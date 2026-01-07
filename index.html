@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Study App (Google Voice)</title>
+    <title>AI Drug Tutor (Manual Request)</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YOUR_KEY_HERE"></script> 
+    
     <style>
         :root {
             --primary: #2563eb;
             --bg: #f3f4f6;
             --card-bg: #ffffff;
             --text: #1f2937;
-            --sim: #059669;    /* Green for Simulation */
+            --sim: #059669;
+            --ai: #7c3aed;
         }
 
         body {
@@ -56,7 +59,7 @@
         button:active { transform: translateY(0); }
 
         button.secondary { background-color: #6b7280; }
-        button.google-voice { background-color: #ea4335; } /* Red for Google */
+        button.rv-voice { background-color: #9333ea; } 
         button.mode-active { ring: 2px solid var(--primary); box-shadow: 0 0 0 3px #bfdbfe; }
         
         /* Settings Panel */
@@ -101,6 +104,15 @@
         }
         
         .btn-sim { background-color: var(--sim); }
+        
+        /* New Explain Button for Quiz */
+        .btn-explain {
+            background-color: var(--ai);
+            color: white;
+            width: 100%; 
+            margin-top: 10px;
+            display: none; /* Hidden by default */
+        }
 
         /* --- Flashcards --- */
         #app-container { width: 100%; max-width: 600px; perspective: 1000px; }
@@ -165,9 +177,7 @@
             background: #ecfdf5; 
             border: 1px solid #a7f3d0;
         }
-
         .ai-output-box h3 { margin: 10px 0 5px 0; font-size: 1rem; color: #065f46; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 2px;}
-        .ai-output-box p { margin-bottom: 8px; }
 
         /* --- Quiz --- */
         .quiz-container {
@@ -204,7 +214,7 @@
             font-size: 0.95rem;
             line-height: 1.6;
         }
-        #ai-container h3 { margin-top: 0; color: #7c3aed; display: flex; align-items: center; gap: 8px;}
+        #ai-container h3 { margin-top: 0; color: var(--ai); display: flex; align-items: center; gap: 8px;}
 
         /* --- Spinner --- */
         .loading-spinner {
@@ -301,6 +311,10 @@
                 <div class="quiz-options" id="quiz-options">
                     </div>
             </div>
+
+            <button id="btn-quiz-explain" class="btn-explain" onclick="triggerQuizExplain()">
+                🤖 Explain Why (AI Tutor)
+            </button>
 
             <div id="ai-container">
                 <h3><span id="ai-status-icon">🤖</span> AI Tutor Explanation</h3>
@@ -464,7 +478,10 @@
         let isFlipped = false;
         let quizCurrentIndex = 0;
         let apiKey = localStorage.getItem('deepseek_key') || "";
-        let useGoogleVoice = false; // Default to native
+        let useRV = false; 
+        
+        // Quiz State for AI
+        let currentQuizData = null; // Stores question, user answer, correct obj for AI button
 
         // --- INITIALIZATION ---
         function init() {
@@ -474,18 +491,16 @@
 
         function reshuffle() {
             drugList = [...rawDrugList];
-            // Fisher-Yates Shuffle
             for (let i = drugList.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [drugList[i], drugList[j]] = [drugList[j], drugList[i]];
             }
-            // Reset UI
             currentIndex = 0;
             quizCurrentIndex = 0;
             resetFlip();
             renderCard();
             generateQuizQuestion();
-            document.getElementById('ai-container').style.display = 'none';
+            resetQuizUI();
         }
 
         // --- API SETTINGS ---
@@ -508,42 +523,29 @@
 
         // --- VOICE TOGGLE ---
         function toggleVoiceMode() {
-            useGoogleVoice = !useGoogleVoice;
+            useRV = !useRV;
             const btn = document.getElementById('voice-btn');
-            if (useGoogleVoice) {
-                btn.innerText = "🗣️ Voice: Google (Hack)";
+            if (useRV) {
+                btn.innerText = "🗣️ Voice: Responsive";
                 btn.classList.remove('secondary');
-                btn.classList.add('google-voice');
+                btn.classList.add('rv-voice');
             } else {
                 btn.innerText = "🗣️ Voice: Native";
                 btn.classList.add('secondary');
-                btn.classList.remove('google-voice');
+                btn.classList.remove('rv-voice');
             }
         }
 
         // --- TTS FUNCTION ---
         function speak(text) {
             window.speechSynthesis.cancel();
-
-            if (useGoogleVoice) {
-                // GOOGLE TRANSLATE HACK
-                // Use 'gtx' client which is more permissive
-                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=gtx`;
-                const audio = new Audio(url);
-                
-                audio.play().catch(error => {
-                    console.error("Google Voice Failed (likely rate limit or network). Falling back to Native.", error);
-                    speakNative(text); // Fallback to native if hack fails
-                });
+            if (useRV && typeof responsiveVoice !== 'undefined') {
+                responsiveVoice.speak(text, "UK English Female");
             } else {
-                speakNative(text);
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
             }
-        }
-
-        function speakNative(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.95;
-            window.speechSynthesis.speak(utterance);
         }
 
         // --- FLASHCARD LOGIC ---
@@ -556,7 +558,6 @@
             document.getElementById('fc-nursing').innerText = drug.nursing;
             document.getElementById('counter').innerText = `${currentIndex + 1} / ${drugList.length}`;
             
-            // Reset AI area
             const box = document.getElementById('fc-ai-case');
             const btn = document.getElementById('btn-case');
             box.style.display = 'none';
@@ -612,7 +613,6 @@
             const btn = document.getElementById('btn-case');
             const container = document.getElementById('fc-ai-case');
             
-            // UI Loading State
             btn.innerHTML = '<span class="loading-spinner"></span> Creating Clinical Scenario...';
             btn.disabled = true;
             container.style.display = 'block';
@@ -621,59 +621,51 @@
             You are a medical simulation engine. 
             For the drug "${drug.name}", create an Integrated Case Study.
             Format strictly in Markdown with these headers:
-
             ### 🏥 Patient Context & Use
-            (Start by briefly explaining why this specific patient is prescribed this drug - common clinical use).
-
             ### ⚠️ The Scenario
-            (Describe a realistic hospital situation happening NOW. Include vital signs or patient complaint relevant to the drug).
-
             ### ✅ Critical Action
-            (What is the immediate nursing priority? Why?).
-
             ### 💡 Clinical Insight
-            (One specific "Pearl of Wisdom" regarding monitoring or safety for this drug).
             `;
 
             try {
                 const response = await fetch("https://api.deepseek.com/chat/completions", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${apiKey}`
-                    },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
                     body: JSON.stringify({
                         model: "deepseek-chat",
                         messages: [{ role: "user", content: prompt }],
-                        temperature: 0.7,
-                        max_tokens: 450
+                        temperature: 0.7
                     })
                 });
 
                 if (!response.ok) throw new Error("API Error");
-
                 const data = await response.json();
-                const markdownText = data.choices[0].message.content;
-                
-                container.innerHTML = marked.parse(markdownText);
+                container.innerHTML = marked.parse(data.choices[0].message.content);
                 btn.innerHTML = '✅ Case Loaded';
 
             } catch (error) {
                 console.error(error);
-                container.innerHTML = "<p style='color:red'>Error loading AI. Check your API key.</p>";
+                container.innerHTML = "<p style='color:red'>Error loading AI. Check API Key.</p>";
                 btn.innerText = "Error - Try Again";
                 btn.disabled = false;
             }
         }
 
         // --- QUIZ LOGIC ---
-        function generateQuizQuestion() {
-            const container = document.getElementById('quiz-options');
-            const questionEl = document.getElementById('quiz-question');
-            container.innerHTML = '';
+        function resetQuizUI() {
             document.getElementById('next-quiz-btn').style.display = 'none';
             document.getElementById('ai-container').style.display = 'none';
             document.getElementById('ai-content').innerHTML = '';
+            document.getElementById('btn-quiz-explain').style.display = 'none';
+            document.getElementById('btn-quiz-explain').innerHTML = '🤖 Explain Why (AI Tutor)';
+            document.getElementById('btn-quiz-explain').disabled = false;
+        }
+
+        function generateQuizQuestion() {
+            resetQuizUI();
+            const container = document.getElementById('quiz-options');
+            const questionEl = document.getElementById('quiz-question');
+            container.innerHTML = '';
 
             if(quizCurrentIndex >= drugList.length) {
                 questionEl.innerText = "Quiz Complete! Click 'Reshuffle' to start over.";
@@ -698,12 +690,12 @@
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.innerText = opt.name;
-                btn.onclick = () => checkAnswer(btn, opt, correctDrug, options, qText);
+                btn.onclick = () => checkAnswer(btn, opt, correctDrug, qText);
                 container.appendChild(btn);
             });
         }
 
-        async function checkAnswer(btnElement, selectedDrug, correctDrug, allOptions, questionText) {
+        function checkAnswer(btnElement, selectedDrug, correctDrug, questionText) {
             const buttons = document.querySelectorAll('.option-btn');
             buttons.forEach(b => b.onclick = null);
 
@@ -720,14 +712,19 @@
                 speak(`Incorrect. The correct answer is ${correctDrug.name}`);
             }
 
+            // Show Next Button
             document.getElementById('next-quiz-btn').style.display = 'block';
+
+            // Show "Explain" Button
+            const explainBtn = document.getElementById('btn-quiz-explain');
+            explainBtn.style.display = 'block';
             
-            if (apiKey) {
-                fetchDeepSeekExplanation(questionText, selectedDrug.name, correctDrug, allOptions);
-            } else {
-                document.getElementById('ai-container').style.display = 'block';
-                document.getElementById('ai-content').innerHTML = '<p style="color:#666; font-style:italic;">Enter API Key in Settings to get AI Explanations.</p>';
-            }
+            // Save state for AI
+            currentQuizData = {
+                question: questionText,
+                userAns: selectedDrug.name,
+                correctObj: correctDrug
+            };
         }
 
         function nextQuestion() {
@@ -735,14 +732,24 @@
             generateQuizQuestion();
         }
 
-        async function fetchDeepSeekExplanation(question, userAns, correctObj, optionsArr) {
+        // --- QUIZ AI EXPLAIN ---
+        async function triggerQuizExplain() {
+            if (!apiKey) {
+                alert("Please enter your DeepSeek API Key in Settings first.");
+                toggleSettings();
+                return;
+            }
+
+            const btn = document.getElementById('btn-quiz-explain');
             const aiContainer = document.getElementById('ai-container');
             const aiContent = document.getElementById('ai-content');
-            const icon = document.getElementById('ai-status-icon');
             
+            btn.innerHTML = '<span class="loading-spinner"></span> Thinking...';
+            btn.disabled = true;
             aiContainer.style.display = 'block';
-            aiContent.innerHTML = '<span class="loading-spinner" style="border-color: #666; border-top-color:#000;"></span> Analyzing...';
-            icon.innerText = "🤔";
+            aiContent.innerHTML = 'Analyzing...';
+
+            const { question, userAns, correctObj } = currentQuizData;
 
             const prompt = `
             You are a clinical nursing tutor. 
@@ -758,15 +765,11 @@
             try {
                 const response = await fetch("https://api.deepseek.com/chat/completions", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${apiKey}`
-                    },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
                     body: JSON.stringify({
                         model: "deepseek-chat",
                         messages: [{ role: "user", content: prompt }],
-                        temperature: 0.7,
-                        max_tokens: 400
+                        temperature: 0.7
                     })
                 });
 
@@ -774,10 +777,12 @@
 
                 const data = await response.json();
                 aiContent.innerHTML = marked.parse(data.choices[0].message.content);
-                icon.innerText = "💡";
+                btn.innerHTML = '✅ Explanation Loaded';
+
             } catch (error) {
                 console.error(error);
-                aiContent.innerHTML = "Error loading explanation. Check API Key.";
+                aiContent.innerHTML = "Error loading explanation.";
+                btn.innerText = "Error";
             }
         }
 
