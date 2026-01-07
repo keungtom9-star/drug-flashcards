@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor (Dual Sets)</title>
+    <title>AI Drug Tutor (Dual Sets + OpenRouter)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
@@ -20,7 +20,7 @@
             --lihkg: #fbbf24;  /* Yellow */
             --lihkg-text: #78350f;
             --ask: #db2777;    /* Pink */
-            --set-extended: #4f46e5; /* Indigo for Extended Set */
+            --set-extended: #4f46e5; /* Indigo */
         }
 
         body {
@@ -81,8 +81,13 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 20px; width: 100%; max-width: 600px;
             border: 1px solid #e5e7eb; box-sizing: border-box;
         }
-        #api-key-input { width: 70%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-right: 5px; }
-
+        
+        .settings-group { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .settings-group:last-child { border-bottom: none; }
+        
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        select, input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 10px; box-sizing: border-box; }
+        
         /* --- Main Container --- */
         #app-container { width: 100%; max-width: 650px; perspective: 1000px; }
 
@@ -142,15 +147,33 @@
         <button onclick="reshuffle()" style="background-color: #f59e0b;">Reset</button>
         <button onclick="toggleVoiceMode()" id="voice-btn" class="voice-native">🗣️ Voice: Native</button>
         <button onclick="toggleLanguage()" id="lang-btn" class="secondary">🌐 Lang: English</button>
-        <button onclick="toggleSettings()" class="secondary">⚙️ API Key</button>
+        <button onclick="toggleSettings()" class="secondary">⚙️ AI Settings</button>
     </div>
 
     <div id="settings-panel">
-        <p style="margin-top:0; font-size:0.9rem;"><strong>DeepSeek API Key:</strong></p>
-        <div style="display:flex;">
-            <input type="password" id="api-key-input" placeholder="sk-..." />
-            <button onclick="saveApiKey()">Save Key</button>
+        <div class="settings-group">
+            <label>AI Provider:</label>
+            <select id="provider-select" onchange="updateSettingsUI()">
+                <option value="deepseek">DeepSeek (Direct)</option>
+                <option value="openrouter">OpenRouter</option>
+            </select>
         </div>
+
+        <div id="deepseek-settings">
+            <label>DeepSeek API Key:</label>
+            <input type="password" id="ds-api-key" placeholder="sk-..." />
+        </div>
+
+        <div id="openrouter-settings" style="display:none;">
+            <label>OpenRouter API Key:</label>
+            <input type="password" id="or-api-key" placeholder="sk-or-..." />
+            
+            <label>Model ID (e.g., xiaomi/mimo-v2-flash:free):</label>
+            <input type="text" id="or-model" value="google/gemini-2.0-flash-exp:free" />
+            <p style="font-size:0.8rem; color:#666; margin-top:0;">Using the "free" model requires no credit but may have rate limits.</p>
+        </div>
+
+        <button onclick="saveSettings()" style="width:100%;">Save Configuration</button>
     </div>
 
     <div id="app-container">
@@ -356,6 +379,7 @@
     { name: "Zolpidem (Stilnox)", class: "Hypnotic", indication: "Insomnia", effects: "Drowsiness, sleep-walking", nursing: "Dose: 10mg HS. Take immediately before bed; risk of falls" }
 ];
 
+        // Placeholder for extended set logic. In a real scenario, you'd paste the full list here.
         const extendedDrugs = [
   { name: "Calcium Carbonate (Tums)", class: "Antacid, Calcium Supplement", indication: "Treatment of calcium deficiency, acid indigestion, and heartburn.", effects: "Constipation, hypercalcemia, kidney stones.", nursing: "Monitor serum calcium levels, take with meals for better absorption, avoid taking with other medications to prevent interactions." },
   { name: "Calcium Citrate (Citracal)", class: "Calcium Supplement", indication: "Prevention or treatment of calcium deficiency, osteoporosis.", effects: "Mild constipation, hypercalcemia, kidney stones.", nursing: "Monitor calcium levels, encourage adequate fluid intake, take with food for better absorption." },
@@ -792,18 +816,30 @@
 ];
 
         // --- STATE ---
-        let activeSourceList = commonDrugs; // Default
+        let activeSourceList = commonDrugs; 
         let drugList = [];
         let currentIndex = 0;
         let quizCurrentIndex = 0;
-        let apiKey = localStorage.getItem('deepseek_key') || "";
+        
+        // Settings State
+        let aiProvider = localStorage.getItem('drug_tutor_provider') || 'deepseek';
+        let dsKey = localStorage.getItem('deepseek_key') || "";
+        let orKey = localStorage.getItem('openrouter_key') || "";
+        let orModel = localStorage.getItem('openrouter_model') || "google/gemini-2.0-flash-exp:free";
+        
         let useGoogleVoice = false; 
         let aiLanguage = 'english'; 
         let currentQuizData = null;
 
         // --- INITIALIZATION ---
         function init() {
-            if(apiKey) document.getElementById('api-key-input').value = apiKey;
+            // Load saved settings into UI
+            document.getElementById('provider-select').value = aiProvider;
+            document.getElementById('ds-api-key').value = dsKey;
+            document.getElementById('or-api-key').value = orKey;
+            document.getElementById('or-model').value = orModel;
+            
+            updateSettingsUI();
             reshuffle();
         }
 
@@ -836,19 +872,42 @@
             resetQuizUI();
         }
 
-        // --- API SETTINGS ---
+        // --- SETTINGS UI LOGIC ---
         function toggleSettings() {
             const panel = document.getElementById('settings-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
-        function saveApiKey() {
-            const input = document.getElementById('api-key-input').value;
-            if(input.trim().length > 0) {
-                localStorage.setItem('deepseek_key', input.trim());
-                apiKey = input.trim();
-                alert("Saved!");
-                toggleSettings();
+
+        function updateSettingsUI() {
+            const provider = document.getElementById('provider-select').value;
+            if (provider === 'deepseek') {
+                document.getElementById('deepseek-settings').style.display = 'block';
+                document.getElementById('openrouter-settings').style.display = 'none';
+            } else {
+                document.getElementById('deepseek-settings').style.display = 'none';
+                document.getElementById('openrouter-settings').style.display = 'block';
             }
+        }
+
+        function saveSettings() {
+            const provider = document.getElementById('provider-select').value;
+            const dsVal = document.getElementById('ds-api-key').value.trim();
+            const orVal = document.getElementById('or-api-key').value.trim();
+            const modelVal = document.getElementById('or-model').value.trim();
+
+            localStorage.setItem('drug_tutor_provider', provider);
+            localStorage.setItem('deepseek_key', dsVal);
+            localStorage.setItem('openrouter_key', orVal);
+            localStorage.setItem('openrouter_model', modelVal);
+
+            // Update local state
+            aiProvider = provider;
+            dsKey = dsVal;
+            orKey = orVal;
+            orModel = modelVal;
+
+            alert("Settings Saved!");
+            toggleSettings();
         }
 
         // --- VOICE & LANGUAGE ---
@@ -920,7 +979,52 @@
             if(el) speakText(el.innerText, lang);
         }
 
-        // --- PROMPT HELPERS ---
+        // --- AI LOGIC (Unified Fetch) ---
+
+        async function fetchAI(messages) {
+            let url = "";
+            let headers = { "Content-Type": "application/json" };
+            let body = {};
+
+            if (aiProvider === 'deepseek') {
+                if(!dsKey) throw new Error("Missing DeepSeek Key");
+                url = "https://api.deepseek.com/chat/completions";
+                headers["Authorization"] = `Bearer ${dsKey}`;
+                body = {
+                    model: "deepseek-chat",
+                    messages: messages,
+                    temperature: 0.7
+                };
+            } else {
+                // OpenRouter
+                if(!orKey) throw new Error("Missing OpenRouter Key");
+                url = "https://openrouter.ai/api/v1/chat/completions";
+                headers["Authorization"] = `Bearer ${orKey}`;
+                // OpenRouter specific headers for rankings
+                headers["HTTP-Referer"] = window.location.href; 
+                headers["X-Title"] = "AI Drug Tutor";
+
+                body = {
+                    model: orModel, // e.g. "google/gemini-2.0-flash-exp:free"
+                    messages: messages
+                };
+            }
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err || res.statusText);
+            }
+
+            const data = await res.json();
+            return data.choices[0].message.content;
+        }
+
         function getRoleInstruction() {
             if (aiLanguage === 'cantonese') return "Provide response in **Cantonese (Traditional Chinese)**. Keep Drug Names/Terms in **English**.";
             if (aiLanguage === 'lihkg') return "Roleplay as a **Hong Kong senior nursing student on LIHKG**. Use **HK Slang** (e.g. Ching, 大癲, gogogo) mixed with Cantonese. **Keep Medical Terms in English**. Tone: Informal.";
@@ -929,7 +1033,6 @@
 
         // --- AI: CLINICAL MENTOR ---
         async function askClinicalMentor() {
-            if (!apiKey) { alert("Enter API Key."); toggleSettings(); return; }
             const input = document.getElementById('ask-input').value; if(!input) return;
             const btn = document.getElementById('btn-ask-submit'); const box = document.getElementById('ask-response-box'); const readBtn = document.getElementById('btn-read-ask');
             
@@ -943,52 +1046,47 @@
             Language: ${getRoleInstruction()}`;
 
             try {
-                const res = await fetch("https://api.deepseek.com/chat/completions", {
-                    method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                    body: JSON.stringify({ model: "deepseek-chat", messages: [{ role: "user", content: prompt }], temperature: 0.7 })
-                });
-                const data = await res.json();
-                box.innerHTML = marked.parse(data.choices[0].message.content);
+                const responseText = await fetchAI([{ role: "user", content: prompt }]);
+                box.innerHTML = marked.parse(responseText);
                 btn.innerHTML = '💡 Ask Mentor'; btn.disabled = false; readBtn.style.display = 'block';
-            } catch (e) { box.innerHTML = "Error."; btn.innerText = "Error"; btn.disabled = false; }
+            } catch (e) { 
+                box.innerHTML = `Error: ${e.message}. Check API Settings.`; 
+                btn.innerText = "Error"; btn.disabled = false; 
+            }
         }
 
         // --- AI: FLASHCARD CASE ---
         async function getIntegratedCaseStudy(drugObj, boxId, btnId, readBtnId) {
-            if (!apiKey) { alert("Enter API Key."); toggleSettings(); return; }
             const btn = document.getElementById(btnId); const box = document.getElementById(boxId); const readBtn = document.getElementById(readBtnId);
             btn.innerHTML = '<span class="loading-spinner"></span> Creating...'; btn.disabled = true; box.style.display = 'block';
             
             const prompt = `Create Medical Case Study for "${drugObj.name}". ${getRoleInstruction()} Headers: ### 🏥 Context ### ⚠️ Scenario ### ✅ Action ### 💡 Insight`;
             
             try {
-                const res = await fetch("https://api.deepseek.com/chat/completions", {
-                    method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                    body: JSON.stringify({ model: "deepseek-chat", messages: [{ role: "user", content: prompt }], temperature: 0.7 })
-                });
-                const data = await res.json();
-                box.innerHTML = marked.parse(data.choices[0].message.content);
+                const responseText = await fetchAI([{ role: "user", content: prompt }]);
+                box.innerHTML = marked.parse(responseText);
                 btn.innerHTML = '✅ Case Loaded'; readBtn.style.display = 'block';
-            } catch (e) { box.innerHTML = "Error."; btn.innerText = "Error"; btn.disabled = false; }
+            } catch (e) { 
+                box.innerHTML = `Error: ${e.message}`; 
+                btn.innerText = "Error"; btn.disabled = false; 
+            }
         }
 
         // --- AI: QUIZ EXPLAIN ---
         async function triggerQuizExplain() {
-            if (!apiKey) { alert("Enter API Key."); toggleSettings(); return; }
             const btn = document.getElementById('btn-quiz-explain'); const box = document.getElementById('ai-content'); const container = document.getElementById('ai-container'); const readBtn = document.getElementById('btn-read-explain');
             btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; btn.disabled = true; container.style.display = 'block'; box.innerHTML = 'Analyzing...';
             
             const prompt = `Explain quiz. Q: "${currentQuizData.q}" Correct: "${currentQuizData.c.name}". ${getRoleInstruction()} Markdown: 1. Why correct? 2. Why others wrong? 3. Two nursing checks.`;
             
             try {
-                const res = await fetch("https://api.deepseek.com/chat/completions", {
-                    method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                    body: JSON.stringify({ model: "deepseek-chat", messages: [{ role: "user", content: prompt }], temperature: 0.7 })
-                });
-                const data = await res.json();
-                box.innerHTML = marked.parse(data.choices[0].message.content);
+                const responseText = await fetchAI([{ role: "user", content: prompt }]);
+                box.innerHTML = marked.parse(responseText);
                 btn.innerHTML = '✅ Explained'; readBtn.style.display = 'block';
-            } catch (e) { box.innerHTML = "Error."; btn.innerText = "Error"; }
+            } catch (e) { 
+                box.innerHTML = `Error: ${e.message}`; 
+                btn.innerText = "Error"; 
+            }
         }
 
         // --- QUIZ LOGIC ---
@@ -1019,9 +1117,23 @@
         }
         function checkAnswer(btn, selected, correct, qText) {
             const btns = document.querySelectorAll('.option-btn'); btns.forEach(b => b.onclick = null);
-            if (selected.name === correct.name) { btn.classList.add('correct'); speakText("Correct!", 'en'); }
-            else { btn.classList.add('wrong'); btns.forEach(b => { if(b.innerText === correct.name) b.classList.add('correct'); }); speakText("Incorrect.", 'en'); }
-            document.getElementById('next-quiz-btn').style.display = 'block'; document.getElementById('btn-quiz-explain').style.display = 'block';
+            
+            let message = "";
+            
+            if (selected.name === correct.name) { 
+                btn.classList.add('correct'); 
+                message = "Correct! " + correct.name;
+            } else { 
+                btn.classList.add('wrong'); 
+                btns.forEach(b => { if(b.innerText === correct.name) b.classList.add('correct'); }); 
+                message = "Incorrect. The correct answer is " + correct.name;
+            }
+            
+            // Read out the result immediately
+            speakText(message, 'en');
+            
+            document.getElementById('next-quiz-btn').style.display = 'block'; 
+            document.getElementById('btn-quiz-explain').style.display = 'block';
             currentQuizData = { q: qText, u: selected.name, c: correct };
         }
         function nextQuestion() { quizCurrentIndex++; generateQuizQuestion(); }
