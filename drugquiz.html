@@ -1,10 +1,28 @@
+Here is the updated HTML file.
+
+### **Changes Made:**
+
+1. **Added ResponsiveVoice Script:** I included the required library in the `<head>` section.
+2. **Updated Voice Toggle:** The button now switches between **"Native"** (Browser default) and **"ResponsiveVoice"** (High quality).
+3. **Updated Logic:** The `speak()` function now uses `responsiveVoice.speak()` when the toggle is active.
+
+### **How to use:**
+
+1. Save as `.html`.
+2. Open in your browser.
+3. Click **"🗣️ Voice: Native"** to switch to **"🗣️ Voice: Responsive"**.
+
+*Note: ResponsiveVoice requires an internet connection to work.*
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Study App (Google Voice)</title>
+    <title>AI Drug Study App (ResponsiveVoice)</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YOUR_KEY_HERE"></script> 
     <style>
         :root {
             --primary: #2563eb;
@@ -56,7 +74,7 @@
         button:active { transform: translateY(0); }
 
         button.secondary { background-color: #6b7280; }
-        button.google-voice { background-color: #ea4335; } /* Red for Google */
+        button.rv-voice { background-color: #9333ea; } /* Purple for ResponsiveVoice */
         button.mode-active { ring: 2px solid var(--primary); box-shadow: 0 0 0 3px #bfdbfe; }
         
         /* Settings Panel */
@@ -464,7 +482,7 @@
         let isFlipped = false;
         let quizCurrentIndex = 0;
         let apiKey = localStorage.getItem('deepseek_key') || "";
-        let useGoogleVoice = false; // Default to native
+        let useRV = false; // Default to native
 
         // --- INITIALIZATION ---
         function init() {
@@ -508,16 +526,16 @@
 
         // --- VOICE TOGGLE ---
         function toggleVoiceMode() {
-            useGoogleVoice = !useGoogleVoice;
+            useRV = !useRV;
             const btn = document.getElementById('voice-btn');
-            if (useGoogleVoice) {
-                btn.innerText = "🗣️ Voice: Google (Hack)";
+            if (useRV) {
+                btn.innerText = "🗣️ Voice: Responsive";
                 btn.classList.remove('secondary');
-                btn.classList.add('google-voice');
+                btn.classList.add('rv-voice');
             } else {
                 btn.innerText = "🗣️ Voice: Native";
                 btn.classList.add('secondary');
-                btn.classList.remove('google-voice');
+                btn.classList.remove('rv-voice');
             }
         }
 
@@ -525,25 +543,16 @@
         function speak(text) {
             window.speechSynthesis.cancel();
 
-            if (useGoogleVoice) {
-                // GOOGLE TRANSLATE HACK
-                // Use 'gtx' client which is more permissive
-                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=gtx`;
-                const audio = new Audio(url);
-                
-                audio.play().catch(error => {
-                    console.error("Google Voice Failed (likely rate limit or network). Falling back to Native.", error);
-                    speakNative(text); // Fallback to native if hack fails
-                });
+            if (useRV && typeof responsiveVoice !== 'undefined') {
+                // ResponsiveVoice (US English Female by default)
+                // You can change to 'UK English Female' or others if desired.
+                responsiveVoice.speak(text, "UK English Female");
             } else {
-                speakNative(text);
+                // Native Fallback
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
             }
-        }
-
-        function speakNative(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.95;
-            window.speechSynthesis.speak(utterance);
         }
 
         // --- FLASHCARD LOGIC ---
@@ -807,3 +816,5 @@
     </script>
 </body>
 </html>
+
+```
