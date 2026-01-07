@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Drug Study App</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        /* Controls */
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s, opacity 0.2s;
+            background-color: var(--primary);
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background-color: #6b7280;
+        }
+
+        button.mode-active {
+            box-shadow: 0 0 0 3px #93c5fd;
+        }
+
+        /* Main Container */
+        #app-container {
+            width: 100%;
+            max-width: 600px;
+            perspective: 1000px;
+        }
+
+        /* Flashcard Styles */
+        .flashcard-container {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .flashcard-container.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            background-color: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background-color: #fff;
+            align-items: flex-start;
+            text-align: left;
+            overflow-y: auto;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .detail-row {
+            margin-bottom: 12px;
+            width: 100%;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #4b5563;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .detail-content {
+            margin-top: 4px;
+            font-size: 1rem;
+        }
+
+        /* Quiz Styles */
+        .quiz-container {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none; /* Hidden by default */
+        }
+
+        .quiz-question {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            text-align: left;
+            border: 1px solid #d1d5db;
+        }
+
+        .option-btn:hover {
+            background-color: #e5e7eb;
+        }
+
+        .option-btn.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+
+        .option-btn.wrong {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        /* Bottom Nav */
+        .nav-controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .speak-icon {
+            font-size: 1.2rem;
+            margin-left: 8px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>💊 Drug Pharmacology Study</h1>
+
+    <div class="controls">
+        <button id="mode-flashcard" class="mode-active" onclick="switchMode('flashcard')">Flashcards</button>
+        <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz Mode</button>
+        <button onclick="reshuffle()" style="background-color: #10b981;">Refhuffle & Reset</button>
+    </div>
+
+    <div id="app-container">
+        
+        <div id="flashcard-section">
+            <div class="flashcard-container" id="flashcard" onclick="flipCard()">
+                <div class="card-face card-front">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">💊</div>
+                    <h2 id="fc-name" class="card-title">Drug Name</h2>
+                    <p style="color: #666; font-size: 0.9rem;">(Click to flip)</p>
+                    <button onclick="event.stopPropagation(); speakFront()" style="margin-top: 20px;">🔊 Read Name</button>
+                </div>
+                
+                <div class="card-face card-back">
+                    <div class="detail-row">
+                        <div class="detail-label">Class</div>
+                        <div class="detail-content" id="fc-class">...</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Indication</div>
+                        <div class="detail-content" id="fc-indication">...</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Effects</div>
+                        <div class="detail-content" id="fc-effects">...</div>
+                    </div>
+                    <div class="detail-row" style="border:none;">
+                        <div class="detail-label">Nursing Considerations</div>
+                        <div class="detail-content" id="fc-nursing">...</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); speakBack()" style="margin-top: auto; align-self: center;">🔊 Read Details</button>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <button onclick="prevCard()">← Previous</button>
+                <span id="counter" style="align-self: center; font-weight: bold;">1 / 10</span>
+                <button onclick="nextCard()">Next →</button>
+            </div>
+        </div>
+
+        <div id="quiz-section" class="quiz-container">
+            <div id="quiz-content">
+                <p class="quiz-question" id="quiz-question">Question text here...</p>
+                <div class="quiz-options" id="quiz-options">
+                    </div>
+            </div>
+            <div class="nav-controls" style="justify-content: flex-end;">
+                <button onclick="nextQuestion()" id="next-quiz-btn" style="display:none;">Next Question →</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA ---
+        // Format: { name: "drug (brandname in hk)", class: "", indication: "", effects: "", nursing: "" }
+        const rawDrugList = [
+    { name: "Acetaminophen/Paracetamol (Panadol)", class: "Analgesic/Antipyretic", indication: "Mild pain, fever", effects: "Hepatotoxicity (overdose), rash", nursing: "Dose: 500mg-1g Q4H. Monitor liver function; max 4g/day; antidote is Acetylcysteine" },
+    { name: "Acetylcysteine (Fluimucil)", class: "Mucolytic/Antidote", indication: "Paracetamol overdose, thick secretions", effects: "Bronchospasm, nausea, rotten egg smell", nursing: "Dose: 600mg daily. Assess respiratory status; monitor for anaphylactoid reactions" },
+    { name: "Acyclovir (Zovirax)", class: "Antiviral", indication: "Herpes simplex, shingles, varicella", effects: "Nausea, diarrhea, renal toxicity", nursing: "Dose: 200-800mg 5x/day. Ensure adequate hydration to prevent crystaluria; infuse slowly" },
+    { name: "Adenosine (Adenocard)", class: "Antiarrhythmic", indication: "PSVT (Supraventricular tachycardia)", effects: "Brief asystole, flushing, chest pressure", nursing: "Dose: 6mg rapid IV push. Give rapidly (1-2 sec) followed by saline flush; continuous ECG monitoring" },
+    { name: "Adrenaline/Epinephrine (Adrenaline)", class: "Sympathomimetic", indication: "Anaphylaxis, cardiac arrest", effects: "Tachycardia, palpitations, hypertension", nursing: "Dose: 0.5mg IM (Anaphylaxis). Double check concentration (1:1000 vs 1:10,000); monitor ECG" },
+    { name: "Albumin (Human Albumin)", class: "Plasma volume expander", indication: "Hypovolemia, hypoalbuminemia", effects: "Fluid overload, pulmonary edema", nursing: "Dose: Titrated. Monitor volume status/breath sounds; use vented tubing for glass bottles" },
+    { name: "Albuterol/Salbutamol (Ventolin)", class: "Beta-2 Agonist (SABA)", indication: "Acute asthma, bronchospasm", effects: "Tremors, tachycardia, hypokalemia", nursing: "Dose: 2.5-5mg Neb / 1-2 puffs. Monitor respiratory rate/SpO2; educate on MDI technique" },
+    { name: "Alendronate (Fosamax)", class: "Bisphosphonate", indication: "Osteoporosis", effects: "Esophagitis, jaw osteonecrosis", nursing: "Dose: 70mg Weekly. Take on empty stomach with plain water; stay upright for 30 mins" },
+    { name: "Allopurinol (Zyloprim)", class: "Xanthine oxidase inhibitor", indication: "Gout, hyperuricemia", effects: "Rash (SJS), GI upset", nursing: "Dose: 100-300mg daily. Push fluids to 3L/day; stop immediately if rash develops" },
+    { name: "Alprazolam (Xanax)", class: "Benzodiazepine", indication: "Anxiety, panic disorder", effects: "Sedation, drowsiness, dependence", nursing: "Dose: 0.25-0.5mg TDS. Fall precautions; avoid alcohol; monitor for respiratory depression" },
+    { name: "Aluminium hydroxide (Alu-Tab)", class: "Antacid", indication: "GERD, hyperphosphatemia", effects: "Constipation, hypophosphatemia", nursing: "Dose: 500mg QID. Give separately from other meds (2 hr gap); monitor bowel habits" },
+    { name: "Amikacin (Amikin)", class: "Aminoglycoside antibiotic", indication: "Severe gram-negative infections", effects: "Nephrotoxicity, ototoxicity", nursing: "Dose: 15mg/kg/day. Monitor peak/trough levels; strictly monitor renal function and hearing" },
+    { name: "Amiodarone (Cordarone)", class: "Antiarrhythmic", indication: "Atrial fibrillation, ventricular arrhythmias", effects: "Hypotension, pulmonary fibrosis, thyroid issues", nursing: "Dose: 200mg daily (maint). Monitor ECG (QT interval), LFTs, TFTs; use filter for IV" },
+    { name: "Amitriptyline (Saroten)", class: "Tricyclic antidepressant", indication: "Depression, neuropathic pain", effects: "Sedation, dry mouth, postural hypotension", nursing: "Dose: 10-50mg HS. Assess suicide risk; fall precautions; take at bedtime" },
+    { name: "Amlodipine (Norvasc)", class: "Calcium channel blocker", indication: "Hypertension, angina", effects: "Peripheral edema, flushing", nursing: "Dose: 5-10mg OD. Monitor BP; assess for ankle swelling" },
+    { name: "Amoxicillin (Amoxil)", class: "Penicillin antibiotic", indication: "RTIs, UTIs, H. pylori", effects: "Rash, diarrhea, allergy", nursing: "Dose: 250-500mg TDS. Check for penicillin allergy; safe to take with food" },
+    { name: "Amoxicillin + Clavulanate (Augmentin)", class: "Penicillin + Beta-lactamase inh", indication: "Respiratory/Skin/Urinary infections", effects: "Diarrhea, candidiasis, cholestatic jaundice", nursing: "Dose: 375mg TDS / 1g BD. Take with food to reduce GI upset; check allergy" },
+    { name: "Ampicillin (Penbritin)", class: "Penicillin antibiotic", indication: "Respiratory, GI, GU infections", effects: "Diarrhea, rash (Mono patients)", nursing: "Dose: 250-500mg Q6H. Monitor for rash; take oral dose on empty stomach" },
+    { name: "Aspirin (Aspro/Cartia)", class: "Antiplatelet/NSAID", indication: "MI prophylaxis, pain", effects: "GI bleeding, tinnitus, bronchospasm", nursing: "Dose: 80-100mg (Antiplatelet). Monitor for tarry stools; take with food" },
+    { name: "Atenolol (Tenormin)", class: "Beta-blocker", indication: "Hypertension, angina", effects: "Bradycardia, hypotension", nursing: "Dose: 25-50mg OD. Check Pulse/BP before giving; caution in asthma/COPD" },
+    { name: "Atorvastatin (Lipitor)", class: "Statin", indication: "Hyperlipidemia", effects: "Myalgia, elevated LFTs", nursing: "Dose: 10-80mg OD. Monitor CK levels if muscle pain; check LFTs; take at night" },
+    { name: "Atropine (Atropine Sulfate)", class: "Anticholinergic", indication: "Bradycardia, poisoning", effects: "Dry mouth, blurred vision, tachycardia", nursing: "Dose: 0.5-1mg IV. Monitor HR, urine output; contraindicated in glaucoma" },
+    { name: "Azithromycin (Zithromax)", class: "Macrolide antibiotic", indication: "RTIs, Chlamydia", effects: "GI upset, QT prolongation", nursing: "Dose: 500mg OD. Take 1hr before or 2hr after food; monitor ECG in cardiac patients" },
+    { name: "Baclofen (Lioresal)", class: "Muscle relaxant", indication: "Spasticity, MS", effects: "Drowsiness, weakness", nursing: "Dose: 5mg TDS. Do not stop abruptly; fall precautions" },
+    { name: "Beclomethasone (Qvar)", class: "Corticosteroid (inhaled)", indication: "Asthma prophylaxis", effects: "Oral thrush, hoarseness", nursing: "Dose: 100-400mcg BD. Rinse mouth with water after use; use spacer" },
+    { name: "Benzhexol/Trihexyphenidyl (Artane)", class: "Anticholinergic", indication: "Parkinsonism, EPS", effects: "Dry mouth, blurred vision, confusion", nursing: "Dose: 2mg TDS. Monitor for urinary retention and confusion; caution in elderly" },
+    { name: "Benzylpenicillin (Crystapen)", class: "Penicillin antibiotic", indication: "Streptococcal infections", effects: "Anaphylaxis, electrolyte imbalance", nursing: "Dose: 1.2g Q4H IV. Check allergy history; inject slowly" },
+    { name: "Betahistine (Serc)", class: "Histamine analogue", indication: "Ménière's disease, vertigo", effects: "Headache, gastric upset", nursing: "Dose: 8-16mg TDS. Take with food to minimize GI intolerance" },
+    { name: "Bisacodyl (Dulcolax)", class: "Stimulant laxative", indication: "Constipation, bowel prep", effects: "Cramping, electrolyte disturbance", nursing: "Dose: 5-10mg HS. Do not chew tablets; avoid milk within 1 hour" },
+    { name: "Calcitriol (Rocaltrol)", class: "Vitamin D analogue", indication: "Hypocalcemia (renal failure)", effects: "Hypercalcemia, metallic taste", nursing: "Dose: 0.25mcg OD. Monitor serum calcium and phosphate levels" },
+    { name: "Calcium Gluconate (Calcium Sandoz)", class: "Electrolyte", indication: "Hypocalcemia, Hyperkalemia", effects: "Arrhythmias, tissue necrosis", nursing: "Dose: 10ml of 10% IV. Monitor ECG; ensure patent IV line (vesicant)" },
+    { name: "Carbamazepine (Tegretol)", class: "Anticonvulsant", indication: "Epilepsy, trigeminal neuralgia", effects: "Drowsiness, hyponatremia, rash (SJS)", nursing: "Dose: 200mg BD. Monitor CBC, Na+; check for HLA-B*1502 in Asians" },
+    { name: "Carbimazole (Neo-Mercazole)", class: "Antithyroid", indication: "Hyperthyroidism", effects: "Agranulocytosis, rash", nursing: "Dose: 5-20mg daily. Report sore throat/fever immediately (marrow suppression)" },
+    { name: "Carvedilol (Coreg/Dilatrend)", class: "Beta-blocker", indication: "Heart failure, hypertension", effects: "Bradycardia, hypotension", nursing: "Dose: 3.125-25mg BD. Take with food; monitor BP/HR" },
+    { name: "Cefotaxime (Claforan)", class: "3rd-gen cephalosporin", indication: "Severe infections", effects: "Diarrhea, rash, injection pain", nursing: "Dose: 1g Q8H. Monitor renal function; check for penicillin cross-sensitivity" },
+    { name: "Ceftazidime (Fortaz)", class: "3rd-gen cephalosporin", indication: "Pseudomonas, hospital infections", effects: "Phlebitis, diarrhea", nursing: "Dose: 1-2g Q8H. Monitor renal function; covers pseudomonas" },
+    { name: "Ceftriaxone (Rocephin)", class: "3rd-gen cephalosporin", indication: "Meningitis, pneumonia", effects: "Biliary sludge, diarrhea", nursing: "Dose: 1-2g OD. Do not mix with calcium solutions; IV over 30 mins" },
+    { name: "Cefuroxime (Zinacef/Zinnat)", class: "2nd-gen cephalosporin", indication: "Surgical prophylaxis, RTIs", effects: "Diarrhea, Candida overgrowth", nursing: "Dose: 250mg BD (PO). Give PO with food to increase absorption" },
+    { name: "Celecoxib (Celebrex)", class: "NSAID (COX-2)", indication: "Osteoarthritis, Pain", effects: "CV thrombotic events, GI upset", nursing: "Dose: 100-200mg BD. Less GI bleeding risk than other NSAIDs but monitor cardiac history" },
+    { name: "Cephalexin (Keflex)", class: "1st-gen cephalosporin", indication: "Skin infections, UTIs", effects: "Nausea, diarrhea, rash", nursing: "Dose: 250-500mg Q6H. Check for penicillin allergy (cross-reactivity)" },
+    { name: "Chloramphenicol (Chloromycetin)", class: "Antibiotic", indication: "Eye infections (topical)", effects: "Marrow suppression (Systemic)", nursing: "Dose: Q4H (Drops). Systemic use rare due to toxicity; monitor CBC closely" },
+    { name: "Chlorpheniramine (Piriton)", class: "Antihistamine", indication: "Allergies, itchiness", effects: "Drowsiness, dry mouth, urinary retention", nursing: "Dose: 4mg TDS. Caution against driving/operating machinery" },
+    { name: "Ciprofloxacin (Ciproxin)", class: "Fluoroquinolone", indication: "UTIs, bacterial gastroenteritis", effects: "Tendonitis, photosensitivity, QT", nursing: "Dose: 250-500mg BD. Separate from dairy/antacids; watch for heel pain" },
+    { name: "Clarithromycin (Klacid)", class: "Macrolide antibiotic", indication: "H. pylori, RTIs", effects: "Metallic taste, GI upset", nursing: "Dose: 250-500mg BD. Interacts with Statins/Warfarin; take with food" },
+    { name: "Clindamycin (Dalacin)", class: "Lincosamide antibiotic", indication: "Dental/Skin infections", effects: "Diarrhea, C. difficile colitis", nursing: "Dose: 150-300mg Q6H. Report diarrhea immediately; monitor liver function" },
+    { name: "Clopidogrel (Plavix)", class: "Antiplatelet", indication: "Stent potency, stroke prevention", effects: "Bleeding, bruising", nursing: "Dose: 75mg OD. Stop 5-7 days pre-op; monitor for signs of bleeding" },
+    { name: "Cloxacillin (Orbenin)", class: "Penicillin antibiotic", indication: "Staphylococcal skin infections", effects: "GI upset, rash", nursing: "Dose: 250-500mg Q6H. Best taken on empty stomach (1hr ac or 2hr pc)" },
+    { name: "Codeine (Codeine Phosphate)", class: "Opioid analgesic", indication: "Mild pain, dry cough", effects: "Constipation, drowsiness", nursing: "Dose: 15-30mg Q4H. Monitor bowel movements; encourage fluids/fiber" },
+    { name: "Colchicine (Colgout)", class: "Antigout agent", indication: "Acute gout flair", effects: "Severe diarrhea, nausea", nursing: "Dose: 0.5mg BD. Stop if diarrhea occurs; caution in renal impairment" },
+    { name: "Cotrimoxazole (Sephros/Bactrim)", class: "Sulfonamide antibiotic", indication: "UTI, PCP pneumonia", effects: "Rash (SJS), photosensitivity, hyperkalemia", nursing: "Dose: 960mg BD. Check sulfa allergy; encourage fluids; monitor K+" },
+    { name: "Dexamethasone (Decadron)", class: "Corticosteroid", indication: "Cerebral edema, anti-emetic", effects: "Hyperglycemia, insomnia", nursing: "Dose: 4-8mg BD. Give in morning to reduce insomnia; monitor glucose" },
+    { name: "Diazepam (Valium)", class: "Benzodiazepine", indication: "Seizures, muscle spasm", effects: "Sedation, respiratory depression", nursing: "Dose: 5mg BD. Monitor resp rate; IV can damage veins (give slowly)" },
+    { name: "Diclofenac (Voltaren)", class: "NSAID", indication: "Pain, inflammation", effects: "Gastric ulcer, renal impairment", nursing: "Dose: 50mg BD/TDS. Take with food; avoid IM in anticoagulated patients" },
+    { name: "Digoxin (Lanoxin)", class: "Cardiac glycoside", indication: "Heart failure, AF", effects: "Bradycardia, yellow vision, nausea", nursing: "Dose: 0.0625-0.25mg OD. Check apical pulse >60; monitor K+ (toxicity risk)" },
+    { name: "Dihydrocodeine (DF118)", class: "Opioid analgesic", indication: "Moderate pain", effects: "Constipation, drowsiness", nursing: "Dose: 30-60mg Q4H. Fall precautions; monitor bowel function" },
+    { name: "Diltiazem (Herbesser)", class: "Calcium channel blocker", indication: "Angina, AF rate control", effects: "Bradycardia, edema", nursing: "Dose: 30-60mg TDS. Monitor HR and BP; caution with Beta-blockers" },
+    { name: "Diphenhydramine (Benadryl)", class: "Antihistamine", indication: "Allergy, sleep aid", effects: "Sedation, dry mouth, confusion", nursing: "Dose: 25-50mg. Fall precautions; High anticholinergic burden in elderly" },
+    { name: "Dobutamine (Dobutrex)", class: "Inotrope", indication: "Cardiogenic shock, HF", effects: "Tachycardia, hypertension", nursing: "Dose: 2-20mcg/kg/min. Continuous cardiac monitoring; central line preferred" },
+    { name: "Dopamine (Intropin)", class: "Inotrope/Vasopressor", indication: "Hypotension, shock", effects: "Arrhythmias, tissue necrosis", nursing: "Dose: 2-20mcg/kg/min. Monitor IV site hourly (vesicant); Phentolamine is antidote" },
+    { name: "Enoxaparin (Clexane)", class: "LMW Heparin", indication: "DVT prophylaxis/treatment", effects: "Bleeding, bruising, thrombocytopenia", nursing: "Dose: 40mg SC OD (Prophylaxis). Inject SC in abdomen; do not rub site; monitor platelets" },
+    { name: "Erythromycin (Erythrocin)", class: "Macrolide antibiotic", indication: "Penicillin allergy, pro-kinetic", effects: "Severe GI upset, QT prolongation", nursing: "Dose: 250-500mg Q6H. Take with food if GI upset occurs" },
+    { name: "Esomeprazole (Nexium)", class: "Proton pump inhibitor", indication: "GERD, Gastritis", effects: "Headache, diarrhea", nursing: "Dose: 20-40mg OD. Best taken 30 mins before breakfast; swallow whole" },
+    { name: "Famotidine (Pepcidine)", class: "H2 Blocker", indication: "GERD, peptic ulcer", effects: "Headache, dizziness", nursing: "Dose: 20mg BD. Can be taken with or without food" },
+    { name: "Fentanyl (Durogesic/Sublimaze)", class: "Opioid analgesic", indication: "Severe pain, anesthesia", effects: "Respiratory depression, chest rigidity", nursing: "Dose: 12/25/50mcg Patch. Monitor respiration; patches take 12h to start working" },
+    { name: "Filgrastim (Neupogen)", class: "G-CSF", indication: "Neutropenia", effects: "Bone pain, leukocytosis", nursing: "Dose: 5mcg/kg/day SC. Store in fridge; monitor WBC counts" },
+    { name: "Fluconazole (Diflucan)", class: "Antifungal", indication: "Candidiasis (Thrush)", effects: "Nausea, hepatotoxicity", nursing: "Dose: 50-150mg OD. Monitor LFTs if used long term" },
+    { name: "Fluoxetine (Prozac)", class: "SSRI", indication: "Depression, OCD", effects: "Insomnia, sexual dysfunction", nursing: "Dose: 20mg OD (AM). Monitor for suicide risk in first weeks; long half-life" },
+    { name: "Furosemide (Lasix)", class: "Loop diuretic", indication: "Heart failure, edema", effects: "Hypokalemia, hypotension", nursing: "Dose: 40mg OD/BD. Monitor K+, BP, and urine output; give in morning" },
+    { name: "Gabapentin (Neurontin)", class: "Anticonvulsant", indication: "Neuropathic pain", effects: "Drowsiness, dizziness", nursing: "Dose: 300mg TDS. Titrate slowly; caution in renal failure" },
+    { name: "Gentamicin (Garamycin)", class: "Aminoglycoside", indication: "Severe sepsis, UTI", effects: "Nephrotoxicity, Ototoxicity", nursing: "Dose: 3-5mg/kg OD. Monitor Creatinine and levels (Peak/Trough) closely" },
+    { name: "Gliclazide (Diamicron)", class: "Sulfonylurea", indication: "Type 2 Diabetes", effects: "Hypoglycemia, weight gain", nursing: "Dose: 80mg BD. Take with breakfast; educate on hypo signs" },
+    { name: "Glyceryl trinitrate (Nitromin)", class: "Nitrate", indication: "Angina pectoris", effects: "Headache, hypotension, flushing", nursing: "Dose: 0.4mg SL. Sit down before using (syncope risk); wait 5 mins between doses" },
+    { name: "Haloperidol (Haldol/Serenace)", class: "Antipsychotic", indication: "Agitation, Delirium", effects: "EPS (dystonia), QT prolongation", nursing: "Dose: 0.5-5mg. Monitor ECG; watch for stiffness/tremors" },
+    { name: "Heparin (Heparin Sodium)", class: "Anticoagulant", indication: "DVT/PE treatment, ACS", effects: "Bleeding, HIT (low platelets)", nursing: "Dose: Infusion titrated. Monitor APTT Q6H; Antidote: Protamine Sulfate" },
+    { name: "Hydralazine (Apresoline)", class: "Vasodilator", indication: "Hypertension, HF", effects: "Reflex tachycardia, lupus-like syndrome", nursing: "Dose: 25-50mg QID. Monitor BP and HR closely" },
+    { name: "Hydrocortisone (Solu-Cortef)", class: "Corticosteroid", indication: "Acute asthma, Adrenal insufficiency", effects: "Hyperglycemia, fluid retention", nursing: "Dose: 100mg Q6H IV. Monitor blood glucose; taper IV to PO" },
+    { name: "Hydroxyzine (Atarax)", class: "Antihistamine", indication: "Itchiness, anxiety", effects: "Sedation, dry mouth", nursing: "Dose: 25mg TDS. Fall precautions; often used for urticaria" },
+    { name: "Hyoscine Butylbromide (Buscopan)", class: "Antispasmodic", indication: "Abdominal cramps", effects: "Dry mouth, tachycardia", nursing: "Dose: 10-20mg QID. Contraindicated in bowel obstruction" },
+    { name: "Ibuprofen (Nurofen)", class: "NSAID", indication: "Pain, fever", effects: "Gastric irritation, renal risk", nursing: "Dose: 200-400mg TDS. Take with food; avoid in asthmatics sensitive to Aspirin" },
+    { name: "Insulin Glargine (Lantus)", class: "Long-acting insulin", indication: "Diabetes Mellitus", effects: "Hypoglycemia", nursing: "Dose: OD SC. Do not mix with other insulins; no peak action" },
+    { name: "Insulin Lispro (Humalog)", class: "Rapid-acting insulin", indication: "Mealtime glucose control", effects: "Hypoglycemia (rapid)", nursing: "Dose: Sliding Scale. Give food immediately (within 15 mins)" },
+    { name: "Isoniazid (INH)", class: "Antitubercular", indication: "Tuberculosis", effects: "Neuropathy, hepatotoxicity", nursing: "Dose: 300mg OD. Give Pyridoxine (B6) to prevent neuropathy; monitor LFTs" },
+    { name: "Isosorbide Mononitrate (Imdur)", class: "Nitrate", indication: "Angina prophylaxis", effects: "Headache, hypotension", nursing: "Dose: 30-60mg OD. Swallow whole (SR formulation); do not crush" },
+    { name: "Ketorolac (Toradol)", class: "NSAID (Potent)", indication: "Post-op pain", effects: "GI bleeding, renal failure", nursing: "Dose: 15-30mg Q6H IM/IV. Short term use only (<5 days); check Creatinine" },
+    { name: "Labetalol (Trandate)", class: "Beta-blocker", indication: "Hypertensive emergency", effects: "Orthostatic hypotension", nursing: "Dose: 20mg IV Bolus / 100mg PO. Keep patient supine during IV administration" },
+    { name: "Lactulose (Duphalac)", class: "Osmotic laxative", indication: "Constipation, Hepatic encephalopathy", effects: "Flatulence, cramps, diarrhea", nursing: "Dose: 15-30ml BD. Titrate for 2-3 soft stools/day in liver patients" },
+    { name: "Lansoprazole (Prevacid)", class: "Proton pump inhibitor", indication: "Gastric reflux", effects: "Headache, diarrhea", nursing: "Dose: 30mg OD. Take in morning before food" },
+    { name: "Levofloxacin (Cravit)", class: "Fluoroquinolone", indication: "RTIs, UTI", effects: "Tendonitis, QT prolongation", nursing: "Dose: 500mg OD. Renal dosing needed; stop if tendon pain occurs" },
+    { name: "Levothyroxine (Eltroxin)", class: "Thyroid hormone", indication: "Hypothyroidism", effects: "Palpitations, weight loss", nursing: "Dose: 50-100mcg OD. Take on empty stomach 30 mins before breakfast" },
+    { name: "Lisinopril (Zestril)", class: "ACE inhibitor", indication: "Hypertension, HF", effects: "Dry cough, hyperkalemia", nursing: "Dose: 10-20mg OD. Monitor K+ and Creatinine; watch for facial swelling" },
+    { name: "Lithium (Priadel)", class: "Mood stabilizer", indication: "Bipolar disorder", effects: "Tremor, polyuria, toxicity", nursing: "Dose: 400-800mg. Narrow therapeutic index; maintain sodium/fluid intake" },
+    { name: "Loperamide (Imodium)", class: "Antidiarrheal", indication: "Diarrhea", effects: "Constipation, cramps", nursing: "Dose: 4mg stat. Max 16mg/day; rule out infectious diarrhea first" },
+    { name: "Lorazepam (Ativan)", class: "Benzodiazepine", indication: "Anxiety, Seizures", effects: "Sedation, respiratory depression", nursing: "Dose: 0.5-2mg. Dilute for IV use; monitor respiration" },
+    { name: "Losartan (Cozaar)", class: "ARB", indication: "Hypertension", effects: "Dizziness, hyperkalemia", nursing: "Dose: 50mg OD. Alternative if ACE inhibitor causes cough" },
+    { name: "Levodopa/Benserazide (Madopar)", class: "Antiparkinsonian", indication: "Parkinson's disease", effects: "Dyskinesia, hypotension", nursing: "Dose: 125mg TDS. Take with food (low protein); urine may darken" },
+    { name: "Magnesium Sulfate (Magnesium)", class: "Electrolyte", indication: "Hypomagnesemia, Asthma", effects: "Flushing, hypotension, loss of reflexes", nursing: "Dose: 1-2g IV. Monitor Deep Tendon Reflexes (DTR) and resp rate" },
+    { name: "Mannitol (Mannitol 20%)", class: "Osmotic diuretic", indication: "Raised ICP", effects: "Dehydration, electrolyte imbalance", nursing: "Dose: 0.25-1g/kg. Inspect bottle for crystals (warm to dissolve); use filter" },
+    { name: "Meropenem (Merrem)", class: "Carbapenem antibiotic", indication: "ESBL infections, meningitis", effects: "Seizures (rare), diarrhea", nursing: "Dose: 1g Q8H. Broad spectrum; monitor renal function" },
+    { name: "Metformin (Glucophage)", class: "Biguanide", indication: "Type 2 Diabetes", effects: "Diarrhea, Lactic acidosis (rare)", nursing: "Dose: 500mg BD. Take with meals to reduce GI upset; hold before CT contrast" },
+    { name: "Methyldopa (Aldomet)", class: "Antihypertensive", indication: "Hypertension in pregnancy", effects: "Drowsiness, hemolytic anemia", nursing: "Dose: 250mg TDS. Monitor LFTs and CBC" },
+    { name: "Metoclopramide (Maxolon)", class: "Antiemetic", indication: "Nausea, gastroparesis", effects: "EPS (dystonia), restlessness", nursing: "Dose: 10mg TDS. Inject slowly; Benztropine reverses dystonia" },
+    { name: "Metoprolol (Betaloc)", class: "Beta-blocker", indication: "Hypertension, Angina", effects: "Bradycardia, fatigue", nursing: "Dose: 50mg BD. Monitor HR/BP; caution in heart failure decompensation" },
+    { name: "Metronidazole (Flagyl)", class: "Antibiotic", indication: "Anaerobes, intra-abdominal infections", effects: "Metallic taste, disulfiram reaction", nursing: "Dose: 400mg TDS. Strict NO ALCOHOL (severe vomiting); dark urine" },
+    { name: "Midazolam (Dormicum)", class: "Benzodiazepine", indication: "Procedural sedation", effects: "Respiratory depression", nursing: "Dose: 1-2.5mg IV titrated. Continuous monitoring; have Flumazenil ready" },
+    { name: "Montelukast (Singulair)", class: "Leukotriene antagonist", indication: "Asthma, Allergic rhinitis", effects: "Headache, mood changes", nursing: "Dose: 10mg OD. Take in the evening" },
+    { name: "Morphine (Morphine)", class: "Opioid analgesic", indication: "Severe pain, MI", effects: "Resp depression, hypotension", nursing: "Dose: 2-5mg IV / 10mg PO. Monitor RR and BP; Naloxone is antidote" },
+    { name: "Naproxen (Naprosyn)", class: "NSAID", indication: "Pain, inflammation", effects: "GI bleeding, renal risk", nursing: "Dose: 250-500mg BD. Take with food; lower cardiac risk than other NSAIDs" },
+    { name: "Nifedipine (Adalat)", class: "Calcium channel blocker", indication: "Hypertension", effects: "Headache, flushing, edema", nursing: "Dose: 30mg OD (SR). Do not bite/crush SR tablets (severe hypotension)" },
+    { name: "Nitrofurantoin (Macrobid)", class: "Antibiotic", indication: "UTI", effects: "Nausea, pulmonary fibrosis (long term)", nursing: "Dose: 100mg QID. Take with food (increases absorption); brown urine" },
+    { name: "Omeprazole (Losec)", class: "Proton pump inhibitor", indication: "GERD, Ulcers", effects: "GI upset", nursing: "Dose: 20mg OD. Swallow whole; usually given OD morning" },
+    { name: "Ondansetron (Zofran)", class: "Antiemetic", indication: "Nausea (Chemo/Post-op)", effects: "Constipation, QT prolongation", nursing: "Dose: 4-8mg TDS. Monitor ECG if giving high doses IV" },
+    { name: "Oseltamivir (Tamiflu)", class: "Antiviral", indication: "Influenza", effects: "Nausea, vomiting", nursing: "Dose: 75mg BD. Start within 48h of symptoms" },
+    { name: "Oxycodone (OxyContin/Oxynorm)", class: "Opioid analgesic", indication: "Moderate-Severe pain", effects: "Constipation, sedation", nursing: "Dose: 5-10mg Q4H. Monitor RR; laxatives required for chronic use" },
+    { name: "Pantoprazole (Pantoloc)", class: "Proton pump inhibitor", indication: "GI bleeding, GERD", effects: "Phlebitis, headache", nursing: "Dose: 40mg OD. IV push over 2 mins" },
+    { name: "Phenytoin (Dilantin)", class: "Anticonvulsant", indication: "Seizures", effects: "Gum hypertrophy, ataxia", nursing: "Dose: 300mg OD. Use filter for IV; only mix with Saline; check levels" },
+    { name: "Piperacillin/Tazobactam (Tazocin)", class: "Penicillin + Beta-lactamase inh", indication: "Severe infections", effects: "Diarrhea, rash", nursing: "Dose: 4.5g Q8H. Monitor Platelets and Renal function" },
+    { name: "Potassium Chloride (Slow-K)", class: "Electrolyte", indication: "Hypokalemia", effects: "GI irritation, hyperkalemia", nursing: "Dose: 600mg-1200mg BD. Swallow whole; never give IV push (fatal)" },
+    { name: "Prazosin (Minipress)", class: "Alpha-blocker", indication: "Hypertension, BPH", effects: "First-dose hypotension", nursing: "Dose: 0.5-1mg BD. Give first dose at bedtime to prevent syncope" },
+    { name: "Prednisolone (Prednisolone)", class: "Corticosteroid", indication: "Inflammation, Asthma", effects: "Hyperglycemia, insomnia", nursing: "Dose: 5-30mg OD. Take with food; do not stop abruptly" },
+    { name: "Pregabalin (Lyrica)", class: "Anticonvulsant", indication: "Neuropathic pain, anxiety", effects: "Dizziness, somnolence", nursing: "Dose: 75mg BD. Fall risk; renal adjustment needed" },
+    { name: "Prochlorperazine (Stemetil)", class: "Antiemetic", indication: "Vertigo, nausea", effects: "EPS, drowsiness", nursing: "Dose: 5-10mg TDS. Monitor for dystonic reactions" },
+    { name: "Promethazine (Phenergan)", class: "Antihistamine", indication: "Allergy, nausea, sedation", effects: "Sedation, tissue necrosis (IV)", nursing: "Dose: 25mg. Deep IM preferred; avoid IV in hand/wrist" },
+    { name: "Propofol (Diprivan)", class: "General anesthetic", indication: "Sedation (ICU)", effects: "Hypotension, apnea", nursing: "Dose: Titrated. Airway management essential; change tubing Q12H" },
+    { name: "Propranolol (Inderal)", class: "Beta-blocker", indication: "Thyrotoxicosis, anxiety", effects: "Bradycardia, bronchospasm", nursing: "Dose: 10-40mg TDS. Contraindicated in asthma" },
+    { name: "Quetiapine (Seroquel)", class: "Atypical antipsychotic", indication: "Schizophrenia, Sleep", effects: "Sedation, hypotension", nursing: "Dose: 25-100mg. Fall risk; monitor glucose/lipids" },
+    { name: "Ramipril (Tritace)", class: "ACE inhibitor", indication: "Hypertension, HF", effects: "Cough, hypotension", nursing: "Dose: 2.5-10mg OD. Monitor BP and renal function" },
+    { name: "Rifampin (Rifadin)", class: "Antitubercular", indication: "TB treatment", effects: "Orange urine, hepatotoxicity", nursing: "Dose: 450-600mg OD. Body fluid discoloration; renders OCP ineffective" },
+    { name: "Salmeterol (Serevent)", class: "LABA", indication: "Asthma maintenance", effects: "Palpitations, tremor", nursing: "Dose: 50mcg BD. NOT for acute attacks" },
+    { name: "Senna (Senokot)", class: "Stimulant laxative", indication: "Constipation", effects: "Cramps, diarrhea", nursing: "Dose: 2 tabs HS. Urine may turn reddish-brown" },
+    { name: "Sertraline (Zoloft)", class: "SSRI", indication: "Depression, Anxiety", effects: "Nausea, insomnia", nursing: "Dose: 50mg OD. Takes 2-4 weeks for effect" },
+    { name: "Simvastatin (Zocor)", class: "Statin", indication: "Hyperlipidemia", effects: "Myopathy, rhabdomyolysis", nursing: "Dose: 20-40mg OD. Take at night; report muscle pain" },
+    { name: "Spironolactone (Aldactone)", class: "Diuretic (K+ sparing)", indication: "Ascites, Heart failure", effects: "Hyperkalemia, gynecomastia", nursing: "Dose: 25-100mg OD. Avoid potassium supplements; monitor K+" },
+    { name: "Tamsulosin (Harnal)", class: "Alpha-blocker", indication: "BPH", effects: "Dizziness, retrograde ejaculation", nursing: "Dose: 0.4mg OD. Take 30 mins after same meal daily" },
+    { name: "Terbutaline (Bricanyl)", class: "Beta-2 agonist", indication: "Bronchospasm", effects: "Tremor, tachycardia", nursing: "Dose: 250-500mcg. Monitor HR" },
+    { name: "Tramadol (Tramal)", class: "Analgesic", indication: "Moderate pain", effects: "Nausea, seizure risk", nursing: "Dose: 50mg Q4-6H. Avoid in epilepsy; caution with SSRIs" },
+    { name: "Tranexamic Acid (Transamin)", class: "Antifibrinolytic", indication: "Hemorrhage", effects: "Nausea, thrombosis risk", nursing: "Dose: 500mg TDS. IV injection must be slow to avoid hypotension" },
+    { name: "Valproate (Epilim)", class: "Anticonvulsant", indication: "Epilepsy, Bipolar", effects: "Weight gain, hepatotoxicity", nursing: "Dose: 400mg BD. Take with food; teratogenic (avoid in pregnancy)" },
+    { name: "Vancomycin (Vancocin)", class: "Glycopeptide", indication: "MRSA", effects: "Red man syndrome, Nephrotoxicity", nursing: "Dose: 1g Q12H. Infuse slowly (>1 hour); monitor Trough levels" },
+    { name: "Warfarin (Marevan)", class: "Anticoagulant", indication: "AF, DVT, Heart valve", effects: "Bleeding", nursing: "Dose: Per INR. Monitor INR; consistent Vitamin K diet" },
+    { name: "Zolpidem (Stilnox)", class: "Hypnotic", indication: "Insomnia", effects: "Drowsiness, sleep-walking", nursing: "Dose: 10mg HS. Take immediately before bed; risk of falls" }
+];
+
+        // --- STATE ---
+        let drugList = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+        let quizCurrentIndex = 0;
+        
+        // --- INITIALIZATION ---
+        function init() {
+            reshuffle();
+        }
+
+        function reshuffle() {
+            // Randomize the list using Fisher-Yates
+            drugList = [...rawDrugList];
+            for (let i = drugList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [drugList[i], drugList[j]] = [drugList[j], drugList[i]];
+            }
+            
+            // Reset Flashcard State
+            currentIndex = 0;
+            isFlipped = false;
+            document.getElementById('flashcard').classList.remove('flipped');
+            renderCard();
+
+            // Reset Quiz State
+            quizCurrentIndex = 0;
+            generateQuizQuestion();
+        }
+
+        // --- TTS UTILS ---
+        function speak(text) {
+            window.speechSynthesis.cancel(); // Stop current speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9; // Slightly slower for clarity
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // --- FLASHCARD LOGIC ---
+        function renderCard() {
+            const drug = drugList[currentIndex];
+            // Front
+            document.getElementById('fc-name').innerText = drug.name;
+            
+            // Back
+            document.getElementById('fc-class').innerText = drug.class;
+            document.getElementById('fc-indication').innerText = drug.indication;
+            document.getElementById('fc-effects').innerText = drug.effects;
+            document.getElementById('fc-nursing').innerText = drug.nursing;
+
+            // Counter
+            document.getElementById('counter').innerText = `${currentIndex + 1} / ${drugList.length}`;
+        }
+
+        function flipCard() {
+            const card = document.getElementById('flashcard');
+            isFlipped = !isFlipped;
+            if(isFlipped) {
+                card.classList.add('flipped');
+                // Optional: Auto read back when flipped? Uncomment below line if desired
+                // setTimeout(speakBack, 300);
+            } else {
+                card.classList.remove('flipped');
+            }
+        }
+
+        function nextCard() {
+            if (currentIndex < drugList.length - 1) {
+                currentIndex++;
+                resetFlip();
+                renderCard();
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                resetFlip();
+                renderCard();
+            }
+        }
+
+        function resetFlip() {
+            isFlipped = false;
+            document.getElementById('flashcard').classList.remove('flipped');
+            window.speechSynthesis.cancel();
+        }
+
+        function speakFront() {
+            const drug = drugList[currentIndex];
+            speak(drug.name);
+        }
+
+        function speakBack() {
+            const drug = drugList[currentIndex];
+            const text = `Class: ${drug.class}. Indication: ${drug.indication}. Effects: ${drug.effects}. Nursing: ${drug.nursing}`;
+            speak(text);
+        }
+
+        // --- QUIZ LOGIC ---
+        function generateQuizQuestion() {
+            const container = document.getElementById('quiz-options');
+            const questionEl = document.getElementById('quiz-question');
+            container.innerHTML = ''; // Clear options
+            document.getElementById('next-quiz-btn').style.display = 'none';
+
+            if(quizCurrentIndex >= drugList.length) {
+                questionEl.innerText = "Quiz Complete! Click 'Reshuffle' to start over.";
+                return;
+            }
+
+            const correctDrug = drugList[quizCurrentIndex];
+            
+            // Randomly decide question type: 0 = Indication, 1 = Class
+            const type = Math.random() > 0.5 ? 'indication' : 'class';
+            let qText = "";
+            
+            if(type === 'indication') {
+                qText = `Which drug is indicated for: ${correctDrug.indication}?`;
+            } else {
+                qText = `Which drug belongs to the class: ${correctDrug.class}?`;
+            }
+
+            questionEl.innerText = qText;
+
+            // Generate Options (1 correct + 3 wrong)
+            let options = [correctDrug];
+            // Get 3 random wrong drugs
+            const wrongDrugs = drugList.filter(d => d.name !== correctDrug.name);
+            // Shuffle wrong drugs to pick 3
+            wrongDrugs.sort(() => Math.random() - 0.5);
+            options = options.concat(wrongDrugs.slice(0, 3));
+            
+            // Shuffle options
+            options.sort(() => Math.random() - 0.5);
+
+            // Render Buttons
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.name;
+                btn.onclick = () => checkAnswer(btn, opt.name === correctDrug.name, correctDrug);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(btnElement, isCorrect, correctDrugObj) {
+            const buttons = document.querySelectorAll('.option-btn');
+            // Disable all buttons
+            buttons.forEach(b => b.onclick = null);
+
+            if (isCorrect) {
+                btnElement.classList.add('correct');
+                speak(`Correct! The answer is ${correctDrugObj.name}`);
+            } else {
+                btnElement.classList.add('wrong');
+                // Highlight the correct one
+                buttons.forEach(b => {
+                    if(b.innerText === correctDrugObj.name) b.classList.add('correct');
+                });
+                speak(`Incorrect. The correct answer is ${correctDrugObj.name}`);
+            }
+
+            document.getElementById('next-quiz-btn').style.display = 'block';
+        }
+
+        function nextQuestion() {
+            quizCurrentIndex++;
+            generateQuizQuestion();
+        }
+
+        // --- UI SWITCHING ---
+        function switchMode(mode) {
+            const flashcardSection = document.getElementById('flashcard-section');
+            const quizSection = document.getElementById('quiz-section');
+            const btnFc = document.getElementById('mode-flashcard');
+            const btnQz = document.getElementById('mode-quiz');
+
+            window.speechSynthesis.cancel();
+
+            if (mode === 'flashcard') {
+                flashcardSection.style.display = 'block';
+                quizSection.style.display = 'none';
+                btnFc.classList.add('mode-active');
+                btnFc.classList.remove('secondary');
+                btnQz.classList.remove('mode-active');
+                btnQz.classList.add('secondary');
+            } else {
+                flashcardSection.style.display = 'none';
+                quizSection.style.display = 'block';
+                btnFc.classList.remove('mode-active');
+                btnFc.classList.add('secondary');
+                btnQz.classList.add('mode-active');
+                btnQz.classList.remove('secondary');
+                
+                // Ensure quiz is ready
+                if(quizCurrentIndex === 0) generateQuizQuestion();
+            }
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>
