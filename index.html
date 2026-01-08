@@ -21,6 +21,7 @@
             --lihkg-text: #78350f;
             --ask: #db2777;    /* Pink */
             --set-extended: #4f46e5; /* Indigo */
+            --mute: #dc2626;   /* Red */
         }
 
         body {
@@ -69,6 +70,7 @@
         button.lang-canto { background-color: var(--canto); }
         button.lang-lihkg { background-color: var(--lihkg); color: var(--lihkg-text); }
         button.set-extended { background-color: var(--set-extended); }
+        button.muted { background-color: var(--mute); }
         button.mode-active { ring: 2px solid var(--primary); box-shadow: 0 0 0 3px #bfdbfe; }
 
         /* --- Settings --- */
@@ -82,22 +84,21 @@
         .settings-input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 5px; box-sizing: border-box; }
         select { padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; width: 100%; margin-bottom: 10px; }
         
-        /* File Upload Styling */
-        .file-upload-wrapper {
-            border: 2px dashed #d1d5db;
+        /* Cloud Import Styling */
+        .import-wrapper {
+            border: 1px solid #d1d5db;
             padding: 15px;
-            text-align: center;
             border-radius: 8px;
             background: #f9fafb;
-            cursor: pointer;
         }
-        .file-upload-wrapper:hover { background: #eff6ff; border-color: var(--primary); }
+        .url-input-group { display: flex; gap: 8px; }
+        .url-input-group input { flex-grow: 1; }
 
         /* --- Main Container --- */
         #app-container { width: 100%; max-width: 650px; perspective: 1000px; }
 
         /* --- Flashcards --- */
-        .flashcard-container { width: 100%; height: 600px; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
+        .flashcard-container { width: 100%; height: 650px; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
         .flashcard-container.flipped { transform: rotateY(180deg); }
         .card-face {
             position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 16px;
@@ -152,6 +153,7 @@
         <button onclick="toggleDrugSet()" id="set-btn" class="secondary">📚 Set: Common</button>
         <button onclick="reshuffle()" style="background-color: #f59e0b;">Reset</button>
         <button onclick="toggleLanguage()" id="lang-btn" class="secondary">🌐 Lang: English</button>
+        <button onclick="toggleMute()" id="mute-btn" class="secondary">🔊 Audio: On</button>
         <button onclick="toggleSettings()" class="secondary">⚙️ Settings</button>
     </div>
 
@@ -182,22 +184,32 @@
         </div>
 
         <div class="settings-group">
-            <label class="settings-label">Upload Custom Data (CSV):</label>
-            <div style="font-size:0.75rem; color:#666; margin-bottom:5px;">Required Columns: name, class, indication, effects, nursing</div>
+            <label class="settings-label">Load External Data (Google Sheet/Online CSV):</label>
+            <div style="font-size:0.75rem; color:#666; margin-bottom:5px;">Paste a Google Sheet Link (must be 'Anyone with link can view')</div>
             
-            <div class="file-upload-wrapper" onclick="document.getElementById('csv-file-input').click()">
-                <span id="file-label">📂 Click to Select .CSV File</span>
-                <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="handleFileUpload(this)">
+            <div class="import-wrapper">
+                <div class="url-input-group">
+                    <input type="text" id="sheet-url" class="settings-input" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-bottom:0;" />
+                    <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load</button>
+                </div>
+                <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary); font-weight:bold;"></div>
             </div>
-            <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary); font-weight:bold;"></div>
             
             <div style="margin-top: 10px; background: #f0fdf4; padding: 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #bbf7d0; color: #166534;">
-                <strong style="display:block; margin-bottom:5px;">💡 CSV Format Guide:</strong>
-                <ul style="margin:0; padding-left:20px; margin-bottom:8px;">
-                    <li>Row 1 Headers: <code>name, class, indication, effects, nursing</code></li>
-                    <li>Headers must be <strong>lowercase</strong>.</li>
-                </ul>
-                <a href="data:text/csv;charset=utf-8,name,class,indication,effects,nursing%0A%22Ibuprofen%22,%22NSAID%22,%22Pain%22,%22GI Bleed%22,%22Take with food%22" download="drug_template.csv" style="color:var(--primary); text-decoration:underline; font-weight:bold;">⬇️ Download Sample Template</a>
+                <strong style="display:block; margin-bottom:5px;">💡 Format Guide:</strong>
+                Create a Google Sheet with Headers required: <code>name, class, indication, effects, nursing</code>
+                <br>
+                Make it available to anyone with the link can view
+                <br>
+                Go to File > Share > Publish to the web.
+                <br>
+                In the popup, change "Entire Document" to the specific Sheet name.
+                <br>
+                Change "Web page" to Comma-separated values (.csv).
+                <br>
+                Click Publish and copy the generated URL.
+                <br><br>
+                <span onclick="document.getElementById('sheet-url').value='https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv'" style="text-decoration:underline; cursor:pointer; font-weight:bold;">Click here to try a Demo Sheet</span>
             </div>
         </div>
 
@@ -221,7 +233,7 @@
                     <div class="detail-row" style="border:none;"><div class="detail-label">Nursing Considerations</div><div class="detail-content" id="fc-nursing">...</div></div>
 
                     <div class="ai-btn-group">
-                        <button onclick="event.stopPropagation(); getIntegratedCaseStudy(drugList[currentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="ai-btn-small btn-sim" id="btn-case">🏥 AI: Generate Integrated Case Study</button>
+                        <button onclick="event.stopPropagation(); getIntegratedCaseStudy(drugList[currentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="ai-btn-small btn-sim" id="btn-case">🏥 AI: Generate Integrated Patient Case</button>
                         <div id="fc-ai-case" class="ai-output-box"></div>
                         <button onclick="event.stopPropagation(); readAIContent('fc-ai-case')" class="btn-read-ai" id="btn-read-case">🔊 Read Out Loud</button>
                     </div>
@@ -268,6 +280,7 @@
         let openRouterKey = "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"; 
         let deepSeekKey = "";
         let selectedVoiceURI = ""; // Stores user's preferred voice
+        let isMuted = false;
 
         // --- DATA SETS ---
         const commonDrugs = [
@@ -415,8 +428,7 @@
 
         let extendedDrugs = []; 
         const fallbackExtended = [
-             { name: "Digoxin", class: "Cardiac glycoside", indication: "HF, AF", effects: "Toxicity (Halo vision)", nursing: "Check apical pulse > 60" },
-             { name: "Salbutamol", class: "Beta-agonist", indication: "Asthma", effects: "Tremors, tachycardia", nursing: "Monitor K+ levels" }
+             { name: "Digoxin", class: "Cardiac glycoside", indication: "HF, AF", effects: "Toxicity (Halo vision)", nursing: "Check apical pulse > 60" }
         ];
 
         // --- APP STATE ---
@@ -454,7 +466,7 @@
             
             reshuffle();
             
-            // Init Voices - Needs delay for some browsers
+            // Init Voices
             populateVoiceList();
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = populateVoiceList;
@@ -466,11 +478,10 @@
             const voices = window.speechSynthesis.getVoices();
             const select = document.getElementById('voice-select');
             
-            if(voices.length === 0) return; // Wait for async load
+            if(voices.length === 0) return; 
 
             select.innerHTML = '<option value="">Default System Voice</option>';
             
-            // Filter and Sort: Prioritize "Enhanced" or "Siri" voices
             const sortedVoices = voices.sort((a, b) => {
                 const aName = a.name.toLowerCase();
                 const bName = b.name.toLowerCase();
@@ -481,7 +492,6 @@
 
             sortedVoices.forEach((voice) => {
                 const option = document.createElement('option');
-                // visual marker for high quality voices
                 const label = voice.name.includes("Enhanced") || voice.name.includes("Siri") ? `✨ ${voice.name}` : voice.name;
                 option.textContent = `${label} (${voice.lang})`;
                 option.value = voice.voiceURI;
@@ -495,49 +505,65 @@
             const selectedURI = select.value;
             if(selectedURI) {
                 selectedVoiceURI = selectedURI;
-                // Don't save yet, just test
                 speakText("Voice check. This is an enhanced quality test.", 'en', true); 
             } else {
                 speakText("Default system voice test.", 'en', true);
             }
         }
 
-        // --- CSV FILE UPLOAD LOGIC ---
-        function handleFileUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
-
+        // --- GOOGLE SHEET / ONLINE CSV LOGIC ---
+        async function fetchSheetData() {
+            const urlInput = document.getElementById('sheet-url').value.trim();
             const statusEl = document.getElementById('upload-status');
-            const labelEl = document.getElementById('file-label');
             
-            statusEl.innerText = "Parsing...";
+            if (!urlInput) {
+                statusEl.innerText = "❌ Please enter a URL.";
+                return;
+            }
 
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    // Validation: Check for minimal required columns
-                    const required = ['name', 'class'];
-                    const hasColumns = required.every(col => results.meta.fields.includes(col));
-                    
-                    if (hasColumns && results.data.length > 0) {
-                        extendedDrugs = results.data;
-                        statusEl.innerText = `✅ Success! Loaded ${extendedDrugs.length} drugs.`;
-                        labelEl.innerText = `📂 ${file.name}`;
-                        
-                        // Switch immediately to this set
-                        activeSourceList = extendedDrugs;
-                        updateSetButton();
-                        reshuffle();
-                    } else {
-                        statusEl.innerText = "❌ Error: CSV missing 'name' or 'class' headers.";
-                    }
-                },
-                error: function(err) {
-                    statusEl.innerText = "❌ Parsing Error.";
-                    console.error(err);
+            statusEl.innerText = "⏳ Fetching...";
+            
+            // Auto-convert standard Google Sheet URL to Export URL
+            let fetchUrl = urlInput;
+            if (urlInput.includes("docs.google.com/spreadsheets")) {
+                // If it's an edit link, try to change it to export format
+                if (urlInput.includes("/edit")) {
+                    fetchUrl = urlInput.replace(/\/edit.*$/, "/export?format=csv");
                 }
-            });
+            }
+
+            try {
+                const response = await fetch(fetchUrl);
+                if (!response.ok) throw new Error("Network error or invalid link permissions.");
+                const csvText = await response.text();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        const required = ['name', 'class'];
+                        const hasColumns = required.every(col => results.meta.fields.includes(col));
+                        
+                        if (hasColumns && results.data.length > 0) {
+                            extendedDrugs = results.data;
+                            statusEl.innerText = `✅ Success! Loaded ${extendedDrugs.length} drugs.`;
+                            
+                            // Switch immediately to this set
+                            activeSourceList = extendedDrugs;
+                            updateSetButton();
+                            reshuffle();
+                        } else {
+                            statusEl.innerText = "❌ Error: CSV missing 'name' or 'class' headers.";
+                        }
+                    },
+                    error: function(err) {
+                        statusEl.innerText = "❌ Parse Error.";
+                    }
+                });
+            } catch (e) {
+                statusEl.innerText = "❌ Failed. Check link permissions (must be 'Anyone with link').";
+                console.error(e);
+            }
         }
 
         // --- SETTINGS LOGIC ---
@@ -584,7 +610,7 @@
         function updateSetButton() {
             const btn = document.getElementById('set-btn');
             if(activeSourceList === extendedDrugs) {
-                btn.innerText = "📚 Set: Extended (CSV)";
+                btn.innerText = "📚 Set: Online CSV";
                 btn.classList.add('set-extended');
                 btn.classList.remove('secondary');
             } else {
@@ -620,7 +646,24 @@
             }
         }
 
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('mute-btn');
+            if (isMuted) {
+                window.speechSynthesis.cancel();
+                btn.innerText = "🔇 Audio: Off";
+                btn.classList.add('muted');
+                btn.classList.remove('secondary');
+            } else {
+                btn.innerText = "🔊 Audio: On";
+                btn.classList.remove('muted');
+                btn.classList.add('secondary');
+            }
+        }
+
         function speakText(text, langCode = 'en', forceSelected = false) {
+            if (isMuted) return; // Mute Check
+            
             window.speechSynthesis.cancel();
             
             let targetLang = langCode;
@@ -634,12 +677,10 @@
             
             const voices = window.speechSynthesis.getVoices();
             
-            // 1. Try to use specific user-selected voice
             if (selectedVoiceURI && !forceSelected) {
                 const preferred = voices.find(v => v.voiceURI === selectedVoiceURI);
                 if(preferred) utterance.voice = preferred;
             } 
-            // 2. If no preference, try to find "Enhanced" or "Siri" voices matching the lang
             else if (voices.length > 0) {
                  const bestMatch = voices.find(v => v.lang.includes(targetLang) && (v.name.includes("Enhanced") || v.name.includes("Siri")));
                  const anyMatch = voices.find(v => v.lang.includes(targetLang));
@@ -648,7 +689,6 @@
                  else if(anyMatch) utterance.voice = anyMatch;
             }
             
-            // Override if force testing current selection in dropdown
             if(forceSelected) {
                 const select = document.getElementById('voice-select');
                 const testURI = select.value;
@@ -677,7 +717,7 @@
         function resetAIUI(boxId, btnId, readBtnId) {
             document.getElementById(boxId).style.display = 'none'; document.getElementById(boxId).innerHTML = '';
             document.getElementById(readBtnId).style.display = 'none';
-            const btn = document.getElementById(btnId); btn.disabled = false; btn.innerHTML = '🏥 AI: Generate Integrated Case Study';
+            const btn = document.getElementById(btnId); btn.disabled = false; btn.innerHTML = '🏥 AI: Generate Integrated Patient Case';
         }
         function flipCard(event) {
             if (event && (event.target.tagName === 'BUTTON' || event.target.closest('button'))) return;
@@ -729,8 +769,12 @@
         }
 
         function getRoleInstruction() {
-            if (aiLanguage === 'cantonese') return "Provide response in **Cantonese (Traditional Chinese)**. Keep Drug Names/Terms in **English**.";
-            if (aiLanguage === 'lihkg') return "Roleplay as a **Hong Kong senior nursing student on LIHKG**. Use **HK Slang** (e.g. Ching, 大癲, gogogo) mixed with Cantonese. **Keep Medical Terms in English**. Tone: Informal.";
+            if (aiLanguage === 'cantonese') {
+                 return "Language Requirement: **Strictly Traditional Chinese (Cantonese)**. \n\nDirectives:\n1. The majority of the response MUST be in Traditional Chinese characters.\n2. ONLY use English for specific Medical Terms and Drug Names.\n3. Do not output full English sentences.";
+            }
+            if (aiLanguage === 'lihkg') {
+                 return "Language Requirement: **Strictly Traditional Chinese (Cantonese)** with **Hong Kong Internet Slang**.\n\nDirectives:\n1. Roleplay as a cynical/informal HK nursing student (LIHKG style).\n2. The majority of the response MUST be in Traditional Chinese characters (e.g. 大癲, 師兄, 救命).\n3. ONLY use English for Medical Terms.\n4. Do not output full English sentences.";
+            }
             return "Provide response in **English**.";
         }
 
@@ -745,7 +789,7 @@
             1. Explain Pathophysiology using **vivid analogies**. 
             2. Focus on "What nurse must DO/OBSERVE". 
             3. Use Tables/Bullet points. 
-            Language: ${getRoleInstruction()}`;
+            ${getRoleInstruction()}`;
 
             try {
                 const content = await getAIResponse(prompt);
@@ -757,11 +801,25 @@
             }
         }
 
+        // --- UPDATED AI CASE STUDY FUNCTION ---
         async function getIntegratedCaseStudy(drugObj, boxId, btnId, readBtnId) {
             const btn = document.getElementById(btnId); const box = document.getElementById(boxId); const readBtn = document.getElementById(readBtnId);
-            btn.innerHTML = '<span class="loading-spinner"></span> Creating...'; btn.disabled = true; box.style.display = 'block';
+            btn.innerHTML = '<span class="loading-spinner"></span> Simulating Patient...'; btn.disabled = true; box.style.display = 'block';
             
-            const prompt = `Create Medical Case Study for "${drugObj.name}". ${getRoleInstruction()} Headers: ### 🏥 Context ### ⚠️ Scenario ### ✅ Action ### 💡 Insight`;
+            const prompt = `
+            Drug: ${drugObj.name} (${drugObj.class}).
+            Task: Create a detailed clinical case study.
+            
+            Structure Required:
+            1. limit the response to 10-20 sentences   
+            2. **Patient Profile**: Create a common patient for this drug (Age, Gender, History).
+            3. **Condition & Dosage**: Why are they taking this specific drug and what is the standard dosing regimen for this condition?
+            4. **Polypharmacy Context**: List 2-3 other drugs this patient is likely taking (co-morbidities) and potential interactions.
+            5. **Drug Differentiation**: Briefly explain how ${drugObj.name} differs from a similar drug in its class (e.g. if it's Heparin, compare to Enoxaparin; if Atenolol, compare to Propranolol).
+            6. **Scenario**: A situation requiring nursing judgment and actions to check before and after admin this drug.
+            7. **Action**: What the nurse should do.
+
+            ${getRoleInstruction()}`;
             
             try {
                 const content = await getAIResponse(prompt);
