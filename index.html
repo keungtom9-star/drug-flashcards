@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor (Pro Audio + Mixed Quiz)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Drug Tutor</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -14,14 +20,14 @@
             --bg: #f3f4f6;
             --card-bg: #ffffff;
             --text: #1f2937;
-            --sim: #059669;    /* Green */
-            --ai: #7c3aed;     /* Purple */
-            --canto: #0891b2;  /* Teal */
-            --lihkg: #fbbf24;  /* Yellow */
+            --sim: #059669;    
+            --ai: #7c3aed;     
+            --canto: #0891b2;  
+            --lihkg: #fbbf24;  
             --lihkg-text: #78350f;
-            --ask: #db2777;    /* Pink */
-            --set-extended: #4f46e5; /* Indigo */
-            --mute: #dc2626;   /* Red */
+            --ask: #db2777;    
+            --set-extended: #4f46e5; 
+            --mute: #dc2626;   
         }
 
         body {
@@ -34,6 +40,7 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px;
+            overscroll-behavior-y: none;
         }
 
         h1 { color: var(--primary); margin-bottom: 5px; text-align: center; }
@@ -61,6 +68,7 @@
             color: white;
             font-size: 0.9rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            touch-action: manipulation;
         }
 
         button:hover { opacity: 0.9; transform: translateY(-1px); }
@@ -95,7 +103,7 @@
         .url-input-group input { flex-grow: 1; }
 
         /* --- Main Container --- */
-        #app-container { width: 100%; max-width: 650px; perspective: 1000px; }
+        #app-container { width: 100%; max-width: 650px; perspective: 1000px; padding-bottom: 50px; }
 
         /* --- Flashcards --- */
         .flashcard-container { width: 100%; height: 650px; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
@@ -138,9 +146,17 @@
         .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.6); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; margin-right: 5px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .nav-controls { margin-top: 20px; display: flex; justify-content: space-between; width: 100%; }
+        
+        /* Persistent Banner */
+        #custom-data-banner {
+            background-color: var(--set-extended); color: white; width: 100%; text-align: center;
+            padding: 5px; font-size: 0.75rem; display: none;
+        }
     </style>
 </head>
 <body>
+
+    <div id="custom-data-banner">📂 Using Saved Custom Database</div>
 
     <h1>💊 Integrated Drug Sim</h1>
     <div class="subtitle" id="provider-display">Provider: Not Configured</div>
@@ -152,7 +168,7 @@
         
         <button onclick="toggleDrugSet()" id="set-btn" class="secondary">📚 Set: Common</button>
         <button onclick="reshuffle()" style="background-color: #f59e0b;">Reset</button>
-        <button onclick="toggleLanguage()" id="lang-btn" class="secondary">🌐 Lang: English</button>
+        <button onclick="toggleLanguage()" id="lang-btn" class="lang-canto">🌐 Lang: Canto</button>
         <button onclick="toggleMute()" id="mute-btn" class="secondary">🔊 Audio: On</button>
         <button onclick="toggleSettings()" class="secondary">⚙️ Settings</button>
     </div>
@@ -165,51 +181,34 @@
             <select id="voice-select">
                 <option value="">Default System Voice</option>
             </select>
-            <div style="font-size: 0.75rem; color:#666; margin-top:4px;">Tip: Select "Enhanced" voices for better quality.</div>
             <button onclick="testVoice()" style="margin-top:5px; font-size:0.8rem; padding:5px 10px;">🔊 Test Voice</button>
         </div>
 
         <div class="settings-group">
             <label class="settings-label">Select Active AI Provider:</label>
             <select id="provider-select" onchange="updateProviderDisplay()">
-                <option value="openrouter">OpenRouter (Xiaomi/Free)</option>
+                <option value="openrouter">OpenRouter (Free)</option>
                 <option value="deepseek">DeepSeek Official</option>
             </select>
             
-            <label class="settings-label">OpenRouter API Key (sk-or...):</label>
-            <input type="password" id="openrouter-key" class="settings-input" placeholder="Enter OpenRouter Key" />
+            <label class="settings-label">OpenRouter API Key:</label>
+            <input type="password" id="openrouter-key" class="settings-input" placeholder="sk-or..." />
             
-            <label class="settings-label">DeepSeek API Key (sk-...):</label>
-            <input type="password" id="deepseek-key" class="settings-input" placeholder="Enter DeepSeek Key" />
+            <label class="settings-label">DeepSeek API Key:</label>
+            <input type="password" id="deepseek-key" class="settings-input" placeholder="sk-..." />
         </div>
 
         <div class="settings-group">
-            <label class="settings-label">Load External Data (Google Sheet/Online CSV):</label>
-            <div style="font-size:0.75rem; color:#666; margin-bottom:5px;">Paste a Google Sheet Link (must be 'Anyone with link can view')</div>
+            <label class="settings-label">Load External Data (Google Sheet/CSV):</label>
+            <div style="font-size:0.75rem; color:#666; margin-bottom:5px;">Data is saved permanently to this device.</div>
             
             <div class="import-wrapper">
                 <div class="url-input-group">
-                    <input type="text" id="sheet-url" class="settings-input" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-bottom:0;" />
-                    <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load</button>
+                    <input type="text" id="sheet-url" class="settings-input" placeholder="https://docs.google.com/spreadsheets/..." style="margin-bottom:0;" />
+                    <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load & Save</button>
                 </div>
                 <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary); font-weight:bold;"></div>
-            </div>
-            
-            <div style="margin-top: 10px; background: #f0fdf4; padding: 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #bbf7d0; color: #166534;">
-                <strong style="display:block; margin-bottom:5px;">💡 Format Guide:</strong>
-                Create a Google Sheet with Headers required: <code>name, class, indication, SideEffects, nursing</code>
-                <br>
-                Make it available to anyone with the link can view
-                <br>
-                Go to File > Share > Publish to the web.
-                <br>
-                In the popup, change "Entire Document" to the specific Sheet name.
-                <br>
-                Change "Web page" to Comma-separated values (.csv).
-                <br>
-                Click Publish and copy the generated URL.
-                <br><br>
-                <span onclick="document.getElementById('sheet-url').value='https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv'" style="text-decoration:underline; cursor:pointer; font-weight:bold;">Click here to try a Demo Sheet</span>
+                <button onclick="clearCustomData()" style="margin-top:10px; background-color:#ef4444; font-size:0.8rem; width:100%;">🗑️ Delete Saved Data</button>
             </div>
         </div>
 
@@ -217,7 +216,6 @@
     </div>
 
     <div id="app-container">
-        
         <div id="flashcard-section">
             <div class="flashcard-container" id="flashcard" onclick="flipCard(event)">
                 <div class="card-face card-front">
@@ -237,7 +235,6 @@
                         <div id="fc-ai-case" class="ai-output-box"></div>
                         <button onclick="event.stopPropagation(); readAIContent('fc-ai-case')" class="btn-read-ai" id="btn-read-case">🔊 Read Out Loud</button>
                     </div>
-                    <button onclick="event.stopPropagation(); speakBack(drugList[currentIndex])" style="margin-top: 20px; width:100%; background:#e0e7ff; color:var(--primary); font-size:0.8rem;">🔊 Read Basic Details</button>
                 </div>
             </div>
             <div class="nav-controls">
@@ -271,177 +268,47 @@
             <div id="ask-response-box" class="ai-output-box"></div>
             <button onclick="readAIContent('ask-response-box')" class="btn-read-ai" id="btn-read-ask">🔊 Read Out Loud</button>
         </div>
-
     </div>
 
     <script>
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Error', err));
+            });
+        }
+
         // --- CONFIGURATION STATE ---
         let currentProvider = 'openrouter'; 
-        let openRouterKey = "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"; 
+        let openRouterKey = ""; 
         let deepSeekKey = "";
-        let selectedVoiceURI = ""; // Stores user's preferred voice
+        let selectedVoiceURI = "";
         let isMuted = false;
+        
+        // UPDATED: Default Language is now Cantonese
+        let aiLanguage = 'cantonese'; 
+        
+        // UPDATED: Default Database URL
+        const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
 
         // --- DATA SETS ---
         const commonDrugs = [
-    { name: "Acetaminophen/Paracetamol (Panadol)", class: "Analgesic/Antipyretic", indication: "Mild pain, fever", SideEffects: "Hepatotoxicity (overdose), rash", nursing: "Dose: 500mg-1g Q4H. Monitor liver function; max 4g/day; antidote is Acetylcysteine" },
-    { name: "Acetylcysteine (Fluimucil)", class: "Mucolytic/Antidote", indication: "Paracetamol overdose, thick secretions", SideEffects: "Bronchospasm, nausea, rotten egg smell", nursing: "Dose: 600mg daily. Assess respiratory status; monitor for anaphylactoid reactions" },
-    { name: "Acyclovir (Zovirax)", class: "Antiviral", indication: "Herpes simplex, shingles, varicella", SideEffects: "Nausea, diarrhea, renal toxicity", nursing: "Dose: 200-800mg 5x/day. Ensure adequate hydration to prevent crystaluria; infuse slowly" },
-    { name: "Adenosine (Adenocard)", class: "Antiarrhythmic", indication: "PSVT (Supraventricular tachycardia)", SideEffects: "Brief asystole, flushing, chest pressure", nursing: "Dose: 6mg rapid IV push. Give rapidly (1-2 sec) followed by saline flush; continuous ECG monitoring" },
-    { name: "Adrenaline/Epinephrine (Adrenaline)", class: "Sympathomimetic", indication: "Anaphylaxis, cardiac arrest", SideEffects: "Tachycardia, palpitations, hypertension", nursing: "Dose: 0.5mg IM (Anaphylaxis). Double check concentration (1:1000 vs 1:10,000); monitor ECG" },
-    { name: "Albumin (Human Albumin)", class: "Plasma volume expander", indication: "Hypovolemia, hypoalbuminemia", SideEffects: "Fluid overload, pulmonary edema", nursing: "Dose: Titrated. Monitor volume status/breath sounds; use vented tubing for glass bottles" },
-    { name: "Albuterol/Salbutamol (Ventolin)", class: "Beta-2 Agonist (SABA)", indication: "Acute asthma, bronchospasm", SideEffects: "Tremors, tachycardia, hypokalemia", nursing: "Dose: 2.5-5mg Neb / 1-2 puffs. Monitor respiratory rate/SpO2; educate on MDI technique" },
-    { name: "Alendronate (Fosamax)", class: "Bisphosphonate", indication: "Osteoporosis", SideEffects: "Esophagitis, jaw osteonecrosis", nursing: "Dose: 70mg Weekly. Take on empty stomach with plain water; stay upright for 30 mins" },
-    { name: "Allopurinol (Zyloprim)", class: "Xanthine oxidase inhibitor", indication: "Gout, hyperuricemia", SideEffects: "Rash (SJS), GI upset", nursing: "Dose: 100-300mg daily. Push fluids to 3L/day; stop immediately if rash develops" },
-    { name: "Alprazolam (Xanax)", class: "Benzodiazepine", indication: "Anxiety, panic disorder", SideEffects: "Sedation, drowsiness, dependence", nursing: "Dose: 0.25-0.5mg TDS. Fall precautions; avoid alcohol; monitor for respiratory depression" },
-    { name: "Aluminium hydroxide (Alu-Tab)", class: "Antacid", indication: "GERD, hyperphosphatemia", SideEffects: "Constipation, hypophosphatemia", nursing: "Dose: 500mg QID. Give separately from other meds (2 hr gap); monitor bowel habits" },
-    { name: "Amikacin (Amikin)", class: "Aminoglycoside antibiotic", indication: "Severe gram-negative infections", SideEffects: "Nephrotoxicity, ototoxicity", nursing: "Dose: 15mg/kg/day. Monitor peak/trough levels; strictly monitor renal function and hearing" },
-    { name: "Amiodarone (Cordarone)", class: "Antiarrhythmic", indication: "Atrial fibrillation, ventricular arrhythmias", SideEffects: "Hypotension, pulmonary fibrosis, thyroid issues", nursing: "Dose: 200mg daily (maint). Monitor ECG (QT interval), LFTs, TFTs; use filter for IV" },
-    { name: "Amitriptyline (Saroten)", class: "Tricyclic antidepressant", indication: "Depression, neuropathic pain", SideEffects: "Sedation, dry mouth, postural hypotension", nursing: "Dose: 10-50mg HS. Assess suicide risk; fall precautions; take at bedtime" },
-    { name: "Amlodipine (Norvasc)", class: "Calcium channel blocker", indication: "Hypertension, angina", SideEffects: "Peripheral edema, flushing", nursing: "Dose: 5-10mg OD. Monitor BP; assess for ankle swelling" },
-    { name: "Amoxicillin (Amoxil)", class: "Penicillin antibiotic", indication: "RTIs, UTIs, H. pylori", SideEffects: "Rash, diarrhea, allergy", nursing: "Dose: 250-500mg TDS. Check for penicillin allergy; safe to take with food" },
-    { name: "Amoxicillin + Clavulanate (Augmentin)", class: "Penicillin + Beta-lactamase inh", indication: "Respiratory/Skin/Urinary infections", SideEffects: "Diarrhea, candidiasis, cholestatic jaundice", nursing: "Dose: 375mg TDS / 1g BD. Take with food to reduce GI upset; check allergy" },
-    { name: "Ampicillin (Penbritin)", class: "Penicillin antibiotic", indication: "Respiratory, GI, GU infections", SideEffects: "Diarrhea, rash (Mono patients)", nursing: "Dose: 250-500mg Q6H. Monitor for rash; take oral dose on empty stomach" },
-    { name: "Aspirin (Aspro/Cartia)", class: "Antiplatelet/NSAID", indication: "MI prophylaxis, pain", SideEffects: "GI bleeding, tinnitus, bronchospasm", nursing: "Dose: 80-100mg (Antiplatelet). Monitor for tarry stools; take with food" },
-    { name: "Atenolol (Tenormin)", class: "Beta-blocker", indication: "Hypertension, angina", SideEffects: "Bradycardia, hypotension", nursing: "Dose: 25-50mg OD. Check Pulse/BP before giving; caution in asthma/COPD" },
-    { name: "Atorvastatin (Lipitor)", class: "Statin", indication: "Hyperlipidemia", SideEffects: "Myalgia, elevated LFTs", nursing: "Dose: 10-80mg OD. Monitor CK levels if muscle pain; check LFTs; take at night" },
-    { name: "Atropine (Atropine Sulfate)", class: "Anticholinergic", indication: "Bradycardia, poisoning", SideEffects: "Dry mouth, blurred vision, tachycardia", nursing: "Dose: 0.5-1mg IV. Monitor HR, urine output; contraindicated in glaucoma" },
-    { name: "Azithromycin (Zithromax)", class: "Macrolide antibiotic", indication: "RTIs, Chlamydia", SideEffects: "GI upset, QT prolongation", nursing: "Dose: 500mg OD. Take 1hr before or 2hr after food; monitor ECG in cardiac patients" },
-    { name: "Baclofen (Lioresal)", class: "Muscle relaxant", indication: "Spasticity, MS", SideEffects: "Drowsiness, weakness", nursing: "Dose: 5mg TDS. Do not stop abruptly; fall precautions" },
-    { name: "Beclomethasone (Qvar)", class: "Corticosteroid (inhaled)", indication: "Asthma prophylaxis", SideEffects: "Oral thrush, hoarseness", nursing: "Dose: 100-400mcg BD. Rinse mouth with water after use; use spacer" },
-    { name: "Benzhexol/Trihexyphenidyl (Artane)", class: "Anticholinergic", indication: "Parkinsonism, EPS", SideEffects: "Dry mouth, blurred vision, confusion", nursing: "Dose: 2mg TDS. Monitor for urinary retention and confusion; caution in elderly" },
-    { name: "Benzylpenicillin (Crystapen)", class: "Penicillin antibiotic", indication: "Streptococcal infections", SideEffects: "Anaphylaxis, electrolyte imbalance", nursing: "Dose: 1.2g Q4H IV. Check allergy history; inject slowly" },
-    { name: "Betahistine (Serc)", class: "Histamine analogue", indication: "Ménière's disease, vertigo", SideEffects: "Headache, gastric upset", nursing: "Dose: 8-16mg TDS. Take with food to minimize GI intolerance" },
-    { name: "Bisacodyl (Dulcolax)", class: "Stimulant laxative", indication: "Constipation, bowel prep", SideEffects: "Cramping, electrolyte disturbance", nursing: "Dose: 5-10mg HS. Do not chew tablets; avoid milk within 1 hour" },
-    { name: "Calcitriol (Rocaltrol)", class: "Vitamin D analogue", indication: "Hypocalcemia (renal failure)", SideEffects: "Hypercalcemia, metallic taste", nursing: "Dose: 0.25mcg OD. Monitor serum calcium and phosphate levels" },
-    { name: "Calcium Gluconate (Calcium Sandoz)", class: "Electrolyte", indication: "Hypocalcemia, Hyperkalemia", SideEffects: "Arrhythmias, tissue necrosis", nursing: "Dose: 10ml of 10% IV. Monitor ECG; ensure patent IV line (vesicant)" },
-    { name: "Carbamazepine (Tegretol)", class: "Anticonvulsant", indication: "Epilepsy, trigeminal neuralgia", SideEffects: "Drowsiness, hyponatremia, rash (SJS)", nursing: "Dose: 200mg BD. Monitor CBC, Na+; check for HLA-B*1502 in Asians" },
-    { name: "Carbimazole (Neo-Mercazole)", class: "Antithyroid", indication: "Hyperthyroidism", SideEffects: "Agranulocytosis, rash", nursing: "Dose: 5-20mg daily. Report sore throat/fever immediately (marrow suppression)" },
-    { name: "Carvedilol (Coreg/Dilatrend)", class: "Beta-blocker", indication: "Heart failure, hypertension", SideEffects: "Bradycardia, hypotension", nursing: "Dose: 3.125-25mg BD. Take with food; monitor BP/HR" },
-    { name: "Cefotaxime (Claforan)", class: "3rd-gen cephalosporin", indication: "Severe infections", SideEffects: "Diarrhea, rash, injection pain", nursing: "Dose: 1g Q8H. Monitor renal function; check for penicillin cross-sensitivity" },
-    { name: "Ceftazidime (Fortaz)", class: "3rd-gen cephalosporin", indication: "Pseudomonas, hospital infections", SideEffects: "Phlebitis, diarrhea", nursing: "Dose: 1-2g Q8H. Monitor renal function; covers pseudomonas" },
-    { name: "Ceftriaxone (Rocephin)", class: "3rd-gen cephalosporin", indication: "Meningitis, pneumonia", SideEffects: "Biliary sludge, diarrhea", nursing: "Dose: 1-2g OD. Do not mix with calcium solutions; IV over 30 mins" },
-    { name: "Cefuroxime (Zinacef/Zinnat)", class: "2nd-gen cephalosporin", indication: "Surgical prophylaxis, RTIs", SideEffects: "Diarrhea, Candida overgrowth", nursing: "Dose: 250mg BD (PO). Give PO with food to increase absorption" },
-    { name: "Celecoxib (Celebrex)", class: "NSAID (COX-2)", indication: "Osteoarthritis, Pain", SideEffects: "CV thrombotic events, GI upset", nursing: "Dose: 100-200mg BD. Less GI bleeding risk than other NSAIDs but monitor cardiac history" },
-    { name: "Cephalexin (Keflex)", class: "1st-gen cephalosporin", indication: "Skin infections, UTIs", SideEffects: "Nausea, diarrhea, rash", nursing: "Dose: 250-500mg Q6H. Check for penicillin allergy (cross-reactivity)" },
-    { name: "Chloramphenicol (Chloromycetin)", class: "Antibiotic", indication: "Eye infections (topical)", SideEffects: "Marrow suppression (Systemic)", nursing: "Dose: Q4H (Drops). Systemic use rare due to toxicity; monitor CBC closely" },
-    { name: "Chlorpheniramine (Piriton)", class: "Antihistamine", indication: "Allergies, itchiness", SideEffects: "Drowsiness, dry mouth, urinary retention", nursing: "Dose: 4mg TDS. Caution against driving/operating machinery" },
-    { name: "Ciprofloxacin (Ciproxin)", class: "Fluoroquinolone", indication: "UTIs, bacterial gastroenteritis", SideEffects: "Tendonitis, photosensitivity, QT", nursing: "Dose: 250-500mg BD. Separate from dairy/antacids; watch for heel pain" },
-    { name: "Clarithromycin (Klacid)", class: "Macrolide antibiotic", indication: "H. pylori, RTIs", SideEffects: "Metallic taste, GI upset", nursing: "Dose: 250-500mg BD. Interacts with Statins/Warfarin; take with food" },
-    { name: "Clindamycin (Dalacin)", class: "Lincosamide antibiotic", indication: "Dental/Skin infections", SideEffects: "Diarrhea, C. difficile colitis", nursing: "Dose: 150-300mg Q6H. Report diarrhea immediately; monitor liver function" },
-    { name: "Clopidogrel (Plavix)", class: "Antiplatelet", indication: "Stent potency, stroke prevention", SideEffects: "Bleeding, bruising", nursing: "Dose: 75mg OD. Stop 5-7 days pre-op; monitor for signs of bleeding" },
-    { name: "Cloxacillin (Orbenin)", class: "Penicillin antibiotic", indication: "Staphylococcal skin infections", SideEffects: "GI upset, rash", nursing: "Dose: 250-500mg Q6H. Best taken on empty stomach (1hr ac or 2hr pc)" },
-    { name: "Codeine (Codeine Phosphate)", class: "Opioid analgesic", indication: "Mild pain, dry cough", SideEffects: "Constipation, drowsiness", nursing: "Dose: 15-30mg Q4H. Monitor bowel movements; encourage fluids/fiber" },
-    { name: "Colchicine (Colgout)", class: "Antigout agent", indication: "Acute gout flair", SideEffects: "Severe diarrhea, nausea", nursing: "Dose: 0.5mg BD. Stop if diarrhea occurs; caution in renal impairment" },
-    { name: "Cotrimoxazole (Sephros/Bactrim)", class: "Sulfonamide antibiotic", indication: "UTI, PCP pneumonia", SideEffects: "Rash (SJS), photosensitivity, hyperkalemia", nursing: "Dose: 960mg BD. Check sulfa allergy; encourage fluids; monitor K+" },
-    { name: "Dexamethasone (Decadron)", class: "Corticosteroid", indication: "Cerebral edema, anti-emetic", SideEffects: "Hyperglycemia, insomnia", nursing: "Dose: 4-8mg BD. Give in morning to reduce insomnia; monitor glucose" },
-    { name: "Diazepam (Valium)", class: "Benzodiazepine", indication: "Seizures, muscle spasm", SideEffects: "Sedation, respiratory depression", nursing: "Dose: 5mg BD. Monitor resp rate; IV can damage veins (give slowly)" },
-    { name: "Diclofenac (Voltaren)", class: "NSAID", indication: "Pain, inflammation", SideEffects: "Gastric ulcer, renal impairment", nursing: "Dose: 50mg BD/TDS. Take with food; avoid IM in anticoagulated patients" },
-    { name: "Digoxin (Lanoxin)", class: "Cardiac glycoside", indication: "Heart failure, AF", SideEffects: "Bradycardia, yellow vision, nausea", nursing: "Dose: 0.0625-0.25mg OD. Check apical pulse >60; monitor K+ (toxicity risk)" },
-    { name: "Dihydrocodeine (DF118)", class: "Opioid analgesic", indication: "Moderate pain", SideEffects: "Constipation, drowsiness", nursing: "Dose: 30-60mg Q4H. Fall precautions; monitor bowel function" },
-    { name: "Diltiazem (Herbesser)", class: "Calcium channel blocker", indication: "Angina, AF rate control", SideEffects: "Bradycardia, edema", nursing: "Dose: 30-60mg TDS. Monitor HR and BP; caution with Beta-blockers" },
-    { name: "Diphenhydramine (Benadryl)", class: "Antihistamine", indication: "Allergy, sleep aid", SideEffects: "Sedation, dry mouth, confusion", nursing: "Dose: 25-50mg. Fall precautions; High anticholinergic burden in elderly" },
-    { name: "Dobutamine (Dobutrex)", class: "Inotrope", indication: "Cardiogenic shock, HF", SideEffects: "Tachycardia, hypertension", nursing: "Dose: 2-20mcg/kg/min. Continuous cardiac monitoring; central line preferred" },
-    { name: "Dopamine (Intropin)", class: "Inotrope/Vasopressor", indication: "Hypotension, shock", SideEffects: "Arrhythmias, tissue necrosis", nursing: "Dose: 2-20mcg/kg/min. Monitor IV site hourly (vesicant); Phentolamine is antidote" },
-    { name: "Enoxaparin (Clexane)", class: "LMW Heparin", indication: "DVT prophylaxis/treatment", SideEffects: "Bleeding, bruising, thrombocytopenia", nursing: "Dose: 40mg SC OD (Prophylaxis). Inject SC in abdomen; do not rub site; monitor platelets" },
-    { name: "Erythromycin (Erythrocin)", class: "Macrolide antibiotic", indication: "Penicillin allergy, pro-kinetic", SideEffects: "Severe GI upset, QT prolongation", nursing: "Dose: 250-500mg Q6H. Take with food if GI upset occurs" },
-    { name: "Esomeprazole (Nexium)", class: "Proton pump inhibitor", indication: "GERD, Gastritis", SideEffects: "Headache, diarrhea", nursing: "Dose: 20-40mg OD. Best taken 30 mins before breakfast; swallow whole" },
-    { name: "Famotidine (Pepcidine)", class: "H2 Blocker", indication: "GERD, peptic ulcer", SideEffects: "Headache, dizziness", nursing: "Dose: 20mg BD. Can be taken with or without food" },
-    { name: "Fentanyl (Durogesic/Sublimaze)", class: "Opioid analgesic", indication: "Severe pain, anesthesia", SideEffects: "Respiratory depression, chest rigidity", nursing: "Dose: 12/25/50mcg Patch. Monitor respiration; patches take 12h to start working" },
-    { name: "Filgrastim (Neupogen)", class: "G-CSF", indication: "Neutropenia", SideEffects: "Bone pain, leukocytosis", nursing: "Dose: 5mcg/kg/day SC. Store in fridge; monitor WBC counts" },
-    { name: "Fluconazole (Diflucan)", class: "Antifungal", indication: "Candidiasis (Thrush)", SideEffects: "Nausea, hepatotoxicity", nursing: "Dose: 50-150mg OD. Monitor LFTs if used long term" },
-    { name: "Fluoxetine (Prozac)", class: "SSRI", indication: "Depression, OCD", SideEffects: "Insomnia, sexual dysfunction", nursing: "Dose: 20mg OD (AM). Monitor for suicide risk in first weeks; long half-life" },
-    { name: "Furosemide (Lasix)", class: "Loop diuretic", indication: "Heart failure, edema", SideEffects: "Hypokalemia, hypotension", nursing: "Dose: 40mg OD/BD. Monitor K+, BP, and urine output; give in morning" },
-    { name: "Gabapentin (Neurontin)", class: "Anticonvulsant", indication: "Neuropathic pain", SideEffects: "Drowsiness, dizziness", nursing: "Dose: 300mg TDS. Titrate slowly; caution in renal failure" },
-    { name: "Gentamicin (Garamycin)", class: "Aminoglycoside", indication: "Severe sepsis, UTI", SideEffects: "Nephrotoxicity, Ototoxicity", nursing: "Dose: 3-5mg/kg OD. Monitor Creatinine and levels (Peak/Trough) closely" },
-    { name: "Gliclazide (Diamicron)", class: "Sulfonylurea", indication: "Type 2 Diabetes", SideEffects: "Hypoglycemia, weight gain", nursing: "Dose: 80mg BD. Take with breakfast; educate on hypo signs" },
-    { name: "Glyceryl trinitrate (Nitromin)", class: "Nitrate", indication: "Angina pectoris", SideEffects: "Headache, hypotension, flushing", nursing: "Dose: 0.4mg SL. Sit down before using (syncope risk); wait 5 mins between doses" },
-    { name: "Haloperidol (Haldol/Serenace)", class: "Antipsychotic", indication: "Agitation, Delirium", SideEffects: "EPS (dystonia), QT prolongation", nursing: "Dose: 0.5-5mg. Monitor ECG; watch for stiffness/tremors" },
-    { name: "Heparin (Heparin Sodium)", class: "Anticoagulant", indication: "DVT/PE treatment, ACS", SideEffects: "Bleeding, HIT (low platelets)", nursing: "Dose: Infusion titrated. Monitor APTT Q6H; Antidote: Protamine Sulfate" },
-    { name: "Hydralazine (Apresoline)", class: "Vasodilator", indication: "Hypertension, HF", SideEffects: "Reflex tachycardia, lupus-like syndrome", nursing: "Dose: 25-50mg QID. Monitor BP and HR closely" },
-    { name: "Hydrocortisone (Solu-Cortef)", class: "Corticosteroid", indication: "Acute asthma, Adrenal insufficiency", SideEffects: "Hyperglycemia, fluid retention", nursing: "Dose: 100mg Q6H IV. Monitor blood glucose; taper IV to PO" },
-    { name: "Hydroxyzine (Atarax)", class: "Antihistamine", indication: "Itchiness, anxiety", SideEffects: "Sedation, dry mouth", nursing: "Dose: 25mg TDS. Fall precautions; often used for urticaria" },
-    { name: "Hyoscine Butylbromide (Buscopan)", class: "Antispasmodic", indication: "Abdominal cramps", SideEffects: "Dry mouth, tachycardia", nursing: "Dose: 10-20mg QID. Contraindicated in bowel obstruction" },
-    { name: "Ibuprofen (Nurofen)", class: "NSAID", indication: "Pain, fever", SideEffects: "Gastric irritation, renal risk", nursing: "Dose: 200-400mg TDS. Take with food; avoid in asthmatics sensitive to Aspirin" },
-    { name: "Insulin Glargine (Lantus)", class: "Long-acting insulin", indication: "Diabetes Mellitus", SideEffects: "Hypoglycemia", nursing: "Dose: OD SC. Do not mix with other insulins; no peak action" },
-    { name: "Insulin Lispro (Humalog)", class: "Rapid-acting insulin", indication: "Mealtime glucose control", SideEffects: "Hypoglycemia (rapid)", nursing: "Dose: Sliding Scale. Give food immediately (within 15 mins)" },
-    { name: "Isoniazid (INH)", class: "Antitubercular", indication: "Tuberculosis", SideEffects: "Neuropathy, hepatotoxicity", nursing: "Dose: 300mg OD. Give Pyridoxine (B6) to prevent neuropathy; monitor LFTs" },
-    { name: "Isosorbide Mononitrate (Imdur)", class: "Nitrate", indication: "Angina prophylaxis", SideEffects: "Headache, hypotension", nursing: "Dose: 30-60mg OD. Swallow whole (SR formulation); do not crush" },
-    { name: "Ketorolac (Toradol)", class: "NSAID (Potent)", indication: "Post-op pain", SideEffects: "GI bleeding, renal failure", nursing: "Dose: 15-30mg Q6H IM/IV. Short term use only (<5 days); check Creatinine" },
-    { name: "Labetalol (Trandate)", class: "Beta-blocker", indication: "Hypertensive emergency", SideEffects: "Orthostatic hypotension", nursing: "Dose: 20mg IV Bolus / 100mg PO. Keep patient supine during IV administration" },
-    { name: "Lactulose (Duphalac)", class: "Osmotic laxative", indication: "Constipation, Hepatic encephalopathy", SideEffects: "Flatulence, cramps, diarrhea", nursing: "Dose: 15-30ml BD. Titrate for 2-3 soft stools/day in liver patients" },
-    { name: "Lansoprazole (Prevacid)", class: "Proton pump inhibitor", indication: "Gastric reflux", SideEffects: "Headache, diarrhea", nursing: "Dose: 30mg OD. Take in morning before food" },
-    { name: "Levofloxacin (Cravit)", class: "Fluoroquinolone", indication: "RTIs, UTI", SideEffects: "Tendonitis, QT prolongation", nursing: "Dose: 500mg OD. Renal dosing needed; stop if tendon pain occurs" },
-    { name: "Levothyroxine (Eltroxin)", class: "Thyroid hormone", indication: "Hypothyroidism", SideEffects: "Palpitations, weight loss", nursing: "Dose: 50-100mcg OD. Take on empty stomach 30 mins before breakfast" },
-    { name: "Lisinopril (Zestril)", class: "ACE inhibitor", indication: "Hypertension, HF", SideEffects: "Dry cough, hyperkalemia", nursing: "Dose: 10-20mg OD. Monitor K+ and Creatinine; watch for facial swelling" },
-    { name: "Lithium (Priadel)", class: "Mood stabilizer", indication: "Bipolar disorder", SideEffects: "Tremor, polyuria, toxicity", nursing: "Dose: 400-800mg. Narrow therapeutic index; maintain sodium/fluid intake" },
-    { name: "Loperamide (Imodium)", class: "Antidiarrheal", indication: "Diarrhea", SideEffects: "Constipation, cramps", nursing: "Dose: 4mg stat. Max 16mg/day; rule out infectious diarrhea first" },
-    { name: "Lorazepam (Ativan)", class: "Benzodiazepine", indication: "Anxiety, Seizures", SideEffects: "Sedation, respiratory depression", nursing: "Dose: 0.5-2mg. Dilute for IV use; monitor respiration" },
-    { name: "Losartan (Cozaar)", class: "ARB", indication: "Hypertension", SideEffects: "Dizziness, hyperkalemia", nursing: "Dose: 50mg OD. Alternative if ACE inhibitor causes cough" },
-    { name: "Levodopa/Benserazide (Madopar)", class: "Antiparkinsonian", indication: "Parkinson's disease", SideEffects: "Dyskinesia, hypotension", nursing: "Dose: 125mg TDS. Take with food (low protein); urine may darken" },
-    { name: "Magnesium Sulfate (Magnesium)", class: "Electrolyte", indication: "Hypomagnesemia, Asthma", SideEffects: "Flushing, hypotension, loss of reflexes", nursing: "Dose: 1-2g IV. Monitor Deep Tendon Reflexes (DTR) and resp rate" },
-    { name: "Mannitol (Mannitol 20%)", class: "Osmotic diuretic", indication: "Raised ICP", SideEffects: "Dehydration, electrolyte imbalance", nursing: "Dose: 0.25-1g/kg. Inspect bottle for crystals (warm to dissolve); use filter" },
-    { name: "Meropenem (Merrem)", class: "Carbapenem antibiotic", indication: "ESBL infections, meningitis", SideEffects: "Seizures (rare), diarrhea", nursing: "Dose: 1g Q8H. Broad spectrum; monitor renal function" },
-    { name: "Metformin (Glucophage)", class: "Biguanide", indication: "Type 2 Diabetes", SideEffects: "Diarrhea, Lactic acidosis (rare)", nursing: "Dose: 500mg BD. Take with meals to reduce GI upset; hold before CT contrast" },
-    { name: "Methyldopa (Aldomet)", class: "Antihypertensive", indication: "Hypertension in pregnancy", SideEffects: "Drowsiness, hemolytic anemia", nursing: "Dose: 250mg TDS. Monitor LFTs and CBC" },
-    { name: "Metoclopramide (Maxolon)", class: "Antiemetic", indication: "Nausea, gastroparesis", SideEffects: "EPS (dystonia), restlessness", nursing: "Dose: 10mg TDS. Inject slowly; Benztropine reverses dystonia" },
-    { name: "Metoprolol (Betaloc)", class: "Beta-blocker", indication: "Hypertension, Angina", SideEffects: "Bradycardia, fatigue", nursing: "Dose: 50mg BD. Monitor HR/BP; caution in heart failure decompensation" },
-    { name: "Metronidazole (Flagyl)", class: "Antibiotic", indication: "Anaerobes, intra-abdominal infections", SideEffects: "Metallic taste, disulfiram reaction", nursing: "Dose: 400mg TDS. Strict NO ALCOHOL (severe vomiting); dark urine" },
-    { name: "Midazolam (Dormicum)", class: "Benzodiazepine", indication: "Procedural sedation", SideEffects: "Respiratory depression", nursing: "Dose: 1-2.5mg IV titrated. Continuous monitoring; have Flumazenil ready" },
-    { name: "Montelukast (Singulair)", class: "Leukotriene antagonist", indication: "Asthma, Allergic rhinitis", SideEffects: "Headache, mood changes", nursing: "Dose: 10mg OD. Take in the evening" },
-    { name: "Morphine (Morphine)", class: "Opioid analgesic", indication: "Severe pain, MI", SideEffects: "Resp depression, hypotension", nursing: "Dose: 2-5mg IV / 10mg PO. Monitor RR and BP; Naloxone is antidote" },
-    { name: "Naproxen (Naprosyn)", class: "NSAID", indication: "Pain, inflammation", SideEffects: "GI bleeding, renal risk", nursing: "Dose: 250-500mg BD. Take with food; lower cardiac risk than other NSAIDs" },
-    { name: "Nifedipine (Adalat)", class: "Calcium channel blocker", indication: "Hypertension", SideEffects: "Headache, flushing, edema", nursing: "Dose: 30mg OD (SR). Do not bite/crush SR tablets (severe hypotension)" },
-    { name: "Nitrofurantoin (Macrobid)", class: "Antibiotic", indication: "UTI", SideEffects: "Nausea, pulmonary fibrosis (long term)", nursing: "Dose: 100mg QID. Take with food (increases absorption); brown urine" },
-    { name: "Omeprazole (Losec)", class: "Proton pump inhibitor", indication: "GERD, Ulcers", SideEffects: "GI upset", nursing: "Dose: 20mg OD. Swallow whole; usually given OD morning" },
-    { name: "Ondansetron (Zofran)", class: "Antiemetic", indication: "Nausea (Chemo/Post-op)", SideEffects: "Constipation, QT prolongation", nursing: "Dose: 4-8mg TDS. Monitor ECG if giving high doses IV" },
-    { name: "Oseltamivir (Tamiflu)", class: "Antiviral", indication: "Influenza", SideEffects: "Nausea, vomiting", nursing: "Dose: 75mg BD. Start within 48h of symptoms" },
-    { name: "Oxycodone (OxyContin/Oxynorm)", class: "Opioid analgesic", indication: "Moderate-Severe pain", SideEffects: "Constipation, sedation", nursing: "Dose: 5-10mg Q4H. Monitor RR; laxatives required for chronic use" },
-    { name: "Pantoprazole (Pantoloc)", class: "Proton pump inhibitor", indication: "GI bleeding, GERD", SideEffects: "Phlebitis, headache", nursing: "Dose: 40mg OD. IV push over 2 mins" },
-    { name: "Phenytoin (Dilantin)", class: "Anticonvulsant", indication: "Seizures", SideEffects: "Gum hypertrophy, ataxia", nursing: "Dose: 300mg OD. Use filter for IV; only mix with Saline; check levels" },
-    { name: "Piperacillin/Tazobactam (Tazocin)", class: "Penicillin + Beta-lactamase inh", indication: "Severe infections", SideEffects: "Diarrhea, rash", nursing: "Dose: 4.5g Q8H. Monitor Platelets and Renal function" },
-    { name: "Potassium Chloride (Slow-K)", class: "Electrolyte", indication: "Hypokalemia", SideEffects: "GI irritation, hyperkalemia", nursing: "Dose: 600mg-1200mg BD. Swallow whole; never give IV push (fatal)" },
-    { name: "Prazosin (Minipress)", class: "Alpha-blocker", indication: "Hypertension, BPH", SideEffects: "First-dose hypotension", nursing: "Dose: 0.5-1mg BD. Give first dose at bedtime to prevent syncope" },
-    { name: "Prednisolone (Prednisolone)", class: "Corticosteroid", indication: "Inflammation, Asthma", SideEffects: "Hyperglycemia, insomnia", nursing: "Dose: 5-30mg OD. Take with food; do not stop abruptly" },
-    { name: "Pregabalin (Lyrica)", class: "Anticonvulsant", indication: "Neuropathic pain, anxiety", SideEffects: "Dizziness, somnolence", nursing: "Dose: 75mg BD. Fall risk; renal adjustment needed" },
-    { name: "Prochlorperazine (Stemetil)", class: "Antiemetic", indication: "Vertigo, nausea", SideEffects: "EPS, drowsiness", nursing: "Dose: 5-10mg TDS. Monitor for dystonic reactions" },
-    { name: "Promethazine (Phenergan)", class: "Antihistamine", indication: "Allergy, nausea, sedation", SideEffects: "Sedation, tissue necrosis (IV)", nursing: "Dose: 25mg. Deep IM preferred; avoid IV in hand/wrist" },
-    { name: "Propofol (Diprivan)", class: "General anesthetic", indication: "Sedation (ICU)", SideEffects: "Hypotension, apnea", nursing: "Dose: Titrated. Airway management essential; change tubing Q12H" },
-    { name: "Propranolol (Inderal)", class: "Beta-blocker", indication: "Thyrotoxicosis, anxiety", SideEffects: "Bradycardia, bronchospasm", nursing: "Dose: 10-40mg TDS. Contraindicated in asthma" },
-    { name: "Quetiapine (Seroquel)", class: "Atypical antipsychotic", indication: "Schizophrenia, Sleep", SideEffects: "Sedation, hypotension", nursing: "Dose: 25-100mg. Fall risk; monitor glucose/lipids" },
-    { name: "Ramipril (Tritace)", class: "ACE inhibitor", indication: "Hypertension, HF", SideEffects: "Cough, hypotension", nursing: "Dose: 2.5-10mg OD. Monitor BP and renal function" },
-    { name: "Rifampin (Rifadin)", class: "Antitubercular", indication: "TB treatment", SideEffects: "Orange urine, hepatotoxicity", nursing: "Dose: 450-600mg OD. Body fluid discoloration; renders OCP ineffective" },
-    { name: "Salmeterol (Serevent)", class: "LABA", indication: "Asthma maintenance", SideEffects: "Palpitations, tremor", nursing: "Dose: 50mcg BD. NOT for acute attacks" },
-    { name: "Senna (Senokot)", class: "Stimulant laxative", indication: "Constipation", SideEffects: "Cramps, diarrhea", nursing: "Dose: 2 tabs HS. Urine may turn reddish-brown" },
-    { name: "Sertraline (Zoloft)", class: "SSRI", indication: "Depression, Anxiety", SideEffects: "Nausea, insomnia", nursing: "Dose: 50mg OD. Takes 2-4 weeks for effect" },
-    { name: "Simvastatin (Zocor)", class: "Statin", indication: "Hyperlipidemia", SideEffects: "Myopathy, rhabdomyolysis", nursing: "Dose: 20-40mg OD. Take at night; report muscle pain" },
-    { name: "Spironolactone (Aldactone)", class: "Diuretic (K+ sparing)", indication: "Ascites, Heart failure", SideEffects: "Hyperkalemia, gynecomastia", nursing: "Dose: 25-100mg OD. Avoid potassium supplements; monitor K+" },
-    { name: "Tamsulosin (Harnal)", class: "Alpha-blocker", indication: "BPH", SideEffects: "Dizziness, retrograde ejaculation", nursing: "Dose: 0.4mg OD. Take 30 mins after same meal daily" },
-    { name: "Terbutaline (Bricanyl)", class: "Beta-2 agonist", indication: "Bronchospasm", SideEffects: "Tremor, tachycardia", nursing: "Dose: 250-500mcg. Monitor HR" },
-    { name: "Tramadol (Tramal)", class: "Analgesic", indication: "Moderate pain", SideEffects: "Nausea, seizure risk", nursing: "Dose: 50mg Q4-6H. Avoid in epilepsy; caution with SSRIs" },
-    { name: "Tranexamic Acid (Transamin)", class: "Antifibrinolytic", indication: "Hemorrhage", SideEffects: "Nausea, thrombosis risk", nursing: "Dose: 500mg TDS. IV injection must be slow to avoid hypotension" },
-    { name: "Valproate (Epilim)", class: "Anticonvulsant", indication: "Epilepsy, Bipolar", SideEffects: "Weight gain, hepatotoxicity", nursing: "Dose: 400mg BD. Take with food; teratogenic (avoid in pregnancy)" },
-    { name: "Vancomycin (Vancocin)", class: "Glycopeptide", indication: "MRSA", SideEffects: "Red man syndrome, Nephrotoxicity", nursing: "Dose: 1g Q12H. Infuse slowly (>1 hour); monitor Trough levels" },
-    { name: "Warfarin (Marevan)", class: "Anticoagulant", indication: "AF, DVT, Heart valve", SideEffects: "Bleeding", nursing: "Dose: Per INR. Monitor INR; consistent Vitamin K diet" },
-    { name: "Zolpidem (Stilnox)", class: "Hypnotic", indication: "Insomnia", SideEffects: "Drowsiness, sleep-walking", nursing: "Dose: 10mg HS. Take immediately before bed; risk of falls" }
-];
-
-        let extendedDrugs = []; 
-        const fallbackExtended = [
-             { name: "Digoxin", class: "Cardiac glycoside", indication: "HF, AF", SideEffects: "Toxicity (Halo vision)", nursing: "Check apical pulse > 60" }
+            { name: "Acetaminophen/Paracetamol", class: "Analgesic", indication: "Pain, Fever", SideEffects: "Hepatotoxicity", nursing: "Monitor LFTs; Max 4g/day" },
+            { name: "Ibuprofen", class: "NSAID", indication: "Inflammation", SideEffects: "GI Bleed, Renal", nursing: "Take with food" },
+            { name: "Digoxin", class: "Cardiac Glycoside", indication: "HF, AFib", SideEffects: "Halo vision, Bradycardia", nursing: "Apical pulse > 60" }
         ];
 
-        // --- APP STATE ---
+        let extendedDrugs = []; 
         let activeSourceList = commonDrugs; 
         let drugList = [];
         let currentIndex = 0;
         let quizCurrentIndex = 0;
-        let aiLanguage = 'english'; 
         let currentQuizData = null;
 
         // --- INITIALIZATION ---
         function init() {
-            // Load saved settings
             const savedOR = localStorage.getItem('or_key');
             if(savedOR) openRouterKey = savedOR;
             
@@ -454,87 +321,64 @@
             const savedVoice = localStorage.getItem('preferred_voice');
             if(savedVoice) selectedVoiceURI = savedVoice;
 
-            // Populate UI Inputs
             document.getElementById('openrouter-key').value = openRouterKey;
             document.getElementById('deepseek-key').value = deepSeekKey;
             document.getElementById('provider-select').value = currentProvider;
             
+            // Set input to default URL
+            document.getElementById('sheet-url').value = DEFAULT_SHEET_URL;
+
             updateProviderDisplay();
 
-            // Default to fallback until file uploaded
-            extendedDrugs = fallbackExtended;
+            // --- LOAD SAVED DATABASE ---
+            const savedCustomData = localStorage.getItem('custom_drug_data');
+            const savedSheetUrl = localStorage.getItem('custom_sheet_url');
             
-            reshuffle();
-            
-            // Init Voices
+            if (savedCustomData) {
+                // If we have saved data, load it immediately (fast/offline friendly)
+                try {
+                    extendedDrugs = JSON.parse(savedCustomData);
+                    if (extendedDrugs.length > 0) {
+                        activeSourceList = extendedDrugs; 
+                        document.getElementById('custom-data-banner').style.display = 'block';
+                        if(savedSheetUrl) document.getElementById('sheet-url').value = savedSheetUrl;
+                        updateSetButton();
+                        reshuffle();
+                    }
+                } catch (e) { console.error("Error loading saved data", e); }
+            } else {
+                // AUTO-FETCH: If no saved data, automatically fetch the default sheet
+                console.log("No saved data found. Auto-fetching default database...");
+                fetchSheetData(DEFAULT_SHEET_URL);
+            }
+
+            // Ensure UI matches the default variable set at top
+            if(aiLanguage !== 'english') toggleLanguage(true); // Force update UI
+
             populateVoiceList();
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = populateVoiceList;
             }
         }
 
-        // --- VOICE LIST POPULATION ---
-        function populateVoiceList() {
-            const voices = window.speechSynthesis.getVoices();
-            const select = document.getElementById('voice-select');
-            
-            if(voices.length === 0) return; 
-
-            select.innerHTML = '<option value="">Default System Voice</option>';
-            
-            const sortedVoices = voices.sort((a, b) => {
-                const aName = a.name.toLowerCase();
-                const bName = b.name.toLowerCase();
-                if (aName.includes('enhanced') && !bName.includes('enhanced')) return -1;
-                if (!aName.includes('enhanced') && bName.includes('enhanced')) return 1;
-                return aName.localeCompare(bName);
-            });
-
-            sortedVoices.forEach((voice) => {
-                const option = document.createElement('option');
-                const label = voice.name.includes("Enhanced") || voice.name.includes("Siri") ? `✨ ${voice.name}` : voice.name;
-                option.textContent = `${label} (${voice.lang})`;
-                option.value = voice.voiceURI;
-                if(voice.voiceURI === selectedVoiceURI) option.selected = true;
-                select.appendChild(option);
-            });
-        }
-
-        function testVoice() {
-            const select = document.getElementById('voice-select');
-            const selectedURI = select.value;
-            if(selectedURI) {
-                selectedVoiceURI = selectedURI;
-                speakText("Voice check. This is an enhanced quality test.", 'en', true); 
-            } else {
-                speakText("Default system voice test.", 'en', true);
-            }
-        }
-
-        // --- GOOGLE SHEET / ONLINE CSV LOGIC ---
-        async function fetchSheetData() {
-            const urlInput = document.getElementById('sheet-url').value.trim();
+        // --- GOOGLE SHEET LOGIC ---
+        async function fetchSheetData(autoUrl = null) {
+            const urlInput = autoUrl || document.getElementById('sheet-url').value.trim();
             const statusEl = document.getElementById('upload-status');
             
-            if (!urlInput) {
-                statusEl.innerText = "❌ Please enter a URL.";
-                return;
-            }
+            if (!urlInput) { statusEl.innerText = "❌ Please enter a URL."; return; }
 
-            statusEl.innerText = "⏳ Fetching...";
+            // Only show "Fetching" if manually clicked, to avoid UI flicker on auto-load
+            if(!autoUrl) statusEl.innerText = "⏳ Fetching & Saving...";
             
-            // Auto-convert standard Google Sheet URL to Export URL
             let fetchUrl = urlInput;
-            if (urlInput.includes("docs.google.com/spreadsheets")) {
-                // If it's an edit link, try to change it to export format
-                if (urlInput.includes("/edit")) {
-                    fetchUrl = urlInput.replace(/\/edit.*$/, "/export?format=csv");
-                }
+            if (urlInput.includes("docs.google.com/spreadsheets") && urlInput.includes("/edit")) {
+                fetchUrl = urlInput.replace(/\/edit.*$/, "/export?format=csv");
             }
 
             try {
                 const response = await fetch(fetchUrl);
-                if (!response.ok) throw new Error("Network error or invalid link permissions.");
+                if (!response.ok) throw new Error("Network error");
                 const csvText = await response.text();
                 
                 Papa.parse(csvText, {
@@ -546,59 +390,93 @@
                         
                         if (hasColumns && results.data.length > 0) {
                             extendedDrugs = results.data;
-                            statusEl.innerText = `✅ Success! Loaded ${extendedDrugs.length} drugs.`;
                             
-                            // Switch immediately to this set
+                            // SAVE TO LOCAL STORAGE
+                            localStorage.setItem('custom_drug_data', JSON.stringify(extendedDrugs));
+                            localStorage.setItem('custom_sheet_url', urlInput);
+
+                            statusEl.innerText = `✅ Loaded ${extendedDrugs.length} drugs.`;
+                            
                             activeSourceList = extendedDrugs;
+                            document.getElementById('custom-data-banner').style.display = 'block';
+                            
+                            // Ensure the set button reflects the new state
                             updateSetButton();
                             reshuffle();
                         } else {
-                            statusEl.innerText = "❌ Error: CSV missing 'name' or 'class' headers.";
+                            statusEl.innerText = "❌ CSV missing 'name' or 'class'.";
                         }
                     },
-                    error: function(err) {
-                        statusEl.innerText = "❌ Parse Error.";
-                    }
+                    error: function(err) { statusEl.innerText = "❌ Parse Error."; }
                 });
             } catch (e) {
-                statusEl.innerText = "❌ Failed. Check link permissions (must be 'Anyone with link').";
-                console.error(e);
+                statusEl.innerText = "❌ Failed to load database.";
             }
         }
 
-        // --- SETTINGS LOGIC ---
+        function clearCustomData() {
+            localStorage.removeItem('custom_drug_data');
+            localStorage.removeItem('custom_sheet_url');
+            extendedDrugs = [];
+            activeSourceList = commonDrugs;
+            // Reset URL input to default when cleared
+            document.getElementById('sheet-url').value = DEFAULT_SHEET_URL;
+            document.getElementById('upload-status').innerText = "🗑️ Data deleted.";
+            document.getElementById('custom-data-banner').style.display = 'none';
+            updateSetButton();
+            reshuffle();
+        }
+
+        // --- STANDARD FUNCTIONS ---
+        function populateVoiceList() {
+            const voices = window.speechSynthesis.getVoices();
+            const select = document.getElementById('voice-select');
+            if(voices.length === 0) return; 
+            select.innerHTML = '<option value="">Default System Voice</option>';
+            const sortedVoices = voices.sort((a, b) => {
+                const aName = a.name.toLowerCase();
+                const bName = b.name.toLowerCase();
+                if (aName.includes('enhanced') && !bName.includes('enhanced')) return -1;
+                if (!aName.includes('enhanced') && bName.includes('enhanced')) return 1;
+                return aName.localeCompare(bName);
+            });
+            sortedVoices.forEach((voice) => {
+                const option = document.createElement('option');
+                const label = voice.name.includes("Enhanced") || voice.name.includes("Siri") ? `✨ ${voice.name}` : voice.name;
+                option.textContent = `${label} (${voice.lang})`;
+                option.value = voice.voiceURI;
+                if(voice.voiceURI === selectedVoiceURI) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+        function testVoice() {
+            const select = document.getElementById('voice-select');
+            const selectedURI = select.value;
+            if(selectedURI) { selectedVoiceURI = selectedURI; speakText("Voice check.", 'en', true); } 
+            else { speakText("Default system voice test.", 'en', true); }
+        }
         function toggleSettings() {
             const panel = document.getElementById('settings-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
-
         function saveSettings() {
             const orInput = document.getElementById('openrouter-key').value.trim();
             const dsInput = document.getElementById('deepseek-key').value.trim();
             const provInput = document.getElementById('provider-select').value;
             const voiceInput = document.getElementById('voice-select').value;
-
             if(orInput) { openRouterKey = orInput; localStorage.setItem('or_key', orInput); }
             if(dsInput) { deepSeekKey = dsInput; localStorage.setItem('ds_key', dsInput); }
-            
-            currentProvider = provInput;
-            localStorage.setItem('active_provider', currentProvider);
-
-            selectedVoiceURI = voiceInput;
-            localStorage.setItem('preferred_voice', selectedVoiceURI);
-
-            updateProviderDisplay();
-            toggleSettings();
+            currentProvider = provInput; localStorage.setItem('active_provider', currentProvider);
+            selectedVoiceURI = voiceInput; localStorage.setItem('preferred_voice', selectedVoiceURI);
+            updateProviderDisplay(); toggleSettings();
         }
-
         function updateProviderDisplay() {
             const display = document.getElementById('provider-display');
-            if(currentProvider === 'openrouter') display.innerText = "Provider: OpenRouter (Xiaomi/Free)";
-            else display.innerText = "Provider: DeepSeek Official";
+            if(currentProvider === 'openrouter') display.innerText = "Provider: OpenRouter";
+            else display.innerText = "Provider: DeepSeek";
         }
-
         function toggleDrugSet() {
-            if (activeSourceList === commonDrugs) {
+            if (activeSourceList === commonDrugs && extendedDrugs.length > 0) {
                 activeSourceList = extendedDrugs;
             } else {
                 activeSourceList = commonDrugs;
@@ -606,100 +484,65 @@
             updateSetButton();
             reshuffle();
         }
-
         function updateSetButton() {
             const btn = document.getElementById('set-btn');
             if(activeSourceList === extendedDrugs) {
-                btn.innerText = "📚 Set: Online CSV";
-                btn.classList.add('set-extended');
-                btn.classList.remove('secondary');
+                btn.innerText = "📚 Set: Saved Custom";
+                btn.classList.add('set-extended'); btn.classList.remove('secondary');
             } else {
                 btn.innerText = "📚 Set: Common";
-                btn.classList.add('secondary');
-                btn.classList.remove('set-extended');
+                btn.classList.add('secondary'); btn.classList.remove('set-extended');
             }
         }
-
         function reshuffle() {
             drugList = [...activeSourceList];
             for (let i = drugList.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [drugList[i], drugList[j]] = [drugList[j], drugList[i]];
             }
-            currentIndex = 0;
-            quizCurrentIndex = 0;
-            renderCard();
-            generateQuizQuestion();
-            resetQuizUI();
+            currentIndex = 0; quizCurrentIndex = 0; renderCard(); generateQuizQuestion(); resetQuizUI();
         }
-
-        // --- VOICE & LANGUAGE ---
-        function toggleLanguage() {
+        function toggleLanguage(forceUpdate = false) {
             const btn = document.getElementById('lang-btn');
-            btn.classList.remove('secondary', 'lang-canto', 'lang-lihkg');
-            if (aiLanguage === 'english') {
-                aiLanguage = 'cantonese'; btn.innerText = "🌐 Lang: Canto+Eng"; btn.classList.add('lang-canto');
-            } else if (aiLanguage === 'cantonese') {
-                aiLanguage = 'lihkg'; btn.innerText = "🌐 Lang: LIHKG Mode"; btn.classList.add('lang-lihkg');
-            } else {
-                aiLanguage = 'english'; btn.innerText = "🌐 Lang: English"; btn.classList.add('secondary');
+            
+            // If just updating UI to match variable (e.g. at startup)
+            if(forceUpdate) {
+                btn.classList.remove('secondary', 'lang-canto', 'lang-lihkg');
+                if (aiLanguage === 'cantonese') { btn.innerText = "🌐 Lang: Canto"; btn.classList.add('lang-canto'); }
+                else if (aiLanguage === 'lihkg') { btn.innerText = "🌐 Lang: LIHKG"; btn.classList.add('lang-lihkg'); }
+                else { btn.innerText = "🌐 Lang: English"; btn.classList.add('secondary'); }
+                return;
             }
-        }
 
+            // Normal Toggle Logic
+            btn.classList.remove('secondary', 'lang-canto', 'lang-lihkg');
+            if (aiLanguage === 'english') { aiLanguage = 'cantonese'; btn.innerText = "🌐 Lang: Canto"; btn.classList.add('lang-canto'); } 
+            else if (aiLanguage === 'cantonese') { aiLanguage = 'lihkg'; btn.innerText = "🌐 Lang: LIHKG"; btn.classList.add('lang-lihkg'); } 
+            else { aiLanguage = 'english'; btn.innerText = "🌐 Lang: English"; btn.classList.add('secondary'); }
+        }
         function toggleMute() {
             isMuted = !isMuted;
             const btn = document.getElementById('mute-btn');
-            if (isMuted) {
-                window.speechSynthesis.cancel();
-                btn.innerText = "🔇 Audio: Off";
-                btn.classList.add('muted');
-                btn.classList.remove('secondary');
-            } else {
-                btn.innerText = "🔊 Audio: On";
-                btn.classList.remove('muted');
-                btn.classList.add('secondary');
-            }
+            if (isMuted) { window.speechSynthesis.cancel(); btn.innerText = "🔇 Audio: Off"; btn.classList.add('muted'); btn.classList.remove('secondary'); } 
+            else { btn.innerText = "🔊 Audio: On"; btn.classList.remove('muted'); btn.classList.add('secondary'); }
         }
-
         function speakText(text, langCode = 'en', forceSelected = false) {
-            if (isMuted) return; // Mute Check
-            
+            if (isMuted) return;
             window.speechSynthesis.cancel();
-            
             let targetLang = langCode;
-            if ((aiLanguage === 'cantonese' || aiLanguage === 'lihkg') && langCode !== 'en') { 
-                targetLang = 'zh-HK'; 
-            }
-            
+            if ((aiLanguage === 'cantonese' || aiLanguage === 'lihkg') && langCode !== 'en') { targetLang = 'zh-HK'; }
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = targetLang;
-            utterance.rate = 0.95;
-            
+            utterance.lang = targetLang; utterance.rate = 0.95;
             const voices = window.speechSynthesis.getVoices();
-            
             if (selectedVoiceURI && !forceSelected) {
                 const preferred = voices.find(v => v.voiceURI === selectedVoiceURI);
                 if(preferred) utterance.voice = preferred;
-            } 
-            else if (voices.length > 0) {
-                 const bestMatch = voices.find(v => v.lang.includes(targetLang) && (v.name.includes("Enhanced") || v.name.includes("Siri")));
-                 const anyMatch = voices.find(v => v.lang.includes(targetLang));
-                 
-                 if(bestMatch) utterance.voice = bestMatch;
-                 else if(anyMatch) utterance.voice = anyMatch;
+            } else if (voices.length > 0) {
+                const bestMatch = voices.find(v => v.lang.includes(targetLang) && (v.name.includes("Enhanced") || v.name.includes("Siri")));
+                if(bestMatch) utterance.voice = bestMatch;
             }
-            
-            if(forceSelected) {
-                const select = document.getElementById('voice-select');
-                const testURI = select.value;
-                const testVoice = voices.find(v => v.voiceURI === testURI);
-                if(testVoice) utterance.voice = testVoice;
-            }
-
             window.speechSynthesis.speak(utterance);
         }
-
-        // --- CARD LOGIC ---
         function renderCard() {
             if(drugList.length === 0) return;
             const drug = drugList[currentIndex];
@@ -721,248 +564,109 @@
         }
         function flipCard(event) {
             if (event && (event.target.tagName === 'BUTTON' || event.target.closest('button'))) return;
-            const card = document.getElementById('flashcard');
-            card.classList.toggle('flipped'); 
-            window.speechSynthesis.cancel();
+            document.getElementById('flashcard').classList.toggle('flipped'); window.speechSynthesis.cancel();
         }
         function nextCard() { if (currentIndex < drugList.length - 1) { currentIndex++; document.getElementById('flashcard').classList.remove('flipped'); renderCard(); } }
         function prevCard() { if (currentIndex > 0) { currentIndex--; document.getElementById('flashcard').classList.remove('flipped'); renderCard(); } }
-        function speakBack(drug) { speakText(`Class: ${drug.class}. Indication: ${drug.indication}. Nursing: ${drug.nursing}`, 'en'); }
-        function readAIContent(id) {
-            const el = document.getElementById(id);
-            const lang = (aiLanguage === 'cantonese' || aiLanguage === 'lihkg') ? 'zh-HK' : 'en';
-            if(el) speakText(el.innerText, lang);
-        }
-
-        // --- API FUNCTIONS ---
+        function readAIContent(id) { const el = document.getElementById(id); const lang = (aiLanguage === 'cantonese' || aiLanguage === 'lihkg') ? 'zh-HK' : 'en'; if(el) speakText(el.innerText, lang); }
         async function callOpenRouterAPI(messages) {
-            if(!openRouterKey) throw new Error("OpenRouter Key Missing");
+            if(!openRouterKey) throw new Error("Key Missing");
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${openRouterKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: "xiaomi/mimo-v2-flash:free", messages: messages, stream: false })
+                method: "POST", headers: { "Authorization": `Bearer ${openRouterKey}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ model: "xiaomi/mimo-v2-flash:free", messages: messages })
             });
-            if(!response.ok) throw new Error("OpenRouter Error");
-            const data = await response.json();
-            return data.choices[0].message.content;
+            const data = await response.json(); return data.choices[0].message.content;
         }
-
         async function callDeepSeekAPI(messages) {
-            if(!deepSeekKey) throw new Error("DeepSeek Key Missing");
+            if(!deepSeekKey) throw new Error("Key Missing");
             const response = await fetch("https://api.deepseek.com/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${deepSeekKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: "deepseek-chat", messages: messages, temperature: 0.7 })
+                method: "POST", headers: { "Authorization": `Bearer ${deepSeekKey}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ model: "deepseek-chat", messages: messages })
             });
-            if(!response.ok) throw new Error("DeepSeek API Error");
-            const data = await response.json();
-            return data.choices[0].message.content;
+            const data = await response.json(); return data.choices[0].message.content;
         }
-
         async function getAIResponse(prompt) {
             const messages = [{ role: "user", content: prompt }];
-            if(currentProvider === 'deepseek') {
-                return await callDeepSeekAPI(messages);
-            } else {
-                return await callOpenRouterAPI(messages);
-            }
+            return (currentProvider === 'deepseek') ? await callDeepSeekAPI(messages) : await callOpenRouterAPI(messages);
         }
-
         function getRoleInstruction() {
-            if (aiLanguage === 'cantonese') {
-                 return "Language Requirement: **Strictly Traditional Chinese (Cantonese)**. \n\nDirectives:\n1. The majority of the response MUST be in Traditional Chinese characters.\n2. ONLY use English for specific Medical Terms and Drug Names.\n3. Do not output full English sentences.";
-            }
-            if (aiLanguage === 'lihkg') {
-                 return "Language Requirement: **Strictly Traditional Chinese (Cantonese)** with **Hong Kong Internet Slang**.\n\nDirectives:\n1. Roleplay as a cynical/informal HK nursing student (LIHKG style).\n2. The majority of the response MUST be in Traditional Chinese characters (e.g. 大癲, 師兄, 救命).\n3. ONLY use English for Medical Terms.\n4. Do not output full English sentences.";
-            }
-            return "Provide response in **English**.";
+            if (aiLanguage === 'cantonese') return "Response in Traditional Chinese (Cantonese). English for medical terms only.";
+            if (aiLanguage === 'lihkg') return "Response in Traditional Chinese with HK Slang (LIHKG style).";
+            return "Response in English.";
         }
-
-        // --- AI FEATURES ---
         async function askClinicalMentor() {
             const input = document.getElementById('ask-input').value; if(!input) return;
             const btn = document.getElementById('btn-ask-submit'); const box = document.getElementById('ask-response-box'); const readBtn = document.getElementById('btn-read-ask');
-            
-            btn.innerHTML = '<span class="loading-spinner"></span> Mentor Thinking...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = "Generating...";
-            
-            const prompt = `Role: Senior Clinical Nursing Educator. Input: "${input}". 
-            1. Explain Pathophysiology using **vivid analogies** with common treatments
-            2. Focus on "What nurse must DO/OBSERVE". 
-            3. Do not Use Tables, but use Bullet points to make it easy to read
-            4. Limit the reply to 10 - 20 sentences 
-            ${getRoleInstruction()}`;
-
-            try {
-                const content = await getAIResponse(prompt);
-                box.innerHTML = marked.parse(content);
-                btn.innerHTML = '💡 Ask Mentor'; btn.disabled = false; readBtn.style.display = 'block';
-            } catch (e) { 
-                console.error(e);
-                box.innerHTML = `Error: ${e.message}. Check Settings.`; btn.innerText = "Error"; btn.disabled = false; 
-            }
+            btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = "Generating...";
+            const prompt = `Role: Clinical Educator. Input: "${input}". 1. Pathophysiology analogy. 2. Nursing actions. Keep short. ${getRoleInstruction()}`;
+            try { const content = await getAIResponse(prompt); box.innerHTML = marked.parse(content); btn.innerHTML = '💡 Ask Mentor'; btn.disabled = false; readBtn.style.display = 'block'; } 
+            catch (e) { box.innerHTML = `Error: ${e.message}`; btn.disabled = false; }
         }
-
-        // --- UPDATED AI CASE STUDY FUNCTION ---
         async function getIntegratedCaseStudy(drugObj, boxId, btnId, readBtnId) {
             const btn = document.getElementById(btnId); const box = document.getElementById(boxId); const readBtn = document.getElementById(readBtnId);
-            btn.innerHTML = '<span class="loading-spinner"></span> Simulating Patient...'; btn.disabled = true; box.style.display = 'block';
-            
-            const prompt = `
-            Drug: ${drugObj.name} (${drugObj.class}).
-            Task: Create a detailed clinical case study.
-            
-            Structure Required:
-            1. limit the response to 10-20 sentences   
-            2. **Patient Profile**: Create a common patient for this drug (Age, Gender, History).
-            3. **Condition & Dosage**: Why are they taking this specific drug and what is the standard dosing regimen for this condition?
-            4. **Polypharmacy Context**: List 2-3 other drugs this patient is likely taking (co-morbidities) and potential interactions.
-            5. **Drug Differentiation**: Briefly explain how ${drugObj.name} differs from a similar drug in its class or drugs with similar functions (e.g. if it's Heparin, compare to Enoxaparin; if Atenolol, compare to Propranolol).
-            6. **Scenario**: A situation requiring nursing judgment and actions to check before and after admin this drug.
-            7. **Action**: What the nurse should do.
-
-            ${getRoleInstruction()}`;
-            
-            try {
-                const content = await getAIResponse(prompt);
-                box.innerHTML = marked.parse(content);
-                btn.innerHTML = '✅ Case Loaded'; readBtn.style.display = 'block';
-            } catch (e) { 
-                box.innerHTML = `Error: ${e.message}. Check Settings.`; btn.innerText = "Error"; btn.disabled = false; 
-            }
+            btn.innerHTML = '<span class="loading-spinner"></span> Simulating...'; btn.disabled = true; box.style.display = 'block';
+            const prompt = `Drug: ${drugObj.name}. Create clinical case study. Patient profile, indication, other meds, specific nursing action. ${getRoleInstruction()}`;
+            try { const content = await getAIResponse(prompt); box.innerHTML = marked.parse(content); btn.innerHTML = '✅ Case Loaded'; readBtn.style.display = 'block'; } 
+            catch (e) { box.innerHTML = `Error: ${e.message}`; btn.disabled = false; }
         }
-
         async function triggerQuizExplain() {
             const btn = document.getElementById('btn-quiz-explain'); const box = document.getElementById('ai-content'); const container = document.getElementById('ai-container'); const readBtn = document.getElementById('btn-read-explain');
             btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; btn.disabled = true; container.style.display = 'block'; box.innerHTML = 'Analyzing...';
-            
-            const prompt = `Explain quiz. 
-            Question: "${currentQuizData.q}" 
-            User Answered: "${currentQuizData.u}" 
-            Correct Answer: "${currentQuizData.correctAnswerText}" 
-            Drug Context: "${currentQuizData.c.name}" (${currentQuizData.c.class}). 
-            ${getRoleInstruction()} 
-            Markdown: 1. Why is "${currentQuizData.correctAnswerText}" correct? 2. Brief Nursing Tip.`;
-            
-            try {
-                const content = await getAIResponse(prompt);
-                box.innerHTML = marked.parse(content);
-                btn.innerHTML = '✅ Explained'; readBtn.style.display = 'block';
-            } catch (e) { box.innerHTML = `Error: ${e.message}.`; btn.innerText = "Error"; }
+            const prompt = `Explain quiz. Q: "${currentQuizData.q}". Answered: "${currentQuizData.u}". Correct: "${currentQuizData.correctAnswerText}". Drug: ${currentQuizData.c.name}. ${getRoleInstruction()}`;
+            try { const content = await getAIResponse(prompt); box.innerHTML = marked.parse(content); btn.innerHTML = '✅ Explained'; readBtn.style.display = 'block'; } 
+            catch (e) { box.innerHTML = `Error: ${e.message}`; }
         }
-
-        // --- QUIZ LOGIC (MIXED MODES) ---
         function resetQuizUI() {
-            document.getElementById('next-quiz-btn').style.display = 'none';
-            document.getElementById('ai-container').style.display = 'none';
-            document.getElementById('btn-read-explain').style.display = 'none';
-            document.getElementById('btn-quiz-explain').style.display = 'none';
-            document.getElementById('btn-quiz-explain').innerHTML = '🤖 Explain Why (AI Tutor)';
-            document.getElementById('btn-quiz-explain').disabled = false;
+            document.getElementById('next-quiz-btn').style.display = 'none'; document.getElementById('ai-container').style.display = 'none';
+            document.getElementById('btn-read-explain').style.display = 'none'; document.getElementById('btn-quiz-explain').style.display = 'none';
+            document.getElementById('btn-quiz-explain').innerHTML = '🤖 Explain Why'; document.getElementById('btn-quiz-explain').disabled = false;
         }
-
         function generateQuizQuestion() {
             resetQuizUI();
-            const container = document.getElementById('quiz-options');
-            const qEl = document.getElementById('quiz-question');
-            container.innerHTML = '';
-
+            const container = document.getElementById('quiz-options'); const qEl = document.getElementById('quiz-question'); container.innerHTML = '';
             if (drugList.length === 0) { qEl.innerText = "No drugs loaded."; return; }
             if (quizCurrentIndex >= drugList.length) { qEl.innerText = "Quiz Complete!"; return; }
-
             const correctDrug = drugList[quizCurrentIndex];
-            
-            // Randomize Question Type: 0=Indication->Name, 1=Class->Name, 2=Name->Indication, 3=Name->Class
             const qType = Math.floor(Math.random() * 4);
-            
-            let qText = "";
-            let correctText = "";
-            let optionType = ""; 
-
+            let qText = "", correctText = "", optionType = ""; 
             switch (qType) {
-                case 0: // Indication -> Drug
-                    qText = `Which drug is indicated for: "${correctDrug.indication}"?`;
-                    correctText = correctDrug.name;
-                    optionType = 'name';
-                    break;
-                case 1: // Class -> Drug
-                    qText = `Which drug belongs to the class: "${correctDrug.class}"?`;
-                    correctText = correctDrug.name;
-                    optionType = 'name';
-                    break;
-                case 2: // Drug -> Indication
-                    qText = `What is the primary indication for: "${correctDrug.name}"?`;
-                    correctText = correctDrug.indication;
-                    optionType = 'indication';
-                    break;
-                case 3: // Drug -> Class
-                    qText = `What is the drug class of: "${correctDrug.name}"?`;
-                    correctText = correctDrug.class;
-                    optionType = 'class';
-                    break;
+                case 0: qText = `Which drug is indicated for: "${correctDrug.indication}"?`; correctText = correctDrug.name; optionType = 'name'; break;
+                case 1: qText = `Which drug belongs to class: "${correctDrug.class}"?`; correctText = correctDrug.name; optionType = 'name'; break;
+                case 2: qText = `Primary indication for: "${correctDrug.name}"?`; correctText = correctDrug.indication; optionType = 'indication'; break;
+                case 3: qText = `Drug class of: "${correctDrug.name}"?`; correctText = correctDrug.class; optionType = 'class'; break;
             }
-
             qEl.innerText = qText;
-
-            // Generate Options - Filter out current correctness
             const otherDrugs = drugList.filter(d => d.name !== correctDrug.name);
             const shuffledOthers = otherDrugs.sort(() => Math.random() - 0.5);
-            
             let wrongOptions = [];
             for (let d of shuffledOthers) {
                 const text = d[optionType];
-                // Ensure unique options and not correct one
-                if (text && text !== correctText && !wrongOptions.includes(text)) {
-                    wrongOptions.push(text);
-                }
+                if (text && text !== correctText && !wrongOptions.includes(text)) { wrongOptions.push(text); }
                 if (wrongOptions.length === 3) break;
             }
-            
-            // Fallback if not enough unique options (rare)
             while(wrongOptions.length < 3) { wrongOptions.push("N/A"); }
-
-            let optionsArr = [correctText, ...wrongOptions];
-            optionsArr.sort(() => Math.random() - 0.5);
-
+            let optionsArr = [correctText, ...wrongOptions].sort(() => Math.random() - 0.5);
             optionsArr.forEach(optText => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.innerText = optText;
+                const btn = document.createElement('button'); btn.className = 'option-btn'; btn.innerText = optText;
                 btn.onclick = () => checkAnswer(btn, optText, correctText, correctDrug, qText);
                 container.appendChild(btn);
             });
         }
-        
         function checkAnswer(btn, selectedText, correctText, correctDrug, qText) {
-            const btns = document.querySelectorAll('.option-btn'); 
-            btns.forEach(b => b.onclick = null);
-            
+            const btns = document.querySelectorAll('.option-btn'); btns.forEach(b => b.onclick = null);
             let speakPhrase = "";
-            
-            if (selectedText === correctText) { 
-                btn.classList.add('correct');
-                speakPhrase = `Correct! ${correctDrug.name} is a ${correctDrug.class} indicated for ${correctDrug.indication}.`;
-            } else { 
-                btn.classList.add('wrong'); 
-                btns.forEach(b => { if(b.innerText === correctText) b.classList.add('correct'); });
-                speakPhrase = `Incorrect. The correct answer is ${correctText}. ${correctDrug.name} is a ${correctDrug.class}.`;
-            }
-            
+            if (selectedText === correctText) { btn.classList.add('correct'); speakPhrase = "Correct!"; } 
+            else { btn.classList.add('wrong'); btns.forEach(b => { if(b.innerText === correctText) b.classList.add('correct'); }); speakPhrase = "Incorrect."; }
             speakText(speakPhrase, 'en');
-            
-            document.getElementById('next-quiz-btn').style.display = 'block'; 
-            document.getElementById('btn-quiz-explain').style.display = 'block';
-            
+            document.getElementById('next-quiz-btn').style.display = 'block'; document.getElementById('btn-quiz-explain').style.display = 'block';
             currentQuizData = { q: qText, u: selectedText, c: correctDrug, correctAnswerText: correctText };
         }
-        
         function nextQuestion() { quizCurrentIndex++; generateQuizQuestion(); }
-
-        // --- UI SWITCHING ---
         function switchMode(mode) {
             document.getElementById('flashcard-section').style.display = 'none'; document.getElementById('quiz-section').style.display = 'none'; document.getElementById('ask-section').style.display = 'none';
-            document.getElementById('mode-flashcard').classList.remove('mode-active'); document.getElementById('mode-flashcard').classList.add('secondary');
-            document.getElementById('mode-quiz').classList.remove('mode-active'); document.getElementById('mode-quiz').classList.add('secondary');
-            document.getElementById('mode-ask').classList.remove('mode-active'); document.getElementById('mode-ask').classList.add('secondary');
+            document.getElementById('mode-flashcard').classList.remove('mode-active', 'secondary'); document.getElementById('mode-flashcard').classList.add('secondary');
+            document.getElementById('mode-quiz').classList.remove('mode-active', 'secondary'); document.getElementById('mode-quiz').classList.add('secondary');
+            document.getElementById('mode-ask').classList.remove('mode-active', 'secondary'); document.getElementById('mode-ask').classList.add('secondary');
             if (mode === 'flashcard') { document.getElementById('flashcard-section').style.display = 'block'; document.getElementById('mode-flashcard').classList.add('mode-active'); document.getElementById('mode-flashcard').classList.remove('secondary'); }
             else if (mode === 'quiz') { document.getElementById('quiz-section').style.display = 'block'; document.getElementById('mode-quiz').classList.add('mode-active'); document.getElementById('mode-quiz').classList.remove('secondary'); if(quizCurrentIndex === 0) generateQuizQuestion(); }
             else if (mode === 'ask') { document.getElementById('ask-section').style.display = 'block'; document.getElementById('mode-ask').classList.add('mode-active'); document.getElementById('mode-ask').classList.remove('secondary'); }
