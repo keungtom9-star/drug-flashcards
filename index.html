@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Drug Tutor (DeepSeek + LIHKG Default)</title>
     
     <link rel="icon" type="image/png" href="icon.png">
@@ -31,28 +31,22 @@
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
-        * {
-            -webkit-tap-highlight-color: transparent; /* iOS: Removes gray tap background */
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background);
             background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-size: 20px 20px; /* Subtle dot pattern */
             color: var(--text-main);
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            /* iOS Safe Area Support */
-            min-height: -webkit-fill-available;
             margin: 0;
-            padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)) 20px;
+            padding: 40px 20px;
             line-height: 1.6;
         }
 
-        /* --- Header & Logo --- */
+        /* Updated H1 to handle Image Alignment */
         h1 {
             color: var(--text-main);
             margin-bottom: 5px;
@@ -64,26 +58,25 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
-            flex-wrap: wrap; /* Allows wrapping on very small screens */
         }
 
+        /* Logo Styling */
         .app-logo {
-            height: 45px;
-            width: 45px;
-            min-width: 45px;
+            height: 45px;       /* Slightly smaller to fit text line */
+            width: 45px;        /* Force square aspect ratio */
+            min-width: 45px;    /* Prevents squishing on mobile */
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
             transition: transform 0.3s ease;
-        }
+            }
 
-        .app-logo:hover {
-            transform: rotate(10deg) scale(1.1);
-        }
-
+.app-logo:hover {
+    transform: rotate(10deg) scale(1.1); /* Adds a little interaction effect */
+}
         .subtitle {
             font-size: 0.9rem;
             color: var(--text-muted);
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             text-align: center;
             font-weight: 500;
             background: #e5e7eb;
@@ -91,44 +84,53 @@
             border-radius: 20px;
             display: inline-block;
         }
+        /* --- Notice Banner Styling --- */
+.notice-banner {
+    background-color: #fffbeb; /* Light Yellow background */
+    border: 1px solid #fcd34d; /* Yellow Border */
+    color: #92400e;            /* Dark Orange Text */
+    
+    /* Size & Spacing */
+    width: 100%;
+    max-width: 850px;          /* Same width as your buttons */
+    padding: 12px 20px;
+    margin-bottom: 20px;       /* Space below the notice */
+    border-radius: 12px;
+    box-sizing: border-box;    /* Ensures padding doesn't break layout */
+    
+    /* Layout: Puts image and text side-by-side */
+    display: flex;
+    align-items: center;
+    gap: 15px;                 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
 
-        /* --- Notice Banner --- */
-        .notice-banner {
-            background-color: #fffbeb;
-            border: 1px solid #fcd34d;
-            color: #92400e;
-            width: 100%;
-            max-width: 850px;
-            padding: 12px 20px;
-            margin-bottom: 20px;
-            border-radius: 12px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
+.notice-img {
+    height: 60px;              /* Controls the image size */
+    width: auto;               /* Keeps the aspect ratio correct */
+    object-fit: contain;
+    display: block;            /* Fixes alignment issues */
+}
 
-        .notice-img {
-            height: 48px;
-            width: auto;
-            object-fit: contain;
-            display: block;
-            flex-shrink: 0;
-        }
+.notice-text {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    font-weight: 500;
+}
 
-        .notice-text {
-            font-size: 0.95rem;
-            line-height: 1.4;
-            font-weight: 500;
-        }
-
+/* Mobile Tweak: Stack them if screen is very small */
+@media (max-width: 680px) {
+    .notice-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+}
         /* --- Controls --- */
         .top-bar {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             width: 100%;
             max-width: 850px;
             flex-wrap: wrap;
@@ -137,11 +139,10 @@
             border-radius: var(--radius);
             box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
-            box-sizing: border-box;
         }
 
         button {
-            padding: 10px 16px;
+            padding: 10px 18px;
             border: none;
             border-radius: 10px;
             cursor: pointer;
@@ -150,9 +151,7 @@
             font-size: 0.9rem;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 6px;
-            touch-action: manipulation; /* Improves touch response */
         }
 
         button:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -180,7 +179,7 @@
         #settings-panel {
             display: none;
             background: var(--surface);
-            padding: 20px;
+            padding: 30px;
             border-radius: var(--radius);
             box-shadow: var(--shadow-lg);
             margin-bottom: 30px;
@@ -193,21 +192,13 @@
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .settings-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-main); }
-        
         .settings-input, select {
-            width: 100%; 
-            padding: 12px;
-            border: 1px solid #d1d5db; 
-            border-radius: 8px;
-            margin-bottom: 15px; 
-            box-sizing: border-box;
-            font-family: inherit; 
-            font-size: 16px; /* PREVENTS IOS ZOOM */
+            width: 100%; padding: 10px 12px;
+            border: 1px solid #d1d5db; border-radius: 8px;
+            margin-bottom: 15px; box-sizing: border-box;
+            font-family: inherit; font-size: 0.95rem;
             transition: border-color 0.2s;
-            background-color: #fff;
-            appearance: none; /* Modern UI for selects */
         }
-        
         .settings-input:focus, select:focus { border-color: var(--primary); outline: 3px solid #e0e7ff; }
         
         /* Cloud Import Styling */
@@ -218,20 +209,15 @@
             background: #f9fafb;
             margin-bottom: 15px;
         }
-        .url-input-group { display: flex; gap: 8px; flex-wrap: wrap; }
-        .url-input-group input { flex-grow: 1; margin-bottom: 0; }
+        .url-input-group { display: flex; gap: 8px; }
+        .url-input-group input { flex-grow: 1; }
 
         /* --- Main Container --- */
         #app-container { width: 100%; max-width: 650px; perspective: 1000px; }
 
         /* --- Flashcards --- */
         .flashcard-container {
-            width: 100%; 
-            /* Responsive Height Logic */
-            height: 60vh;
-            min-height: 450px;
-            max-height: 700px;
-            
+            width: 100%; height: 650px;
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
@@ -250,23 +236,19 @@
             padding: 30px; box-sizing: border-box;
             text-align: center;
             border: 1px solid rgba(0,0,0,0.02);
-            -webkit-backface-visibility: hidden; /* Safari Fix */
         }
 
         .card-front {
             background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
-            z-index: 2;
         }
 
         .card-back {
             transform: rotateY(180deg);
             align-items: flex-start; text-align: left;
-            overflow-y: auto; 
-            padding-top: 25px;
-            -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+            overflow-y: auto; padding-top: 25px;
         }
         
-        /* Custom Scrollbar */
+        /* Custom Scrollbar for Card Back */
         .card-back::-webkit-scrollbar { width: 6px; }
         .card-back::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
 
@@ -276,7 +258,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin: 15px 0;
-            word-wrap: break-word; /* Prevents long names breaking layout */
         }
 
         .detail-row {
@@ -293,25 +274,22 @@
 
         /* --- Quiz & Ask Sections --- */
         .quiz-container, #ask-section {
-            background: var(--surface); padding: 25px;
+            background: var(--surface); padding: 30px;
             border-radius: var(--radius);
             box-shadow: var(--shadow-lg);
             border: 1px solid #e5e7eb;
             display: none;
-            width: 100%;
-            box-sizing: border-box;
         }
 
-        .quiz-question { font-size: 1.25rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
+        .quiz-question { font-size: 1.3rem; font-weight: 700; margin-bottom: 25px; color: var(--text-main); }
         .option-btn {
             background-color: #f9fafb; color: var(--text-main);
             text-align: left; border: 1px solid #e5e7eb;
-            padding: 14px 18px; border-radius: 12px;
+            padding: 16px 20px; border-radius: 12px;
             transition: all 0.2s; font-size: 1rem;
             margin-bottom: 10px;
             width: 100%;
             cursor: pointer;
-            white-space: normal; /* Allow text wrap */
         }
         .option-btn:hover { border-color: var(--primary); background-color: #eef2ff; }
         .option-btn.correct { background-color: #ecfdf5; border-color: var(--secondary); color: #065f46; }
@@ -319,21 +297,20 @@
 
         /* --- AI Boxes & Ask --- */
         .ask-textarea { 
-            width: 100%; height: 120px; padding: 15px; 
+            width: 100%; height: 100px; padding: 15px; 
             border: 1px solid #d1d5db; border-radius: 12px; 
-            font-size: 16px; /* iOS Zoom Fix */
-            margin-bottom: 15px; 
+            font-size: 1rem; margin-bottom: 15px; 
             box-sizing: border-box; resize: vertical; 
             font-family: inherit;
         }
         .ask-textarea:focus { border-color: var(--primary); outline: 3px solid #e0e7ff; }
 
-        .btn-ask-submit { background-color: var(--accent); width: 100%; font-size: 1rem; justify-content: center; color: white;}
+        .btn-ask-submit { background-color: var(--accent); width: 100%; font-size: 1rem; justify-content: center; }
         .ask-header { font-weight: 800; color: var(--accent); margin-bottom: 10px; font-size: 1.2rem; }
 
         .ai-btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; width: 100%; }
-        .ai-btn-small { font-size: 0.9rem; padding: 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; white-space: normal; }
-        .btn-sim { background-color: var(--secondary); color: white;}
+        .ai-btn-small { font-size: 0.9rem; padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; }
+        .btn-sim { background-color: var(--secondary); }
         .btn-explain { background-color: var(--primary); color: white; width: 100%; margin-top: 20px; display: none; justify-content: center;}
 
         .ai-output-box {
@@ -345,7 +322,6 @@
             display: none;
             width: 100%;
             box-sizing: border-box;
-            overflow-wrap: break-word; /* Prevent overflow */
         }
         #ask-response-box { background: #fff1f2; border-left-color: var(--accent); }
         
@@ -360,7 +336,6 @@
             justify-content: space-between; width: 100%;
             background: white; padding: 10px;
             border-radius: 50px; box-shadow: var(--shadow-md);
-            box-sizing: border-box;
         }
         .nav-controls button {
             border-radius: 40px;
@@ -379,24 +354,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* --- MOBILE MEDIA QUERIES --- */
-        @media (max-width: 480px) {
-            h1 { font-size: 1.6rem; gap: 10px; }
-            .app-logo { width: 35px; height: 35px; min-width: 35px; }
-            .top-bar { padding: 10px; gap: 8px; }
-            button { padding: 8px 12px; font-size: 0.85rem; width: 100%; justify-content: center; }
-            .top-bar button { width: 48%; /* 2 buttons per row */ }
-            
-            .notice-banner { flex-direction: column; text-align: center; }
-            .notice-img { margin-bottom: 5px; }
-            
-            .flashcard-container { min-height: 400px; height: 65vh; }
-            .card-title { font-size: 1.5rem; }
-            .card-face { padding: 20px; }
-            
-            .nav-controls button { padding: 10px 16px; font-size: 0.9rem; }
-        }
     </style>
 </head>
 <body>
@@ -415,7 +372,7 @@
     <img src="notice.png" alt="Notice Icon" class="notice-img" onerror="this.style.display='none'">
     
     <span class="notice-text">
-        <strong>📢 祝福聲想你都聽到</strong>
+        <strong>📢 祝福聲想妳都聽到
     </span>
 </div>
     <div class="top-bar">
@@ -439,7 +396,7 @@
                 <option value="">Default System Voice</option>
             </select>
             <div style="font-size: 0.75rem; color:#666; margin-top:4px;">Tip: Select "Enhanced" voices for better quality.</div>
-            <button onclick="testVoice()" style="margin-top:5px; font-size:0.8rem; padding:5px 10px; width: auto;">🔊 Test Voice</button>
+            <button onclick="testVoice()" style="margin-top:5px; font-size:0.8rem; padding:5px 10px;">🔊 Test Voice</button>
         </div>
 
         <div class="settings-group">
@@ -463,7 +420,7 @@
             <div class="import-wrapper">
                 <div class="url-input-group">
                     <input type="text" id="sheet-url" class="settings-input" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-bottom:0;" />
-                    <button onclick="fetchSheetData()" style="padding: 10px 15px; width: auto;">Load</button>
+                    <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load</button>
                 </div>
                 <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary); font-weight:bold;"></div>
             </div>
@@ -478,7 +435,7 @@
             </div>
         </div>
 
-        <button onclick="saveSettings()" style="width:100%; background-color: var(--secondary); color: white;">💾 Save & Close</button>
+        <button onclick="saveSettings()" style="width:100%; background-color: var(--secondary);">💾 Save & Close</button>
     </div>
 
     <div id="app-container">
@@ -489,7 +446,7 @@
                     <div style="font-size: 3.5rem; margin-bottom: 20px;">💊</div>
                     <h2 id="fc-name" class="card-title">Drug Name</h2>
                     <p style="color: #9ca3af; font-size: 0.9rem;">(Tap to flip)</p>
-                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name, 'en')" style="margin-top: 20px; background:#e0e7ff; color:var(--primary); width:auto;">🔊 Read Name</button>
+                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name, 'en')" style="margin-top: 20px; background:#e0e7ff; color:var(--primary);">🔊 Read Name</button>
                 </div>
                 <div class="card-face card-back">
                     <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class">...</div></div>
