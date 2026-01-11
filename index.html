@@ -62,17 +62,17 @@
 
         /* Logo Styling */
         .app-logo {
-            height: 45px;       /* Slightly smaller to fit text line */
-            width: 45px;        /* Force square aspect ratio */
-            min-width: 45px;    /* Prevents squishing on mobile */
+            height: 45px;        /* Slightly smaller to fit text line */
+            width: 45px;         /* Force square aspect ratio */
+            min-width: 45px;     /* Prevents squishing on mobile */
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
             transition: transform 0.3s ease;
             }
 
-.app-logo:hover {
-    transform: rotate(10deg) scale(1.1); /* Adds a little interaction effect */
-}
+        .app-logo:hover {
+            transform: rotate(10deg) scale(1.1); /* Adds a little interaction effect */
+        }
         .subtitle {
             font-size: 0.9rem;
             color: var(--text-muted);
@@ -85,52 +85,53 @@
             display: inline-block;
         }
         /* --- Notice Banner Styling --- */
-.notice-banner {
-    background-color: #fffbeb; /* Light Yellow background */
-    border: 1px solid #fcd34d; /* Yellow Border */
-    color: #92400e;            /* Dark Orange Text */
-    
-    /* Size & Spacing */
-    width: 100%;
-    max-width: 850px;          /* Same width as your buttons */
-    padding: 12px 20px;
-    margin-bottom: 20px;       /* Space below the notice */
-    border-radius: 12px;
-    box-sizing: border-box;    /* Ensures padding doesn't break layout */
-    
-    /* Layout: Puts image and text side-by-side */
-    display: flex;
-    align-items: center;
-    gap: 15px;                 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
+        .notice-banner {
+            background-color: #fffbeb; /* Light Yellow background */
+            border: 1px solid #fcd34d; /* Yellow Border */
+            color: #92400e;            /* Dark Orange Text */
+            
+            /* Size & Spacing */
+            width: 100%;
+            max-width: 850px;       /* Same width as your buttons */
+            padding: 12px 20px;
+            margin-bottom: 20px;       /* Space below the notice */
+            border-radius: 12px;
+            box-sizing: border-box;    /* Ensures padding doesn't break layout */
+            
+            /* Layout: Puts image and text side-by-side */
+            display: flex;
+            align-items: center;
+            gap: 15px;                  
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
 
-.notice-img {
-    height: 60px;              /* Controls the image size */
-    width: auto;               /* Keeps the aspect ratio correct */
-    object-fit: contain;
-    display: block;            /* Fixes alignment issues */
-}
+        .notice-img {
+            height: 60px;              /* Controls the image size */
+            width: auto;               /* Keeps the aspect ratio correct */
+            object-fit: contain;
+            display: block;            /* Fixes alignment issues */
+        }
 
-.notice-text {
-    font-size: 0.95rem;
-    line-height: 1.4;
-    font-weight: 500;
-}
+        .notice-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            font-weight: 500;
+        }
 
-/* Mobile Tweak: Stack them if screen is very small */
-@media (max-width: 680px) {
-    .notice-banner {
-        flex-direction: column;
-        text-align: center;
-    }
-}
+        /* Mobile Tweak: Stack them if screen is very small */
+        @media (max-width: 680px) {
+            .notice-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+        
         /* --- Controls --- */
         .top-bar {
             display: flex;
             gap: 12px;
             justify-content: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             width: 100%;
             max-width: 850px;
             flex-wrap: wrap;
@@ -139,6 +140,40 @@
             border-radius: var(--radius);
             box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
+        }
+
+        /* --- Search Bar Styling --- */
+        .search-wrapper {
+            width: 100%;
+            max-width: 650px; /* Matches app-container */
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            padding-left: 45px; /* Space for icon */
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+            font-size: 1rem;
+            box-shadow: var(--shadow-sm);
+            box-sizing: border-box;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            outline: none;
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 1.2rem;
+            pointer-events: none;
         }
 
         button {
@@ -272,8 +307,8 @@
         }
         .detail-content { font-size: 1rem; color: var(--text-main); font-weight: 500; }
 
-        /* --- Quiz & Ask Sections --- */
-        .quiz-container, #ask-section {
+        /* --- Quiz Section --- */
+        .quiz-container {
             background: var(--surface); padding: 30px;
             border-radius: var(--radius);
             box-shadow: var(--shadow-lg);
@@ -295,19 +330,7 @@
         .option-btn.correct { background-color: #ecfdf5; border-color: var(--secondary); color: #065f46; }
         .option-btn.wrong { background-color: #fef2f2; border-color: var(--accent); color: #991b1b; }
 
-        /* --- AI Boxes & Ask --- */
-        .ask-textarea { 
-            width: 100%; height: 100px; padding: 15px; 
-            border: 1px solid #d1d5db; border-radius: 12px; 
-            font-size: 1rem; margin-bottom: 15px; 
-            box-sizing: border-box; resize: vertical; 
-            font-family: inherit;
-        }
-        .ask-textarea:focus { border-color: var(--primary); outline: 3px solid #e0e7ff; }
-
-        .btn-ask-submit { background-color: var(--accent); width: 100%; font-size: 1rem; justify-content: center; }
-        .ask-header { font-weight: 800; color: var(--accent); margin-bottom: 10px; font-size: 1.2rem; }
-
+        /* --- AI Boxes --- */
         .ai-btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; width: 100%; }
         .ai-btn-small { font-size: 0.9rem; padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; }
         .btn-sim { background-color: var(--secondary); }
@@ -323,7 +346,6 @@
             width: 100%;
             box-sizing: border-box;
         }
-        #ask-response-box { background: #fff1f2; border-left-color: var(--accent); }
         
         .ai-output-box h3 { margin: 15px 0 8px 0; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; font-weight: 800; }
         .ai-output-box ul { padding-left: 20px; margin: 8px 0; }
@@ -375,16 +397,20 @@
         <strong>📢 祝福聲想妳都聽到
     </span>
 </div>
+    
     <div class="top-bar">
         <button id="mode-flashcard" class="mode-active" onclick="switchMode('flashcard')">Flashcards</button>
         <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz</button>
-        <button id="mode-ask" class="secondary" onclick="switchMode('ask')">Clinical Ask</button>
-        
         <button onclick="toggleDrugSet()" id="set-btn" class="secondary">📚 Set: Common</button>
         <button onclick="reshuffle()" style="background-color: #f59e0b;">Reset</button>
         <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg">🌐 Lang: LIHKG Mode</button>
         <button onclick="toggleMute()" id="mute-btn" class="secondary">🔊 Audio: On</button>
         <button onclick="toggleSettings()" class="secondary">⚙️ Settings</button>
+    </div>
+
+    <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" class="search-input" placeholder="Search drug name, brand, or content..." oninput="handleSearch()">
     </div>
 
     <div id="settings-panel">
@@ -485,16 +511,7 @@
             </div>
         </div>
 
-        <div id="ask-section">
-            <div class="ask-header">👩‍⚕️ Clinical Mentor (Bedside Teaching)</div>
-            <p style="font-size:0.9rem; color:#666; margin-bottom: 20px;">Enter a scenario/question. I will explain using analogies, nursing priorities & mnemonics.</p>
-            <textarea id="ask-input" class="ask-textarea" placeholder="e.g. Patient on Digoxin with pulse 52. What to do?"></textarea>
-            <button onclick="askClinicalMentor()" class="btn-ask-submit" id="btn-ask-submit">💡 Ask Mentor</button>
-            <div id="ask-response-box" class="ai-output-box"></div>
-            <button onclick="readAIContent('ask-response-box')" class="btn-read-ai" id="btn-read-ask">🔊 Read Out Loud</button>
         </div>
-
-    </div>
 
     <script src="drugs.js"></script>
     <script src="prompts.js"></script>
@@ -578,6 +595,43 @@
             populateVoiceList();
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+        }
+
+        // --- SEARCH FUNCTIONALITY ---
+        function handleSearch() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            
+            if (!query) {
+                // If search is cleared, we want to restore the list. 
+                // We restart with the active source list (ordered as per data source).
+                flashcardList = [...activeSourceList];
+            } else {
+                flashcardList = activeSourceList.filter(item => {
+                    // 1. Check Name (Also covers "one of the drugs in the cell" if name has semicolons)
+                    const nameMatch = item.name && item.name.toLowerCase().includes(query);
+                    
+                    // 2. Check Brand Name (if the property exists in the CSV/Data)
+                    const brandMatch = item.brandname && item.brandname.toLowerCase().includes(query);
+                    
+                    return nameMatch || brandMatch;
+                });
+            }
+            
+            fcCurrentIndex = 0;
+            
+            // Handle Case: No results found
+            if(flashcardList.length === 0) {
+                // Temporary dummy card for "No Results"
+                document.getElementById('flashcard-section').style.display = 'block';
+                document.getElementById('fc-name').innerText = "No Results Found";
+                document.getElementById('fc-class').innerText = "-";
+                document.getElementById('fc-indication').innerText = "-";
+                document.getElementById('fc-SideEffects').innerText = "-";
+                document.getElementById('fc-nursing').innerText = "-";
+                document.getElementById('counter').innerText = "0 / 0";
+            } else {
+                renderCard();
             }
         }
 
@@ -729,6 +783,9 @@
 
         function reshuffle() {
             if(!activeSourceList || activeSourceList.length === 0) return;
+            
+            // Clear Search input when resetting
+            document.getElementById('search-input').value = "";
             
             // 1. Prepare Flashcard List (RAW DATA)
             flashcardList = [...activeSourceList];
@@ -887,25 +944,6 @@
         }
 
         // --- AI FEATURES ---
-        async function askClinicalMentor() {
-            const input = document.getElementById('ask-input').value; if(!input) return;
-            const btn = document.getElementById('btn-ask-submit'); const box = document.getElementById('ask-response-box'); const readBtn = document.getElementById('btn-read-ask');
-            
-            btn.innerHTML = '<span class="loading-spinner"></span> Mentor Thinking...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = "Generating...";
-            
-            // Calling function from prompts.js
-            const prompt = getMentorPrompt(input, aiLanguage);
-
-            try {
-                const content = await getAIResponse(prompt);
-                box.innerHTML = marked.parse(content);
-                btn.innerHTML = '💡 Ask Mentor'; btn.disabled = false; readBtn.style.display = 'block';
-            } catch (e) { 
-                console.error(e);
-                box.innerHTML = `Error: ${e.message}. Check Settings.`; btn.innerText = "Error"; btn.disabled = false; 
-            }
-        }
-
         async function getIntegratedCaseStudy(drugObj, boxId, btnId, readBtnId) {
             const btn = document.getElementById(btnId); const box = document.getElementById(boxId); const readBtn = document.getElementById(readBtnId);
             btn.innerHTML = '<span class="loading-spinner"></span> Simulating Patient...'; btn.disabled = true; box.style.display = 'block';
@@ -1064,13 +1102,12 @@
 
         // --- UI SWITCHING ---
         function switchMode(mode) {
-            document.getElementById('flashcard-section').style.display = 'none'; document.getElementById('quiz-section').style.display = 'none'; document.getElementById('ask-section').style.display = 'none';
+            document.getElementById('flashcard-section').style.display = 'none'; document.getElementById('quiz-section').style.display = 'none';
             document.getElementById('mode-flashcard').classList.remove('mode-active'); document.getElementById('mode-flashcard').classList.add('secondary');
             document.getElementById('mode-quiz').classList.remove('mode-active'); document.getElementById('mode-quiz').classList.add('secondary');
-            document.getElementById('mode-ask').classList.remove('mode-active'); document.getElementById('mode-ask').classList.add('secondary');
+            
             if (mode === 'flashcard') { document.getElementById('flashcard-section').style.display = 'block'; document.getElementById('mode-flashcard').classList.add('mode-active'); document.getElementById('mode-flashcard').classList.remove('secondary'); }
             else if (mode === 'quiz') { document.getElementById('quiz-section').style.display = 'block'; document.getElementById('mode-quiz').classList.add('mode-active'); document.getElementById('mode-quiz').classList.remove('secondary'); if(quizCurrentIndex === 0) generateQuizQuestion(); }
-            else if (mode === 'ask') { document.getElementById('ask-section').style.display = 'block'; document.getElementById('mode-ask').classList.add('mode-active'); document.getElementById('mode-ask').classList.remove('secondary'); }
             window.speechSynthesis.cancel();
         }
 
