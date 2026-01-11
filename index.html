@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor (DeepSeek + LIHKG Default)</title>
+    <title>AI Drug Tutor</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -94,14 +94,14 @@
             width: 100%;
             max-width: 850px;       /* Same width as your buttons */
             padding: 12px 20px;
-            margin-bottom: 20px;       /* Space below the notice */
+            margin-bottom: 20px;        /* Space below the notice */
             border-radius: 12px;
             box-sizing: border-box;    /* Ensures padding doesn't break layout */
             
             /* Layout: Puts image and text side-by-side */
             display: flex;
             align-items: center;
-            gap: 15px;                  
+            gap: 15px;                   
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
@@ -175,6 +175,7 @@
         button.lang-lihkg { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: white; }
         button.set-extended { background-color: #7c3aed; color: white; }
         button.muted { background-color: var(--accent); color: white; }
+        button.auto-read-on { background-color: #0ea5e9; color: white; border:none; }
 
         /* --- Settings Panel --- */
         #settings-panel {
@@ -395,7 +396,7 @@
         <path d="M16 32H48" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="42" cy="22" r="6" fill="#10B981" stroke="#4F46E5" stroke-width="2"/>
     </svg>
-    Integrated Drug Sim
+    Integrated Drug
 </h1>
     <div class="subtitle" id="provider-display">Provider: Not Configured</div>
     <div class="notice-banner">
@@ -421,7 +422,8 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                  <button onclick="toggleDrugSet()" id="set-btn" class="secondary" style="width:100%; font-size:0.85rem;">📚 Set: Common</button>
                  <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; font-size:0.85rem;">🌐 Lang: LIHKG</button>
-                 <button onclick="toggleMute()" id="mute-btn" class="secondary" style="grid-column: span 2; width:100%;">🔊 Audio: On</button>
+                 <button onclick="toggleAutoRead()" id="autoread-btn" class="secondary" style="width:100%; font-size:0.85rem;">🗣️ Auto-Speak: Off</button>
+                 <button onclick="toggleMute()" id="mute-btn" class="secondary" style="width:100%;">🔊 Audio: On</button>
             </div>
         </div>
 
@@ -439,15 +441,19 @@
         <div class="settings-group">
             <label class="settings-label">Select Active AI Provider:</label>
             <select id="provider-select" onchange="updateProviderDisplay()">
-                <option value="deepseek" selected>DeepSeek Official</option>
+                <option value="deepseek">DeepSeek Official</option>
+                <option value="gemini" selected>Google Gemini (Flash)</option>
                 <option value="openrouter">OpenRouter (Xiaomi/Free)</option>
             </select>
             
-            <label class="settings-label">OpenRouter API Key (sk-or...):</label>
-            <input type="password" id="openrouter-key" class="settings-input" placeholder="Enter OpenRouter Key" />
-            
+            <label class="settings-label">Google Gemini API Key:</label>
+            <input type="password" id="gemini-key" class="settings-input" placeholder="Enter Gemini Key (AI Studio)" />
+
             <label class="settings-label">DeepSeek API Key (sk-...):</label>
             <input type="password" id="deepseek-key" class="settings-input" placeholder="Enter DeepSeek Key" />
+            
+            <label class="settings-label">OpenRouter API Key (sk-or...):</label>
+            <input type="password" id="openrouter-key" class="settings-input" placeholder="Enter OpenRouter Key" />
         </div>
 
         <div class="settings-group">
@@ -537,11 +543,14 @@
 
     <script>
         // --- CONFIGURATION STATE ---
-        let currentProvider = 'deepseek'; 
+        let currentProvider = 'gemini'; 
         let openRouterKey = ""; 
         let deepSeekKey = "sk-92db3cf721454bd7b351ca6ef40eaaf7";
+        let geminiKey = "";
+        
         let selectedVoiceURI = ""; 
         let isMuted = false;
+        let isAutoRead = false; // New Auto-Read State
 
         let aiLanguage = 'lihkg'; 
         
@@ -589,6 +598,9 @@
             
             const savedDS = localStorage.getItem('ds_key');
             if(savedDS) deepSeekKey = savedDS;
+
+            const savedGemini = localStorage.getItem('gemini_key');
+            if(savedGemini) geminiKey = savedGemini;
             
             const savedProv = localStorage.getItem('active_provider');
             if(savedProv) currentProvider = savedProv;
@@ -598,6 +610,7 @@
 
             document.getElementById('openrouter-key').value = openRouterKey;
             document.getElementById('deepseek-key').value = deepSeekKey;
+            document.getElementById('gemini-key').value = geminiKey;
             document.getElementById('provider-select').value = currentProvider;
             
             document.getElementById('sheet-url').value = defaultSheetUrl;
@@ -718,11 +731,13 @@
         function saveSettings() {
             const orInput = document.getElementById('openrouter-key').value.trim();
             const dsInput = document.getElementById('deepseek-key').value.trim();
+            const geminiInput = document.getElementById('gemini-key').value.trim();
             const provInput = document.getElementById('provider-select').value;
             const voiceInput = document.getElementById('voice-select').value;
 
             if(orInput) { openRouterKey = orInput; localStorage.setItem('or_key', orInput); }
             if(dsInput) { deepSeekKey = dsInput; localStorage.setItem('ds_key', dsInput); }
+            if(geminiInput) { geminiKey = geminiInput; localStorage.setItem('gemini_key', geminiInput); }
             
             currentProvider = provInput;
             localStorage.setItem('active_provider', currentProvider);
@@ -737,6 +752,7 @@
         function updateProviderDisplay() {
             const display = document.getElementById('provider-display');
             if(currentProvider === 'openrouter') display.innerText = "Provider: OpenRouter (Xiaomi/Free)";
+            else if (currentProvider === 'gemini') display.innerText = "Provider: Google Gemini (Flash)";
             else display.innerText = "Provider: DeepSeek Official";
         }
 
@@ -815,6 +831,22 @@
             }
         }
 
+        // New Auto Read Toggle
+        function toggleAutoRead() {
+            isAutoRead = !isAutoRead;
+            const btn = document.getElementById('autoread-btn');
+            if(isAutoRead) {
+                btn.innerText = "🗣️ Auto-Speak: ON";
+                btn.classList.add('auto-read-on');
+                btn.classList.remove('secondary');
+            } else {
+                btn.innerText = "🗣️ Auto-Speak: Off";
+                btn.classList.remove('auto-read-on');
+                btn.classList.add('secondary');
+            }
+        }
+
+        // UPDATED: Enhanced Text-to-Speech with Chunking for long AI responses
         function speakText(text, langCode = 'en', forceSelected = false) {
             if (isMuted) return; 
             
@@ -824,33 +856,42 @@
             if ((aiLanguage === 'cantonese' || aiLanguage === 'lihkg') && langCode !== 'en') { 
                 targetLang = 'zh-HK'; 
             }
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = targetLang;
-            utterance.rate = 0.95;
-            
-            const voices = window.speechSynthesis.getVoices();
-            
-            if (selectedVoiceURI && !forceSelected) {
-                const preferred = voices.find(v => v.voiceURI === selectedVoiceURI);
-                if(preferred) utterance.voice = preferred;
-            } 
-            else if (voices.length > 0) {
-                 const bestMatch = voices.find(v => v.lang.includes(targetLang) && (v.name.includes("Enhanced") || v.name.includes("Siri")));
-                 const anyMatch = voices.find(v => v.lang.includes(targetLang));
-                 
-                 if(bestMatch) utterance.voice = bestMatch;
-                 else if(anyMatch) utterance.voice = anyMatch;
-            }
-            
-            if(forceSelected) {
-                const select = document.getElementById('voice-select');
-                const testURI = select.value;
-                const testVoice = voices.find(v => v.voiceURI === testURI);
-                if(testVoice) utterance.voice = testVoice;
-            }
 
-            window.speechSynthesis.speak(utterance);
+            // CHUNKING: Split text by sentence to prevent browser TTS timeout on long AI responses
+            // Regex splits by period, exclamation, question mark, but keeps the punctuation
+            const matchRegex = /[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g;
+            const sentences = text.match(matchRegex) || [text];
+
+            sentences.forEach((sentence) => {
+                const utterance = new SpeechSynthesisUtterance(sentence.trim());
+                utterance.lang = targetLang;
+                utterance.rate = 0.95;
+                
+                // --- Voice Selection Logic ---
+                const voices = window.speechSynthesis.getVoices();
+                if (selectedVoiceURI && !forceSelected) {
+                    const preferred = voices.find(v => v.voiceURI === selectedVoiceURI);
+                    if(preferred) utterance.voice = preferred;
+                } 
+                else if (voices.length > 0) {
+                    // Try to find Enhanced or Siri voices for better quality
+                    const bestMatch = voices.find(v => v.lang.includes(targetLang) && (v.name.includes("Enhanced") || v.name.includes("Siri")));
+                    const anyMatch = voices.find(v => v.lang.includes(targetLang));
+                    
+                    if(bestMatch) utterance.voice = bestMatch;
+                    else if(anyMatch) utterance.voice = anyMatch;
+                }
+                
+                if(forceSelected) {
+                    const select = document.getElementById('voice-select');
+                    const testURI = select.value;
+                    const testVoice = voices.find(v => v.voiceURI === testURI);
+                    if(testVoice) utterance.voice = testVoice;
+                }
+                
+                // Queue the sentence
+                window.speechSynthesis.speak(utterance);
+            });
         }
 
         // --- CARD LOGIC ---
@@ -913,10 +954,38 @@
             return data.choices[0].message.content;
         }
 
+        async function callGeminiAPI(prompt) {
+            if(!geminiKey) throw new Error("Gemini Key Missing");
+            // Uses gemini-1.5-flash as the stable Flash model
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+            
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+            
+            if(!response.ok) throw new Error("Gemini API Error: " + response.statusText);
+            const data = await response.json();
+            
+            if(data.candidates && data.candidates.length > 0) {
+                return data.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("No candidates in Gemini response");
+            }
+        }
+
         async function getAIResponse(prompt) {
+            // Messages array for standard OpenAI-compatible APIs
             const messages = [{ role: "user", content: prompt }];
+            
             if(currentProvider === 'deepseek') {
                 return await callDeepSeekAPI(messages);
+            } else if(currentProvider === 'gemini') {
+                // Gemini API takes raw text prompt structure differently
+                return await callGeminiAPI(prompt);
             } else {
                 return await callOpenRouterAPI(messages);
             }
@@ -934,6 +1003,11 @@
                 const content = await getAIResponse(prompt);
                 box.innerHTML = marked.parse(content);
                 btn.innerHTML = '✅ Case Loaded'; readBtn.style.display = 'block';
+                
+                // AUTO READ CHECK
+                if(isAutoRead) {
+                    readAIContent(boxId);
+                }
             } catch (e) { 
                 box.innerHTML = `Error: ${e.message}. Check Settings.`; btn.innerText = "Error"; btn.disabled = false; 
             }
@@ -950,6 +1024,11 @@
                 const content = await getAIResponse(prompt);
                 box.innerHTML = marked.parse(content);
                 btn.innerHTML = '✅ Explained'; readBtn.style.display = 'block';
+                
+                // AUTO READ CHECK
+                if(isAutoRead) {
+                    readAIContent('ai-content');
+                }
             } catch (e) { box.innerHTML = `Error: ${e.message}.`; btn.innerText = "Error"; }
         }
 
