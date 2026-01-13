@@ -62,9 +62,9 @@
 
         /* Logo Styling */
         .app-logo {
-            height: 45px;        /* Slightly smaller to fit text line */
-            width: 45px;         /* Force square aspect ratio */
-            min-width: 45px;     /* Prevents squishing on mobile */
+            height: 45px;       /* Slightly smaller to fit text line */
+            width: 45px;        /* Force square aspect ratio */
+            min-width: 45px;    /* Prevents squishing on mobile */
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
             transition: transform 0.3s ease;
@@ -402,7 +402,7 @@
     <img src="notice.png" alt="Notice Icon" class="notice-img" onerror="this.style.display='none'">
     
     <span class="notice-text">
-        <strong>📢 祝福聲想妳都聽到
+        <strong>📢 May every whispered wish reach you on the breeze.
     </span>
 </div>
     
@@ -953,13 +953,11 @@
             } catch (e) { box.innerHTML = `Error: ${e.message}.`; btn.innerText = "Error"; }
         }
 
-        // --- SEARCH LOGIC (Updated with AI Fallback) ---
+        // --- SEARCH LOGIC ---
         function handleSearch() {
             const input = document.getElementById('search-input');
             const query = input.value.toLowerCase().trim();
             const container = document.getElementById('search-results');
-            
-            // Clear previous results
             container.innerHTML = '';
 
             if(query.length === 0) {
@@ -967,14 +965,18 @@
                 return;
             }
 
-            // 1. Local Search by Name or Class
+            // Search by Name (Brand/Generic) or Class
             const matches = activeSourceList.filter(d => {
                 const nameMatch = (d.name || '').toLowerCase().includes(query);
                 const classMatch = (d.class || '').toLowerCase().includes(query);
                 return nameMatch || classMatch;
             });
 
-            // 2. Render Local Results
+            if(matches.length === 0) {
+                 container.innerHTML = '<div style="text-align:center; color:#9ca3af; margin-top:20px;">No drugs found. Try a generic name or class.</div>';
+                 return;
+            }
+
             matches.forEach(drug => {
                 const div = document.createElement('div');
                 div.className = 'result-card';
@@ -990,99 +992,139 @@
                         <button onclick="event.stopPropagation(); speakText('${drug.name}. ${drug.class}.', 'en')" style="margin-top:10px; padding:5px 10px; font-size:0.8rem; background:#f3f4f6; border:1px solid #d1d5db;">🔊 Speak Name</button>
                     </div>
                 `;
-                div.onclick = () => { div.classList.toggle('expanded'); };
+                div.onclick = () => {
+                    // Toggle Expansion
+                    div.classList.toggle('expanded');
+                };
                 container.appendChild(div);
             });
-
-            // 3. If No Local Results -> Show AI Search Option
-            if(matches.length === 0) {
-                const noResultDiv = document.createElement('div');
-                noResultDiv.innerHTML = `
-                    <div style="text-align:center; color:#6b7280; margin-bottom:15px;">
-                        No local results for "<strong>${input.value}</strong>"
-                    </div>
-                    <button onclick="searchDrugWithAI('${query.replace(/'/g, "\\'")}')" class="ai-btn-small btn-sim" style="justify-content:center; background-color: var(--primary); color: white;">
-                        🤖 Ask AI to find "${input.value}"
-                    </button>
-                    <div id="ai-search-error" style="color:var(--accent); text-align:center; margin-top:10px; font-size:0.9rem;"></div>
-                `;
-                container.appendChild(noResultDiv);
-            }
         }
 
-        async function searchDrugWithAI(query) {
-            const container = document.getElementById('search-results');
-            const btn = container.querySelector('button');
-            const errDiv = document.getElementById('ai-search-error');
+        // --- QUIZ LOGIC ---
+        function resetQuizUI() {
+            document.getElementById('next-quiz-btn').style.display = 'none';
+            document.getElementById('ai-container').style.display = 'none';
+            document.getElementById('btn-read-explain').style.display = 'none';
+            document.getElementById('btn-quiz-explain').style.display = 'none';
+            document.getElementById('btn-quiz-explain').innerHTML = '🤖 Explain Why (AI Tutor)';
+            document.getElementById('btn-quiz-explain').disabled = false;
+        }
+
+        function generateQuizQuestion() {
+            resetQuizUI();
+            const container = document.getElementById('quiz-options');
+            const qEl = document.getElementById('quiz-question');
+            container.innerHTML = '';
+
+            if (quizList.length === 0) { qEl.innerText = "No drugs loaded."; return; }
+            if (quizCurrentIndex >= quizList.length) { qEl.innerText = "Quiz Complete!"; return; }
+
+            // USE quizList (Processed Split Data)
+            const correctDrug = quizList[quizCurrentIndex];
             
-            if(btn) {
-                btn.innerHTML = '<span class="loading-spinner"></span> Searching AI Database...';
-                btn.disabled = true;
+            // Randomize Question Type: 0=Indication->Name, 1=Class->Name, 2=Name->Indication, 3=Name->Class
+            const qType = Math.floor(Math.random() * 4);
+            
+            let qText = "";
+            let correctText = "";
+            let optionType = ""; 
+
+            switch (qType) {
+                case 0: // Indication -> Drug
+                    qText = `Which drug is indicated for: "${correctDrug.indication}"?`;
+                    correctText = correctDrug.name;
+                    optionType = 'name';
+                    break;
+                case 1: // Class -> Drug
+                    qText = `Which drug belongs to the class: "${correctDrug.class}"?`;
+                    correctText = correctDrug.name;
+                    optionType = 'name';
+                    break;
+                case 2: // Drug -> Indication
+                    qText = `What is the primary indication for: "${correctDrug.name}"?`;
+                    correctText = correctDrug.indication;
+                    optionType = 'indication';
+                    break;
+                case 3: // Drug -> Class
+                    qText = `What is the drug class of: "${correctDrug.name}"?`;
+                    correctText = correctDrug.class;
+                    optionType = 'class';
+                    break;
             }
 
-            // Prompt specifically asking for JSON format
-            const prompt = `Act as a nursing pharmacology expert. The user is searching for the drug "${query}". 
-            If this is a valid drug, provide a summary in strictly valid JSON format (no markdown, no code blocks) with these keys:
-            {
-                "name": "Standard Drug Name",
-                "class": "Pharmacological Class",
-                "indication": "Primary indications",
-                "SideEffects": "Common side effects",
-                "nursing": "Key nursing considerations"
-            }
-            If "${query}" is not a valid medical drug, return strictly: {"error": "Drug not found or invalid"}
-            `;
+            qEl.innerText = qText;
 
-            try {
-                let content = await getAIResponse(prompt);
+            // Generate Options - Smart Filtering
+            let wrongOptions = [];
+            let attempts = 0;
+            
+            while(wrongOptions.length < 3 && attempts < 100) {
+                attempts++;
+                // Pick random from quizList (Split data)
+                const randomDrug = quizList[Math.floor(Math.random() * quizList.length)];
                 
-                // Sanitation: Remove markdown code blocks if the AI adds them (e.g. ```json ... ```)
-                content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-                
-                const drug = JSON.parse(content);
+                // Skip if it is the correct drug object
+                if (randomDrug.name === correctDrug.name) continue;
 
-                if(drug.error) {
-                    errDiv.innerText = "❌ " + drug.error;
-                    if(btn) { btn.innerText = "Try Different Spelling"; btn.disabled = false; }
-                    return;
+                const optText = randomDrug[optionType];
+                
+                if (!optText || optText === "N/A") continue;
+                if (optText === correctText) continue; // Skip if text is identical
+                if (wrongOptions.includes(optText)) continue; // Skip duplicates
+
+                // SMART CHECK: Does this random drug actually match the question criteria?
+                let isConfusinglyCorrect = false;
+
+                if (qType === 0) { // Asking for Indication -> expects Name
+                    if (randomDrug.indication === correctDrug.indication) isConfusinglyCorrect = true;
                 }
-
-                // Success! Render the AI Card
-                container.innerHTML = ''; // Clear the button
-                
-                const div = document.createElement('div');
-                div.className = 'result-card expanded'; // Auto-expand
-                // Add a visual cue that this is AI generated
-                div.style.borderLeft = "5px solid var(--primary)"; 
-                div.style.backgroundColor = "#fdfeff";
-                
-                div.innerHTML = `
-                    <div class="result-header">
-                        <span>✨ ${drug.name} <span style="font-size:0.7rem; background:#e0e7ff; color:var(--primary); padding:2px 6px; border-radius:4px; margin-left:5px; border:1px solid #c7d2fe;">AI Found</span></span>
-                        <span class="result-sub">${drug.class}</span>
-                    </div>
-                    <div class="result-detail" style="display:block;">
-                        <strong>📌 Indication:</strong> ${drug.indication}<br>
-                        <strong>⚠️ Side Effects:</strong> ${drug.SideEffects}<br>
-                        <div style="margin-top:8px; font-size:0.85rem; color:#4b5563;"><strong>👩‍⚕️ Nursing:</strong> ${drug.nursing}</div>
-                        <button onclick="event.stopPropagation(); speakText('${drug.name}. ${drug.class}.', 'en')" style="margin-top:10px; padding:5px 10px; font-size:0.8rem; background:#f3f4f6; border:1px solid #d1d5db;">🔊 Speak Name</button>
-                    </div>
-                `;
-                
-                // Allow clicking to toggle (though it starts expanded)
-                div.onclick = () => { div.classList.toggle('expanded'); };
-                
-                container.appendChild(div);
-
-            } catch (e) {
-                console.error("AI Search Error:", e);
-                if(btn) {
-                    btn.innerHTML = '❌ Search Failed';
-                    btn.disabled = false;
+                if (qType === 1) { // Asking for Class -> expects Name
+                    if (randomDrug.class === correctDrug.class) isConfusinglyCorrect = true;
                 }
-                if(errDiv) errDiv.innerText = "Error parsing AI response. Please check your API Key or try again.";
+                
+                if (!isConfusinglyCorrect) {
+                    wrongOptions.push(optText);
+                }
             }
+            
+            while(wrongOptions.length < 3) { wrongOptions.push("N/A"); }
+
+            let optionsArr = [correctText, ...wrongOptions];
+            optionsArr.sort(() => Math.random() - 0.5);
+
+            optionsArr.forEach(optText => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = optText;
+                btn.onclick = () => checkAnswer(btn, optText, correctText, correctDrug, qText);
+                container.appendChild(btn);
+            });
         }
+        
+        function checkAnswer(btn, selectedText, correctText, correctDrug, qText) {
+            const btns = document.querySelectorAll('.option-btn'); 
+            btns.forEach(b => b.onclick = null);
+            
+            let speakPhrase = "";
+            
+            if (selectedText === correctText) { 
+                btn.classList.add('correct');
+                speakPhrase = `Correct! ${correctDrug.name} is a ${correctDrug.class} indicated for ${correctDrug.indication}.`;
+            } else { 
+                btn.classList.add('wrong'); 
+                btns.forEach(b => { if(b.innerText === correctText) b.classList.add('correct'); });
+                speakPhrase = `Incorrect. The correct answer is ${correctText}. ${correctDrug.name} is a ${correctDrug.class}.`;
+            }
+            
+            speakText(speakPhrase, 'en');
+            
+            document.getElementById('next-quiz-btn').style.display = 'block'; 
+            document.getElementById('btn-quiz-explain').style.display = 'flex'; 
+            
+            currentQuizData = { q: qText, u: selectedText, c: correctDrug, correctAnswerText: correctText };
+        }
+        
+        function nextQuestion() { quizCurrentIndex++; generateQuizQuestion(); }
 
         // --- UI SWITCHING ---
         function switchMode(mode) {
