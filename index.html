@@ -218,7 +218,7 @@
 
         /* --- Flashcards --- */
         .flashcard-container {
-            width: 100%; height: 650px;
+            width: 100%; height: 700px; /* Increased height slightly for new row */
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
@@ -464,11 +464,13 @@
             
             <div style="margin-top: 10px; background: #f0fdf4; padding: 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #bbf7d0; color: #166534;">
                 <strong style="display:block; margin-bottom:5px;">💡 Format Guide:</strong>
-                Create a Google Sheet with Headers required: <code>name, class, indication, SideEffects, nursing</code>
-                <br>
-                <strong>Split Drugs:</strong> Separate multiple drugs in one cell with a semi-colon:
-                <br>
-                <em>Example: Aripiprazole; Olanzapine; Risperidone</em>
+                Create a Google Sheet with Headers required: <code>name, class, system, indication, SideEffects, nursing</code>
+                <br><br>
+                <strong>System Column Values:</strong><br>
+                Gastro-intestinal system; Cardiovascular system; Respiratory system; Central nervous system; Infections; Endocrine system; Obstetrics, gynaecology, and urinary-tract disorders; Malignant disease and immunosuppression; Nutrition and blood; Musculoskeletal and joint disease; Eye; Ear, nose, and oropharynx; Skin; Immunological products and vaccines; Anaesthesia
+                <br><br>
+                <strong>Split Drugs:</strong> Separate multiple drugs in one cell with a semi-colon:<br>
+                <em>Example: Aripiprazole; Olanzapine</em>
             </div>
         </div>
 
@@ -487,6 +489,8 @@
                 </div>
                 <div class="card-face card-back">
                     <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class">...</div></div>
+                    <div class="detail-row"><div class="detail-label">Body System</div><div class="detail-content" id="fc-system">...</div></div>
+                    
                     <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content" id="fc-indication">...</div></div>
                     <div class="detail-row"><div class="detail-label">SideEffects</div><div class="detail-content" id="fc-SideEffects">...</div></div>
                     <div class="detail-row" style="border:none;"><div class="detail-label">Nursing Considerations</div><div class="detail-content" id="fc-nursing">...</div></div>
@@ -524,7 +528,7 @@
 
         <div id="search-section">
             <div style="text-align:center; margin-bottom:15px; font-weight:800; color:var(--primary); font-size:1.2rem;">🔍 Drug Database Search</div>
-            <input type="text" id="search-input" class="search-bar" placeholder="Search generic, brand name, or class..." oninput="handleSearch()">
+            <input type="text" id="search-input" class="search-bar" placeholder="Search generic, brand name, class, or system..." oninput="handleSearch()">
             <div id="search-results" class="results-grid">
                 <div style="text-align:center; color:#9ca3af; margin-top:20px;">Type above to search...</div>
             </div>
@@ -683,6 +687,7 @@
                     header: true,
                     skipEmptyLines: true,
                     complete: function(results) {
+                        // Check for required headers. Note: 'system' is optional for older sheets to work, but recommended.
                         const required = ['name', 'class'];
                         const hasColumns = required.every(col => results.meta.fields.includes(col));
                         
@@ -864,6 +869,9 @@
         function fillCardData(prefix, drug) {
             document.getElementById(`${prefix}-name`).innerText = drug.name || "N/A";
             document.getElementById(`${prefix}-class`).innerText = drug.class || "N/A";
+            // Populate the new system field
+            document.getElementById(`${prefix}-system`).innerText = drug.system || "N/A";
+            
             document.getElementById(`${prefix}-indication`).innerText = drug.indication || "N/A";
             document.getElementById(`${prefix}-SideEffects`).innerText = drug.SideEffects || "N/A";
             document.getElementById(`${prefix}-nursing`).innerText = drug.nursing || "N/A";
@@ -881,7 +889,7 @@
         }
         function nextCard() { if (fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; document.getElementById('flashcard').classList.remove('flipped'); renderCard(); } }
         function prevCard() { if (fcCurrentIndex > 0) { fcCurrentIndex--; document.getElementById('flashcard').classList.remove('flipped'); renderCard(); } }
-        function speakBack(drug) { speakText(`Class: ${drug.class}. Indication: ${drug.indication}. Nursing: ${drug.nursing}`, 'en'); }
+        function speakBack(drug) { speakText(`System: ${drug.system || 'Unknown'}. Class: ${drug.class}. Indication: ${drug.indication}. Nursing: ${drug.nursing}`, 'en'); }
         function readAIContent(id) {
             const el = document.getElementById(id);
             const lang = (aiLanguage === 'cantonese' || aiLanguage === 'lihkg') ? 'zh-HK' : 'en';
@@ -965,15 +973,16 @@
                 return;
             }
 
-            // Search by Name (Brand/Generic) or Class
+            // Search by Name (Brand/Generic), Class, or System
             const matches = activeSourceList.filter(d => {
                 const nameMatch = (d.name || '').toLowerCase().includes(query);
                 const classMatch = (d.class || '').toLowerCase().includes(query);
-                return nameMatch || classMatch;
+                const systemMatch = (d.system || '').toLowerCase().includes(query);
+                return nameMatch || classMatch || systemMatch;
             });
 
             if(matches.length === 0) {
-                 container.innerHTML = '<div style="text-align:center; color:#9ca3af; margin-top:20px;">No drugs found. Try a generic name or class.</div>';
+                 container.innerHTML = '<div style="text-align:center; color:#9ca3af; margin-top:20px;">No drugs found. Try a generic name, class, or body system.</div>';
                  return;
             }
 
@@ -986,6 +995,7 @@
                         <span class="result-sub">${drug.class}</span>
                     </div>
                     <div class="result-detail">
+                        <strong>🫀 System:</strong> ${drug.system || "N/A"}<br>
                         <strong>📌 Indication:</strong> ${drug.indication}<br>
                         <strong>⚠️ Side Effects:</strong> ${drug.SideEffects}<br>
                         <div style="margin-top:8px; font-size:0.85rem; color:#4b5563;"><strong>👩‍⚕️ Nursing:</strong> ${drug.nursing}</div>
