@@ -210,6 +210,25 @@
         </div>
     </div>
 
+    <div style="background: #f0fdfa; padding: 15px; border-radius: 12px; border: 1px solid #ccfbf1; margin-bottom: 20px;">
+        <label class="settings-label" style="margin-bottom: 10px; color: #0f766e;">📅 Study Quota & Intervals</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label class="settings-label" style="font-size:0.8rem;">Max New/Day</label>
+                <input type="number" id="setting-new-limit" class="settings-input" value="15" min="0" style="margin-bottom:0;">
+            </div>
+            <div>
+                <label class="settings-label" style="font-size:0.8rem;">Max Review/Day</label>
+                <input type="number" id="setting-review-limit" class="settings-input" value="100" min="0" style="margin-bottom:0;">
+            </div>
+            <div style="grid-column: span 2;">
+                <label class="settings-label" style="font-size:0.8rem;">Starting Interval (Days)</label>
+                <input type="number" id="setting-start-int" class="settings-input" value="1" min="1" step="0.5" style="margin-bottom:0;" placeholder="Default: 1 day">
+                <div style="font-size:0.75rem; color:#6b7280; margin-top:4px;">Controls the interval for "Good" on new cards.</div>
+            </div>
+        </div>
+    </div>
+
     <h3 style="margin-top:0;">☁️ Cloud Progress (Saving)</h3>
     <label class="settings-label">Paste Google Apps Script URL here to sync:</label>
     <input type="text" id="script-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." onchange="saveSettings()">
@@ -239,7 +258,7 @@
     <div id="flashcard-section">
         <div id="deck-empty-state" style="display:none; text-align:center; padding:50px; background:white; border-radius:12px;">
             <h2>🎉 All caught up!</h2>
-            <p style="color:#6b7280;">You have reviewed all due cards for now.</p>
+            <p style="color:#6b7280;">You have reached your daily quota.</p>
             <button onclick="forceReviewAll()" class="secondary" style="margin-top:20px;">Review Ahead (Cram)</button>
         </div>
 
@@ -271,10 +290,10 @@
                 <button class="btn-reveal" onclick="revealAnswer()">Show Answer</button>
             </div>
             <div id="controls-post-reveal" class="srs-controls" style="display:none;">
-                <button class="srs-btn btn-again" onclick="rateCard(1)">Again <span>&lt; 1m</span></button>
-                <button class="srs-btn btn-hard" onclick="rateCard(2)">Hard <span>2d</span></button>
-                <button class="srs-btn btn-good" onclick="rateCard(3)">Good <span>4d</span></button>
-                <button class="srs-btn btn-easy" onclick="rateCard(4)">Easy <span>7d</span></button>
+                <button id="btn-srs-again" class="srs-btn btn-again" onclick="rateCard(1)">Again <span id="lbl-again">1m</span></button>
+                <button id="btn-srs-hard" class="srs-btn btn-hard" onclick="rateCard(2)">Hard <span id="lbl-hard">...</span></button>
+                <button id="btn-srs-good" class="srs-btn btn-good" onclick="rateCard(3)">Good <span id="lbl-good">...</span></button>
+                <button id="btn-srs-easy" class="srs-btn btn-easy" onclick="rateCard(4)">Easy <span id="lbl-easy">...</span></button>
             </div>
         </div>
     </div>
@@ -312,13 +331,12 @@
     let srsProgress = {}; 
     let studyQueue = [];
     let currentCard = null;
-    let activeSourceList = []; // For toggling datasets
+    let activeSourceList = [];
     let quizList = [];
     let quizCurrentIndex = 0;
     let currentQuizData = null;
 
     // --- HARDCODED CREDENTIALS (AUTO-CONNECT) ---
-    // Note: Do not host this file publicly.
     const DEEPSEEK_KEY_FIXED = "sk-8fd0f4776401470ab71b9aa166a02a25";
     const OPENROUTER_KEY_FIXED = "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";
     const DATABASE_URL_FIXED = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
@@ -326,12 +344,13 @@
     // Config Variables
     let activeProvider = 'deepseek';
     let ttsProvider = 'browser';
-    let azureSpeechKey = "";
-    let azureSpeechRegion = "southeastasia";
-    let selectedVoiceURI = "";
-    let azureSynthesizer = null;
     let isMuted = false;
     let aiLanguage = 'lihkg';
+    
+    // Quota & Interval Config
+    let limitNew = 15;
+    let limitReview = 100;
+    let startInterval = 1; // days
 
     // --- INIT ---
     async function init() {
@@ -342,7 +361,6 @@
         if (localData) srsProgress = JSON.parse(localData);
         await loadCloudData(true); // Silent sync
 
-        // Check fallback data
         if(typeof commonDrugs !== 'undefined') {
             activeSourceList = [...commonDrugs];
         }
@@ -354,21 +372,20 @@
 
     function loadSettings() {
         activeProvider = localStorage.getItem('active_provider') || 'deepseek';
-        
-        // Use Fixed keys unless user overrides manually in code, 
-        // but for UI, we rely on the consts defined above.
-        
         document.getElementById('provider-select').value = activeProvider;
         document.getElementById('script-url').value = localStorage.getItem('scriptUrl') || "";
-        
-        // Auto-fill sheet URL in UI (disabled input)
         document.getElementById('sheet-url').value = DATABASE_URL_FIXED;
         
+        // Quotas
+        limitNew = parseInt(localStorage.getItem('limitNew')) || 15;
+        limitReview = parseInt(localStorage.getItem('limitReview')) || 100;
+        startInterval = parseFloat(localStorage.getItem('startInterval')) || 1;
+        
+        document.getElementById('setting-new-limit').value = limitNew;
+        document.getElementById('setting-review-limit').value = limitReview;
+        document.getElementById('setting-start-int').value = startInterval;
+
         ttsProvider = localStorage.getItem('tts_provider') || 'browser';
-        // Azure keys can still be manual if needed, or hardcoded if you have them
-        azureSpeechKey = localStorage.getItem('azure_key') || "";
-        azureSpeechRegion = localStorage.getItem('azure_region') || "southeastasia";
-        selectedVoiceURI = localStorage.getItem('preferred_voice') || "";
     }
 
     function getKeyForProvider(p) {
@@ -377,8 +394,6 @@
     }
 
     // --- CLOUD SYNC (GOOGLE SHEETS) ---
-    
-    
     async function loadCloudData(silent = false) {
         const url = document.getElementById('script-url').value;
         const statusText = document.getElementById('sync-text');
@@ -392,14 +407,12 @@
         try {
             const resp = await fetch(url);
             const cloudData = await resp.json();
-            
-            // Merge strategies: prefer cloud if exists, else keep local
             srsProgress = { ...srsProgress, ...cloudData };
             localStorage.setItem('srsProgress', JSON.stringify(srsProgress));
             
             statusText.innerText = "Synced";
             statusDot.className = "sync-dot done";
-            if(!silent) buildStudyQueue(); // Refresh deck
+            if(!silent) buildStudyQueue(); 
         } catch(e) {
             console.error(e);
             statusText.innerText = "Sync Error";
@@ -416,10 +429,9 @@
         statusText.innerText = "Saving...";
         statusDot.className = "sync-dot active";
 
-        // Using simple POST to GAS
         fetch(url, {
             method: 'POST',
-            mode: 'no-cors', // Avoids preflight check issues
+            mode: 'no-cors', 
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(srsProgress)
         }).then(() => {
@@ -431,9 +443,7 @@
         });
     }
 
-    // --- ANKI ALGORITHM (SM-2) ---
-    
-
+    // --- ANKI ALGORITHM (SM-2 + QUOTAS) ---
     function buildStudyQueue() {
         if(!activeSourceList || activeSourceList.length === 0) return;
         
@@ -444,7 +454,6 @@
 
         activeSourceList.forEach(drug => {
             if(!drug.name) return;
-            // Clean/Trim
             const d = { ...drug, name: drug.name.trim() };
             const stats = srsProgress[d.name];
 
@@ -456,16 +465,21 @@
             }
         });
 
-        // Sort: Due by date asc, New randomized
+        // Sorting
         due.sort((a,b) => a.dueDate - b.dueDate);
         newCards.sort(() => Math.random() - 0.5);
 
+        // Stats Display
         document.getElementById('count-due').innerText = due.length;
         document.getElementById('count-new').innerText = newCards.length;
         document.getElementById('count-learned').innerText = learnedCount;
 
-        // Mix: All due + batch of new
-        studyQueue = [...due, ...newCards.slice(0, 15)];
+        // Apply Quotas
+        const actualDue = due.slice(0, limitReview);
+        const actualNew = newCards.slice(0, limitNew);
+
+        // Mix: Review first, then New
+        studyQueue = [...actualDue, ...actualNew];
         loadNextCard();
     }
 
@@ -502,6 +516,36 @@
         document.getElementById('fc-indication').innerText = currentCard.indication || "N/A";
         document.getElementById('fc-SideEffects').innerText = currentCard.SideEffects || "N/A";
         document.getElementById('fc-nursing').innerText = currentCard.nursing || "N/A";
+
+        // Update Button Logic (Predictions)
+        updateSRSButtons(currentCard);
+    }
+
+    function updateSRSButtons(card) {
+        // Calculate potential intervals for display
+        const calc = (quality) => {
+            let stats = srsProgress[card.name] || { interval: 0, repetitions: 0, ef: 2.5 };
+            // Simulate next step logic
+            if (quality < 3) return 0; // < 1m
+            
+            let nextInt = 1;
+            if (stats.repetitions === 0) nextInt = startInterval; // User setting
+            else if (stats.repetitions === 1) nextInt = 6;
+            else nextInt = Math.round(stats.interval * stats.ef);
+            
+            // Modifier for Hard/Easy
+            if(quality === 2) nextInt = Math.max(1, Math.floor(nextInt * 0.8)); // Hard is shorter
+            if(quality === 4) nextInt = Math.max(nextInt + 1, Math.floor(nextInt * 1.3)); // Easy is longer
+            
+            return nextInt;
+        };
+
+        const fmt = (days) => days === 0 ? "< 1m" : (days + "d");
+
+        document.getElementById('lbl-again').innerText = fmt(0);
+        document.getElementById('lbl-hard').innerText = fmt(calc(2));
+        document.getElementById('lbl-good').innerText = fmt(calc(3));
+        document.getElementById('lbl-easy').innerText = fmt(calc(4));
     }
 
     function revealAnswer() {
@@ -512,34 +556,40 @@
     }
 
     function rateCard(quality) {
-        // SM-2: 1=Fail, 2=Hard, 3=Good, 4=Easy
-        const qMap = { 1: 0, 2: 3, 3: 4, 4: 5 };
-        const q = qMap[quality];
-        
         const id = currentCard.name;
         let stats = srsProgress[id] || { interval: 0, repetitions: 0, ef: 2.5 };
 
-        if (q < 3) {
+        // Logic mirrors updateSRSButtons but applies changes
+        let nextInterval = 0;
+        
+        if (quality < 3) {
             stats.repetitions = 0;
             stats.interval = 1;
+            nextInterval = 0; // Immediate Requeue
         } else {
-            if (stats.repetitions === 0) stats.interval = 1;
+            if (stats.repetitions === 0) stats.interval = startInterval; // Use Setting
             else if (stats.repetitions === 1) stats.interval = 6;
             else stats.interval = Math.round(stats.interval * stats.ef);
-            
+
+            // Modifiers
+            if (quality === 2) stats.interval = Math.max(1, Math.floor(stats.interval * 0.8));
+            if (quality === 4) stats.interval = Math.max(stats.interval + 1, Math.floor(stats.interval * 1.3));
+
+            // EF adjustment
             stats.repetitions++;
-            stats.ef = stats.ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+            stats.ef = stats.ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
             if (stats.ef < 1.3) stats.ef = 1.3;
+            
+            nextInterval = stats.interval;
         }
 
-        // Calculate Due Date
+        // Apply Due Date
         const dayMs = 86400000;
-        // If fail, requeue immediately (1 min from now)
-        if(quality === 1) {
-            stats.dueDate = Date.now(); 
-            studyQueue.push(currentCard); 
+        if(nextInterval === 0) {
+            stats.dueDate = Date.now() + 60000; // 1 min
+            studyQueue.push(currentCard); // Requeue
         } else {
-            stats.dueDate = Date.now() + (stats.interval * dayMs);
+            stats.dueDate = Date.now() + (nextInterval * dayMs);
         }
 
         // Save & Sync
@@ -573,7 +623,6 @@
                         updateSetButton();
                         buildStudyQueue();
                         
-                        // Prepare Quiz List
                         quizList = [...activeSourceList];
                         quizList.sort(() => Math.random() - 0.5);
                     }
@@ -601,9 +650,7 @@
 
     // --- AI FUNCTIONS ---
     async function callAI(messages) {
-        // Force provider selection based on UI logic or default
         const activeKey = getKeyForProvider(activeProvider);
-        
         if(activeProvider === 'openrouter') {
             const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
@@ -614,7 +661,6 @@
             const data = await resp.json(); return data.choices[0].message.content;
         } 
         else {
-            // Default DeepSeek
             const resp = await fetch("https://api.deepseek.com/chat/completions", {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${activeKey}`, "Content-Type": "application/json" },
@@ -790,28 +836,25 @@
     function saveSettings() {
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('scriptUrl', document.getElementById('script-url').value);
+        
+        // Save Quota
+        localStorage.setItem('limitNew', document.getElementById('setting-new-limit').value);
+        localStorage.setItem('limitReview', document.getElementById('setting-review-limit').value);
+        localStorage.setItem('startInterval', document.getElementById('setting-start-int').value);
+
         loadSettings();
         toggleSettings();
+        buildStudyQueue(); // Rebuild with new settings
     }
 
-    function updateTTSUI() {
-        populateVoiceList();
-    }
-    
     function updateProviderDisplay() {
         activeProvider = document.getElementById('provider-select').value;
     }
 
-    // Azure/Browser Voice Logic 
+    // Audio
     async function populateVoiceList() {
         const select = document.getElementById('voice-select');
-        select.innerHTML = '<option value="">Default</option>';
-        if (ttsProvider === 'browser') {
-            window.speechSynthesis.getVoices().forEach(v => {
-                const opt = document.createElement('option'); opt.value = v.voiceURI; opt.innerText = v.name;
-                select.appendChild(opt);
-            });
-        }
+        if(select) select.innerHTML = '<option value="">Default</option>';
     }
     function speakText(text) {
         if(isMuted) return;
@@ -821,6 +864,7 @@
     }
     function speakBack(d) { speakText(`${d.name}. ${d.class}.`); }
     function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "🔇 Off" : "🔊 On"; }
+    function stopAudio() { window.speechSynthesis.cancel(); }
 
     // Start
     init();
