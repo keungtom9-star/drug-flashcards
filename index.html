@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor Ultimate (SRS + Cloud + AI)</title>
+    <title>AI Drug Tutor (Auto-Connected)</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     
@@ -204,42 +204,29 @@
     <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
         <label class="settings-label" style="margin-bottom: 10px;">⚡ Quick Controls</label>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-             <button onclick="toggleDrugSet()" id="set-btn" class="secondary" style="width:100%; font-size:0.85rem;">📚 Set: Common</button>
+             <button onclick="toggleDrugSet()" id="set-btn" class="secondary" style="width:100%; font-size:0.85rem;">📚 Set: Auto CSV</button>
              <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; font-size:0.85rem;">🌐 Lang: LIHKG</button>
              <button onclick="toggleMute()" id="mute-btn" class="secondary" style="grid-column: span 2; width:100%;">🔊 Audio: On</button>
         </div>
     </div>
 
-    <h3 style="margin-top:0;">☁️ Cloud Progress (Google Sheets)</h3>
-    <label class="settings-label">GAS Web App URL:</label>
+    <h3 style="margin-top:0;">☁️ Cloud Progress (Saving)</h3>
+    <label class="settings-label">Paste Google Apps Script URL here to sync:</label>
     <input type="text" id="script-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." onchange="saveSettings()">
     <button onclick="loadCloudData()" class="secondary" style="width:100%; margin-bottom:15px;">📥 Force Download from Cloud</button>
 
-    <h3>🔊 Audio Config</h3>
-    <select id="tts-provider-select" onchange="updateTTSUI()">
-        <option value="browser">Browser Native</option>
-        <option value="azure">Azure Neural</option>
-    </select>
-    <div id="azure-config-group" style="display:none; background:#eff6ff; padding:10px; border-radius:8px; margin-bottom:10px;">
-        <input type="password" id="azure-key" class="settings-input" placeholder="Azure Key" />
-        <input type="text" id="azure-region" class="settings-input" placeholder="Region (e.g. southeastasia)" />
-    </div>
-    <select id="voice-select"><option value="">Default Voice</option></select>
-    <button onclick="testVoice()" style="width:100%; margin-bottom:15px;">🔊 Test Voice</button>
-
     <h3>🤖 AI Provider</h3>
     <select id="provider-select" onchange="updateProviderDisplay()">
-        <option value="deepseek">DeepSeek Official</option>
-        <option value="openrouter">OpenRouter</option>
-        <option value="github">GitHub Models</option>
+        <option value="deepseek" selected>DeepSeek Official (Auto)</option>
+        <option value="openrouter">OpenRouter (Auto)</option>
     </select>
-    <input type="password" id="api-key" class="settings-input" placeholder="API Key" onchange="saveSettings()">
+    <div id="keys-display" style="font-size:0.8rem; color:green; margin-bottom:10px;">✅ Keys are hardcoded & connected</div>
 
-    <h3>📚 Data Source</h3>
+    <h3>📚 Database Source</h3>
     <div class="import-wrapper">
         <div class="url-input-group">
-            <input type="text" id="sheet-url" class="settings-input" placeholder="CSV URL" style="margin-bottom:0;" />
-            <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load</button>
+            <input type="text" id="sheet-url" class="settings-input" placeholder="CSV URL" style="margin-bottom:0;" disabled />
+            <button onclick="fetchSheetData()" style="padding: 5px 15px;">Reload</button>
         </div>
         <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary);"></div>
     </div>
@@ -330,12 +317,14 @@
     let quizCurrentIndex = 0;
     let currentQuizData = null;
 
-    // Config
-    let openRouterKey = ""; 
-    let deepSeekKey = "sk-92db3cf721454bd7b351ca6ef40eaaf7";
-    let githubKey = "";
+    // --- HARDCODED CREDENTIALS (AUTO-CONNECT) ---
+    // Note: Do not host this file publicly.
+    const DEEPSEEK_KEY_FIXED = "sk-8fd0f4776401470ab71b9aa166a02a25";
+    const OPENROUTER_KEY_FIXED = "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";
+    const DATABASE_URL_FIXED = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
+
+    // Config Variables
     let activeProvider = 'deepseek';
-    
     let ttsProvider = 'browser';
     let azureSpeechKey = "";
     let azureSpeechRegion = "southeastasia";
@@ -343,8 +332,6 @@
     let azureSynthesizer = null;
     let isMuted = false;
     let aiLanguage = 'lihkg';
-
-    const defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
 
     // --- INIT ---
     async function init() {
@@ -366,31 +353,27 @@
     }
 
     function loadSettings() {
-        openRouterKey = localStorage.getItem('or_key') || "";
-        deepSeekKey = localStorage.getItem('ds_key') || deepSeekKey;
-        githubKey = localStorage.getItem('gh_key') || "";
         activeProvider = localStorage.getItem('active_provider') || 'deepseek';
         
+        // Use Fixed keys unless user overrides manually in code, 
+        // but for UI, we rely on the consts defined above.
+        
+        document.getElementById('provider-select').value = activeProvider;
+        document.getElementById('script-url').value = localStorage.getItem('scriptUrl') || "";
+        
+        // Auto-fill sheet URL in UI (disabled input)
+        document.getElementById('sheet-url').value = DATABASE_URL_FIXED;
+        
         ttsProvider = localStorage.getItem('tts_provider') || 'browser';
+        // Azure keys can still be manual if needed, or hardcoded if you have them
         azureSpeechKey = localStorage.getItem('azure_key') || "";
         azureSpeechRegion = localStorage.getItem('azure_region') || "southeastasia";
         selectedVoiceURI = localStorage.getItem('preferred_voice') || "";
-        
-        document.getElementById('openrouter-key').value = openRouterKey;
-        document.getElementById('deepseek-key').value = deepSeekKey;
-        document.getElementById('api-key').value = getKeyForProvider(activeProvider);
-        document.getElementById('provider-select').value = activeProvider;
-        document.getElementById('script-url').value = localStorage.getItem('scriptUrl') || "";
-        document.getElementById('sheet-url').value = localStorage.getItem('csvUrl') || defaultSheetUrl;
-        
-        document.getElementById('tts-provider-select').value = ttsProvider;
-        updateTTSUI();
     }
 
     function getKeyForProvider(p) {
-        if(p==='openrouter') return openRouterKey;
-        if(p==='github') return githubKey;
-        return deepSeekKey;
+        if(p==='openrouter') return OPENROUTER_KEY_FIXED;
+        return DEEPSEEK_KEY_FIXED;
     }
 
     // --- CLOUD SYNC (GOOGLE SHEETS) ---
@@ -576,15 +559,10 @@
 
     // --- DATA & CSV ---
     function fetchSheetData() {
-        const urlInput = document.getElementById('sheet-url').value.trim();
+        const url = DATABASE_URL_FIXED;
         const statusEl = document.getElementById('upload-status');
         
-        let fetchUrl = urlInput;
-        if (urlInput.includes("docs.google.com/spreadsheets") && urlInput.includes("/edit")) {
-            fetchUrl = urlInput.replace(/\/edit.*$/, "/export?format=csv");
-        }
-
-        fetch(fetchUrl).then(resp => resp.text()).then(csvText => {
+        fetch(url).then(resp => resp.text()).then(csvText => {
             Papa.parse(csvText, {
                 header: true, skipEmptyLines: true,
                 complete: function(results) {
@@ -603,25 +581,33 @@
             });
         }).catch(e => { statusEl.innerText = "❌ CSV Load Failed"; });
     }
+    
+    function processRawData(data) {
+        let processed = [];
+        data.forEach(item => {
+            if (item.name && typeof item.name === 'string' && item.name.includes(';')) {
+                let names = item.name.split(';');
+                names.forEach(n => {
+                    const cleanName = n.trim();
+                    if(cleanName) processed.push({ ...item, name: cleanName });
+                });
+            } else {
+                if(item.name) item.name = item.name.trim();
+                processed.push(item);
+            }
+        });
+        return processed;
+    }
 
     // --- AI FUNCTIONS ---
     async function callAI(messages) {
-        // Select provider based on current setting
-        if(activeProvider === 'github') {
-            if(!githubKey) throw new Error("GitHub Key missing");
-            const resp = await fetch("https://models.github.ai/inference/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${githubKey}`, "Content-Type": "application/json", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
-                body: JSON.stringify({ model: "gpt-4o-mini", messages: messages, temperature: 0.7 })
-            });
-            if(!resp.ok) throw new Error("GitHub API Error");
-            const data = await resp.json(); return data.choices[0].message.content;
-        } 
-        else if (activeProvider === 'openrouter') {
-            if(!openRouterKey) throw new Error("OpenRouter Key missing");
+        // Force provider selection based on UI logic or default
+        const activeKey = getKeyForProvider(activeProvider);
+        
+        if(activeProvider === 'openrouter') {
             const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${openRouterKey}`, "Content-Type": "application/json", "HTTP-Referer": window.location.href },
+                headers: { "Authorization": `Bearer ${activeKey}`, "Content-Type": "application/json", "HTTP-Referer": window.location.href },
                 body: JSON.stringify({ model: "arcee-ai/trinity-mini:free", messages: messages })
             });
             if(!resp.ok) throw new Error("OpenRouter Error");
@@ -629,10 +615,9 @@
         } 
         else {
             // Default DeepSeek
-            if(!deepSeekKey) throw new Error("DeepSeek Key missing");
             const resp = await fetch("https://api.deepseek.com/chat/completions", {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${deepSeekKey}`, "Content-Type": "application/json" },
+                headers: { "Authorization": `Bearer ${activeKey}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ model: "deepseek-chat", messages: messages, temperature: 0.7 })
             });
             if(!resp.ok) throw new Error("DeepSeek Error");
@@ -675,6 +660,17 @@
             outputBox.innerHTML = `Error: ${e.message}`; if(btn) { btn.innerText = '❌ Error'; btn.disabled = false; }
         }
     }
+    
+    async function triggerQuizExplain() {
+        const btn = document.getElementById('btn-quiz-explain'); const box = document.getElementById('ai-content'); const container = document.getElementById('ai-container'); const readBtn = document.getElementById('btn-read-explain');
+        btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; btn.disabled = true; container.style.display = 'block'; box.innerHTML = 'Analyzing...';
+        const prompt = `Explain why the correct answer to the question: "${currentQuizData.q}" is "${currentQuizData.correctAnswerText}" and why "${currentQuizData.u}" is wrong (if applicable).`;
+        try {
+            const content = await callAI([{ role: "user", content: prompt }]);
+            box.innerHTML = marked.parse(content);
+            btn.innerHTML = '✅ Explained'; readBtn.style.display = 'block';
+        } catch (e) { box.innerHTML = `Error: ${e.message}.`; btn.innerText = "Error"; }
+    }
 
     // --- SEARCH ---
     function handleSearch() {
@@ -715,7 +711,6 @@
 
     // --- QUIZ & UTILS ---
     function generateQuizQuestion() {
-        // Simple randomization logic from previous version
         document.getElementById('next-quiz-btn').style.display = 'none';
         document.getElementById('ai-container').style.display = 'none';
         document.getElementById('btn-quiz-explain').style.display = 'none';
@@ -777,7 +772,7 @@
 
     function updateSetButton() {
         const btn = document.getElementById('set-btn');
-        if(activeSourceList === extendedDrugs) { btn.innerText = "📚 Set: Online CSV"; btn.classList.add('set-extended'); btn.classList.remove('secondary'); } 
+        if(activeSourceList === extendedDrugs) { btn.innerText = "📚 Set: Auto CSV"; btn.classList.add('set-extended'); btn.classList.remove('secondary'); } 
         else { btn.innerText = "📚 Set: Common"; btn.classList.add('secondary'); btn.classList.remove('set-extended'); }
     }
     
@@ -793,23 +788,21 @@
     }
 
     function saveSettings() {
-        localStorage.setItem('or_key', document.getElementById('openrouter-key').value);
-        localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('scriptUrl', document.getElementById('script-url').value);
-        localStorage.setItem('csvUrl', document.getElementById('sheet-url').value);
-        
         loadSettings();
         toggleSettings();
     }
 
     function updateTTSUI() {
-        const p = document.getElementById('tts-provider-select').value;
-        document.getElementById('azure-config-group').style.display = p === 'azure' ? 'block' : 'none';
         populateVoiceList();
     }
+    
+    function updateProviderDisplay() {
+        activeProvider = document.getElementById('provider-select').value;
+    }
 
-    // Azure/Browser Voice Logic retained from previous version (simplified for brevity)
+    // Azure/Browser Voice Logic 
     async function populateVoiceList() {
         const select = document.getElementById('voice-select');
         select.innerHTML = '<option value="">Default</option>';
