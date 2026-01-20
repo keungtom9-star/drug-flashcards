@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor (Auto-Connected)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Drug Tutor</title>
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Drug Tutor">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --primary: #4F46E5;
-            --primary-hover: #4338ca;
             --secondary: #10B981;
             --accent: #F43F5E;
             --surface: #ffffff;
@@ -24,8 +27,6 @@
             --text-main: #111827;
             --text-muted: #6B7280;
             --radius: 16px;
-            
-            /* SRS Colors */
             --srs-again: #ef4444;
             --srs-hard: #f59e0b;
             --srs-good: #10b981;
@@ -35,254 +36,161 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background);
-            background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
-            background-size: 20px 20px;
             color: var(--text-main);
             display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; margin: 0; padding: 40px 20px; line-height: 1.6;
+            min-height: 100vh; margin: 0; 
+            padding: env(safe-area-inset-top) 20px 40px 20px; 
+            line-height: 1.6;
+            -webkit-tap-highlight-color: transparent;
         }
 
         h1 {
-            color: var(--text-main); margin-bottom: 5px; text-align: center;
-            font-weight: 800; font-size: 2.2rem; display: flex; align-items: center; gap: 15px;
+            color: var(--text-main); margin: 20px 0 5px 0; text-align: center;
+            font-weight: 800; font-size: 1.8rem; display: flex; align-items: center; gap: 12px;
         }
 
-        .app-logo { height: 45px; width: 45px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .app-logo { height: 40px; width: 40px; border-radius: 10px; }
 
-        /* Stats Bar */
         .stats-bar {
-            display: flex; gap: 15px; font-size: 0.85rem; color: var(--text-muted);
-            background: rgba(255,255,255,0.8); padding: 5px 15px; border-radius: 20px;
-            margin-bottom: 20px; border: 1px solid #e5e7eb; align-items: center;
+            display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);
+            background: rgba(255,255,255,0.9); padding: 8px 15px; border-radius: 20px;
+            margin-bottom: 20px; border: 1px solid #e5e7eb; backdrop-filter: blur(5px);
         }
-        .stat-item strong { color: var(--primary); }
-        .sync-status { font-size: 0.75rem; display: flex; align-items: center; gap: 5px; }
-        .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
-        .sync-dot.active { background: #f59e0b; animation: pulse 1s infinite; }
-        .sync-dot.done { background: #10b981; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* Controls */
         .top-bar {
-            display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; width: 100%; max-width: 850px;
-            background: var(--surface); padding: 15px; border-radius: var(--radius);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; flex-wrap: wrap;
+            display: flex; gap: 8px; justify-content: center; margin-bottom: 25px; width: 100%; max-width: 500px;
+            background: var(--surface); padding: 10px; border-radius: var(--radius);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;
         }
 
         button {
-            padding: 10px 18px; border: none; border-radius: 10px; cursor: pointer;
-            font-weight: 600; transition: all 0.2s ease; font-size: 0.9rem;
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 12px 15px; border: none; border-radius: 12px; cursor: pointer;
+            font-weight: 600; transition: all 0.2s ease; font-size: 0.85rem;
+            display: inline-flex; align-items: center; justify-content: center;
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        button:active { transform: translateY(0); }
-        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .mode-active { background-color: var(--primary); color: white; }
-        .secondary { background-color: white; color: var(--text-main); border: 1px solid #d1d5db; }
-        .secondary:hover { background-color: #f9fafb; border-color: #9ca3af; }
+        .secondary { background-color: #f3f4f6; color: var(--text-main); }
         .lang-lihkg { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: white; }
-        .muted { background-color: var(--accent); color: white; }
 
-        /* Settings */
         #settings-panel {
-            display: none; background: var(--surface); padding: 30px;
-            border-radius: var(--radius); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            margin-bottom: 30px; width: 100%; max-width: 600px;
-            border: 1px solid #e5e7eb; box-sizing: border-box; animation: slideDown 0.3s ease-out;
+            display: none; background: var(--surface); padding: 25px;
+            border-radius: var(--radius); box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 30px; width: 100%; max-width: 500px; box-sizing: border-box;
+            border: 1px solid #e5e7eb;
         }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .settings-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-main); }
+        .settings-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.85rem; }
         .settings-input, select {
-            width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px;
-            margin-bottom: 15px; box-sizing: border-box; font-family: inherit; font-size: 0.95rem;
+            width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px;
+            margin-bottom: 15px; box-sizing: border-box; font-size: 1rem;
         }
 
-        /* Flashcards */
-        #app-container { width: 100%; max-width: 650px; perspective: 1000px; }
+        #app-container { width: 100%; max-width: 500px; perspective: 1000px; }
         
         .flashcard-container {
-            width: 100%; height: 720px; position: relative;
-            transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%; height: 500px; position: relative;
+            transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .flashcard-container.flipped { transform: rotateY(180deg); }
 
         .card-face {
             position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-            border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             background-color: var(--surface); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 30px; box-sizing: border-box;
-            text-align: center; border: 1px solid rgba(0,0,0,0.02);
+            padding: 25px; box-sizing: border-box; border: 1px solid #eee;
         }
-        .card-front { background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%); }
-        .card-back { transform: rotateY(180deg); align-items: flex-start; text-align: left; overflow-y: auto; padding-top: 25px; }
-        .card-back::-webkit-scrollbar { width: 6px; }
-        .card-back::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        .card-front { justify-content: center; align-items: center; }
+        .card-back { transform: rotateY(180deg); overflow-y: auto; text-align: left; }
 
-        .card-title {
-            font-size: 1.8rem; font-weight: 800; margin: 15px 0;
-            background: -webkit-linear-gradient(45deg, var(--primary), #818cf8);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
+        .card-title { font-size: 1.6rem; font-weight: 800; margin: 10px 0; color: var(--primary); }
 
-        .detail-row { margin-bottom: 15px; width: 100%; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; }
-        .detail-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .detail-content { font-size: 1rem; color: var(--text-main); font-weight: 500; }
+        .detail-row { margin-bottom: 12px; border-bottom: 1px solid #f9fafb; padding-bottom: 8px; }
+        .detail-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .detail-content { font-size: 0.95rem; font-weight: 500; }
 
-        /* SRS Controls */
-        .srs-controls { margin-top: 20px; width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
-        .btn-reveal { width: 100%; margin-top: 25px; padding: 15px; background: var(--text-main); color: white; font-size: 1.1rem; border-radius: 12px; }
+        .srs-controls { margin-top: 20px; width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .btn-reveal { width: 100%; margin-top: 20px; padding: 18px; background: #111; color: white; border-radius: 15px; font-size: 1.1rem; }
         
-        .srs-btn { display: flex; flex-direction: column; align-items: center; padding: 10px 5px; font-size: 0.85rem; color: white; border: none; }
-        .srs-btn span { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
+        .srs-btn { display: flex; flex-direction: column; padding: 12px 5px; color: white; border: none; }
+        .srs-btn span { font-size: 0.65rem; opacity: 0.9; margin-top: 2px; }
         .btn-again { background: var(--srs-again); }
         .btn-hard { background: var(--srs-hard); }
         .btn-good { background: var(--srs-good); }
         .btn-easy { background: var(--srs-easy); }
 
-        /* AI & Search Styles */
-        .ai-output-box {
-            margin-top: 20px; padding: 20px; border-radius: 12px; font-size: 0.95rem;
-            line-height: 1.7; background: #f0fdfa; border-left: 5px solid var(--secondary);
-            display: none; width: 100%; box-sizing: border-box;
-        }
-        .ai-output-box h3 { margin: 15px 0 8px 0; font-size: 1.1rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; }
+        .ai-output-box { margin-top: 15px; padding: 15px; border-radius: 12px; background: #f0fdfa; border-left: 4px solid var(--secondary); font-size: 0.9rem; }
         
-        .quiz-container, #search-section { background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; display: none; box-sizing: border-box; min-height: 400px; }
-        .quiz-question { font-size: 1.3rem; font-weight: 700; margin-bottom: 25px; }
-        
-        .option-btn { background-color: #f9fafb; color: var(--text-main); text-align: left; border: 1px solid #e5e7eb; padding: 16px 20px; border-radius: 12px; margin-bottom: 10px; width: 100%; cursor: pointer; font-size: 1rem; }
-        .option-btn:hover { border-color: var(--primary); background-color: #eef2ff; }
+        .quiz-container, #search-section { background: var(--surface); padding: 20px; border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: none; }
+        .search-bar { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #eee; font-size: 1rem; box-sizing: border-box; }
+        .option-btn { background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 14px; border-radius: 10px; margin-bottom: 8px; width: 100%; text-align: left; font-size: 1rem; }
         .option-btn.correct { background-color: #ecfdf5; border-color: var(--secondary); color: #065f46; }
         .option-btn.wrong { background-color: #fef2f2; border-color: var(--accent); color: #991b1b; }
-
-        .search-bar { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e5e7eb; font-size: 1.1rem; margin-bottom: 20px; box-sizing: border-box; }
-        .search-bar:focus { border-color: var(--primary); outline: none; }
-        
-        .results-grid { display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; }
-        .result-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; cursor: pointer; }
-        .result-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .result-detail { display: none; margin-top: 12px; border-top: 1px solid #f3f4f6; padding-top: 12px; font-size: 0.9rem; }
-        .result-card.expanded .result-detail { display: block; }
-
-        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.2); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <h1>
-    <svg class="app-logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg class="app-logo" viewBox="0 0 64 64" fill="none">
         <rect width="64" height="64" rx="16" fill="#4F46E5"/>
         <path d="M32 16V48" stroke="white" stroke-width="6" stroke-linecap="round"/>
         <path d="M16 32H48" stroke="white" stroke-width="6" stroke-linecap="round"/>
-        <circle cx="42" cy="22" r="6" fill="#10B981" stroke="#4F46E5" stroke-width="2"/>
     </svg>
-    Integrated Drug
+    Drug Tutor
 </h1>
 
 <div class="stats-bar">
-    <div class="stat-item">Due: <strong id="count-due">0</strong></div>
-    <div class="stat-item">New: <strong id="count-new">0</strong></div>
-    <div class="stat-item">Learned: <strong id="count-learned">0</strong></div>
-    <div style="flex-grow:1;"></div>
-    <div class="sync-status">
-        <div id="sync-dot" class="sync-dot"></div>
-        <span id="sync-text">Local</span>
-    </div>
+    <div>Due: <strong id="count-due">0</strong></div>
+    <div>New: <strong id="count-new">0</strong></div>
+    <div>Learned: <strong id="count-learned">0</strong></div>
 </div>
 
 <div class="top-bar">
-    <button id="mode-flashcard" class="mode-active" onclick="switchMode('flashcard')">Flashcards</button>
+    <button id="mode-flashcard" class="mode-active" onclick="switchMode('flashcard')">Cards</button>
     <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz</button>
     <button id="mode-search" class="secondary" onclick="switchMode('search')">Search</button>
-    <button onclick="toggleSettings()" class="secondary">⚙️ Settings</button>
+    <button onclick="toggleSettings()" class="secondary">⚙️</button>
 </div>
 
 <div id="settings-panel">
-    <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-        <label class="settings-label" style="margin-bottom: 10px;">⚡ Quick Controls</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-             <button onclick="toggleDrugSet()" id="set-btn" class="secondary" style="width:100%; font-size:0.85rem;">📚 Set: Auto CSV</button>
-             <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; font-size:0.85rem;">🌐 Lang: LIHKG</button>
-             <button onclick="toggleMute()" id="mute-btn" class="secondary" style="grid-column: span 2; width:100%;">🔊 Audio: On</button>
-        </div>
+    <label class="settings-label">Study Quotas</label>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <input type="number" id="setting-new-limit" class="settings-input" value="15">
+        <input type="number" id="setting-review-limit" class="settings-input" value="100">
     </div>
 
-    <div style="background: #f0fdfa; padding: 15px; border-radius: 12px; border: 1px solid #ccfbf1; margin-bottom: 20px;">
-        <label class="settings-label" style="margin-bottom: 10px; color: #0f766e;">📅 Study Quota & Intervals</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div>
-                <label class="settings-label" style="font-size:0.8rem;">Max New/Day</label>
-                <input type="number" id="setting-new-limit" class="settings-input" value="15" min="0" style="margin-bottom:0;">
-            </div>
-            <div>
-                <label class="settings-label" style="font-size:0.8rem;">Max Review/Day</label>
-                <input type="number" id="setting-review-limit" class="settings-input" value="100" min="0" style="margin-bottom:0;">
-            </div>
-            <div style="grid-column: span 2;">
-                <label class="settings-label" style="font-size:0.8rem;">Starting Interval (Days)</label>
-                <input type="number" id="setting-start-int" class="settings-input" value="1" min="1" step="0.5" style="margin-bottom:0;" placeholder="Default: 1 day">
-                <div style="font-size:0.75rem; color:#6b7280; margin-top:4px;">Controls the interval for "Good" on new cards.</div>
-            </div>
-        </div>
-    </div>
-
-    <h3 style="margin-top:0;">☁️ Cloud Progress (Saving)</h3>
-    <label class="settings-label">Paste Google Apps Script URL here to sync:</label>
-    <input type="text" id="script-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." onchange="saveSettings()">
-    <button onclick="loadCloudData()" class="secondary" style="width:100%; margin-bottom:15px;">📥 Force Download from Cloud</button>
-
-    <h3>🤖 AI Provider</h3>
-    <select id="provider-select" onchange="updateProviderDisplay()">
-        <option value="deepseek" selected>DeepSeek Official (Auto)</option>
-        <option value="openrouter">OpenRouter (Auto)</option>
+    <label class="settings-label">AI Provider</label>
+    <select id="provider-select" class="settings-input" onchange="updateProviderDisplay()">
+        <option value="deepseek">DeepSeek (Auto)</option>
+        <option value="openrouter">OpenRouter (Free)</option>
     </select>
-    <div id="keys-display" style="font-size:0.8rem; color:green; margin-bottom:10px;">✅ Keys are hardcoded & connected</div>
-
-    <h3>📚 Database Source</h3>
-    <div class="import-wrapper">
-        <div class="url-input-group">
-            <input type="text" id="sheet-url" class="settings-input" placeholder="CSV URL" style="margin-bottom:0;" disabled />
-            <button onclick="fetchSheetData()" style="padding: 5px 15px;">Reload</button>
-        </div>
-        <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary);"></div>
-    </div>
-
-    <button onclick="saveSettings()" style="width:100%; background-color: var(--secondary); margin-top:20px;">💾 Save & Close</button>
+    
+    <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; margin-bottom:10px;">🌐 Lang: LIHKG</button>
+    <button onclick="saveSettings()" style="width:100%; background: var(--secondary); color:white;">💾 Save & Close</button>
 </div>
 
 <div id="app-container">
-
     <div id="flashcard-section">
-        <div id="deck-empty-state" style="display:none; text-align:center; padding:50px; background:white; border-radius:12px;">
-            <h2>🎉 All caught up!</h2>
-            <p style="color:#6b7280;">You have reached your daily quota.</p>
-            <button onclick="forceReviewAll()" class="secondary" style="margin-top:20px;">Review Ahead (Cram)</button>
+        <div id="deck-empty-state" style="display:none; text-align:center; padding:40px;">
+            <h2>All done! 🌟</h2>
+            <button onclick="forceReviewAll()" class="secondary">Cram Mode</button>
         </div>
 
         <div id="card-wrapper">
             <div class="flashcard-container" id="flashcard">
                 <div class="card-face card-front">
-                    <div style="font-size: 3.5rem; margin-bottom: 20px;">💊</div>
+                    <div style="font-size: 3rem;">💊</div>
                     <h2 id="fc-name" class="card-title">Drug Name</h2>
-                    <p style="color: #9ca3af; font-size: 0.9rem;">(Tap "Show Answer" below)</p>
-                    <button onclick="speakText(currentCard.name, 'en')" style="margin-top: 20px; background:#e0e7ff; color:var(--primary); border:none; padding:8px 16px; border-radius:8px;">🔊 Pronounce</button>
+                    <button onclick="speakText(currentCard.name)" style="background:#e0e7ff; color:var(--primary);">🔊 Pronounce</button>
                 </div>
                 <div class="card-face card-back">
-                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class">...</div></div>
-                    <div class="detail-row"><div class="detail-label">System</div><div class="detail-content" id="fc-system">...</div></div>
-                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content" id="fc-indication">...</div></div>
-                    <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" id="fc-SideEffects">...</div></div>
-                    <div class="detail-row" style="border:none;"><div class="detail-label">Nursing</div><div class="detail-content" id="fc-nursing">...</div></div>
-
-                    <div class="ai-btn-group">
-                        <button onclick="getIntegratedCaseStudy(currentCard, 'fc-ai-case', 'btn-case', 'btn-read-case')" class="ai-btn-small btn-sim" id="btn-case" style="color:white; border:none;">🏥 AI: Generate Integrated Patient Case</button>
-                        <div id="fc-ai-case" class="ai-output-box"></div>
-                        <button onclick="readAIContent('fc-ai-case')" class="btn-read-ai" id="btn-read-case">🔊 Read Out Loud</button>
-                    </div>
-                    <button onclick="speakBack(currentCard)" style="margin-top: 20px; width:100%; background:#e0e7ff; color:var(--primary); font-size:0.8rem; border:none; padding:10px; border-radius:8px;">🔊 Read Basic Details</button>
+                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class"></div></div>
+                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content" id="fc-indication"></div></div>
+                    <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" id="fc-SideEffects"></div></div>
+                    <div class="detail-row" style="border:none;"><div class="detail-label">Nursing</div><div class="detail-content" id="fc-nursing"></div></div>
+                    
+                    <button id="btn-case" onclick="getIntegratedCaseStudy()" style="width:100%; background:#f0fdfa; color:#0f766e; border: 1px solid #ccfbf1; margin-top:10px;">🏥 AI Case Study</button>
+                    <div id="fc-ai-case" class="ai-output-box" style="display:none;"></div>
                 </div>
             </div>
 
@@ -290,542 +198,158 @@
                 <button class="btn-reveal" onclick="revealAnswer()">Show Answer</button>
             </div>
             <div id="controls-post-reveal" class="srs-controls" style="display:none;">
-                <button id="btn-srs-again" class="srs-btn btn-again" onclick="rateCard(1)">Again <span id="lbl-again">1m</span></button>
-                <button id="btn-srs-hard" class="srs-btn btn-hard" onclick="rateCard(2)">Hard <span id="lbl-hard">...</span></button>
-                <button id="btn-srs-good" class="srs-btn btn-good" onclick="rateCard(3)">Good <span id="lbl-good">...</span></button>
-                <button id="btn-srs-easy" class="srs-btn btn-easy" onclick="rateCard(4)">Easy <span id="lbl-easy">...</span></button>
+                <button class="srs-btn btn-again" onclick="rateCard(1)">Again<span>1m</span></button>
+                <button class="srs-btn btn-hard" onclick="rateCard(2)">Hard<span>2d</span></button>
+                <button class="srs-btn btn-good" onclick="rateCard(3)">Good<span>4d</span></button>
+                <button class="srs-btn btn-easy" onclick="rateCard(4)">Easy<span>7d</span></button>
             </div>
         </div>
     </div>
 
     <div id="quiz-section" class="quiz-container">
-        <div id="quiz-content">
-            <p class="quiz-question" id="quiz-question">Question...</p>
-            <div class="quiz-options" id="quiz-options"></div>
-        </div>
-        <button id="btn-quiz-explain" class="btn-explain" onclick="triggerQuizExplain()">🤖 Explain Why (AI Tutor)</button>
-        <div id="ai-container" style="display:none;">
-            <h3>🤖 AI Explanation</h3>
-            <div id="ai-content" class="ai-output-box" style="display:block;"></div>
-            <button onclick="readAIContent('ai-content')" class="btn-read-ai" id="btn-read-explain">🔊 Read Out Loud</button>
-        </div>
-        <div class="nav-controls">
-            <button onclick="nextQuestion()" id="next-quiz-btn" style="display:none;">Next Question →</button>
-        </div>
+        <p id="quiz-question" style="font-weight:bold; font-size:1.1rem;"></p>
+        <div id="quiz-options"></div>
+        <button id="next-quiz-btn" onclick="nextQuestion()" style="display:none; width:100%; margin-top:15px; background:var(--primary); color:white;">Next Question →</button>
     </div>
 
     <div id="search-section">
-        <div style="text-align:center; margin-bottom:15px; font-weight:800; color:var(--primary); font-size:1.2rem;">🔍 Drug Database</div>
-        <input type="text" id="search-input" class="search-bar" placeholder="Search drug, class, or indication..." oninput="handleSearch()">
-        <div id="search-results" class="results-grid"></div>
+        <input type="text" id="search-input" class="search-bar" placeholder="Search drugs..." oninput="handleSearch()">
+        <div id="search-results" style="margin-top:15px;"></div>
     </div>
-
 </div>
 
-<script src="drugs.js"></script>
-<script src="prompts.js"></script>
-
 <script>
-    // --- STATE ---
-    let drugDatabase = [];
-    let srsProgress = {}; 
-    let studyQueue = [];
-    let currentCard = null;
-    let activeSourceList = [];
-    let quizList = [];
-    let quizCurrentIndex = 0;
-    let currentQuizData = null;
-
-    // --- HARDCODED CREDENTIALS (AUTO-CONNECT) ---
-    const DEEPSEEK_KEY_FIXED = "sk-8fd0f4776401470ab71b9aa166a02a25";
-    const OPENROUTER_KEY_FIXED = "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";
-    const DATABASE_URL_FIXED = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
-
-    // Config Variables
-    let activeProvider = 'deepseek';
-    let ttsProvider = 'browser';
-    let isMuted = false;
-    let aiLanguage = 'lihkg';
-    
-    // Quota & Interval Config
-    let limitNew = 15;
-    let limitReview = 100;
-    let startInterval = 1; // days
-
-    // --- INIT ---
-    async function init() {
-        loadSettings();
-        
-        // Load SRS (Local -> Cloud)
-        const localData = localStorage.getItem('srsProgress');
-        if (localData) srsProgress = JSON.parse(localData);
-        await loadCloudData(true); // Silent sync
-
-        if(typeof commonDrugs !== 'undefined') {
-            activeSourceList = [...commonDrugs];
-        }
-        
-        fetchSheetData(); // Load CSV
-        populateVoiceList();
-        if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoiceList;
-    }
-
-    function loadSettings() {
-        activeProvider = localStorage.getItem('active_provider') || 'deepseek';
-        document.getElementById('provider-select').value = activeProvider;
-        document.getElementById('script-url').value = localStorage.getItem('scriptUrl') || "";
-        document.getElementById('sheet-url').value = DATABASE_URL_FIXED;
-        
-        // Quotas
-        limitNew = parseInt(localStorage.getItem('limitNew')) || 15;
-        limitReview = parseInt(localStorage.getItem('limitReview')) || 100;
-        startInterval = parseFloat(localStorage.getItem('startInterval')) || 1;
-        
-        document.getElementById('setting-new-limit').value = limitNew;
-        document.getElementById('setting-review-limit').value = limitReview;
-        document.getElementById('setting-start-int').value = startInterval;
-
-        ttsProvider = localStorage.getItem('tts_provider') || 'browser';
-    }
-
-    function getKeyForProvider(p) {
-        if(p==='openrouter') return OPENROUTER_KEY_FIXED;
-        return DEEPSEEK_KEY_FIXED;
-    }
-
-    // --- CLOUD SYNC (GOOGLE SHEETS) ---
-    async function loadCloudData(silent = false) {
-        const url = document.getElementById('script-url').value;
-        const statusText = document.getElementById('sync-text');
-        const statusDot = document.getElementById('sync-dot');
-        
-        if(!url) return;
-        
-        statusText.innerText = "Syncing...";
-        statusDot.className = "sync-dot active";
-
-        try {
-            const resp = await fetch(url);
-            const cloudData = await resp.json();
-            srsProgress = { ...srsProgress, ...cloudData };
-            localStorage.setItem('srsProgress', JSON.stringify(srsProgress));
-            
-            statusText.innerText = "Synced";
-            statusDot.className = "sync-dot done";
-            if(!silent) buildStudyQueue(); 
-        } catch(e) {
-            console.error(e);
-            statusText.innerText = "Sync Error";
-            statusDot.className = "sync-dot";
-        }
-    }
-
-    function syncToCloud() {
-        const url = document.getElementById('script-url').value;
-        if(!url) return;
-        
-        const statusText = document.getElementById('sync-text');
-        const statusDot = document.getElementById('sync-dot');
-        statusText.innerText = "Saving...";
-        statusDot.className = "sync-dot active";
-
-        fetch(url, {
-            method: 'POST',
-            mode: 'no-cors', 
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(srsProgress)
-        }).then(() => {
-            statusText.innerText = "Saved";
-            statusDot.className = "sync-dot done";
-        }).catch(e => {
-            statusText.innerText = "Save Fail";
-            statusDot.className = "sync-dot";
+    // --- PWA Service Worker Registration ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('SW Registered'))
+                .catch(err => console.log('SW Failed', err));
         });
     }
 
-    // --- ANKI ALGORITHM (SM-2 + QUOTAS) ---
+    // --- State & Config ---
+    let drugDatabase = [];
+    let srsProgress = JSON.parse(localStorage.getItem('srsProgress')) || {};
+    let studyQueue = [];
+    let currentCard = null;
+    let aiLanguage = 'lihkg';
+    let quizCurrentIndex = 0;
+
+    const DEEPSEEK_KEY = "sk-8fd0f4776401470ab71b9aa166a02a25";
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
+
+    async function init() {
+        await fetchDatabase();
+    }
+
+    async function fetchDatabase() {
+        try {
+            const resp = await fetch(CSV_URL);
+            const csvText = await resp.text();
+            Papa.parse(csvText, {
+                header: true, skipEmptyLines: true,
+                complete: (results) => {
+                    drugDatabase = results.data.filter(d => d.name);
+                    buildStudyQueue();
+                }
+            });
+        } catch (e) { console.error("Database error", e); }
+    }
+
     function buildStudyQueue() {
-        if(!activeSourceList || activeSourceList.length === 0) return;
-        
         const now = Date.now();
-        let due = [];
-        let newCards = [];
-        let learnedCount = 0;
+        let due = [], newCards = [], learned = 0;
+        const limitNew = parseInt(document.getElementById('setting-new-limit').value);
+        const limitReview = parseInt(document.getElementById('setting-review-limit').value);
 
-        activeSourceList.forEach(drug => {
-            if(!drug.name) return;
-            const d = { ...drug, name: drug.name.trim() };
-            const stats = srsProgress[d.name];
-
-            if(!stats) {
-                newCards.push({ ...d, _type: 'new' });
-            } else {
-                if(stats.interval > 21) learnedCount++;
-                if(stats.dueDate <= now) due.push({ ...d, ...stats, _type: 'due' });
+        drugDatabase.forEach(drug => {
+            const stats = srsProgress[drug.name];
+            if (!stats) newCards.push(drug);
+            else {
+                if (stats.interval > 21) learned++;
+                if (stats.dueDate <= now) due.push({...drug, ...stats});
             }
         });
 
-        // Sorting
-        due.sort((a,b) => a.dueDate - b.dueDate);
-        newCards.sort(() => Math.random() - 0.5);
-
-        // Stats Display
         document.getElementById('count-due').innerText = due.length;
         document.getElementById('count-new').innerText = newCards.length;
-        document.getElementById('count-learned').innerText = learnedCount;
+        document.getElementById('count-learned').innerText = learned;
 
-        // Apply Quotas
-        const actualDue = due.slice(0, limitReview);
-        const actualNew = newCards.slice(0, limitNew);
-
-        // Mix: Review first, then New
-        studyQueue = [...actualDue, ...actualNew];
+        studyQueue = [...due.slice(0, limitReview), ...newCards.slice(0, limitNew)];
         loadNextCard();
     }
 
     function loadNextCard() {
-        const wrapper = document.getElementById('card-wrapper');
-        const empty = document.getElementById('deck-empty-state');
-
-        if(studyQueue.length === 0) {
-            wrapper.style.display = 'none';
-            empty.style.display = 'block';
+        if (studyQueue.length === 0) {
+            document.getElementById('card-wrapper').style.display = 'none';
+            document.getElementById('deck-empty-state').style.display = 'block';
             return;
         }
-
-        wrapper.style.display = 'block';
-        empty.style.display = 'none';
         currentCard = studyQueue[0];
-
-        // UI Reset
+        document.getElementById('card-wrapper').style.display = 'block';
+        document.getElementById('deck-empty-state').style.display = 'none';
         document.getElementById('flashcard').classList.remove('flipped');
         document.getElementById('controls-pre-reveal').style.display = 'block';
         document.getElementById('controls-post-reveal').style.display = 'none';
         
-        // Clear AI
-        document.getElementById('fc-ai-case').innerHTML = '';
-        document.getElementById('fc-ai-case').style.display = 'none';
-        document.getElementById('btn-read-case').style.display = 'none';
-        document.getElementById('btn-case').disabled = false;
-        document.getElementById('btn-case').innerHTML = '🏥 AI: Generate Integrated Patient Case';
-
-        // Fill Data
         document.getElementById('fc-name').innerText = currentCard.name;
         document.getElementById('fc-class').innerText = currentCard.class || "N/A";
-        document.getElementById('fc-system').innerText = currentCard.system || "N/A";
         document.getElementById('fc-indication').innerText = currentCard.indication || "N/A";
         document.getElementById('fc-SideEffects').innerText = currentCard.SideEffects || "N/A";
         document.getElementById('fc-nursing').innerText = currentCard.nursing || "N/A";
-
-        // Update Button Logic (Predictions)
-        updateSRSButtons(currentCard);
-    }
-
-    function updateSRSButtons(card) {
-        // Calculate potential intervals for display
-        const calc = (quality) => {
-            let stats = srsProgress[card.name] || { interval: 0, repetitions: 0, ef: 2.5 };
-            // Simulate next step logic
-            if (quality < 3) return 0; // < 1m
-            
-            let nextInt = 1;
-            if (stats.repetitions === 0) nextInt = startInterval; // User setting
-            else if (stats.repetitions === 1) nextInt = 6;
-            else nextInt = Math.round(stats.interval * stats.ef);
-            
-            // Modifier for Hard/Easy
-            if(quality === 2) nextInt = Math.max(1, Math.floor(nextInt * 0.8)); // Hard is shorter
-            if(quality === 4) nextInt = Math.max(nextInt + 1, Math.floor(nextInt * 1.3)); // Easy is longer
-            
-            return nextInt;
-        };
-
-        const fmt = (days) => days === 0 ? "< 1m" : (days + "d");
-
-        document.getElementById('lbl-again').innerText = fmt(0);
-        document.getElementById('lbl-hard').innerText = fmt(calc(2));
-        document.getElementById('lbl-good').innerText = fmt(calc(3));
-        document.getElementById('lbl-easy').innerText = fmt(calc(4));
+        document.getElementById('fc-ai-case').style.display = 'none';
+        document.getElementById('btn-case').innerText = "🏥 AI Case Study";
     }
 
     function revealAnswer() {
         document.getElementById('flashcard').classList.add('flipped');
         document.getElementById('controls-pre-reveal').style.display = 'none';
         document.getElementById('controls-post-reveal').style.display = 'grid';
-        stopAudio();
     }
 
     function rateCard(quality) {
         const id = currentCard.name;
         let stats = srsProgress[id] || { interval: 0, repetitions: 0, ef: 2.5 };
-
-        // Logic mirrors updateSRSButtons but applies changes
-        let nextInterval = 0;
         
         if (quality < 3) {
-            stats.repetitions = 0;
             stats.interval = 1;
-            nextInterval = 0; // Immediate Requeue
+            stats.repetitions = 0;
         } else {
-            if (stats.repetitions === 0) stats.interval = startInterval; // Use Setting
+            if (stats.repetitions === 0) stats.interval = 1;
             else if (stats.repetitions === 1) stats.interval = 6;
             else stats.interval = Math.round(stats.interval * stats.ef);
-
-            // Modifiers
-            if (quality === 2) stats.interval = Math.max(1, Math.floor(stats.interval * 0.8));
-            if (quality === 4) stats.interval = Math.max(stats.interval + 1, Math.floor(stats.interval * 1.3));
-
-            // EF adjustment
             stats.repetitions++;
-            stats.ef = stats.ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-            if (stats.ef < 1.3) stats.ef = 1.3;
-            
-            nextInterval = stats.interval;
         }
-
-        // Apply Due Date
-        const dayMs = 86400000;
-        if(nextInterval === 0) {
-            stats.dueDate = Date.now() + 60000; // 1 min
-            studyQueue.push(currentCard); // Requeue
-        } else {
-            stats.dueDate = Date.now() + (nextInterval * dayMs);
-        }
-
-        // Save & Sync
+        
+        stats.dueDate = Date.now() + (stats.interval * 86400000);
         srsProgress[id] = stats;
         localStorage.setItem('srsProgress', JSON.stringify(srsProgress));
-        syncToCloud();
-
-        // Next
+        
         studyQueue.shift();
         loadNextCard();
     }
 
-    function forceReviewAll() {
-        studyQueue = [...activeSourceList].sort(() => Math.random() - 0.5);
-        loadNextCard();
-    }
+    async function getIntegratedCaseStudy() {
+        const box = document.getElementById('fc-ai-case');
+        const btn = document.getElementById('btn-case');
+        box.style.display = 'block';
+        box.innerHTML = "<em>Simulating patient...</em>";
+        btn.disabled = true;
 
-    // --- DATA & CSV ---
-    function fetchSheetData() {
-        const url = DATABASE_URL_FIXED;
-        const statusEl = document.getElementById('upload-status');
-        
-        fetch(url).then(resp => resp.text()).then(csvText => {
-            Papa.parse(csvText, {
-                header: true, skipEmptyLines: true,
-                complete: function(results) {
-                    if (results.data.length > 0) {
-                        extendedDrugs = processRawData(results.data);
-                        activeSourceList = extendedDrugs;
-                        statusEl.innerText = `✅ Loaded ${extendedDrugs.length} drugs`;
-                        updateSetButton();
-                        buildStudyQueue();
-                        
-                        quizList = [...activeSourceList];
-                        quizList.sort(() => Math.random() - 0.5);
-                    }
-                }
-            });
-        }).catch(e => { statusEl.innerText = "❌ CSV Load Failed"; });
-    }
-    
-    function processRawData(data) {
-        let processed = [];
-        data.forEach(item => {
-            if (item.name && typeof item.name === 'string' && item.name.includes(';')) {
-                let names = item.name.split(';');
-                names.forEach(n => {
-                    const cleanName = n.trim();
-                    if(cleanName) processed.push({ ...item, name: cleanName });
-                });
-            } else {
-                if(item.name) item.name = item.name.trim();
-                processed.push(item);
-            }
-        });
-        return processed;
-    }
-
-    // --- AI FUNCTIONS ---
-    async function callAI(messages) {
-        const activeKey = getKeyForProvider(activeProvider);
-        if(activeProvider === 'openrouter') {
-            const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${activeKey}`, "Content-Type": "application/json", "HTTP-Referer": window.location.href },
-                body: JSON.stringify({ model: "arcee-ai/trinity-mini:free", messages: messages })
-            });
-            if(!resp.ok) throw new Error("OpenRouter Error");
-            const data = await resp.json(); return data.choices[0].message.content;
-        } 
-        else {
+        try {
             const resp = await fetch("https://api.deepseek.com/chat/completions", {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${activeKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: "deepseek-chat", messages: messages, temperature: 0.7 })
+                headers: { "Authorization": `Bearer ${DEEPSEEK_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [{role: "user", content: `Create a brief clinical case for a nurse about ${currentCard.name}. Use ${aiLanguage} tone.`}]
+                })
             });
-            if(!resp.ok) throw new Error("DeepSeek Error");
-            const data = await resp.json(); return data.choices[0].message.content;
-        }
-    }
-
-    async function getIntegratedCaseStudy(drugObj, boxId, btnId, readBtnId) {
-        const btn = document.getElementById(btnId); const box = document.getElementById(boxId); const readBtn = document.getElementById(readBtnId);
-        btn.innerHTML = '<span class="loading-spinner"></span> Simulating...'; btn.disabled = true; box.style.display = 'block';
-        
-        const prompt = `Create a short clinical nursing case study for a patient prescribed ${drugObj.name} (${drugObj.class}). Include presenting complaint, reason for drug, and one critical nursing priority.`;
-        
-        try {
-            const content = await callAI([{ role: "user", content: prompt }]);
-            box.innerHTML = marked.parse(content);
-            btn.innerHTML = '✅ Case Loaded'; readBtn.style.display = 'block';
-        } catch (e) {
-            box.innerHTML = `Error: ${e.message}`; btn.innerText = "Error"; btn.disabled = false;
-        }
-    }
-
-    async function triggerAISearch(query) {
-        const outputBox = document.getElementById('ai-search-output');
-        const btn = document.querySelector('#search-results button');
-        if(btn) { btn.innerHTML = '<span class="loading-spinner"></span> Searching Global Database...'; btn.disabled = true; }
-        outputBox.style.display = 'block'; outputBox.innerHTML = 'Thinking...';
-
-        const prompt = `Provide a structured clinical summary for the drug "${query}". Headers: Class, System, Indication, Side Effects, Nursing Considerations. Keep it concise.`;
-        try {
-            const content = await callAI([{ role: "user", content: prompt }]);
-            outputBox.innerHTML = marked.parse(content);
-            if(btn) btn.innerHTML = '✅ AI Result Loaded';
-            
-            const speakBtn = document.createElement('button');
-            speakBtn.className = 'btn-read-ai'; speakBtn.innerText = '🔊 Read Result';
-            speakBtn.onclick = () => speakText(outputBox.innerText, 'en');
-            outputBox.appendChild(speakBtn);
-        } catch (e) {
-            outputBox.innerHTML = `Error: ${e.message}`; if(btn) { btn.innerText = '❌ Error'; btn.disabled = false; }
-        }
-    }
-    
-    async function triggerQuizExplain() {
-        const btn = document.getElementById('btn-quiz-explain'); const box = document.getElementById('ai-content'); const container = document.getElementById('ai-container'); const readBtn = document.getElementById('btn-read-explain');
-        btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; btn.disabled = true; container.style.display = 'block'; box.innerHTML = 'Analyzing...';
-        const prompt = `Explain why the correct answer to the question: "${currentQuizData.q}" is "${currentQuizData.correctAnswerText}" and why "${currentQuizData.u}" is wrong (if applicable).`;
-        try {
-            const content = await callAI([{ role: "user", content: prompt }]);
-            box.innerHTML = marked.parse(content);
-            btn.innerHTML = '✅ Explained'; readBtn.style.display = 'block';
-        } catch (e) { box.innerHTML = `Error: ${e.message}.`; btn.innerText = "Error"; }
-    }
-
-    // --- SEARCH ---
-    function handleSearch() {
-        const input = document.getElementById('search-input');
-        const query = input.value.toLowerCase().trim();
-        const container = document.getElementById('search-results');
-        container.innerHTML = '';
-
-        if(query.length === 0) return;
-
-        const matches = activeSourceList.filter(d => 
-            (d.name||'').toLowerCase().includes(query) || (d.class||'').toLowerCase().includes(query)
-        );
-
-        if(matches.length === 0) {
-             container.innerHTML = `
-                <div style="text-align:center; color:#9ca3af; margin:20px;">No local match.</div>
-                <button onclick="triggerAISearch('${query.replace(/'/g, "\\'")}')" class="ai-btn-small btn-sim" style="justify-content:center; width:100%;">✨ AI Search for "${input.value}"</button>
-                <div id="ai-search-output" class="ai-output-box" style="margin-top:15px;"></div>
-             `;
-             return;
-        }
-
-        matches.forEach(drug => {
-            const div = document.createElement('div');
-            div.className = 'result-card';
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between;"><strong>${drug.name}</strong> <span style="color:#666;">${drug.class}</span></div>
-                <div class="result-detail">
-                    <p><strong>Indication:</strong> ${drug.indication}</p>
-                    <button onclick="event.stopPropagation(); speakText('${drug.name}', 'en')" style="margin-top:10px; padding:5px;">🔊</button>
-                </div>
-            `;
-            div.onclick = () => { div.classList.toggle('expanded'); };
-            container.appendChild(div);
-        });
-    }
-
-    // --- QUIZ & UTILS ---
-    function generateQuizQuestion() {
-        document.getElementById('next-quiz-btn').style.display = 'none';
-        document.getElementById('ai-container').style.display = 'none';
-        document.getElementById('btn-quiz-explain').style.display = 'none';
-        const container = document.getElementById('quiz-options');
-        container.innerHTML = '';
-        
-        if (quizList.length === 0) return;
-        if (quizCurrentIndex >= quizList.length) quizCurrentIndex = 0; 
-
-        const correctDrug = quizList[quizCurrentIndex];
-        const qEl = document.getElementById('quiz-question');
-        qEl.innerText = `Which drug belongs to the class: "${correctDrug.class}"?`;
-        
-        let options = [correctDrug];
-        while(options.length < 4) {
-            let r = quizList[Math.floor(Math.random()*quizList.length)];
-            if(!options.includes(r)) options.push(r);
-        }
-        options.sort(()=>Math.random()-0.5);
-
-        options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerText = opt.name;
-            btn.onclick = () => {
-                if(opt === correctDrug) { btn.classList.add('correct'); speakText("Correct"); }
-                else { btn.classList.add('wrong'); speakText("Incorrect"); }
-                document.getElementById('next-quiz-btn').style.display = 'block';
-                document.getElementById('btn-quiz-explain').style.display = 'block';
-                currentQuizData = { q: qEl.innerText, u: opt.name, c: correctDrug, correctAnswerText: correctDrug.name };
-            }
-            container.appendChild(btn);
-        });
-    }
-    function nextQuestion() { quizCurrentIndex++; generateQuizQuestion(); }
-    
-    // --- UI HELPERS ---
-    function switchMode(mode) {
-        document.getElementById('flashcard-section').style.display = 'none';
-        document.getElementById('quiz-section').style.display = 'none';
-        document.getElementById('search-section').style.display = 'none';
-        document.querySelectorAll('.top-bar button').forEach(b => { b.classList.remove('mode-active'); b.classList.add('secondary'); });
-        
-        document.getElementById('mode-'+mode).classList.add('mode-active');
-        document.getElementById('mode-'+mode).classList.remove('secondary');
-        
-        if(mode === 'flashcard') {
-            document.getElementById('flashcard-section').style.display = 'block';
-            buildStudyQueue();
-        } else if (mode === 'quiz') {
-            document.getElementById('quiz-section').style.display = 'block';
-            if(quizCurrentIndex === 0) generateQuizQuestion();
-        } else {
-            document.getElementById('search-section').style.display = 'block';
-            document.getElementById('search-input').focus();
-        }
-        stopAudio();
-    }
-
-    function updateSetButton() {
-        const btn = document.getElementById('set-btn');
-        if(activeSourceList === extendedDrugs) { btn.innerText = "📚 Set: Auto CSV"; btn.classList.add('set-extended'); btn.classList.remove('secondary'); } 
-        else { btn.innerText = "📚 Set: Common"; btn.classList.add('secondary'); btn.classList.remove('set-extended'); }
-    }
-    
-    function toggleDrugSet() {
-        if (activeSourceList === commonDrugs || (Array.isArray(commonDrugs) && activeSourceList[0]?.name === commonDrugs[0]?.name)) activeSourceList = extendedDrugs;
-        else if(typeof commonDrugs !== 'undefined') activeSourceList = [...commonDrugs];
-        updateSetButton(); buildStudyQueue();
+            const data = await resp.json();
+            box.innerHTML = marked.parse(data.choices[0].message.content);
+        } catch(e) { box.innerText = "Error loading AI."; }
+        btn.disabled = false;
     }
 
     function toggleSettings() {
@@ -834,39 +358,68 @@
     }
 
     function saveSettings() {
-        localStorage.setItem('active_provider', document.getElementById('provider-select').value);
-        localStorage.setItem('scriptUrl', document.getElementById('script-url').value);
-        
-        // Save Quota
-        localStorage.setItem('limitNew', document.getElementById('setting-new-limit').value);
-        localStorage.setItem('limitReview', document.getElementById('setting-review-limit').value);
-        localStorage.setItem('startInterval', document.getElementById('setting-start-int').value);
-
-        loadSettings();
         toggleSettings();
-        buildStudyQueue(); // Rebuild with new settings
+        buildStudyQueue();
     }
 
-    function updateProviderDisplay() {
-        activeProvider = document.getElementById('provider-select').value;
+    function toggleLanguage() {
+        aiLanguage = aiLanguage === 'lihkg' ? 'professional' : 'lihkg';
+        document.getElementById('lang-btn').innerText = `🌐 Lang: ${aiLanguage.toUpperCase()}`;
     }
 
-    // Audio
-    async function populateVoiceList() {
-        const select = document.getElementById('voice-select');
-        if(select) select.innerHTML = '<option value="">Default</option>';
+    function switchMode(mode) {
+        ['flashcard-section', 'quiz-section', 'search-section'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
+        document.getElementById(mode + '-section').style.display = 'block';
+        document.querySelectorAll('.top-bar button').forEach(b => b.classList.replace('mode-active', 'secondary'));
+        document.getElementById('mode-' + mode).classList.replace('secondary', 'mode-active');
+        if (mode === 'quiz') generateQuiz();
     }
+
     function speakText(text) {
-        if(isMuted) return;
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.speak(u);
     }
-    function speakBack(d) { speakText(`${d.name}. ${d.class}.`); }
-    function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "🔇 Off" : "🔊 On"; }
-    function stopAudio() { window.speechSynthesis.cancel(); }
 
-    // Start
+    function handleSearch() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const results = drugDatabase.filter(d => d.name.toLowerCase().includes(query) || d.class.toLowerCase().includes(query));
+        const html = results.map(d => `<div style="padding:10px; background:white; margin-bottom:5px; border-radius:8px;"><strong>${d.name}</strong> - ${d.class}</div>`).join('');
+        document.getElementById('search-results').innerHTML = html;
+    }
+
+    function generateQuiz() {
+        if (drugDatabase.length < 4) return;
+        const correct = drugDatabase[Math.floor(Math.random() * drugDatabase.length)];
+        const options = [correct];
+        while(options.length < 4) {
+            const r = drugDatabase[Math.floor(Math.random() * drugDatabase.length)];
+            if(!options.includes(r)) options.push(r);
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        document.getElementById('quiz-question').innerText = `Which drug belongs to the class: ${correct.class}?`;
+        document.getElementById('quiz-options').innerHTML = options.map(o => 
+            `<button class="option-btn" onclick="checkQuiz(this, '${o.name}', '${correct.name}')">${o.name}</button>`
+        ).join('');
+        document.getElementById('next-quiz-btn').style.display = 'none';
+    }
+
+    function checkQuiz(btn, selected, correct) {
+        if (selected === correct) {
+            btn.classList.add('correct');
+            speakText("Correct");
+        } else {
+            btn.classList.add('wrong');
+            speakText("Incorrect");
+        }
+        document.getElementById('next-quiz-btn').style.display = 'block';
+    }
+
+    function nextQuestion() { generateQuiz(); }
+
     init();
 </script>
 </body>
