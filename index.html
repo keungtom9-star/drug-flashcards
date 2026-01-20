@@ -2,254 +2,384 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nursing Drug Tutor (Pro)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Drug Tutor: Anki Mode</title>
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
     <link rel="apple-touch-icon" href="icon.png">
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #4F46E5; --background: #F3F4F6; --surface: #ffffff;
-            --text: #111827; --muted: #6B7280;
-            --srs-again: #ef4444; --srs-hard: #f59e0b; --srs-good: #10b981; --srs-easy: #3b82f6;
+            --primary: #4F46E5;
+            --primary-hover: #4338ca;
+            --secondary: #10B981;
+            --accent: #F43F5E;
+            --surface: #ffffff;
+            --background: #F3F4F6;
+            --text-main: #111827;
+            --text-muted: #6B7280;
+            --radius: 16px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         body {
-            font-family: 'Inter', sans-serif; background: var(--background); margin: 0;
-            padding: env(safe-area-inset-top) 15px 40px 15px; display: flex; flex-direction: column; align-items: center;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; margin: 0; padding: 20px;
+            overscroll-behavior-y: none; /* Prevents pull-to-refresh on mobile */
         }
 
-        .stats-bar {
-            display: flex; gap: 10px; background: white; padding: 12px 20px; 
-            border-radius: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 0.8rem; margin: 20px 0;
-            width: 100%; max-width: 400px; justify-content: space-around; align-items: center;
+        /* --- Progress Bar (Anki Style) --- */
+        .progress-section {
+            width: 100%; max-width: 650px;
+            margin-bottom: 20px;
+        }
+        .progress-header {
+            display: flex; justify-content: space-between;
+            font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .progress-track {
+            height: 10px; background: #e5e7eb;
+            border-radius: 5px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: var(--secondary);
+            width: 0%; transition: width 0.5s ease;
         }
 
-        /* Settings Overlay */
+        /* --- App Styles --- */
+        h1 {
+            color: var(--text-main); margin-bottom: 5px; text-align: center;
+            font-weight: 800; font-size: 1.8rem;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .app-logo { height: 40px; width: 40px; border-radius: 10px; }
+
+        .top-bar {
+            display: flex; gap: 10px; justify-content: center;
+            margin-bottom: 20px; flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px; border: none; border-radius: 10px;
+            cursor: pointer; font-weight: 600; transition: all 0.2s;
+            background: white; color: var(--text-main);
+            box-shadow: var(--shadow-sm);
+        }
+        button:hover { transform: translateY(-2px); }
+        button.primary { background: var(--primary); color: white; }
+        
+        /* Settings */
         #settings-panel {
-            display: none; background: white; width: 100%; max-width: 380px; 
-            padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: fixed; top: 100px; z-index: 100; border: 1px solid #ddd;
+            display: none; background: var(--surface); padding: 20px;
+            border-radius: var(--radius); box-shadow: var(--shadow-lg);
+            width: 100%; max-width: 600px; margin-bottom: 20px;
         }
-        .settings-input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
 
-        #app-container { width: 100%; max-width: 400px; perspective: 1000px; }
-        .card-box { width: 100%; height: 480px; position: relative; transform-style: preserve-3d; transition: transform 0.5s; }
-        .card-box.flipped { transform: rotateY(180deg); }
+        /* Cards */
+        #app-container { width: 100%; max-width: 650px; perspective: 1000px; position: relative; }
         
-        .face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-            background: white; border-radius: 24px; padding: 25px; box-sizing: border-box;
-            display: flex; flex-direction: column; border: 1px solid #e5e7eb; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        .flashcard-container {
+            width: 100%; height: 600px; position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s; cursor: pointer;
         }
-        .front { justify-content: center; align-items: center; text-align: center; }
-        .back { transform: rotateY(180deg); overflow-y: auto; }
-        
-        .drug-name { font-size: 2.2rem; font-weight: 800; color: var(--primary); margin: 5px 0; }
-        .label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; font-weight: 700; margin-top: 10px; }
-        .val { font-size: 0.95rem; margin-bottom: 8px; color: var(--text); line-height: 1.4; }
+        .flashcard-container.flipped { transform: rotateY(180deg); }
 
-        .controls { width: 100%; max-width: 400px; margin-top: 20px; }
-        .btn-reveal { width: 100%; padding: 18px; border-radius: 15px; border: none; background: #111; color: white; font-weight: 600; font-size: 1.1rem; }
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 24px;
+            box-shadow: var(--shadow-lg); background: var(--surface);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 30px; box-sizing: border-box; text-align: center;
+        }
+        .card-back { transform: rotateY(180deg); align-items: flex-start; text-align: left; overflow-y: auto; }
+        .card-title { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 15px 0; }
         
-        .srs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; display: none; }
-        .srs-btn { padding: 12px 2px; border-radius: 12px; border: none; color: white; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
-        .srs-btn span { font-weight: 400; font-size: 0.55rem; opacity: 0.8; margin-top: 2px; }
+        /* Session Complete Screen */
+        #session-complete {
+            display: none;
+            background: var(--surface);
+            height: 600px; width: 100%;
+            border-radius: 24px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.5s;
+        }
 
-        .btn-more { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; margin-top: 15px; cursor: pointer; }
+        .nav-controls {
+            margin-top: 20px; display: flex; justify-content: space-between;
+            background: white; padding: 10px; border-radius: 50px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .detail-row { border-bottom: 1px solid #f3f4f6; padding: 10px 0; width: 100%; }
+        .detail-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-<div class="stats-bar">
-    <span>Due: <strong id="due-count">0</strong></span>
-    <span>New: <strong id="new-count">0</strong></span>
-    <span>Left: <strong id="session-left">0</strong></span>
-    <button onclick="toggleSettings()" style="background:none; border:none; font-size:1.2rem;">⚙️</button>
-</div>
+    <h1>
+        <svg class="app-logo" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="16" fill="#4F46E5"/><circle cx="32" cy="32" r="12" fill="white"/></svg>
+        Drug Tutor
+    </h1>
 
-<div id="settings-panel">
-    <h3 style="margin-top:0;">Study Settings</h3>
-    <label style="font-size:0.8rem; font-weight:600;">Daily New Drug Quota</label>
-    <input type="number" id="quota-input" class="settings-input" value="15">
-    <p style="font-size:0.7rem; color:var(--muted);">Changes will apply when you refresh or finish today's batch.</p>
-    <button onclick="saveSettings()" style="width:100%; padding:12px; background:var(--secondary); color:white; border:none; border-radius:10px; font-weight:600;">Save & Close</button>
-</div>
-
-<div id="app-container">
-    <div id="empty-state" style="display:none; text-align:center; padding:50px 20px;">
-        <div style="font-size: 4rem;">🎉</div>
-        <h2>收得工！</h2>
-        <p style="color:var(--muted)">You've finished your daily quota.</p>
-        <button class="btn-more" onclick="studyExtra()">Study 5 More New Drugs</button>
-        <br>
-        <button onclick="location.reload()" style="background:none; border:none; color:var(--primary); margin-top:20px; font-size:0.9rem;">Reload Database</button>
+    <div class="progress-section" id="anki-progress-ui">
+        <div class="progress-header">
+            <span>Daily Goal</span>
+            <span id="progress-text">0 / 20</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progress-bar"></div>
+        </div>
     </div>
 
-    <div id="card-wrapper">
-        <div class="card-box" id="card-element" onclick="flipCard()">
-            <div class="face front">
-                <p class="label">NURSING PHARMACOLOGY</p>
-                <h1 class="drug-name" id="display-name">...</h1>
-                <button onclick="event.stopPropagation(); speak(currentCard.name)" style="margin-top:15px; border:none; background:#e0e7ff; color:var(--primary); padding:10px 15px; border-radius:10px;">🔊 發音</button>
-            </div>
-            <div class="face back">
-                <p class="label">Class</p><div class="val" id="display-class"></div>
-                <p class="label">Indication</p><div class="val" id="display-indication"></div>
-                <p class="label">Nursing Priority</p><div class="val" id="display-nursing"></div>
-                <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                <button onclick="event.stopPropagation(); getLihkgExplain()" id="lihkg-btn" style="width:100%; padding:10px; background:#f97316; color:white; border:none; border-radius:10px; font-weight:600; font-size:0.8rem;">🔥 LIHKG 師兄解釋</button>
-                <div id="lihkg-explain-box" style="display:none; margin-top:10px; font-size:0.85rem; background:#fff7ed; padding:10px; border-radius:10px; border-left:4px solid #f97316;"></div>
+    <div class="top-bar">
+        <button onclick="toggleSettings()">⚙️ Settings</button>
+        <button onclick="resetDailyProgress()">🔄 Reset Day</button>
+    </div>
+
+    <div id="settings-panel">
+        <h3>Configuration</h3>
+        <label>Daily New Cards Limit:</label>
+        <input type="number" id="daily-limit-input" value="20" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ddd;">
+        
+        <label>Data Source URL (CSV):</label>
+        <input type="text" id="sheet-url" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ddd;" placeholder="CSV Link">
+        
+        <button onclick="saveSettings()" class="primary" style="width:100%">Save & Close</button>
+    </div>
+
+    <div id="app-container">
+        
+        <div id="session-complete">
+            <div style="font-size: 4rem;">🎉</div>
+            <h2 style="color:var(--text-main);">Daily Quota Reached!</h2>
+            <p style="color:var(--text-muted); max-width: 80%;">You've studied your target number of drugs for today. Good job keeping the streak!</p>
+            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; width: 200px;">
+                <button onclick="extendSession(10)" class="primary">Study 10 More</button>
+                <button onclick="resetDailyProgress()" style="background: #f3f4f6;">Reset Today</button>
             </div>
         </div>
 
-        <div class="controls">
-            <button id="btn-reveal" class="btn-reveal" onclick="flipCard()">揭盅 (Show Answer)</button>
-            <div id="srs-controls" class="srs-grid">
-                <button class="srs-btn" style="background:var(--srs-again)" onclick="rate(1)">Again<span>1m</span></button>
-                <button class="srs-btn" style="background:var(--srs-hard)" onclick="rate(2)">Hard<span>2d</span></button>
-                <button class="srs-btn" style="background:var(--srs-good)" onclick="rate(3)">Good<span>4d</span></button>
-                <button class="srs-btn" style="background:var(--srs-easy)" onclick="rate(4)">Easy<span>7d</span></button>
+        <div id="flashcard-section">
+            <div class="flashcard-container" id="flashcard" onclick="flipCard(event)">
+                <div class="card-face card-front">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">💊</div>
+                    <h2 id="fc-name" class="card-title">Loading...</h2>
+                    <p style="color: #9ca3af; font-size: 0.9rem;">(Tap to flip)</p>
+                </div>
+                <div class="card-face card-back">
+                    <div class="detail-row"><div class="detail-label">Class</div><div id="fc-class">...</div></div>
+                    <div class="detail-row"><div class="detail-label">Indication</div><div id="fc-indication">...</div></div>
+                    <div class="detail-row"><div class="detail-label">Nursing</div><div id="fc-nursing">...</div></div>
+                    <button onclick="event.stopPropagation(); nextCard()" class="primary" style="margin-top:auto; width:100%;">Got it! Next Drug →</button>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <button onclick="prevCard()">← Review Previous</button>
+                <span id="counter" style="color:var(--text-muted);">1 / 10</span>
+                <button onclick="nextCard()">Skip / Next →</button>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
-    const DEEPSEEK_KEY = "sk-8fd0f4776401470ab71b9aa166a02a25";
-
-    let drugDb = [];
-    let srsData = JSON.parse(localStorage.getItem('anki_srs_v2')) || {};
-    let sessionQueue = [];
-    let currentCard = null;
-    let dailyQuota = parseInt(localStorage.getItem('daily_quota')) || 15;
-
-    async function init() {
-        document.getElementById('quota-input').value = dailyQuota;
-        Papa.parse(CSV_URL, {
-            download: true, header: true, skipEmptyLines: true,
-            complete: (results) => {
-                drugDb = results.data.filter(d => d.name);
-                buildSession();
-            }
-        });
-    }
-
-    function buildSession() {
-        const now = Date.now();
-        let due = [], newCards = [];
-        
-        drugDb.forEach(drug => {
-            const stats = srsData[drug.name];
-            if (!stats) newCards.push(drug);
-            else if (stats.dueDate <= now) due.push({...drug, ...stats});
-        });
-
-        document.getElementById('due-count').innerText = due.length;
-        document.getElementById('new-count').innerText = newCards.length;
-        
-        sessionQueue = [...due, ...newCards.slice(0, dailyQuota)];
-        sessionQueue.sort(() => Math.random() - 0.5);
-        render();
-    }
-
-    function studyExtra() {
-        let newCards = drugDb.filter(drug => !srsData[drug.name]);
-        let extra = newCards.slice(0, 5);
-        if(extra.length > 0) {
-            sessionQueue = [...extra];
-            document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('card-wrapper').style.display = 'block';
-            render();
-        } else {
-            alert("No more new drugs found in database!");
-        }
-    }
-
-    function render() {
-        document.getElementById('session-left').innerText = sessionQueue.length;
-        if (sessionQueue.length === 0) {
-            document.getElementById('card-wrapper').style.display = 'none';
-            document.getElementById('empty-state').style.display = 'block';
-            return;
-        }
-        currentCard = sessionQueue[0];
-        document.getElementById('card-element').classList.remove('flipped');
-        document.getElementById('btn-reveal').style.display = 'block';
-        document.getElementById('srs-controls').style.display = 'none';
-        document.getElementById('lihkg-explain-box').style.display = 'none';
-        
-        document.getElementById('display-name').innerText = currentCard.name;
-        document.getElementById('display-class').innerText = currentCard.class || 'N/A';
-        document.getElementById('display-indication').innerText = currentCard.indication || 'N/A';
-        document.getElementById('display-nursing').innerText = currentCard.nursing || 'N/A';
-    }
-
-    function flipCard() {
-        document.getElementById('card-element').classList.add('flipped');
-        document.getElementById('btn-reveal').style.display = 'none';
-        document.getElementById('srs-controls').style.display = 'grid';
-    }
-
-    function rate(q) {
-        let stats = srsData[currentCard.name] || { interval: 0, reps: 0, ef: 2.5 };
-        if (q === 1) { 
-            stats.reps = 0;
-            const card = sessionQueue.shift();
-            sessionQueue.push(card);
-        } else {
-            if (stats.reps === 0) stats.interval = q === 4 ? 4 : 1;
-            else if (stats.reps === 1) stats.interval = 6;
-            else stats.interval = Math.round(stats.interval * stats.ef);
-            
-            stats.ef = stats.ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
-            if (stats.ef < 1.3) stats.ef = 1.3;
-            stats.reps++;
-            stats.dueDate = Date.now() + (stats.interval * 86400000);
-            srsData[currentCard.name] = stats;
-            localStorage.setItem('anki_srs_v2', JSON.stringify(srsData));
-            sessionQueue.shift();
-        }
-        render();
-    }
-
-    function toggleSettings() {
-        const p = document.getElementById('settings-panel');
-        p.style.display = p.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function saveSettings() {
-        dailyQuota = parseInt(document.getElementById('quota-input').value);
-        localStorage.setItem('daily_quota', dailyQuota);
-        toggleSettings();
-        buildSession();
-    }
-
-    async function getLihkgExplain() {
-        const box = document.getElementById('lihkg-explain-box');
-        box.style.display = 'block'; box.innerText = "師兄諗緊點答你...";
-        try {
-            const prompt = `You are a senior nurse in Hong Kong. Explain ${currentCard.name} for a student in clinical. Use LIHKG tone and HK Cantonese.`;
-            const resp = await fetch("https://api.deepseek.com/chat/completions", {
-                method: "POST", headers: { "Authorization": `Bearer ${DEEPSEEK_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: "deepseek-chat", messages: [{role: "user", content: prompt}] })
+    <script src="drugs.js"></script>
+    <script>
+        // --- 1. PWA & SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.log('SW Registration failed', err));
             });
-            const data = await resp.json();
-            box.innerHTML = marked.parse(data.choices[0].message.content);
-        } catch(e) { box.innerText = "Error loading AI."; }
-    }
+        }
 
-    function speak(txt) { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(txt)); }
+        // --- 2. APP STATE ---
+        let flashcardList = [];
+        let currentIndex = 0;
+        let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
 
-    init();
-</script>
+        // --- 3. ANKI / PROGRESS LOGIC ---
+        let dailyState = {
+            date: new Date().toDateString(),
+            count: 0,
+            quota: 20
+        };
+
+        function loadDailyState() {
+            const saved = localStorage.getItem('drug_tutor_daily');
+            const settingsQuota = localStorage.getItem('drug_tutor_quota');
+            
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // If it's a new day, reset the count
+                if (parsed.date !== new Date().toDateString()) {
+                    dailyState.date = new Date().toDateString();
+                    dailyState.count = 0;
+                } else {
+                    dailyState = parsed;
+                }
+            }
+            
+            if (settingsQuota) dailyState.quota = parseInt(settingsQuota);
+            document.getElementById('daily-limit-input').value = dailyState.quota;
+            updateProgressUI();
+        }
+
+        function saveDailyState() {
+            localStorage.setItem('drug_tutor_daily', JSON.stringify(dailyState));
+            localStorage.setItem('drug_tutor_quota', dailyState.quota);
+        }
+
+        function updateProgressUI() {
+            const percent = Math.min((dailyState.count / dailyState.quota) * 100, 100);
+            document.getElementById('progress-bar').style.width = percent + '%';
+            document.getElementById('progress-text').innerText = `${dailyState.count} / ${dailyState.quota}`;
+            
+            // Check for completion
+            if (dailyState.count >= dailyState.quota) {
+                showCompletionScreen();
+            } else {
+                hideCompletionScreen();
+            }
+        }
+
+        function incrementProgress() {
+            dailyState.count++;
+            saveDailyState();
+            updateProgressUI();
+        }
+
+        function resetDailyProgress() {
+            dailyState.count = 0;
+            saveDailyState();
+            updateProgressUI();
+            alert("Daily progress reset!");
+        }
+
+        function extendSession(amount) {
+            dailyState.quota += amount;
+            saveDailyState();
+            updateProgressUI(); // Will hide completion screen because count < new quota
+        }
+
+        function showCompletionScreen() {
+            document.getElementById('flashcard-section').style.display = 'none';
+            document.getElementById('session-complete').style.display = 'flex';
+        }
+
+        function hideCompletionScreen() {
+            document.getElementById('flashcard-section').style.display = 'block';
+            document.getElementById('session-complete').style.display = 'none';
+        }
+
+        // --- 4. DATA & UI LOGIC ---
+        
+        function init() {
+            loadDailyState();
+            
+            // Try load URL from settings, else default
+            const url = localStorage.getItem('drug_csv_url') || defaultSheetUrl;
+            document.getElementById('sheet-url').value = url;
+            
+            Papa.parse(url, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    let cleanData = results.data.filter(d => d.name && d.name.trim() !== "");
+                    // Shuffle the deck on load
+                    flashcardList = cleanData.sort(() => Math.random() - 0.5);
+                    renderCard();
+                }
+            });
+        }
+
+        function renderCard() {
+            if (flashcardList.length === 0) return;
+            const drug = flashcardList[currentIndex];
+            
+            // Reset Flip
+            document.getElementById('flashcard').classList.remove('flipped');
+            
+            // Fill Data
+            document.getElementById('fc-name').innerText = drug.name;
+            document.getElementById('fc-class').innerText = drug.class || 'Unknown';
+            document.getElementById('fc-indication').innerText = drug.indication || 'See details';
+            document.getElementById('fc-nursing').innerText = drug.nursing || 'Monitor patient';
+            
+            // Counter for total deck
+            document.getElementById('counter').innerText = `${currentIndex + 1} / ${flashcardList.length}`;
+        }
+
+        function flipCard(e) {
+            e.currentTarget.classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            if (dailyState.count < dailyState.quota) {
+                incrementProgress(); // Only count if we haven't hit quota yet
+            }
+            
+            // If we just hit the quota, the UI updates to hide the card.
+            // If not, we advance.
+            if (dailyState.count < dailyState.quota) {
+                currentIndex = (currentIndex + 1) % flashcardList.length;
+                setTimeout(renderCard, 200); // Small delay for flip animation reset
+            }
+        }
+
+        function prevCard() {
+            // Going back does not affect daily quota count
+            currentIndex = (currentIndex - 1 + flashcardList.length) % flashcardList.length;
+            renderCard();
+        }
+
+        // --- Settings Functions ---
+        function toggleSettings() {
+            const el = document.getElementById('settings-panel');
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function saveSettings() {
+            const newQuota = parseInt(document.getElementById('daily-limit-input').value);
+            const newUrl = document.getElementById('sheet-url').value;
+            
+            dailyState.quota = newQuota;
+            saveDailyState();
+            localStorage.setItem('drug_csv_url', newUrl);
+            
+            toggleSettings();
+            updateProgressUI();
+            
+            // Reload data if URL changed
+            if(newUrl !== defaultSheetUrl) {
+                location.reload(); 
+            }
+        }
+
+        // Start App
+        init();
+
+    </script>
 </body>
 </html>
