@@ -3,338 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Drug Tutor</title>
+    <title>Drug Tutor PWA</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Drug Tutor">
     
-    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
-    
+    <link rel="manifest" href="manifest.json">
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --primary: #4F46E5;
             --secondary: #10B981;
-            --accent: #F43F5E;
-            --surface: #ffffff;
             --background: #F3F4F6;
-            --text-main: #111827;
-            --text-muted: #6B7280;
-            --radius: 16px;
+            --surface: #ffffff;
+            --text: #111827;
+            --muted: #6B7280;
             --srs-again: #ef4444;
-            --srs-hard: #f59e0b;
             --srs-good: #10b981;
-            --srs-easy: #3b82f6;
+            --radius: 20px;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--background);
-            color: var(--text-main);
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; margin: 0; 
-            padding: env(safe-area-inset-top) 20px 40px 20px; 
-            line-height: 1.6;
+            background: var(--background);
+            margin: 0;
+            /* Safe area padding for iPhone notches */
+            padding: env(safe-area-inset-top) 15px 40px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
             -webkit-tap-highlight-color: transparent;
         }
 
-        h1 {
-            color: var(--text-main); margin: 20px 0 5px 0; text-align: center;
-            font-weight: 800; font-size: 1.8rem; display: flex; align-items: center; gap: 12px;
-        }
-
-        .app-logo { height: 40px; width: 40px; border-radius: 10px; }
-
+        /* Stats Header */
         .stats-bar {
-            display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);
-            background: rgba(255,255,255,0.9); padding: 8px 15px; border-radius: 20px;
-            margin-bottom: 20px; border: 1px solid #e5e7eb; backdrop-filter: blur(5px);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-size: 0.85rem;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 400px;
+            justify-content: space-between;
+            box-sizing: border-box;
         }
 
-        .top-bar {
-            display: flex; gap: 8px; justify-content: center; margin-bottom: 25px; width: 100%; max-width: 500px;
-            background: var(--surface); padding: 10px; border-radius: var(--radius);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;
+        /* Flashcard Container */
+        #app-container {
+            width: 100%;
+            max-width: 400px;
+            perspective: 1000px;
         }
 
-        button {
-            padding: 12px 15px; border: none; border-radius: 12px; cursor: pointer;
-            font-weight: 600; transition: all 0.2s ease; font-size: 0.85rem;
-            display: inline-flex; align-items: center; justify-content: center;
+        .card-box {
+            width: 100%;
+            height: 480px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .mode-active { background-color: var(--primary); color: white; }
-        .secondary { background-color: #f3f4f6; color: var(--text-main); }
-        .lang-lihkg { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: white; }
-
-        #settings-panel {
-            display: none; background: var(--surface); padding: 25px;
-            border-radius: var(--radius); box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            margin-bottom: 30px; width: 100%; max-width: 500px; box-sizing: border-box;
-            border: 1px solid #e5e7eb;
+        .card-box.flipped {
+            transform: rotateY(180deg);
         }
 
-        .settings-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.85rem; }
-        .settings-input, select {
-            width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px;
-            margin-bottom: 15px; box-sizing: border-box; font-size: 1rem;
+        .face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
-        #app-container { width: 100%; max-width: 500px; perspective: 1000px; }
-        
-        .flashcard-container {
-            width: 100%; height: 500px; position: relative;
-            transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        .front {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
-        .flashcard-container.flipped { transform: rotateY(180deg); }
 
-        .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-            border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            background-color: var(--surface); display: flex; flex-direction: column;
-            padding: 25px; box-sizing: border-box; border: 1px solid #eee;
+        .back {
+            transform: rotateY(180deg);
+            overflow-y: auto;
+            text-align: left;
         }
-        .card-front { justify-content: center; align-items: center; }
-        .card-back { transform: rotateY(180deg); overflow-y: auto; text-align: left; }
 
-        .card-title { font-size: 1.6rem; font-weight: 800; margin: 10px 0; color: var(--primary); }
+        /* Card Typography */
+        .label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
 
-        .detail-row { margin-bottom: 12px; border-bottom: 1px solid #f9fafb; padding-bottom: 8px; }
-        .detail-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-        .detail-content { font-size: 0.95rem; font-weight: 500; }
+        .drug-name {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 10px 0;
+        }
 
-        .srs-controls { margin-top: 20px; width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .btn-reveal { width: 100%; margin-top: 20px; padding: 18px; background: #111; color: white; border-radius: 15px; font-size: 1.1rem; }
-        
-        .srs-btn { display: flex; flex-direction: column; padding: 12px 5px; color: white; border: none; }
-        .srs-btn span { font-size: 0.65rem; opacity: 0.9; margin-top: 2px; }
-        .btn-again { background: var(--srs-again); }
-        .btn-hard { background: var(--srs-hard); }
-        .btn-good { background: var(--srs-good); }
-        .btn-easy { background: var(--srs-easy); }
+        .val {
+            font-size: 1rem;
+            margin-bottom: 18px;
+            color: var(--text);
+            line-height: 1.5;
+        }
 
-        .ai-output-box { margin-top: 15px; padding: 15px; border-radius: 12px; background: #f0fdfa; border-left: 4px solid var(--secondary); font-size: 0.9rem; }
-        
-        .quiz-container, #search-section { background: var(--surface); padding: 20px; border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: none; }
-        .search-bar { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #eee; font-size: 1rem; box-sizing: border-box; }
-        .option-btn { background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 14px; border-radius: 10px; margin-bottom: 8px; width: 100%; text-align: left; font-size: 1rem; }
-        .option-btn.correct { background-color: #ecfdf5; border-color: var(--secondary); color: #065f46; }
-        .option-btn.wrong { background-color: #fef2f2; border-color: var(--accent); color: #991b1b; }
+        /* Controls */
+        .controls {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 25px;
+        }
+
+        .btn-reveal {
+            width: 100%;
+            padding: 20px;
+            border-radius: 16px;
+            border: none;
+            background: #111;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .srs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            display: none;
+        }
+
+        .srs-btn {
+            padding: 18px;
+            border-radius: 16px;
+            border: none;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* Empty State */
+        #empty-state {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .ai-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0fdfa;
+            border-left: 4px solid var(--secondary);
+            font-size: 0.85rem;
+            border-radius: 8px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-<h1>
-    <svg class="app-logo" viewBox="0 0 64 64" fill="none">
-        <rect width="64" height="64" rx="16" fill="#4F46E5"/>
-        <path d="M32 16V48" stroke="white" stroke-width="6" stroke-linecap="round"/>
-        <path d="M16 32H48" stroke="white" stroke-width="6" stroke-linecap="round"/>
-    </svg>
-    Drug Tutor
-</h1>
-
 <div class="stats-bar">
-    <div>Due: <strong id="count-due">0</strong></div>
-    <div>New: <strong id="count-new">0</strong></div>
-    <div>Learned: <strong id="count-learned">0</strong></div>
-</div>
-
-<div class="top-bar">
-    <button id="mode-flashcard" class="mode-active" onclick="switchMode('flashcard')">Cards</button>
-    <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz</button>
-    <button id="mode-search" class="secondary" onclick="switchMode('search')">Search</button>
-    <button onclick="toggleSettings()" class="secondary">⚙️</button>
-</div>
-
-<div id="settings-panel">
-    <label class="settings-label">Study Quotas</label>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-        <input type="number" id="setting-new-limit" class="settings-input" value="15">
-        <input type="number" id="setting-review-limit" class="settings-input" value="100">
-    </div>
-
-    <label class="settings-label">AI Provider</label>
-    <select id="provider-select" class="settings-input" onchange="updateProviderDisplay()">
-        <option value="deepseek">DeepSeek (Auto)</option>
-        <option value="openrouter">OpenRouter (Free)</option>
-    </select>
-    
-    <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; margin-bottom:10px;">🌐 Lang: LIHKG</button>
-    <button onclick="saveSettings()" style="width:100%; background: var(--secondary); color:white;">💾 Save & Close</button>
+    <span>Today's Task: <strong id="session-count">0</strong> left</span>
+    <span style="color: var(--muted)">•</span>
+    <span id="quota-label">15 New + Reviews</span>
 </div>
 
 <div id="app-container">
-    <div id="flashcard-section">
-        <div id="deck-empty-state" style="display:none; text-align:center; padding:40px;">
-            <h2>All done! 🌟</h2>
-            <button onclick="forceReviewAll()" class="secondary">Cram Mode</button>
-        </div>
-
-        <div id="card-wrapper">
-            <div class="flashcard-container" id="flashcard">
-                <div class="card-face card-front">
-                    <div style="font-size: 3rem;">💊</div>
-                    <h2 id="fc-name" class="card-title">Drug Name</h2>
-                    <button onclick="speakText(currentCard.name)" style="background:#e0e7ff; color:var(--primary);">🔊 Pronounce</button>
-                </div>
-                <div class="card-face card-back">
-                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class"></div></div>
-                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content" id="fc-indication"></div></div>
-                    <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" id="fc-SideEffects"></div></div>
-                    <div class="detail-row" style="border:none;"><div class="detail-label">Nursing</div><div class="detail-content" id="fc-nursing"></div></div>
-                    
-                    <button id="btn-case" onclick="getIntegratedCaseStudy()" style="width:100%; background:#f0fdfa; color:#0f766e; border: 1px solid #ccfbf1; margin-top:10px;">🏥 AI Case Study</button>
-                    <div id="fc-ai-case" class="ai-output-box" style="display:none;"></div>
-                </div>
-            </div>
-
-            <div id="controls-pre-reveal">
-                <button class="btn-reveal" onclick="revealAnswer()">Show Answer</button>
-            </div>
-            <div id="controls-post-reveal" class="srs-controls" style="display:none;">
-                <button class="srs-btn btn-again" onclick="rateCard(1)">Again<span>1m</span></button>
-                <button class="srs-btn btn-hard" onclick="rateCard(2)">Hard<span>2d</span></button>
-                <button class="srs-btn btn-good" onclick="rateCard(3)">Good<span>4d</span></button>
-                <button class="srs-btn btn-easy" onclick="rateCard(4)">Easy<span>7d</span></button>
-            </div>
-        </div>
+    <div id="empty-state">
+        <div style="font-size: 5rem; margin-bottom: 20px;">🏆</div>
+        <h2 style="font-weight: 800;">Quota Complete!</h2>
+        <p style="color: var(--muted); margin-bottom: 30px;">You've finished your drugs for today. Time to rest your brain!</p>
+        <button onclick="location.reload()" style="background: white; border: 1px solid #ddd; padding: 12px 25px; border-radius: 10px; font-weight: 600;">Check for Updates</button>
     </div>
 
-    <div id="quiz-section" class="quiz-container">
-        <p id="quiz-question" style="font-weight:bold; font-size:1.1rem;"></p>
-        <div id="quiz-options"></div>
-        <button id="next-quiz-btn" onclick="nextQuestion()" style="display:none; width:100%; margin-top:15px; background:var(--primary); color:white;">Next Question →</button>
-    </div>
+    <div id="card-wrapper">
+        <div class="card-box" id="card-element" onclick="flipCard()">
+            <div class="face front">
+                <p class="label">DRUG NAME</p>
+                <h1 class="drug-name" id="display-name">Syncing...</h1>
+                <button onclick="event.stopPropagation(); speak(currentCard.name)" style="margin-top:20px; border:none; background:#e0e7ff; color:var(--primary); padding:10px 20px; border-radius:12px; font-weight:600;">🔊 Pronounce</button>
+            </div>
+            <div class="face back">
+                <p class="label">Class</p><div class="val" id="display-class"></div>
+                <p class="label">Indication</p><div class="val" id="display-indication"></div>
+                <p class="label">Nursing Priority</p><div class="val" id="display-nursing"></div>
+                
+                <button onclick="event.stopPropagation(); getAICase()" id="ai-btn" style="width:100%; padding:12px; background:#f0fdfa; color:#0f766e; border:1px solid #ccfbf1; border-radius:12px; font-weight:600; font-size:0.8rem;">🏥 AI Patient Case</button>
+                <div id="ai-case-box" class="ai-box"></div>
+            </div>
+        </div>
 
-    <div id="search-section">
-        <input type="text" id="search-input" class="search-bar" placeholder="Search drugs..." oninput="handleSearch()">
-        <div id="search-results" style="margin-top:15px;"></div>
+        <div class="controls">
+            <button id="btn-reveal" class="btn-reveal" onclick="flipCard()">Show Details</button>
+            <div id="srs-controls" class="srs-grid">
+                <button class="srs-btn" style="background:var(--srs-again)" onclick="rate(1)">Review Again</button>
+                <button class="srs-btn" style="background:var(--srs-good)" onclick="rate(3)">Got It</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // --- PWA Service Worker Registration ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(reg => console.log('SW Registered'))
-                .catch(err => console.log('SW Failed', err));
+    // --- Configuration ---
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
+    const DEEPSEEK_KEY = "sk-8fd0f4776401470ab71b9aa166a02a25";
+    const NEW_DRUG_QUOTA = 15;
+
+    let drugDb = [];
+    let srsData = JSON.parse(localStorage.getItem('drug_srs_v3')) || {};
+    let sessionQueue = [];
+    let currentCard = null;
+
+    // --- Initialization ---
+    async function init() {
+        // Register Service Worker for Offline PWA Support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js').catch(() => {});
+        }
+
+        // Fetch Google Sheets Data
+        Papa.parse(CSV_URL, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: (results) => {
+                drugDb = results.data.filter(d => d.name);
+                generateDailySession();
+            },
+            error: () => { alert("Failed to connect to drug database."); }
         });
     }
 
-    // --- State & Config ---
-    let drugDatabase = [];
-    let srsProgress = JSON.parse(localStorage.getItem('srsProgress')) || {};
-    let studyQueue = [];
-    let currentCard = null;
-    let aiLanguage = 'lihkg';
-    let quizCurrentIndex = 0;
-
-    const DEEPSEEK_KEY = "sk-8fd0f4776401470ab71b9aa166a02a25";
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
-
-    async function init() {
-        await fetchDatabase();
-    }
-
-    async function fetchDatabase() {
-        try {
-            const resp = await fetch(CSV_URL);
-            const csvText = await resp.text();
-            Papa.parse(csvText, {
-                header: true, skipEmptyLines: true,
-                complete: (results) => {
-                    drugDatabase = results.data.filter(d => d.name);
-                    buildStudyQueue();
-                }
-            });
-        } catch (e) { console.error("Database error", e); }
-    }
-
-    function buildStudyQueue() {
+    // --- Quota Logic ---
+    function generateDailySession() {
         const now = Date.now();
-        let due = [], newCards = [], learned = 0;
-        const limitNew = parseInt(document.getElementById('setting-new-limit').value);
-        const limitReview = parseInt(document.getElementById('setting-review-limit').value);
+        let dueCards = [];
+        let newEligible = [];
 
-        drugDatabase.forEach(drug => {
-            const stats = srsProgress[drug.name];
-            if (!stats) newCards.push(drug);
-            else {
-                if (stats.interval > 21) learned++;
-                if (stats.dueDate <= now) due.push({...drug, ...stats});
+        drugDb.forEach(drug => {
+            const stats = srsData[drug.name];
+            if (!stats) {
+                newEligible.push(drug);
+            } else if (stats.dueDate <= now) {
+                dueCards.push({...drug, ...stats});
             }
         });
 
-        document.getElementById('count-due').innerText = due.length;
-        document.getElementById('count-new').innerText = newCards.length;
-        document.getElementById('count-learned').innerText = learned;
-
-        studyQueue = [...due.slice(0, limitReview), ...newCards.slice(0, limitNew)];
-        loadNextCard();
+        // Strict Session: Today's Due Reviews + Exactly 15 New Cards
+        sessionQueue = [...dueCards, ...newEligible.slice(0, NEW_DRUG_QUOTA)];
+        
+        // Shuffle for variety
+        sessionQueue.sort(() => Math.random() - 0.5);
+        
+        renderNext();
     }
 
-    function loadNextCard() {
-        if (studyQueue.length === 0) {
+    function renderNext() {
+        document.getElementById('session-count').innerText = sessionQueue.length;
+        
+        if (sessionQueue.length === 0) {
             document.getElementById('card-wrapper').style.display = 'none';
-            document.getElementById('deck-empty-state').style.display = 'block';
+            document.getElementById('empty-state').style.display = 'block';
             return;
         }
-        currentCard = studyQueue[0];
-        document.getElementById('card-wrapper').style.display = 'block';
-        document.getElementById('deck-empty-state').style.display = 'none';
-        document.getElementById('flashcard').classList.remove('flipped');
-        document.getElementById('controls-pre-reveal').style.display = 'block';
-        document.getElementById('controls-post-reveal').style.display = 'none';
+
+        currentCard = sessionQueue[0];
         
-        document.getElementById('fc-name').innerText = currentCard.name;
-        document.getElementById('fc-class').innerText = currentCard.class || "N/A";
-        document.getElementById('fc-indication').innerText = currentCard.indication || "N/A";
-        document.getElementById('fc-SideEffects').innerText = currentCard.SideEffects || "N/A";
-        document.getElementById('fc-nursing').innerText = currentCard.nursing || "N/A";
-        document.getElementById('fc-ai-case').style.display = 'none';
-        document.getElementById('btn-case').innerText = "🏥 AI Case Study";
+        // UI Reset
+        document.getElementById('card-element').classList.remove('flipped');
+        document.getElementById('btn-reveal').style.display = 'block';
+        document.getElementById('srs-controls').style.display = 'none';
+        document.getElementById('ai-case-box').style.display = 'none';
+        document.getElementById('ai-btn').disabled = false;
+        document.getElementById('ai-btn').innerText = "🏥 AI Patient Case";
+        
+        // Populate Data
+        document.getElementById('display-name').innerText = currentCard.name;
+        document.getElementById('display-class').innerText = currentCard.class || 'N/A';
+        document.getElementById('display-indication').innerText = currentCard.indication || 'N/A';
+        document.getElementById('display-nursing').innerText = currentCard.nursing || 'N/A';
     }
 
-    function revealAnswer() {
-        document.getElementById('flashcard').classList.add('flipped');
-        document.getElementById('controls-pre-reveal').style.display = 'none';
-        document.getElementById('controls-post-reveal').style.display = 'grid';
+    // --- Interaction ---
+    function flipCard() {
+        const card = document.getElementById('card-element');
+        card.classList.toggle('flipped');
+        const isFlipped = card.classList.contains('flipped');
+        document.getElementById('btn-reveal').style.display = isFlipped ? 'none' : 'block';
+        document.getElementById('srs-controls').style.display = isFlipped ? 'grid' : 'none';
     }
 
-    function rateCard(quality) {
-        const id = currentCard.name;
-        let stats = srsProgress[id] || { interval: 0, repetitions: 0, ef: 2.5 };
+    function rate(quality) {
+        let stats = srsData[currentCard.name] || { interval: 0, reps: 0, ef: 2.5 };
         
         if (quality < 3) {
-            stats.interval = 1;
-            stats.repetitions = 0;
+            // "Review Again" - Re-queue for today
+            const retryItem = sessionQueue.shift();
+            sessionQueue.push(retryItem);
         } else {
-            if (stats.repetitions === 0) stats.interval = 1;
-            else if (stats.repetitions === 1) stats.interval = 6;
-            else stats.interval = Math.round(stats.interval * stats.ef);
-            stats.repetitions++;
+            // "Got It" - Apply Spaced Repetition and remove from today
+            if (stats.reps === 0) stats.interval = 1;
+            else if (stats.reps === 1) stats.interval = 4;
+            else stats.interval = Math.round(stats.interval * 2.5);
+            
+            stats.reps++;
+            stats.dueDate = Date.now() + (stats.interval * 86400000);
+            
+            srsData[currentCard.name] = stats;
+            localStorage.setItem('drug_srs_v3', JSON.stringify(srsData));
+            sessionQueue.shift();
         }
         
-        stats.dueDate = Date.now() + (stats.interval * 86400000);
-        srsProgress[id] = stats;
-        localStorage.setItem('srsProgress', JSON.stringify(srsProgress));
-        
-        studyQueue.shift();
-        loadNextCard();
+        renderNext();
     }
 
-    async function getIntegratedCaseStudy() {
-        const box = document.getElementById('fc-ai-case');
-        const btn = document.getElementById('btn-case');
+    // --- AI Functions ---
+    async function getAICase() {
+        const box = document.getElementById('ai-case-box');
+        const btn = document.getElementById('ai-btn');
         box.style.display = 'block';
-        box.innerHTML = "<em>Simulating patient...</em>";
+        box.innerText = "Simulating patient...";
         btn.disabled = true;
 
         try {
@@ -343,82 +352,24 @@
                 headers: { "Authorization": `Bearer ${DEEPSEEK_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "deepseek-chat",
-                    messages: [{role: "user", content: `Create a brief clinical case for a nurse about ${currentCard.name}. Use ${aiLanguage} tone.`}]
+                    messages: [{role: "user", content: `Create a brief, one-paragraph clinical nursing scenario for the drug ${currentCard.name}.`}]
                 })
             });
             const data = await resp.json();
             box.innerHTML = marked.parse(data.choices[0].message.content);
-        } catch(e) { box.innerText = "Error loading AI."; }
-        btn.disabled = false;
-    }
-
-    function toggleSettings() {
-        const p = document.getElementById('settings-panel');
-        p.style.display = p.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function saveSettings() {
-        toggleSettings();
-        buildStudyQueue();
-    }
-
-    function toggleLanguage() {
-        aiLanguage = aiLanguage === 'lihkg' ? 'professional' : 'lihkg';
-        document.getElementById('lang-btn').innerText = `🌐 Lang: ${aiLanguage.toUpperCase()}`;
-    }
-
-    function switchMode(mode) {
-        ['flashcard-section', 'quiz-section', 'search-section'].forEach(id => {
-            document.getElementById(id).style.display = 'none';
-        });
-        document.getElementById(mode + '-section').style.display = 'block';
-        document.querySelectorAll('.top-bar button').forEach(b => b.classList.replace('mode-active', 'secondary'));
-        document.getElementById('mode-' + mode).classList.replace('secondary', 'mode-active');
-        if (mode === 'quiz') generateQuiz();
-    }
-
-    function speakText(text) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        window.speechSynthesis.speak(u);
-    }
-
-    function handleSearch() {
-        const query = document.getElementById('search-input').value.toLowerCase();
-        const results = drugDatabase.filter(d => d.name.toLowerCase().includes(query) || d.class.toLowerCase().includes(query));
-        const html = results.map(d => `<div style="padding:10px; background:white; margin-bottom:5px; border-radius:8px;"><strong>${d.name}</strong> - ${d.class}</div>`).join('');
-        document.getElementById('search-results').innerHTML = html;
-    }
-
-    function generateQuiz() {
-        if (drugDatabase.length < 4) return;
-        const correct = drugDatabase[Math.floor(Math.random() * drugDatabase.length)];
-        const options = [correct];
-        while(options.length < 4) {
-            const r = drugDatabase[Math.floor(Math.random() * drugDatabase.length)];
-            if(!options.includes(r)) options.push(r);
+            btn.innerText = "Case Generated";
+        } catch(e) { 
+            box.innerText = "AI is currently offline. Check your internet.";
+            btn.disabled = false;
         }
-        options.sort(() => Math.random() - 0.5);
-
-        document.getElementById('quiz-question').innerText = `Which drug belongs to the class: ${correct.class}?`;
-        document.getElementById('quiz-options').innerHTML = options.map(o => 
-            `<button class="option-btn" onclick="checkQuiz(this, '${o.name}', '${correct.name}')">${o.name}</button>`
-        ).join('');
-        document.getElementById('next-quiz-btn').style.display = 'none';
     }
 
-    function checkQuiz(btn, selected, correct) {
-        if (selected === correct) {
-            btn.classList.add('correct');
-            speakText("Correct");
-        } else {
-            btn.classList.add('wrong');
-            speakText("Incorrect");
-        }
-        document.getElementById('next-quiz-btn').style.display = 'block';
+    function speak(txt) { 
+        window.speechSynthesis.cancel(); 
+        const msg = new SpeechSynthesisUtterance(txt);
+        msg.rate = 0.9; // Slightly slower for clarity
+        window.speechSynthesis.speak(msg); 
     }
-
-    function nextQuestion() { generateQuiz(); }
 
     init();
 </script>
