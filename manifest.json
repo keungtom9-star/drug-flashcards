@@ -1,8 +1,7 @@
 {
-  "name": "AI Drug Tutor",
+  "name": "Drug Tutor AI",
   "short_name": "DrugTutor",
-  "description": "Integrated Pharmacology Tutor for Nurses",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#F3F4F6",
   "theme_color": "#4F46E5",
