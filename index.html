@@ -3,598 +3,572 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor (Anki Mode)</title>
+    <title>AI Drug Tutor (SRS Edition)</title>
     
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#4F46E5">
+    <link rel="apple-touch-icon" href="icon.png">
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338ca;
-            --secondary: #10B981;
-            --accent: #F43F5E;
-            --surface: #ffffff;
-            --background: #F3F4F6;
-            --text-main: #111827;
-            --text-muted: #6B7280;
+            --primary: #4F46E5; --primary-hover: #4338ca;
+            --secondary: #10B981; --accent: #F43F5E;
+            --surface: #ffffff; --background: #F3F4F6;
+            --text-main: #111827; --text-muted: #6B7280;
             --radius: 16px;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background);
-            background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
-            background-size: 20px 20px;
             color: var(--text-main);
             display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; margin: 0; padding: 40px 20px; line-height: 1.6;
+            min-height: 100vh; margin: 0; padding: 20px;
+            padding-bottom: 80px; /* Space for bottom nav */
         }
 
-        h1 {
-            color: var(--text-main); margin-bottom: 5px; text-align: center;
-            font-weight: 800; font-size: 2.2rem;
-            display: flex; align-items: center; justify-content: center; gap: 15px;
+        /* --- Dashboard (Anki Style) --- */
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 15px; width: 100%; max-width: 600px;
+            margin-bottom: 25px;
         }
-
-        .app-logo { height: 45px; width: 45px; min-width: 45px; border-radius: 12px; box-shadow: var(--shadow-sm); transition: transform 0.3s ease; }
-        .app-logo:hover { transform: rotate(10deg) scale(1.1); }
-        .subtitle { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 30px; text-align: center; background: #e5e7eb; padding: 4px 12px; border-radius: 20px; }
-
-        /* Anki Progress Bar */
-        .anki-progress-wrapper {
-            width: 100%; max-width: 600px; margin-bottom: 15px;
+        .stat-card {
+            background: white; padding: 15px; border-radius: 12px;
+            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .anki-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
-        .anki-track { width: 100%; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; }
-        .anki-fill { height: 100%; background: var(--secondary); width: 0%; transition: width 0.4s ease; }
+        .stat-num { font-size: 1.8rem; font-weight: 800; display: block; }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .c-new { color: #3b82f6; } /* Blue for New */
+        .c-learn { color: #f59e0b; } /* Orange for Learning */
+        .c-review { color: #10b981; } /* Green for Review */
 
-        /* Completion Screen */
-        #session-complete-screen {
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            background: var(--surface); padding: 40px; border-radius: var(--radius);
-            box-shadow: var(--shadow-lg); text-align: center; width: 100%; max-width: 600px;
-            animation: fadeIn 0.5s;
+        /* --- Flashcard Container --- */
+        .flashcard-area {
+            width: 100%; max-width: 600px; perspective: 1000px;
+            min-height: 500px; position: relative;
         }
-        .complete-icon { font-size: 4rem; margin-bottom: 10px; }
+        .card-face {
+            background: white; width: 100%; min-height: 500px;
+            border-radius: 24px; box-shadow: var(--shadow-lg);
+            padding: 30px; box-sizing: border-box;
+            display: flex; flex-direction: column;
+            backface-visibility: hidden; position: absolute;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-back {
+            transform: rotateY(180deg); 
+            background: #fafafa;
+        }
+        .flipped .card-front { transform: rotateY(-180deg); }
+        .flipped .card-back { transform: rotateY(0deg); }
 
-        /* General UI */
-        .top-bar { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; width: 100%; max-width: 850px; flex-wrap: wrap; background: var(--surface); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid #e5e7eb; }
-        button { padding: 10px 18px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.2s ease; font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        button:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        button.mode-active { background-color: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-        button.secondary { background-color: white; color: var(--text-main); border: 1px solid #d1d5db; }
-        button.secondary:hover { background-color: #f9fafb; border-color: #9ca3af; }
-        button.lang-lihkg { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: white; }
-        button.muted { background-color: var(--accent); color: white; }
+        /* --- SRS Controls --- */
+        .srs-controls {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 8px; margin-top: 20px; width: 100%;
+        }
+        .srs-btn {
+            padding: 12px 5px; border-radius: 10px; border: none;
+            color: white; font-weight: 600; font-size: 0.85rem;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center;
+        }
+        .btn-again { background: #ef4444; } /* Red */
+        .btn-hard { background: #f59e0b; }  /* Orange */
+        .btn-good { background: #10b981; }  /* Green */
+        .btn-easy { background: #3b82f6; }  /* Blue */
+        .interval-sub { font-size: 0.7rem; opacity: 0.9; margin-top: 4px; font-weight: 400; }
 
-        /* Settings */
-        #settings-panel { display: none; background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow-lg); margin-bottom: 30px; width: 100%; max-width: 600px; border: 1px solid #e5e7eb; animation: slideDown 0.3s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .settings-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; }
-        .settings-input, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 15px; font-family: inherit; }
+        .big-action-btn {
+            background: var(--primary); color: white;
+            width: 100%; padding: 18px; border-radius: 16px;
+            font-size: 1.1rem; font-weight: 700; border: none;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            transition: transform 0.2s;
+        }
+        .big-action-btn:active { transform: scale(0.98); }
 
-        /* Cards */
-        #app-container { width: 100%; max-width: 650px; perspective: 1000px; }
-        .flashcard-container { width: 100%; height: 720px; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
-        .flashcard-container.flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 24px; box-shadow: var(--shadow-lg); background-color: var(--surface); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; box-sizing: border-box; text-align: center; border: 1px solid rgba(0,0,0,0.02); }
-        .card-front { background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%); }
-        .card-back { transform: rotateY(180deg); align-items: flex-start; text-align: left; overflow-y: auto; padding-top: 25px; }
-        .card-title { font-size: 1.8rem; font-weight: 800; background: -webkit-linear-gradient(45deg, var(--primary), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 15px 0; }
+        /* --- Standard UI Elements --- */
+        h1 { margin: 10px 0 20px 0; font-size: 1.8rem; color: #111827; display: flex; align-items: center; gap: 10px; }
+        .detail-row { border-bottom: 1px solid #e5e7eb; padding: 10px 0; }
+        .detail-label { font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; }
+        .ai-output-box { background: #f0fdfa; border-left: 4px solid #10b981; padding: 15px; margin-top: 15px; border-radius: 8px; font-size: 0.9rem; }
         
-        .detail-row { margin-bottom: 15px; width: 100%; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; }
-        .detail-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
-        .detail-content { font-size: 1rem; font-weight: 500; }
+        /* Navigation & Sections */
+        .section { display: none; width: 100%; max-width: 600px; animation: fadeIn 0.3s; }
+        .active-section { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Quiz & Search */
-        .quiz-container, #search-section { background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow-lg); border: 1px solid #e5e7eb; display: none; min-height: 400px; }
-        .quiz-question { font-size: 1.3rem; font-weight: 700; margin-bottom: 25px; }
-        .option-btn { background: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 12px; width: 100%; margin-bottom: 10px; text-align: left; cursor: pointer; }
-        .option-btn.correct { background: #ecfdf5; border-color: var(--secondary); }
-        .option-btn.wrong { background: #fef2f2; border-color: var(--accent); }
+        /* Settings Overlay */
+        #settings-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; display: none;
+            justify-content: center; align-items: center;
+        }
+        .settings-modal {
+            background: white; width: 90%; max-width: 500px;
+            border-radius: 16px; padding: 25px;
+            max-height: 85vh; overflow-y: auto;
+        }
+        input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
 
-        .search-bar { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e5e7eb; font-size: 1.1rem; margin-bottom: 20px; box-sizing: border-box; }
-        .results-grid { display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; }
-        .result-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; cursor: pointer; }
-        
-        /* AI Output */
-        .ai-output-box { margin-top: 20px; padding: 20px; border-radius: 12px; background: #f0fdfa; border-left: 5px solid var(--secondary); display: none; animation: fadeIn 0.5s; font-size: 0.95rem; }
-        .nav-controls { margin-top: 25px; display: flex; justify-content: space-between; width: 100%; background: white; padding: 10px; border-radius: 50px; box-shadow: var(--shadow-md); }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.3); border-radius: 50%; border-top-color: #000; animation: spin 0.8s linear infinite; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Bottom Tab Bar (Mobile App Feel) */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: white; border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: space-around;
+            padding: 10px 0; z-index: 500;
+        }
+        .nav-item {
+            background: none; border: none; color: #9ca3af;
+            font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .nav-item.active { color: var(--primary); font-weight: 600; }
+        .nav-icon { font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-<h1>
-    <svg class="app-logo" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="16" fill="#4F46E5"/><path d="M32 16V48" stroke="white" stroke-width="6" stroke-linecap="round"/><path d="M16 32H48" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="42" cy="22" r="6" fill="#10B981" stroke="#4F46E5" stroke-width="2"/></svg>
-    Integrated Drug
-</h1>
-    <div class="subtitle" id="provider-display">Provider: Not Configured</div>
-    
-    <div class="top-bar">
-        <button id="mode-flashcard" class="mode-active" onclick="switchMode('flashcard')">Flashcards</button>
-        <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz</button>
-        <button id="mode-search" class="secondary" onclick="switchMode('search')">Search</button>
-        <button onclick="reshuffle()" style="background-color: #f59e0b; color: white;">Reset</button>
-        <button onclick="toggleSettings()" class="secondary">⚙️ Settings</button>
+    <div style="width:100%; max-width:600px; display:flex; justify-content:space-between; align-items:center;">
+        <h1>💊 Integrated Drug</h1>
+        <button onclick="openSettings()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">⚙️</button>
     </div>
 
-    <div id="settings-panel">
-        
-        <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-            <label class="settings-label" style="margin-bottom: 10px;">⚡ Quick Controls</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                 <button onclick="toggleDrugSet()" id="set-btn" class="secondary" style="width:100%; font-size:0.85rem;">📚 Set: Common</button>
-                 <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; font-size:0.85rem;">🌐 Lang: LIHKG</button>
-                 <button onclick="toggleMute()" id="mute-btn" class="secondary" style="grid-column: span 2; width:100%;">🔊 Audio: On</button>
+    <div id="section-home" class="section active-section">
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <span class="stat-num c-new" id="dash-new">0</span>
+                <span class="stat-label">New</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num c-learn" id="dash-learn">0</span>
+                <span class="stat-label">Learning</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num c-review" id="dash-review">0</span>
+                <span class="stat-label">To Review</span>
             </div>
         </div>
 
-        <h3 style="margin-top:0;">Configuration</h3>
-        
-        <div class="settings-group">
-            <label class="settings-label">📅 Daily Quota (Cards/Day):</label>
-            <input type="number" id="daily-quota-input" class="settings-input" value="20" min="5" />
-            
-            <label class="settings-label">🔊 Text-to-Speech Provider:</label>
-            <select id="tts-provider-select" onchange="updateTTSUI()">
-                <option value="browser">Browser Native (Free/Offline)</option>
-                <option value="azure">Azure Neural (High Quality)</option>
-            </select>
-            
-            <div id="azure-config-group" style="display:none; margin-top:10px; background:#eff6ff; padding:10px; border-radius:8px;">
-                <label class="settings-label">Azure Speech Key:</label>
-                <input type="password" id="azure-key" class="settings-input" placeholder="e.g. 39483..." />
-                <label class="settings-label">Azure Region:</label>
-                <input type="text" id="azure-region" class="settings-input" placeholder="e.g. eastus, southeastasia" />
-            </div>
-
-            <label class="settings-label" style="margin-top:15px;">Preferred Voice:</label>
-            <select id="voice-select"><option value="">Default Voice</option></select>
+        <div style="background: white; padding: 20px; border-radius: 16px; text-align: center; box-shadow: var(--shadow-lg);">
+            <h2 style="margin-top:0;">Ready to Study?</h2>
+            <p id="queue-status" style="color: #6b7280; margin-bottom: 25px;">You have items due today.</p>
+            <button id="btn-start" class="big-action-btn" onclick="startSession()">▶ Start Session</button>
+            <button id="btn-add-more" onclick="addMoreNewCards()" style="margin-top: 15px; background: #eff6ff; color: var(--primary); border:none; padding: 10px 20px; border-radius: 20px; font-weight: 600; display:none;">
+                + Add More New Cards
+            </button>
         </div>
 
-        <div class="settings-group" style="margin-top:15px;">
-            <label class="settings-label">Select Active AI Provider:</label>
-            <select id="provider-select" onchange="updateProviderDisplay()">
-                <option value="deepseek">DeepSeek Official</option>
-                <option value="openrouter" selected>OpenRouter (Trinity Mini)</option>
-                <option value="github">GitHub Models (GPT-4o mini)</option>
-            </select>
-            
-            <div id="config-inputs" style="margin-top:10px;">
-                <input type="password" id="api-key-input" class="settings-input" placeholder="Enter API Key for selected provider" />
+        <div style="margin-top: 20px; text-align: center; font-size: 0.8rem; color: #9ca3af;">
+            <div id="pwa-install-area" style="display:none; margin-bottom: 10px;">
+                <button onclick="installPWA()" style="background: #111827; color: white; border:none; padding: 8px 16px; border-radius: 8px;">📲 Install App</button>
             </div>
+            Synced to Local Storage
         </div>
-
-        <div class="settings-group">
-            <label class="settings-label">Load External Data (CSV):</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="sheet-url" class="settings-input" placeholder="https://docs.google.com/spreadsheets/..." style="margin-bottom:0; flex-grow:1;" />
-                <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load</button>
-            </div>
-            <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary);"></div>
-        </div>
-
-        <button onclick="saveSettings()" style="width:100%; background-color: var(--secondary); margin-top: 15px;">💾 Save & Close</button>
     </div>
 
-    <div id="app-container">
-        
-        <div id="flashcard-section">
-            
-            <div class="anki-progress-wrapper" id="anki-ui">
-                <div class="anki-header">
-                    <span>📅 Daily Goal</span>
-                    <span id="anki-counter">0 / 20</span>
-                </div>
-                <div class="anki-track">
-                    <div class="anki-fill" id="anki-bar"></div>
+    <div id="section-review" class="section">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; color:#6b7280; font-size:0.9rem;">
+            <span id="review-counter">Card 1</span>
+            <button onclick="endSession()" style="background:none; border:none; color:#ef4444; font-weight:600;">Exit</button>
+        </div>
+
+        <div class="flashcard-area" id="flashcard-container">
+            <div class="card-face card-front">
+                <div style="font-size: 3rem; margin-bottom: 15px; text-align:center;">💊</div>
+                <h2 id="card-name" style="text-align:center; font-size: 2rem; margin:0 0 10px 0;">Drug Name</h2>
+                <div style="flex-grow:1; display:flex; align-items:center; justify-content:center;">
+                    <button onclick="showAnswer()" class="big-action-btn" style="background: #f3f4f6; color: #111827;">Show Answer</button>
                 </div>
             </div>
 
-            <div id="session-complete-screen">
-                <div class="complete-icon">🎉</div>
-                <h2 style="color:var(--text-main);">Daily Quota Reached!</h2>
-                <p style="color:var(--text-muted); margin-bottom: 30px;">You've studied your target drugs for today. Great job keeping the streak!</p>
-                <button onclick="extendSession(10)" class="mode-active" style="width:100%; margin-bottom: 10px; font-size: 1rem;">📚 Study 10 More</button>
-                <button onclick="resetDailyProgress()" class="secondary" style="width:100%;">🔄 Reset Today</button>
-            </div>
+            <div class="card-face card-back">
+                <h3 id="back-name" style="margin-top:0; color:var(--primary);">Drug Name</h3>
+                
+                <div class="detail-row"><div class="detail-label">Class</div><div id="back-class">...</div></div>
+                <div class="detail-row"><div class="detail-label">Indication</div><div id="back-indication">...</div></div>
+                <div class="detail-row"><div class="detail-label">Nursing</div><div id="back-nursing">...</div></div>
+                
+                <div id="ai-context-area" class="ai-output-box" style="display:none;"></div>
+                <button onclick="triggerAIExplanation()" style="margin-top:10px; width:100%; padding:8px; border:1px solid #ddd; background:white; border-radius:8px;">🤖 AI: Explain Mechanism</button>
 
-            <div class="flashcard-container" id="flashcard" onclick="flipCard(event)">
-                <div class="card-face card-front">
-                    <div style="font-size: 3.5rem; margin-bottom: 20px;">💊</div>
-                    <h2 id="fc-name" class="card-title">Drug Name</h2>
-                    <p style="color: #9ca3af; font-size: 0.9rem;">(Tap to flip)</p>
-                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name, 'en')" style="margin-top: 20px; background:#e0e7ff; color:var(--primary);">🔊 Read Name</button>
-                </div>
-                <div class="card-face card-back">
-                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class">...</div></div>
-                    <div class="detail-row"><div class="detail-label">Body System</div><div class="detail-content" id="fc-system">...</div></div>
-                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content" id="fc-indication">...</div></div>
-                    <div class="detail-row"><div class="detail-label">SideEffects</div><div class="detail-content" id="fc-SideEffects">...</div></div>
-                    <div class="detail-row" style="border:none;"><div class="detail-label">Nursing Considerations</div><div class="detail-content" id="fc-nursing">...</div></div>
-
-                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px; width: 100%;">
-                        <button onclick="event.stopPropagation(); getIntegratedCaseStudy(flashcardList[fcCurrentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="secondary" style="width:100%; font-size:0.85rem;" id="btn-case">🏥 AI: Case Study</button>
-                        <div id="fc-ai-case" class="ai-output-box"></div>
-                        <button onclick="event.stopPropagation(); readAIContent('fc-ai-case')" style="display:none; width:100%; background:#e0e7ff; color:var(--primary);" id="btn-read-case">🔊 Read Case</button>
+                <div style="margin-top: auto;">
+                    <div class="srs-controls">
+                        <button class="srs-btn btn-again" onclick="rateCard(1)">Again<span class="interval-sub" id="time-again">1m</span></button>
+                        <button class="srs-btn btn-hard" onclick="rateCard(2)">Hard<span class="interval-sub" id="time-hard">2d</span></button>
+                        <button class="srs-btn btn-good" onclick="rateCard(3)">Good<span class="interval-sub" id="time-good">4d</span></button>
+                        <button class="srs-btn btn-easy" onclick="rateCard(4)">Easy<span class="interval-sub" id="time-easy">7d</span></button>
                     </div>
-                    <button onclick="event.stopPropagation(); speakBack(flashcardList[fcCurrentIndex])" style="margin-top: 20px; width:100%; background:#e0e7ff; color:var(--primary); font-size:0.8rem;">🔊 Read Details</button>
                 </div>
             </div>
-            
-            <div class="nav-controls" id="fc-nav">
-                <button onclick="prevCard()">← Prev</button>
-                <span id="counter" style="align-self: center; font-weight: bold; color:#6b7280;">#1</span>
-                <button onclick="nextCard()">Next / Done →</button>
-            </div>
         </div>
-
-        <div id="quiz-section" class="quiz-container">
-            <div id="quiz-content">
-                <p class="quiz-question" id="quiz-question">Question...</p>
-                <div id="quiz-options"></div>
-            </div>
-            <button id="btn-quiz-explain" style="width:100%; background:var(--primary); color:white; margin-top:20px;" onclick="triggerQuizExplain()">🤖 Explain Why</button>
-            <div id="ai-container" style="display:none;">
-                <div id="ai-content" class="ai-output-box" style="display:block;"></div>
-                <button onclick="readAIContent('ai-content')" style="width:100%; background:#e0e7ff; color:var(--primary); margin-top:10px;">🔊 Read Explanation</button>
-            </div>
-            <div class="nav-controls" style="justify-content: flex-end; margin-top:15px;">
-                <button onclick="nextQuestion()" id="next-quiz-btn" style="display:none;">Next Question →</button>
-            </div>
-        </div>
-
-        <div id="search-section">
-            <div style="text-align:center; margin-bottom:15px; font-weight:800; color:var(--primary); font-size:1.2rem;">🔍 Drug Database Search</div>
-            <input type="text" id="search-input" class="search-bar" placeholder="Search generic, brand name, class..." oninput="handleSearch()">
-            <div id="search-results" class="results-grid"></div>
-        </div>
-
     </div>
 
-    <script src="drugs.js"></script>
-    <script src="prompts.js"></script>
+    <div id="settings-overlay">
+        <div class="settings-modal">
+            <h3>⚙️ Settings</h3>
+            <label>Daily New Card Limit</label>
+            <input type="number" id="setting-new-limit" value="5">
+            
+            <label>AI API Key (OpenRouter/DeepSeek)</label>
+            <input type="password" id="setting-api-key" placeholder="sk-...">
 
-    <script>
-        // --- PWA REGISTRATION ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registered', reg))
-                    .catch(err => console.log('SW Registration failed', err));
-            });
+            <label>Database Source (CSV URL)</label>
+            <input type="text" id="setting-csv-url" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv">
+            <button onclick="reloadData()" style="width:100%; padding:8px; background:#f3f4f6; border:1px solid #ccc; margin-bottom:15px;">🔄 Reload Database</button>
+
+            <button onclick="saveSettings()" class="big-action-btn">Save & Close</button>
+            <button onclick="document.getElementById('settings-overlay').style.display='none'" style="width:100%; padding:10px; background:none; border:none; color:red; margin-top:10px;">Cancel</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('home')">
+            <span class="nav-icon">🏠</span><span>Home</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('search')">
+            <span class="nav-icon">🔍</span><span>Search</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('stats')">
+            <span class="nav-icon">📊</span><span>Stats</span>
+        </button>
+    </div>
+
+    <script src="drugs.js"></script> <script>
+        // --- APP STATE & CONFIG ---
+        let appState = {
+            drugs: [],      // The full database of drugs
+            srsData: {},    // Map: DrugName -> { interval, factor, dueDate, state (new/learning/review) }
+            queue: [],      // Current session queue
+            currentCard: null,
+            config: {
+                newLimit: 5,
+                apiKey: localStorage.getItem('srs_api_key') || '',
+                csvUrl: localStorage.getItem('srs_csv_url') || "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv"
+            }
+        };
+
+        // --- PWA INSTALLATION ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwa-install-area').style.display = 'block';
+        });
+
+        async function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('pwa-install-area').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
         }
 
-        // --- GLOBAL STATE ---
-        let currentProvider = 'openrouter'; 
-        let openRouterKey = ""; let deepSeekKey = "sk-92db3cf721454bd7b351ca6ef40eaaf7"; let githubKey = "";
-        let ttsProvider = 'browser'; let azureSpeechKey = ""; let azureSpeechRegion = "southeastasia"; let selectedVoiceURI = ""; 
-        let isMuted = false; let azureSynthesizer = null; let aiLanguage = 'lihkg'; 
-        const defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW Registered', reg))
+                .catch(err => console.log('SW Fail', err));
+        }
 
-        // --- DATA & ANKI STATE ---
-        let extendedDrugs = []; let activeSourceList = []; let flashcardList = []; let quizList = [];      
-        let fcCurrentIndex = 0; let quizCurrentIndex = 0; let currentQuizData = null;
+        // --- INIT ---
+        async function init() {
+            loadSRSData();
+            document.getElementById('setting-new-limit').value = localStorage.getItem('srs_new_limit') || 5;
+            document.getElementById('setting-api-key').value = appState.config.apiKey;
+            document.getElementById('setting-csv-url').value = appState.config.csvUrl;
+            
+            await fetchDatabase();
+            calculateDashboard();
+        }
 
-        let dailyState = { date: new Date().toDateString(), count: 0, quota: 20 };
+        // --- DATA MANAGEMENT ---
+        function loadSRSData() {
+            const saved = localStorage.getItem('srs_data');
+            if (saved) appState.srsData = JSON.parse(saved);
+        }
 
-        function loadDailyState() {
-            const saved = localStorage.getItem('drug_tutor_daily');
-            const savedQuota = localStorage.getItem('drug_tutor_quota');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed.date !== new Date().toDateString()) {
-                    // New Day: Reset count, keep quota
-                    dailyState.date = new Date().toDateString();
-                    dailyState.count = 0;
-                } else {
-                    dailyState = parsed;
+        function saveSRSData() {
+            localStorage.setItem('srs_data', JSON.stringify(appState.srsData));
+            calculateDashboard(); // Refresh UI
+        }
+
+        async function fetchDatabase() {
+            try {
+                const response = await fetch(appState.config.csvUrl);
+                const csvText = await response.text();
+                Papa.parse(csvText, {
+                    header: true, skipEmptyLines: true,
+                    complete: function(results) {
+                        if (results.data.length > 0) {
+                            appState.drugs = results.data.filter(d => d.name); // basic cleanup
+                            console.log(`Loaded ${appState.drugs.length} drugs`);
+                            calculateDashboard();
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Fetch failed, using fallback if available");
+                if(typeof commonDrugs !== 'undefined') {
+                    appState.drugs = commonDrugs;
+                    calculateDashboard();
                 }
             }
-            if(savedQuota) dailyState.quota = parseInt(savedQuota);
-            document.getElementById('daily-quota-input').value = dailyState.quota;
-            updateAnkiUI();
         }
 
-        function saveDailyState() {
-            localStorage.setItem('drug_tutor_daily', JSON.stringify(dailyState));
-            localStorage.setItem('drug_tutor_quota', dailyState.quota);
-        }
-
-        function updateAnkiUI() {
-            const percent = Math.min((dailyState.count / dailyState.quota) * 100, 100);
-            document.getElementById('anki-bar').style.width = percent + '%';
-            document.getElementById('anki-counter').innerText = `${dailyState.count} / ${dailyState.quota}`;
-
-            if (dailyState.count >= dailyState.quota) {
-                document.getElementById('flashcard').style.display = 'none';
-                document.getElementById('fc-nav').style.display = 'none';
-                document.getElementById('session-complete-screen').style.display = 'flex';
-            } else {
-                document.getElementById('flashcard').style.display = 'block';
-                document.getElementById('fc-nav').style.display = 'flex';
-                document.getElementById('session-complete-screen').style.display = 'none';
+        // --- SRS ALGORITHM (Modified SM-2) ---
+        function getDrugState(name) {
+            if (!appState.srsData[name]) {
+                return { 
+                    interval: 0, 
+                    factor: 2.5, 
+                    dueDate: 0, 
+                    state: 'new',
+                    reps: 0 
+                };
             }
+            return appState.srsData[name];
         }
 
-        function incrementProgress() {
-            if (dailyState.count < dailyState.quota) {
-                dailyState.count++;
-                saveDailyState();
-                updateAnkiUI();
-            }
-        }
+        function calculateDashboard() {
+            const today = Date.now();
+            let newCount = 0;
+            let learningCount = 0;
+            let reviewCount = 0;
+            let newQuota = parseInt(localStorage.getItem('srs_new_limit') || 5);
+            let addedToday = getDailyAddedCount();
 
-        function extendSession(amount) {
-            dailyState.quota += amount;
-            saveDailyState();
-            updateAnkiUI();
-        }
+            // Analyze Database against SRS Data
+            appState.drugs.forEach(drug => {
+                const srs = getDrugState(drug.name);
+                
+                if (srs.state === 'new') {
+                    // Only count as "Ready to do" if we haven't hit quota
+                    if (newCount < (newQuota - addedToday)) newCount++;
+                } else if (srs.dueDate <= today) {
+                    if (srs.state === 'learning') learningCount++;
+                    else reviewCount++;
+                }
+            });
 
-        function resetDailyProgress() {
-            dailyState.count = 0;
-            saveDailyState();
-            updateAnkiUI();
-            reshuffle();
-        }
-
-        // --- INITIALIZATION ---
-        function init() {
-            // Load Keys
-            openRouterKey = localStorage.getItem('or_key') || "";
-            deepSeekKey = localStorage.getItem('ds_key') || deepSeekKey;
-            githubKey = localStorage.getItem('gh_key') || "";
-            currentProvider = localStorage.getItem('active_provider') || 'openrouter';
+            // Update UI
+            document.getElementById('dash-new').innerText = Math.max(0, newQuota - addedToday);
+            document.getElementById('dash-learn').innerText = learningCount;
+            document.getElementById('dash-review').innerText = reviewCount;
             
-            ttsProvider = localStorage.getItem('tts_provider') || 'browser';
-            azureSpeechKey = localStorage.getItem('azure_key') || "";
-            azureSpeechRegion = localStorage.getItem('azure_region') || "southeastasia";
-            selectedVoiceURI = localStorage.getItem('preferred_voice') || "";
-
-            // Set UI inputs
-            document.getElementById('api-key-input').value = getActiveKey();
-            document.getElementById('provider-select').value = currentProvider;
-            document.getElementById('tts-provider-select').value = ttsProvider;
-            document.getElementById('azure-key').value = azureSpeechKey;
-            document.getElementById('azure-region').value = azureSpeechRegion;
-            document.getElementById('sheet-url').value = defaultSheetUrl;
-
-            loadDailyState();
-            updateProviderDisplay();
-            updateTTSUI();
-
-            if(typeof commonDrugs !== 'undefined') activeSourceList = [...commonDrugs];
-            fetchSheetData();
+            const totalDue = Math.max(0, newQuota - addedToday) + learningCount + reviewCount;
+            const btn = document.getElementById('btn-start');
             
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = populateVoiceList;
-            }
-        }
-
-        function getActiveKey() {
-            if(currentProvider === 'deepseek') return deepSeekKey;
-            if(currentProvider === 'github') return githubKey;
-            return openRouterKey;
-        }
-
-        // --- AUDIO ---
-        function updateTTSUI() {
-            const provider = document.getElementById('tts-provider-select').value;
-            document.getElementById('azure-config-group').style.display = (provider === 'azure') ? 'block' : 'none';
-            populateVoiceList();
-        }
-
-        function populateVoiceList() {
-            const select = document.getElementById('voice-select');
-            const provider = document.getElementById('tts-provider-select').value;
-            select.innerHTML = '<option value="">Default Voice</option>';
-
-            if (provider === 'browser') {
-                const voices = window.speechSynthesis.getVoices().sort((a,b) => a.name.localeCompare(b.name));
-                voices.forEach(v => {
-                    const opt = document.createElement('option');
-                    opt.textContent = `${v.name} (${v.lang})`; opt.value = v.voiceURI;
-                    if(v.voiceURI === selectedVoiceURI) opt.selected = true;
-                    select.appendChild(opt);
-                });
+            if (totalDue === 0) {
+                document.getElementById('queue-status').innerText = "🎉 All caught up for today!";
+                btn.style.backgroundColor = "#9ca3af";
+                btn.innerText = "Review Ahead (Custom)";
+                btn.disabled = false; // Allow custom study if wanted
+                document.getElementById('btn-add-more').style.display = 'inline-block';
             } else {
-                const azVoices = [
-                    {n:"🇺🇸 US - Ava",v:"en-US-AvaNeural"}, {n:"🇭🇰 HK - HiuGaai",v:"zh-HK-HiuGaaiNeural"},
-                    {n:"🇬🇧 UK - Ryan",v:"en-GB-RyanNeural"}, {n:"🇨🇳 CN - Xiaoxiao",v:"zh-CN-XiaoxiaoNeural"}
-                ];
-                azVoices.forEach(v => {
-                    const opt = document.createElement('option');
-                    opt.textContent = v.n; opt.value = v.v;
-                    if(v.v === selectedVoiceURI) opt.selected = true;
-                    select.appendChild(opt);
-                });
+                document.getElementById('queue-status').innerText = `You have ${totalDue} cards due.`;
+                btn.style.backgroundColor = "var(--primary)";
+                btn.innerText = "▶ Start Session";
+                document.getElementById('btn-add-more').style.display = 'none';
             }
         }
 
-        function speakText(text, lang='en') {
-            if(isMuted) return;
-            window.speechSynthesis.cancel();
-            if(azureSynthesizer) { try{azureSynthesizer.close(); azureSynthesizer=null;}catch(e){} }
+        function getDailyAddedCount() {
+            // Check how many 'new' cards were introduced today (simple localStorage counter reset daily)
+            const todayStr = new Date().toLocaleDateString();
+            const record = JSON.parse(localStorage.getItem('srs_daily_log') || '{}');
+            if (record.date !== todayStr) return 0;
+            return record.count || 0;
+        }
 
-            if(ttsProvider === 'azure' && azureSpeechKey) {
-                if(typeof SpeechSDK === 'undefined') return alert("Azure SDK not loaded");
-                const config = SpeechSDK.SpeechConfig.fromSubscription(azureSpeechKey, azureSpeechRegion);
-                config.speechSynthesisVoiceName = selectedVoiceURI || (lang==='zh-HK'?"zh-HK-HiuGaaiNeural":"en-US-AvaNeural");
-                azureSynthesizer = new SpeechSDK.SpeechSynthesizer(config);
-                azureSynthesizer.speakTextAsync(text, r=>{ if(r.reason!==SpeechSDK.ResultReason.SynthesizingAudioCompleted) console.log(r.errorDetails); azureSynthesizer.close(); });
+        function incrementDailyAdded() {
+            const todayStr = new Date().toLocaleDateString();
+            let record = JSON.parse(localStorage.getItem('srs_daily_log') || '{}');
+            if (record.date !== todayStr) record = { date: todayStr, count: 0 };
+            record.count++;
+            localStorage.setItem('srs_daily_log', JSON.stringify(record));
+        }
+
+        function addMoreNewCards() {
+            let currentLimit = parseInt(localStorage.getItem('srs_new_limit') || 5);
+            localStorage.setItem('srs_new_limit', currentLimit + 5);
+            document.getElementById('setting-new-limit').value = currentLimit + 5;
+            calculateDashboard();
+            alert("Added 5 more cards to today's quota.");
+        }
+
+        // --- SESSION LOGIC ---
+        function startSession() {
+            // Build Queue
+            appState.queue = [];
+            const today = Date.now();
+            let newQuota = parseInt(localStorage.getItem('srs_new_limit') || 5) - getDailyAddedCount();
+            if (newQuota < 0) newQuota = 0;
+
+            const allDrugs = [...appState.drugs]; // Shuffle strictly for New cards randomization?
+            
+            // 1. Due Reviews & Learning
+            allDrugs.forEach(d => {
+                const srs = getDrugState(d.name);
+                if (srs.state !== 'new' && srs.dueDate <= today) {
+                    appState.queue.push({ ...d, srs });
+                }
+            });
+
+            // 2. New Cards (up to quota)
+            let addedNew = 0;
+            // Shuffle for random new cards
+            const shuffled = allDrugs.sort(() => 0.5 - Math.random());
+            
+            for (let d of shuffled) {
+                const srs = getDrugState(d.name);
+                if (srs.state === 'new' && addedNew < newQuota) {
+                    appState.queue.push({ ...d, srs });
+                    addedNew++;
+                }
+            }
+
+            if (appState.queue.length === 0) {
+                alert("Nothing due! Use 'Add More' to increase limit.");
+                return;
+            }
+
+            // Start UI
+            document.getElementById('section-home').classList.remove('active-section');
+            document.getElementById('section-review').classList.add('active-section');
+            document.querySelector('.bottom-nav').style.display = 'none'; // Hide nav during study
+            
+            loadNextCard();
+        }
+
+        function loadNextCard() {
+            if (appState.queue.length === 0) {
+                endSession();
+                return;
+            }
+
+            appState.currentCard = appState.queue.shift();
+            const d = appState.currentCard;
+
+            // Render Front
+            document.getElementById('card-name').innerText = d.name;
+            document.getElementById('flashcard-container').classList.remove('flipped');
+
+            // Render Back
+            document.getElementById('back-name').innerText = d.name;
+            document.getElementById('back-class').innerText = d.class || 'Unknown';
+            document.getElementById('back-indication').innerText = d.indication || 'Unknown';
+            document.getElementById('back-nursing').innerText = d.nursing || 'Unknown';
+            document.getElementById('ai-context-area').style.display = 'none';
+
+            // Calculate estimated intervals for buttons (Visual only)
+            const iv = d.srs.interval;
+            const factor = d.srs.factor;
+            
+            // Rough estimates for button labels
+            let nextGood = iv === 0 ? 1 : Math.round(iv * factor);
+            let nextEasy = iv === 0 ? 4 : Math.round(iv * factor * 1.3);
+            
+            document.getElementById('time-again').innerText = "<1m";
+            document.getElementById('time-hard').innerText = iv === 0 ? "12h" : Math.round(iv * 1.2) + "d";
+            document.getElementById('time-good').innerText = nextGood + "d";
+            document.getElementById('time-easy').innerText = nextEasy + "d";
+        }
+
+        function showAnswer() {
+            document.getElementById('flashcard-container').classList.add('flipped');
+        }
+
+        function rateCard(rating) {
+            // Rating: 1=Again, 2=Hard, 3=Good, 4=Easy
+            const card = appState.currentCard;
+            let srs = card.srs;
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            if (srs.state === 'new') {
+                incrementDailyAdded();
+                srs.state = 'learning';
+            }
+
+            if (rating === 1) { // Again
+                srs.interval = 0;
+                srs.dueDate = now + (60 * 1000); // 1 minute
+                srs.state = 'learning';
+                // Re-queue immediately
+                appState.queue.push(card); 
             } else {
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = (lang==='zh-HK') ? 'zh-HK' : 'en-US';
-                if(selectedVoiceURI) u.voice = window.speechSynthesis.getVoices().find(v=>v.voiceURI===selectedVoiceURI);
-                window.speechSynthesis.speak(u);
+                if (rating === 2) { // Hard
+                    srs.interval = Math.max(1, Math.floor(srs.interval * 1.2));
+                    srs.factor = Math.max(1.3, srs.factor - 0.15);
+                } else if (rating === 3) { // Good
+                    srs.interval = srs.interval === 0 ? 1 : Math.floor(srs.interval * srs.factor);
+                    // factor unchanged
+                } else if (rating === 4) { // Easy
+                    srs.interval = srs.interval === 0 ? 4 : Math.floor(srs.interval * srs.factor * 1.3);
+                    srs.factor += 0.15;
+                }
+                
+                srs.dueDate = now + (srs.interval * oneDay);
+                srs.state = 'review';
             }
+
+            // Save
+            appState.srsData[card.name] = srs;
+            saveSRSData();
+            loadNextCard();
         }
 
-        function stopAudio() { window.speechSynthesis.cancel(); }
-        function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "🔇 Audio: Off" : "🔊 Audio: On"; }
+        function endSession() {
+            document.getElementById('section-review').classList.remove('active-section');
+            document.getElementById('section-home').classList.add('active-section');
+            document.querySelector('.bottom-nav').style.display = 'flex';
+            calculateDashboard();
+        }
 
-        // --- APP LOGIC ---
+        // --- SETTINGS & HELPERS ---
+        function openSettings() {
+            document.getElementById('settings-overlay').style.display = 'flex';
+        }
         function saveSettings() {
-            const key = document.getElementById('api-key-input').value;
-            currentProvider = document.getElementById('provider-select').value;
+            const limit = document.getElementById('setting-new-limit').value;
+            const key = document.getElementById('setting-api-key').value;
+            const url = document.getElementById('setting-csv-url').value;
+
+            localStorage.setItem('srs_new_limit', limit);
+            localStorage.setItem('srs_api_key', key);
+            localStorage.setItem('srs_csv_url', url);
             
-            if(currentProvider === 'deepseek') { deepSeekKey = key; localStorage.setItem('ds_key', key); }
-            else if(currentProvider === 'github') { githubKey = key; localStorage.setItem('gh_key', key); }
-            else { openRouterKey = key; localStorage.setItem('or_key', key); }
-            localStorage.setItem('active_provider', currentProvider);
-
-            ttsProvider = document.getElementById('tts-provider-select').value;
-            localStorage.setItem('tts_provider', ttsProvider);
-            azureSpeechKey = document.getElementById('azure-key').value;
-            localStorage.setItem('azure_key', azureSpeechKey);
-            selectedVoiceURI = document.getElementById('voice-select').value;
-            localStorage.setItem('preferred_voice', selectedVoiceURI);
+            appState.config.apiKey = key;
+            appState.config.csvUrl = url;
             
-            const newQuota = parseInt(document.getElementById('daily-quota-input').value);
-            dailyState.quota = newQuota;
-            saveDailyState();
-
-            toggleSettings();
-            updateAnkiUI();
+            document.getElementById('settings-overlay').style.display = 'none';
+            calculateDashboard();
         }
-
-        function fetchSheetData() {
-            const url = document.getElementById('sheet-url').value;
-            const status = document.getElementById('upload-status');
-            status.innerText = "⏳ Loading...";
-            
-            let fetchUrl = url.includes("docs.google.com") ? url.replace(/\/edit.*$/, "/export?format=csv") : url;
-            
-            fetch(fetchUrl).then(r => r.text()).then(csv => {
-                Papa.parse(csv, { header: true, skipEmptyLines: true, complete: res => {
-                    if(res.data.length > 0) {
-                        extendedDrugs = res.data;
-                        activeSourceList = extendedDrugs;
-                        status.innerText = `✅ Loaded ${extendedDrugs.length} drugs.`;
-                        updateSetButton();
-                        reshuffle();
-                    } else status.innerText = "❌ Empty CSV";
-                }});
-            }).catch(e => status.innerText = "❌ Load Failed");
+        function reloadData() {
+            saveSettings();
+            location.reload();
         }
-
-        function reshuffle() {
-            if(!activeSourceList.length) return;
-            flashcardList = [...activeSourceList].sort(() => Math.random() - 0.5);
-            quizList = [...activeSourceList].sort(() => Math.random() - 0.5);
-            fcCurrentIndex = 0; quizCurrentIndex = 0;
-            renderCard(); generateQuizQuestion();
-        }
-
-        function renderCard() {
-            if(!flashcardList.length) return;
-            const d = flashcardList[fcCurrentIndex];
-            ['name','class','system','indication','SideEffects','nursing'].forEach(k => {
-                const el = document.getElementById(`fc-${k}`);
-                if(el) el.innerText = d[k] || "N/A";
-            });
-            document.getElementById('counter').innerText = `#${fcCurrentIndex + 1}`;
-            document.getElementById('flashcard').classList.remove('flipped');
-            document.getElementById('fc-ai-case').style.display='none';
-            document.getElementById('btn-case').disabled = false;
-            document.getElementById('btn-case').innerHTML = "🏥 AI: Case Study";
-            document.getElementById('btn-read-case').style.display='none';
-        }
-
-        function nextCard() {
-            incrementProgress();
-            // If quota reached, UI updates automatically. If not, advance card.
-            if (dailyState.count < dailyState.quota) {
-                if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
-                else { reshuffle(); } // Loop deck
-            }
-        }
-        function prevCard() { if(fcCurrentIndex > 0) { fcCurrentIndex--; renderCard(); } }
-        function flipCard(e) { if(!e.target.closest('button')) document.getElementById('flashcard').classList.toggle('flipped'); }
-
-        // --- AI STUFF ---
-        async function getAIResponse(messages) {
-            const headers = { "Content-Type": "application/json" };
-            let url = "", body = {};
-
-            if(currentProvider === 'deepseek') {
-                url = "https://api.deepseek.com/chat/completions";
-                headers["Authorization"] = `Bearer ${deepSeekKey}`;
-                body = { model: "deepseek-chat", messages: messages };
-            } else if(currentProvider === 'github') {
-                url = "https://models.github.ai/inference/chat/completions";
-                headers["Authorization"] = `Bearer ${githubKey}`;
-                body = { model: "gpt-4o-mini", messages: messages };
+        function switchTab(tab) {
+            if(tab === 'home') {
+                document.getElementById('section-home').classList.add('active-section');
+                document.getElementById('section-review').classList.remove('active-section');
             } else {
-                url = "https://openrouter.ai/api/v1/chat/completions";
-                headers["Authorization"] = `Bearer ${openRouterKey}`;
-                headers["HTTP-Referer"] = window.location.href;
-                body = { model: "arcee-ai/trinity-mini:free", messages: messages };
+                alert("Search and Stats Coming in next update! (Focus on Home for now)");
             }
-
-            const res = await fetch(url, { method: "POST", headers: headers, body: JSON.stringify(body) });
-            if(!res.ok) throw new Error(await res.text());
-            const data = await res.json();
-            return data.choices[0].message.content;
         }
 
-        async function getIntegratedCaseStudy(drug, boxId, btnId, readBtnId) {
-            const btn = document.getElementById(btnId); const box = document.getElementById(boxId);
-            btn.innerHTML = '<span class="loading-spinner"></span> Generating...'; btn.disabled=true; box.style.display='block';
-            try {
-                const prompt = `Create a short nursing case study for ${drug.name} (${drug.indication}). Include vitals and one critical thinking question. Use ${aiLanguage === 'lihkg' ? 'Cantonese mixed with English terms' : 'English'}.`;
-                const content = await getAIResponse([{role:"user", content: prompt}]);
-                box.innerHTML = marked.parse(content);
-                btn.innerHTML = '✅ Loaded'; document.getElementById(readBtnId).style.display='block';
-            } catch(e) { box.innerHTML = "Error: " + e.message; btn.disabled=false; }
-        }
-
-        // --- HELPERS ---
-        function toggleSettings() { const p = document.getElementById('settings-panel'); p.style.display = p.style.display==='block'?'none':'block'; }
-        function switchMode(m) {
-            ['flashcard','quiz','search'].forEach(x => {
-                document.getElementById(`${x}-section`).style.display = (x===m)?'block':'none';
-                const btn = document.getElementById(`mode-${x}`);
-                if(x===m) { btn.classList.add('mode-active'); btn.classList.remove('secondary'); }
-                else { btn.classList.remove('mode-active'); btn.classList.add('secondary'); }
-            });
-        }
-        function toggleLanguage() {
-            const btn = document.getElementById('lang-btn');
-            if(aiLanguage === 'english') { aiLanguage = 'lihkg'; btn.innerText = "🌐 Lang: LIHKG"; btn.classList.add('lang-lihkg'); }
-            else { aiLanguage = 'english'; btn.innerText = "🌐 Lang: English"; btn.classList.remove('lang-lihkg'); }
-        }
-        function toggleDrugSet() {
-            activeSourceList = (activeSourceList === commonDrugs) ? extendedDrugs : commonDrugs;
-            updateSetButton(); reshuffle();
-        }
-        function updateSetButton() {
-            const btn = document.getElementById('set-btn');
-            btn.innerText = (activeSourceList === extendedDrugs) ? "📚 Set: Online CSV" : "📚 Set: Common";
-        }
-        function updateProviderDisplay() {
-            document.getElementById('provider-display').innerText = `Provider: ${currentProvider.toUpperCase()}`;
-            document.getElementById('api-key-input').value = getActiveKey();
-        }
-
-        // Start
+        // Initialize
         init();
+
     </script>
 </body>
 </html>
