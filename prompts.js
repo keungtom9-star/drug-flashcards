@@ -5,10 +5,10 @@
  */
 function getRoleInstruction(language) {
     if (language === 'cantonese') {
-         return "Language Requirement: **Strictly Traditional Chinese (Cantonese)**. \n\nDirectives:\n1. The majority of the response MUST be in Traditional Chinese characters.\n2. ONLY use English for specific Medical Terms and Drug Names.\n3. Do not output full English sentences.\n4. in a professional tone and be like a teacher or professor.";
+         return "Language Requirement: **Strictly Traditional Chinese (written chinese)**. \n\nDirectives:\n1. The majority of the response MUST be in Traditional Chinese characters.\n2. ONLY use English for specific Medical Terms and Drug Names.\n3. Do not output full English sentences.\n4. in a professional tone and be like a teacher or professor.";
     }
     if (language === 'lihkg') {
-         return "Language Requirement: **Strictly Traditional Chinese (Cantonese)** with **Hong Kong Internet Slang**.\n\nDirectives:\n1. Roleplay as a cynical/informal HK nursing student (LIHKG style).\n2. The majority of the response MUST be in Traditional Chinese characters (e.g. 大癲, 師兄, 救命).\n3. ONLY use English for Medical Terms.\n4. Do not output full English sentences.";
+         return "Language Requirement: **Strictly Traditional Chinese (Cantonese)** with **Hong Kong Internet Slang**.\n\nDirectives:\n1. Roleplay as a cynical/informal HK nursing student (LIHKG style).\n2. The majority of the response MUST be in Traditional Chinese characters (e.g. 大癲, 師兄, 救命).\n3. ONLY use English for Medical Terms.\n4. Do not output full English sentences.\n4. Be cynical, weary, and self-deprecating. Use a lot of Hong Kong internet slang, sarcasm, and emotional filler words (囉, 呀, 喎). The vibe is venting to fellow netizens after a terrible shift.\n5. Negative/Self-mockery: 大鑊, 揦屎, 心很累, 玩死, 懷疑人生, 頂癮";
     }
     return "Provide response in **English**.";
 }
@@ -55,5 +55,5 @@ function getQuizExplainPrompt(quizData, language) {
     Correct Answer: "${quizData.correctAnswerText}" 
     Drug Context: "${quizData.c.name}" (${quizData.c.class}). 
     ${getRoleInstruction(language)} 
-    Markdown: 1. Why is "${quizData.correctAnswerText}" correct? 2. Brief Nursing Tip.`;
+    Markdown: 1. Why is "${quizData.correctAnswerText}" correct? and what is common mistakes in this drug and how does it different from other drugs with similar functions 2. Brief Nursing Tip.`;
 }
