@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor + Database Save</title>
+    <title>AI Drug Tutor (Compact)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
     
@@ -13,7 +13,6 @@
 
     <style>
         :root {
-            /* Modern Medical Palette */
             --primary: #4F46E5;       
             --primary-hover: #4338ca;
             --secondary: #10B981;     
@@ -22,12 +21,9 @@
             --background: #F3F4F6;
             --text-main: #111827;
             --text-muted: #6B7280;
-            
-            /* UI Variables */
-            --radius: 16px;
+            --radius: 12px;
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         body {
@@ -41,168 +37,144 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 40px 20px;
-            line-height: 1.6;
+            padding: 20px 15px; /* Reduced padding */
+            line-height: 1.5;
         }
 
-        h1 {
-            color: var(--text-main);
-            margin-bottom: 5px;
-            text-align: center;
-            font-weight: 800;
-            letter-spacing: -0.025em;
-            font-size: 2.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
+        /* --- COMPACT HEADER STYLES --- */
+        .header-compact {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
         }
-
         .app-logo {
-            height: 45px; width: 45px; min-width: 45px;    
-            border-radius: 12px;
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.3s ease;
+            height: 32px; width: 32px; border-radius: 8px;
         }
-        .app-logo:hover { transform: rotate(10deg) scale(1.1); }
-
-        .subtitle {
-            font-size: 0.9rem; color: var(--text-muted);
-            margin-bottom: 30px; text-align: center;
-            font-weight: 500; background: #e5e7eb;
-            padding: 4px 12px; border-radius: 20px;
-            display: inline-block;
+        h1 {
+            font-size: 1.4rem; font-weight: 800; margin: 0; color: var(--text-main);
+            display: flex; align-items: center; gap: 10px;
         }
         
-        .notice-banner {
-            background-color: #fffbeb; border: 1px solid #fcd34d; color: #92400e;            
-            width: 100%; max-width: 850px; padding: 12px 20px;
-            margin-bottom: 20px; border-radius: 12px;
-            box-sizing: border-box; display: flex;
-            align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .notice-img { height: 60px; width: auto; object-fit: contain; display: block; }
-        .notice-text { font-size: 0.95rem; line-height: 1.4; font-weight: 500; }
-
-        @media (max-width: 680px) {
-            .notice-banner { flex-direction: column; text-align: center; }
-        }
-
-        /* Top Controls */
+        /* --- COMPACT TOP BAR (TOOLBAR) --- */
         .top-bar {
             display: flex; 
-            gap: 10px; 
-            justify-content: center; 
+            flex-wrap: wrap;
+            gap: 8px; 
+            justify-content: space-between; 
             align-items: center;    
-            margin-bottom: 30px; 
+            margin-bottom: 20px; 
             width: 100%; 
             max-width: 800px;
-            flex-wrap: wrap; 
             background: var(--surface);
-            padding: 15px; 
-            border-radius: var(--radius);
+            padding: 8px; /* Compact padding */
+            border-radius: 14px;
             box-shadow: var(--shadow-sm); 
             border: 1px solid #e5e7eb;
             box-sizing: border-box;
         }
 
-        button, .system-select, .mastery-select, a.btn-link-style {
-            height: 42px;
-            padding: 0 18px; 
+        /* Segmented Control (Joined Buttons) */
+        .mode-switcher {
+            display: flex;
+            background: #f3f4f6;
+            padding: 3px;
             border-radius: 10px;
-            cursor: pointer; 
-            font-weight: 600; 
-            font-size: 0.9rem; 
-            font-family: 'Inter', sans-serif;
-            display: inline-flex;
-            align-items: center; 
-            justify-content: center;
-            box-sizing: border-box;
-            transition: all 0.2s ease;
-            text-decoration: none;
+            gap: 0;
+            flex-grow: 1; /* Takes available space */
         }
-
-        button { border: none; gap: 6px; }
-        button:hover, a.btn-link-style:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        button:active, a.btn-link-style:active { transform: translateY(0); }
-
-        button.mode-active { background-color: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-        button.secondary, a.secondary { background-color: white; color: var(--text-main); border: 1px solid #d1d5db; }
-        button.secondary:hover, a.secondary:hover { background-color: #f9fafb; border-color: #9ca3af; }
         
-        button.lang-lihkg { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: white; }
-        button.set-extended { background-color: #7c3aed; color: white; }
-        button.muted { background-color: var(--accent); color: white; }
-        
-        button.btn-search-explain {
-            background-color: #8b5cf6; 
-            color: white;
-            font-size: 0.85rem;
-            padding: 6px 12px;
-            height: auto; 
-            min-height: 36px;
-        }
-        button.btn-search-explain:hover { background-color: #7c3aed; }
-        
-        a.btn-search-google {
-            background-color: #f3f4f6; 
-            color: #4b5563;
-            border: 1px solid #d1d5db;
-            font-size: 0.85rem;
-            padding: 6px 12px;
-            height: auto; 
-            min-height: 36px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            border-radius: 10px;
+        .mode-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-size: 0.8rem;
             font-weight: 600;
-            box-sizing: border-box;
-            transition: all 0.2s ease;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: none;
+            height: 32px; /* Fixed compact height */
+            display: flex; align-items: center; justify-content: center; gap: 4px;
         }
-        a.btn-search-google:hover { background-color: #e5e7eb; border-color: #9ca3af; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        
+        .mode-btn:hover { background: rgba(0,0,0,0.05); color: #374151; transform: none; box-shadow: none; }
+        
+        .mode-btn.active {
+            background: var(--surface);
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-weight: 700;
+        }
 
-        /* Dropdowns */
-        .system-select, .mastery-select {
-            border: 1px solid #d1d5db; 
+        /* Compact Dropdowns */
+        .compact-select {
+            height: 32px;
+            font-size: 0.8rem;
+            padding: 0 24px 0 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
             background-color: white;
-            color: var(--text-main); 
-            max-width: 250px;
+            color: var(--text-main);
+            font-weight: 500;
+            cursor: pointer;
             appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 16px;
-            padding-right: 35px;
-            display: none; 
+            background-position: right 4px center;
+            background-size: 14px;
+            max-width: 140px; /* Limit width */
         }
-        .system-select:focus, .mastery-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .compact-select:focus { outline: none; border-color: var(--primary); }
+
+        /* Icon Button (Settings) */
+        .btn-icon {
+            height: 32px; width: 32px;
+            padding: 0;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+        }
+        .btn-icon:hover { background: #f9fafb; border-color: #9ca3af; }
+
+        /* --------------------------- */
+
+        .subtitle {
+            font-size: 0.75rem; color: var(--text-muted);
+            margin-bottom: 15px; text-align: center;
+            font-weight: 500; background: #e5e7eb;
+            padding: 2px 10px; border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .notice-banner {
+            display: none; /* Hidden for compactness unless needed */
+        }
 
         /* Settings Panel */
         #settings-panel {
             display: none; background: var(--surface);
-            padding: 30px; border-radius: var(--radius);
-            box-shadow: var(--shadow-lg); margin-bottom: 30px;
+            padding: 20px; border-radius: var(--radius);
+            box-shadow: var(--shadow-lg); margin-bottom: 20px;
             width: 100%; max-width: 600px; border: 1px solid #e5e7eb;
             box-sizing: border-box; animation: slideDown 0.3s ease-out;
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .settings-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-main); }
+        .settings-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-main); }
         .settings-input, select.settings-select {
-            width: 100%; padding: 10px 12px;
+            width: 100%; padding: 8px 10px;
             border: 1px solid #d1d5db; border-radius: 8px;
-            margin-bottom: 15px; box-sizing: border-box;
-            font-family: inherit; font-size: 0.95rem;
-            transition: border-color 0.2s;
+            margin-bottom: 12px; box-sizing: border-box;
+            font-family: inherit; font-size: 0.9rem;
         }
-        .settings-input:focus, select.settings-select:focus { border-color: var(--primary); outline: 3px solid #e0e7ff; }
         
         .import-wrapper {
-            border: 1px solid #d1d5db; padding: 15px;
+            border: 1px solid #d1d5db; padding: 12px;
             border-radius: 8px; background: #f9fafb;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         .url-input-group { display: flex; gap: 8px; }
         .url-input-group input { flex-grow: 1; }
@@ -212,64 +184,79 @@
 
         /* Flashcards */
         .flashcard-container {
-            width: 100%; height: 720px; 
+            width: 100%; height: 650px; /* Slightly shorter */
             position: relative; transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
         }
         .flashcard-container.flipped { transform: rotateY(180deg); }
 
         .card-face {
             position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; border-radius: 24px;
-            box-shadow: var(--shadow-lg); background-color: var(--surface);
+            backface-visibility: hidden; border-radius: 20px;
+            box-shadow: var(--shadow-md); background-color: var(--surface);
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            padding: 30px; box-sizing: border-box;
-            text-align: center; border: 1px solid rgba(0,0,0,0.02);
+            padding: 20px; box-sizing: border-box;
+            text-align: center; border: 1px solid rgba(0,0,0,0.04);
         }
 
         .card-front { background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%); }
         .card-back {
             transform: rotateY(180deg); align-items: flex-start;
-            text-align: left; overflow-y: auto; padding-top: 25px;
+            text-align: left; overflow-y: auto; padding-top: 20px;
         }
-        .card-back::-webkit-scrollbar { width: 6px; }
-        .card-back::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        /* Hide scrollbar for cleaner look */
+        .card-back::-webkit-scrollbar { width: 0px; background: transparent; }
 
         .card-title {
-            font-size: 1.8rem; font-weight: 800;
+            font-size: 1.6rem; font-weight: 800;
             background: -webkit-linear-gradient(45deg, var(--primary), #818cf8);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin: 15px 0;
+            margin: 10px 0;
         }
 
+        /* --- SAFETY STYLES --- */
+        .high-alert-border { border: 3px solid #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2) !important; }
+        .high-alert-badge {
+            background-color: #fee2e2; color: #b91c1c;
+            padding: 3px 6px; border-radius: 4px;
+            font-weight: 800; font-size: 0.65rem;
+            display: inline-block; margin-bottom: 5px; border: 1px solid #fca5a5;
+        }
+        .monitor-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; justify-content: center; }
+        .monitor-badge {
+            font-size: 0.7rem; font-weight: 800; padding: 3px 8px;
+            border-radius: 15px; text-transform: uppercase; display: flex; align-items: center; gap: 4px;
+            border: 1px solid transparent;
+        }
+        .mon-bp { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .mon-hr { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+        .mon-lab { background: #e0f2fe; color: #075985; border-color: #7dd3fc; }
+        .mon-resp { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+        
         .detail-row {
-            margin-bottom: 15px; width: 100%;
-            border-bottom: 1px solid #f3f4f6; padding-bottom: 10px;
+            margin-bottom: 12px; width: 100%;
+            border-bottom: 1px solid #f3f4f6; padding-bottom: 8px;
         }
-        .detail-label {
-            font-size: 0.7rem; font-weight: 700;
-            color: var(--text-muted); text-transform: uppercase;
-            letter-spacing: 1px; margin-bottom: 4px;
-        }
-        .detail-content { font-size: 1rem; color: var(--text-main); font-weight: 500; }
+        .detail-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+        .detail-content { font-size: 0.95rem; color: var(--text-main); font-weight: 500; }
 
-        /* Quiz & Search */
+        /* Quiz & Search Containers */
         .quiz-container, #search-section {
-            background: var(--surface); padding: 30px;
-            border-radius: var(--radius); box-shadow: var(--shadow-lg);
+            background: var(--surface); padding: 20px;
+            border-radius: var(--radius); box-shadow: var(--shadow-md);
             border: 1px solid #e5e7eb; display: none;
             box-sizing: border-box; min-height: 400px;
         }
 
-        .quiz-question { font-size: 1.3rem; font-weight: 700; margin-bottom: 25px; color: var(--text-main); }
+        .quiz-question { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
         .option-btn {
             background-color: #f9fafb; color: var(--text-main);
             text-align: left; border: 1px solid #e5e7eb;
-            padding: 16px 20px; border-radius: 12px;
-            transition: all 0.2s; font-size: 1rem;
-            margin-bottom: 10px; width: 100%; cursor: pointer;
+            padding: 12px 16px; border-radius: 10px;
+            transition: all 0.2s; font-size: 0.95rem;
+            margin-bottom: 8px; width: 100%; cursor: pointer;
         }
         .option-btn:hover { border-color: var(--primary); background-color: #eef2ff; }
         .option-btn.correct { background-color: #ecfdf5; border-color: var(--secondary); color: #065f46; }
@@ -277,334 +264,292 @@
 
         /* Search */
         .search-bar { 
-            width: 100%; padding: 15px; border-radius: 12px; 
-            border: 2px solid #e5e7eb; font-size: 1.1rem; 
+            width: 100%; padding: 12px; border-radius: 10px; 
+            border: 2px solid #e5e7eb; font-size: 1rem; 
             margin-bottom: 10px; box-sizing: border-box; font-family: inherit;
         }
         .search-bar:focus { border-color: var(--primary); outline: none; }
         
-        /* Chips Styles */
         .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
-        .chip-label { width: 100%; font-size: 0.75rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        
+        .chip-label { width: 100%; font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; margin-bottom: 4px; }
         .history-chip, .system-chip {
-            font-size: 0.8rem; padding: 4px 10px; border-radius: 20px;
-            cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
-            font-weight: 500;
+            font-size: 0.75rem; padding: 4px 10px; border-radius: 15px;
+            cursor: pointer; border: 1px solid transparent; font-weight: 500;
         }
-        
-        .history-chip { background-color: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
-        .history-chip:hover { background-color: #e5e7eb; border-color: #d1d5db; }
-        .history-clear { color: #ef4444; font-size: 0.8rem; cursor: pointer; margin-left: auto; text-decoration: underline; }
-        
-        .system-chip { background-color: #e0e7ff; color: var(--primary); border-color: #c7d2fe; }
-        .system-chip:hover { background-color: #c7d2fe; transform: translateY(-1px); }
+        .history-chip { background-color: #f3f4f6; color: #4b5563; }
+        .history-clear { color: #ef4444; font-size: 0.75rem; cursor: pointer; margin-left: auto; text-decoration: underline; }
+        .system-chip { background-color: #e0e7ff; color: var(--primary); }
 
-        .results-grid { display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; padding-right: 5px; }
-        .results-grid::-webkit-scrollbar { width: 6px; }
-        .results-grid::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
-
+        .results-grid { display: flex; flex-direction: column; gap: 8px; max-height: 500px; overflow-y: auto; padding-right: 2px; }
         .result-card { 
-            background: white; padding: 15px; 
-            border-radius: 12px; border: 1px solid #e5e7eb; 
-            cursor: pointer; transition: all 0.2s; 
+            background: white; padding: 12px; 
+            border-radius: 10px; border: 1px solid #e5e7eb; 
+            cursor: pointer; 
         }
-        .result-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        .result-header { font-weight: 700; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
-        .result-sub { font-size: 0.8rem; color: #6b7280; font-weight: normal; }
-        
+        .result-header { font-weight: 700; color: var(--primary); display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;}
+        .result-sub { font-size: 0.75rem; color: #6b7280; font-weight: normal; }
         .result-detail { 
-            margin-top: 12px; display: none; border-top: 1px solid #f3f4f6; 
-            padding-top: 12px; font-size: 0.9rem; 
+            margin-top: 10px; display: none; border-top: 1px solid #f3f4f6; 
+            padding-top: 10px; font-size: 0.85rem; 
             color: var(--text-main); line-height: 1.5;
-            
-            /* ADDED: Fix for mobile text overflow in details */
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            word-break: break-word;
-            max-width: 100%;
         }
         .result-card.expanded .result-detail { display: block; animation: fadeIn 0.3s; }
         .result-card.expanded { border-color: var(--primary); background-color: #fcfaff; }
 
         /* AI Output */
-        .ai-btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; width: 100%; }
-        .ai-btn-small { font-size: 0.9rem; padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; }
-        .btn-sim { background-color: var(--secondary); color: white; border: none;}
-        .btn-explain { background-color: var(--primary); color: white; width: 100%; margin-top: 20px; display: none; justify-content: center;}
+        .ai-btn-group { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; width: 100%; }
+        .ai-btn-small { 
+            font-size: 0.85rem; padding: 8px 12px; width: 100%; 
+            text-align: left; display: flex; align-items: center; gap: 6px; 
+            border-radius: 8px; border: none; cursor: pointer; color: white;
+            transition: transform 0.1s;
+        }
+        .ai-btn-small:active { transform: scale(0.98); }
+        .btn-sim { background-color: var(--secondary); }
+        .btn-link-style { text-decoration: none; }
+        
+        .btn-explain { background-color: var(--primary); color: white; width: 100%; margin-top: 15px; display: none; justify-content: center; padding: 10px; border-radius: 8px; border:none; cursor: pointer;}
 
         .ai-output-box {
-            margin-top: 20px; padding: 20px;
-            border-radius: 12px; font-size: 0.95rem;
-            line-height: 1.7; background: #f0fdfa; border-left: 5px solid var(--secondary);
-            animation: fadeIn 0.5s; display: none;
-            width: 100%; box-sizing: border-box;
-            
-            /* ADDED: Fix for mobile text overflow */
+            margin-top: 15px; padding: 15px;
+            border-radius: 10px; font-size: 0.9rem;
+            line-height: 1.6; background: #f0fdfa; border-left: 4px solid var(--secondary);
+            display: none; width: 100%; box-sizing: border-box;
             overflow-wrap: break-word;
-            word-wrap: break-word;
-            word-break: break-word;
-            max-width: 100%;
         }
-        .ai-output-box h3 { margin: 15px 0 8px 0; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; font-weight: 800; }
-        .ai-output-box ul { padding-left: 20px; margin: 8px 0; }
+        .ai-output-box h3 { margin: 10px 0 5px 0; font-size: 1rem; }
         
         .btn-read-ai { 
             background-color: #e0e7ff; color: var(--primary); 
-            margin-top: 10px; width: 100%; font-size: 0.85rem; 
-            display: none; justify-content: center; padding: 8px 12px;
-            border: 1px solid #c7d2fe; border-radius: 8px; cursor: pointer;
+            margin-top: 8px; width: 100%; font-size: 0.8rem; 
+            display: none; justify-content: center; padding: 6px;
+            border: 1px solid #c7d2fe; border-radius: 6px; cursor: pointer;
         }
-        .btn-read-ai:hover { background-color: #c7d2fe; }
 
         /* Nav Controls */
         .nav-controls {
-            margin-top: 25px; display: flex;
+            margin-top: 20px; display: flex;
             justify-content: space-between; width: 100%;
-            background: white; padding: 10px;
-            border-radius: 50px; box-shadow: var(--shadow-md);
+            background: white; padding: 5px;
+            border-radius: 50px; box-shadow: var(--shadow-sm); border: 1px solid #eee;
         }
         .nav-controls button {
-            border-radius: 40px; padding: 12px 24px;
-            background: transparent; color: var(--text-main);
-            box-shadow: none;
+            border-radius: 40px; padding: 10px 20px; border: none;
+            background: transparent; color: var(--text-main); font-weight: 600; cursor: pointer;
         }
-        .nav-controls button:hover { background: #f3f4f6; transform: none; box-shadow: none; }
+        .nav-controls button:hover { background: #f3f4f6; }
 
-        /* PROGRESS DASHBOARD STYLES */
+        /* Modal */
         #progress-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
         }
         .progress-content {
-            background: white; width: 90%; max-width: 500px; height: 80vh;
-            border-radius: 16px; padding: 25px; display: flex; flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background: white; width: 90%; max-width: 450px; height: 70vh;
+            border-radius: 16px; padding: 20px; display: flex; flex-direction: column;
         }
-        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;}
-        .progress-list { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
-        .progress-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem;
-        }
-        .prog-name { font-weight: 600; color: var(--text-main); }
-        .prog-stat { font-size: 0.8rem; color: var(--text-muted); }
-        .prog-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
-        .badge-master { background: #dcfce7; color: #166534; }
-        .badge-mid { background: #fef9c3; color: #854d0e; }
-        .badge-low { background: #fee2e2; color: #991b1b; }
         
         .loading-spinner {
-            display: inline-block; width: 16px; height: 16px;
+            display: inline-block; width: 14px; height: 14px;
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%; border-top-color: #fff;
-            animation: spin 0.8s linear infinite; margin-right: 8px;
+            animation: spin 0.8s linear infinite; margin-right: 6px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
+        
+        /* Mobile Tweaks */
         @media (max-width: 600px) {
-            .system-select, .mastery-select { width: 100%; max-width: 100%; order: 5; margin-top: 5px;}
-            .top-bar { flex-direction: row; justify-content: space-between; }
-            .top-bar button { flex-grow: 1; }
+            .mode-switcher { width: 100%; order: 1; margin-bottom: 5px; }
+            .compact-select { flex-grow: 1; max-width: none; order: 2; }
+            .btn-icon { order: 2; }
         }
     </style>
 </head>
 <body>
 
-<h1>
+<div class="header-compact">
     <svg class="app-logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="64" height="64" rx="16" fill="#4F46E5"/>
         <path d="M32 16V48" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M16 32H48" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="42" cy="22" r="6" fill="#10B981" stroke="#4F46E5" stroke-width="2"/>
     </svg>
-    Integrated Drug
-</h1>
-    <div class="subtitle" id="provider-display">Provider: Not Configured</div>
-    <div class="notice-banner">
-    <img src="notice.png" alt="Notice Icon" class="notice-img" loading="lazy" onerror="this.style.display='none'">
-    <span class="notice-text">
-        <strong>📢 May every whispered wish reach you on the breeze.
-    </span>
+    <h1>Drug Tutor</h1>
 </div>
     
+    <div class="subtitle" id="provider-display">Provider: Not Configured</div>
+
     <div class="top-bar">
-        <button id="mode-search" class="mode-active" onclick="switchMode('search')">Search</button>
-        <button id="mode-flashcard" class="secondary" onclick="switchMode('flashcard')">Flashcards</button>
-        <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz</button>
-        
-        <select id="system-filter" onchange="applyFilter()" class="system-select">
-            <option value="All">Show All Systems</option>
+        <div class="mode-switcher">
+            <button id="mode-search" class="mode-btn active" onclick="switchMode('search')">🔍 Search</button>
+            <button id="mode-flashcard" class="mode-btn" onclick="switchMode('flashcard')">💊 Cards</button>
+            <button id="mode-quiz" class="mode-btn" onclick="switchMode('quiz')">❓ Quiz</button>
+        </div>
+
+        <select id="system-filter" onchange="applyFilter()" class="compact-select">
+            <option value="All">All Systems</option>
         </select>
 
-        <select id="mastery-filter" onchange="applyFilter()" class="mastery-select">
-            <option value="All">All Mastery Levels</option>
-            <option value="Focus">⚠️ Needs Focus (Low)</option>
-            <option value="Learning">🟡 Learning (Mid)</option>
-            <option value="Mastered">✅ Mastered (High)</option>
+        <select id="mastery-filter" onchange="applyFilter()" class="compact-select">
+            <option value="All">All Levels</option>
+            <option value="Focus">⚠️ Focus</option>
+            <option value="Learning">🟡 Learning</option>
+            <option value="Mastered">✅ Mastered</option>
         </select>
 
-        <button onclick="toggleSettings()" class="secondary">⚙️ Settings</button>
+        <button onclick="toggleSettings()" class="btn-icon" title="Settings">⚙️</button>
     </div>
 
     <div id="settings-panel">
         <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
             <label class="settings-label" style="margin-bottom: 10px;">⚡ Quick Controls</label>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                 <button onclick="toggleDrugSet()" id="set-btn" class="secondary" style="width:100%; font-size:0.85rem;">📚 Set: Common</button>
-                 <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; font-size:0.85rem;">🌐 Lang: LIHKG</button>
-                 <button onclick="toggleMute()" id="mute-btn" class="secondary" style="grid-column: span 2; width:100%;">🔊 Audio: On</button>
+                 <button onclick="toggleDrugSet()" id="set-btn" class="ai-btn-small" style="background:white; color:#333; border:1px solid #ccc; justify-content:center;">📚 Set: Common</button>
+                 <button onclick="toggleLanguage()" id="lang-btn" class="ai-btn-small" style="background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); justify-content:center;">🌐 LIHKG Mode</button>
+                 <button onclick="toggleMute()" id="mute-btn" class="ai-btn-small" style="grid-column: span 2; background:white; color:#333; border:1px solid #ccc; justify-content:center;">🔊 Audio: On</button>
             </div>
         </div>
 
         <h3 style="margin-top:0;">Configuration</h3>
         
         <div class="settings-group" style="border-bottom: 1px solid #eee; padding-bottom:15px; margin-bottom:15px;">
-            <label class="settings-label">🔊 Text-to-Speech Provider:</label>
+            <label class="settings-label">🔊 TTS Provider:</label>
             <select id="tts-provider-select" onchange="updateTTSUI()" class="settings-select">
-                <option value="browser">Browser Native (Free/Offline)</option>
+                <option value="browser">Browser Native</option>
             </select>
 
-            <label class="settings-label" style="margin-top:15px;">Preferred Voice:</label>
+            <label class="settings-label" style="margin-top:10px;">Voice:</label>
             <select id="voice-select" class="settings-select">
-                <option value="">Default Voice</option>
+                <option value="">Default</option>
             </select>
-            
-            <button onclick="testVoice()" style="margin-top:10px; font-size:0.8rem; padding:8px 12px; width:100%; border:1px solid #d1d5db;">🔊 Test Selected Voice</button>
         </div>
 
         <div class="settings-group">
-            <label class="settings-label">Select Active AI Provider:</label>
+            <label class="settings-label">AI Provider:</label>
             <select id="provider-select" onchange="updateProviderDisplay()" class="settings-select">
-                <option value="deepseek" selected>DeepSeek Official</option>
-                <option value="yinli">Yinli AI (Gemini Flash)</option>
-                <option value="openrouter">OpenRouter (Trinity Mini)</option>
-                <option value="github">GitHub Models (GPT-4o mini)</option>
+                <option value="deepseek" selected>DeepSeek</option>
+                <option value="yinli">Yinli (Gemini)</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="github">GitHub</option>
             </select>
             
             <div id="yinli-config" style="display:none;">
-                <label class="settings-label">Yinli AI URL (Routing Address):</label>
-                <input type="text" id="yinli-url" class="settings-input" value="https://yinli.one/v1/chat/completions" placeholder="https://yinli.one/v1/chat/completions" />
-                
-                <label class="settings-label">Yinli Model Name:</label>
+                <label class="settings-label">Yinli URL:</label>
+                <input type="text" id="yinli-url" class="settings-input" value="https://yinli.one/v1/chat/completions" />
+                <label class="settings-label">Yinli Model:</label>
                 <input type="text" id="yinli-model" class="settings-input" placeholder="gemini-2.5-flash" />
-                <div style="font-size:0.8rem; color:#6b7280; margin-bottom:10px;">Default: gemini-2.5-flash</div>
-                
-                <label class="settings-label">Yinli API Key (sk-...):</label>
-                <input type="password" id="yinli-key" class="settings-input" placeholder="Enter Yinli Key" />
+                <label class="settings-label">Key:</label>
+                <input type="password" id="yinli-key" class="settings-input" placeholder="sk-..." />
             </div>
 
             <div id="github-config" style="display:none;">
-                <label class="settings-label">GitHub PAT (Token):</label>
+                <label class="settings-label">GitHub Token:</label>
                 <input type="password" id="github-key" class="settings-input" placeholder="github_pat_..." />
-                <div style="font-size:0.8rem; color:#6b7280; margin-bottom:15px;">Use a Classic or Fine-grained Token with public access.</div>
             </div>
 
             <div id="openrouter-config" style="display:none;">
-                <label class="settings-label">OpenRouter API Key (sk-or...):</label>
-                <input type="password" id="openrouter-key" class="settings-input" placeholder="Enter OpenRouter Key" />
+                <label class="settings-label">OpenRouter Key:</label>
+                <input type="password" id="openrouter-key" class="settings-input" placeholder="sk-or..." />
             </div>
             
             <div id="deepseek-config">
-                <label class="settings-label">DeepSeek API Key (sk-...):</label>
-                <input type="password" id="deepseek-key" class="settings-input" placeholder="Enter DeepSeek Key" />
+                <label class="settings-label">DeepSeek Key:</label>
+                <input type="password" id="deepseek-key" class="settings-input" placeholder="sk-..." />
             </div>
         </div>
 
         <div class="settings-group">
-            <label class="settings-label">Load External Data (Google Sheet/Online CSV):</label>
+            <label class="settings-label">Google Sheet URL:</label>
             <div class="import-wrapper">
                 <div class="url-input-group">
-                    <input type="text" id="sheet-url" class="settings-input" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-bottom:0;" />
-                    <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load</button>
+                    <input type="text" id="sheet-url" class="settings-input" placeholder="https://..." style="margin-bottom:0;" />
+                    <button onclick="fetchSheetData()" style="padding: 5px 15px; cursor:pointer;">Load</button>
                 </div>
-                <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary); font-weight:bold;"></div>
+                <div id="upload-status" style="font-size:0.75rem; margin-top:5px; color:var(--primary); font-weight:bold;"></div>
             </div>
         </div>
 
-        <button onclick="saveSettings()" style="width:100%; background-color: var(--secondary);">💾 Save & Close</button>
+        <button onclick="saveSettings()" style="width:100%; padding:10px; border-radius:8px; border:none; background-color: var(--secondary); color:white; font-weight:bold; cursor:pointer;">💾 Save & Close</button>
     </div>
 
     <div id="progress-modal">
         <div class="progress-content">
-            <div class="progress-header">
-                <h3 style="margin:0;">📊 Knowledge Bank</h3>
-                <button onclick="closeProgressModal()" style="height:32px; padding:0 12px; background:#f3f4f6; color:#333;">Close</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin:0;">📊 Stats</h3>
+                <button onclick="closeProgressModal()" style="height:28px; padding:0 10px; background:#f3f4f6; border:1px solid #ccc; border-radius:6px; cursor:pointer;">X</button>
             </div>
-            <div class="progress-list" id="progress-list-content">
-                </div>
-            <div style="margin-top:15px; font-size:0.8rem; color:#6b7280; text-align:center;">
-                * Lower mastery items appear more often in quiz.
-            </div>
+            <div style="overflow-y: auto; flex-grow: 1;" id="progress-list-content"></div>
         </div>
     </div>
 
     <div id="app-container">
         
         <div id="search-section">
-            <div style="text-align:center; margin-bottom:15px; font-weight:800; color:var(--primary); font-size:1.2rem;">🔍 Drug Database Search</div>
-            <input type="text" id="search-input" class="search-bar" placeholder="Type drug name or press 'Enter' to save history..." oninput="handleSearch()">
+            <input type="text" id="search-input" class="search-bar" placeholder="Type drug name..." oninput="handleSearch()">
             
             <div id="history-section" style="display:none;">
                 <div style="display:flex; align-items:center; margin-bottom:4px;">
-                    <div class="chip-label">🕒 Recent Searches</div>
+                    <div class="chip-label">Recent</div>
                     <span class="history-clear" onclick="clearHistory()">Clear</span>
                 </div>
                 <div id="history-container" class="chip-container"></div>
             </div>
             
             <div id="recommend-section">
-                <div class="chip-label">🫁 Body Systems</div>
+                <div class="chip-label">Systems</div>
                 <div id="recommend-container" class="chip-container"></div>
             </div>
 
             <div id="search-results" class="results-grid">
-                <div style="text-align:center; color:#9ca3af; margin-top:20px;">Type above to search...</div>
+                <div style="text-align:center; color:#9ca3af; margin-top:20px; font-size:0.9rem;">Type above to search...</div>
             </div>
         </div>
 
         <div id="flashcard-section" style="display:none;">
             <div class="flashcard-container" id="flashcard" onclick="flipCard(event)">
                 <div class="card-face card-front">
-                    <div style="font-size: 3.5rem; margin-bottom: 20px;">💊</div>
+                    <div style="font-size: 3rem; margin-bottom: 15px;">💊</div>
                     <h2 id="fc-name" class="card-title">Drug Name</h2>
-                    <p style="color: #9ca3af; font-size: 0.9rem;">(Tap to flip)</p>
-                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name, 'en')" style="margin-top: 20px; background:#e0e7ff; color:var(--primary);">🔊 Read Name</button>
+                    <p style="color: #9ca3af; font-size: 0.8rem;">(Tap to flip)</p>
+                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name, 'en')" style="margin-top: 15px; background:#e0e7ff; color:var(--primary); border:none; padding:5px 10px; border-radius:6px; font-weight:600; cursor:pointer;">🔊 Read</button>
                 </div>
                 <div class="card-face card-back">
                     <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class">...</div></div>
-                    <div class="detail-row"><div class="detail-label">Body System</div><div class="detail-content" id="fc-system">...</div></div>
+                    <div class="detail-row"><div class="detail-label">System</div><div class="detail-content" id="fc-system">...</div></div>
                     <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content" id="fc-indication">...</div></div>
                     <div class="detail-row"><div class="detail-label">SideEffects</div><div class="detail-content" id="fc-SideEffects">...</div></div>
-                    <div class="detail-row" style="border:none;"><div class="detail-label">Nursing Considerations</div><div class="detail-content" id="fc-nursing">...</div></div>
+                    <div class="detail-row" style="border:none;"><div class="detail-label">Nursing</div><div class="detail-content" id="fc-nursing">...</div></div>
 
                     <div class="ai-btn-group">
-                        <button onclick="event.stopPropagation(); getIntegratedCaseStudy(flashcardList[fcCurrentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="ai-btn-small btn-sim" id="btn-case">🏥 AI: Generate Integrated Patient Case</button>
+                        <button onclick="event.stopPropagation(); getWardCheatSheet(flashcardList[fcCurrentIndex])" class="ai-btn-small btn-sim" style="background-color: #059669;">📋 AI: Ward Cheat Sheet</button>
+                        <div id="ward-sheet-output" class="ai-output-box" style="display:none; border-left-color: #059669; background: #ecfdf5;"></div>
+
+                        <button onclick="event.stopPropagation(); playISBAR(flashcardList[fcCurrentIndex])" class="ai-btn-small" style="background:white; color:#333; border:1px solid #ccc;">🔊 ISBAR Handover</button>
+                        <div id="isbar-box" class="ai-output-box" style="display:none; border-left-color: #7c3aed;"></div>
+
+                        <button onclick="event.stopPropagation(); generateMathProblem(flashcardList[fcCurrentIndex])" class="ai-btn-small btn-sim" style="background-color: #6366f1;">🧮 AI: Dosage Math</button>
+                        <div id="math-output" class="ai-output-box" style="display:none; border-left-color: #6366f1; background: #eef2ff;"></div>
+
+                        <button onclick="event.stopPropagation(); getIntegratedCaseStudy(flashcardList[fcCurrentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="ai-btn-small btn-sim" id="btn-case">🏥 AI: Patient Case</button>
                         
-                        <a id="fc-google-link" href="#" target="_blank" onclick="event.stopPropagation();" 
-                                class="ai-btn-small secondary btn-link-style" 
-                                style="background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; justify-content: center;">
-                            🌐 Search on Google
-                        </a>
+                        <a id="fc-google-link" href="#" target="_blank" onclick="event.stopPropagation();" class="ai-btn-small btn-link-style" style="background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; justify-content: center;">🌐 Google Search</a>
                         
                         <div id="fc-ai-case" class="ai-output-box"></div>
-                        <button onclick="event.stopPropagation(); readAIContent('fc-ai-case')" class="btn-read-ai" id="btn-read-case">🔊 Read Out Loud</button>
+                        <button onclick="event.stopPropagation(); readAIContent('fc-ai-case')" class="btn-read-ai" id="btn-read-case">🔊 Read Case</button>
                     </div>
-                    <button onclick="event.stopPropagation(); speakBack(flashcardList[fcCurrentIndex])" style="margin-top: 20px; width:100%; background:#e0e7ff; color:var(--primary); font-size:0.8rem;">🔊 Read Basic Details</button>
                 </div>
             </div>
             <div class="nav-controls">
-                <button onclick="prevCard()">← Prev</button>
-                <span id="counter" style="align-self: center; font-weight: bold; color:#6b7280;">1 / 10</span>
-                <button onclick="nextCard()">Next →</button>
+                <button onclick="prevCard()">←</button>
+                <span id="counter" style="align-self: center; font-weight: bold; color:#6b7280; font-size:0.9rem;">1 / 10</span>
+                <button onclick="nextCard()">→</button>
             </div>
         </div>
 
         <div id="quiz-section" class="quiz-container" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0; font-size:1.1rem; color:var(--primary);">Adaptive Quiz</h3>
-                <button onclick="showProgressModal()" style="font-size:0.8rem; padding:6px 12px; background:white; border:1px solid #d1d5db; color:#333;">📊 My Progress</button>
+                <h3 style="margin:0; font-size:1rem; color:var(--primary);">Adaptive Quiz</h3>
+                <button onclick="showProgressModal()" style="font-size:0.75rem; padding:4px 8px; background:white; border:1px solid #d1d5db; color:#333; border-radius:6px; cursor:pointer;">📊 Progress</button>
             </div>
             
             <div id="quiz-content">
@@ -614,14 +559,13 @@
             
             <div id="quiz-feedback" style="display:none; margin-top:15px; padding:10px; background:#f0f9ff; border-radius:8px; border:1px solid #bae6fd; font-size:0.9rem; text-align:center;"></div>
 
-            <button id="btn-quiz-explain" class="btn-explain" onclick="triggerQuizExplain()">🤖 Explain Why (AI Tutor)</button>
+            <button id="btn-quiz-explain" class="btn-explain" onclick="triggerQuizExplain()">🤖 Explain Why</button>
             <div id="ai-container" style="display:none;">
-                <h3><span id="ai-status-icon">🤖</span> AI Tutor Explanation</h3>
                 <div id="ai-content" class="ai-output-box" style="display:block;"></div>
-                <button onclick="readAIContent('ai-content')" class="btn-read-ai" id="btn-read-explain" style="margin-bottom:0;">🔊 Read Out Loud</button>
+                <button onclick="readAIContent('ai-content')" class="btn-read-ai" id="btn-read-explain" style="margin-bottom:0;">🔊 Read</button>
             </div>
             <div class="nav-controls" style="justify-content: flex-end;">
-                <button onclick="nextQuestion()" id="next-quiz-btn" style="display:none;">Next Question →</button>
+                <button onclick="nextQuestion()" id="next-quiz-btn" style="display:none;">Next →</button>
             </div>
         </div>
 
@@ -639,28 +583,25 @@
         let deepSeekKey = "sk-92db3cf721454bd7b351ca6ef40eaaf7";
         let githubKey = "";
         
-        // YINLI CONFIG
         let yinliKey = "";
         let yinliUrl = "https://yinli.one/v1/chat/completions";
-        let yinliModel = "gemini-2.5-flash"; // NEW VARIABLE FOR MODEL
+        let yinliModel = "gemini-2.5-flash";
 
         let googleScriptURL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec"; 
         
-        // --- AUDIO ---
         let ttsProvider = 'browser'; 
         let selectedVoiceURI = ""; 
         let isMuted = false;
         let aiLanguage = 'lihkg'; 
         const defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
 
-        // --- DATA & STATE ---
         let extendedDrugs = []; 
         let activeSourceList = []; 
         let filteredList = [];     
         let flashcardList = []; 
         let quizList = [];      
         let searchHistory = []; 
-        let quizStats = {}; // { drugName: { correct: 0, attempts: 0, weight: 10 } }
+        let quizStats = {};
         let fcCurrentIndex = 0;
         let quizCurrentIndex = 0;
         let currentQuizData = null;
@@ -671,32 +612,16 @@
             "Musculoskeletal and joint disease", "Eye", "Ear, nose, and oropharynx", "Skin", "Immunological products and vaccines", "Anaesthesia"
         ];
         
-        // UPDATED: Short names for compact view
         const systemShortNames = {
-            "Gastro-intestinal system": "GI System",
-            "Cardiovascular system": "Cardio",
-            "Respiratory system": "Respiratory",
-            "Central nervous system": "CNS / Neuro",
-            "Infections": "Infections",
-            "Endocrine system": "Endocrine",
-            "Obstetrics, gynaecology, and urinary-tract disorders": "ObGyn / GU",
-            "Malignant disease and immunosuppression": "Oncology",
-            "Nutrition and blood": "Nutrition / Blood",
-            "Musculoskeletal and joint disease": "MSK / Bone",
-            "Eye": "Eye",
-            "Ear, nose, and oropharynx": "ENT",
-            "Skin": "Skin",
-            "Immunological products and vaccines": "Immune / Vax",
-            "Anaesthesia": "Anaesthesia"
+            "Gastro-intestinal system": "GI System", "Cardiovascular system": "Cardio", "Respiratory system": "Respiratory", "Central nervous system": "CNS / Neuro",
+            "Infections": "Infections", "Endocrine system": "Endocrine", "Obstetrics, gynaecology, and urinary-tract disorders": "ObGyn / GU",
+            "Malignant disease and immunosuppression": "Oncology", "Nutrition and blood": "Nutrition / Blood", "Musculoskeletal and joint disease": "MSK / Bone",
+            "Eye": "Eye", "Ear, nose, and oropharynx": "ENT", "Skin": "Skin", "Immunological products and vaccines": "Immune", "Anaesthesia": "Anaesthesia"
         };
 
-        // --- ICONS MAPPING ---
         const systemIcons = {
-            "Gastro-intestinal": "🍔", "Cardiovascular": "🫀", "Respiratory": "🫁", 
-            "Central nervous": "🧠", "Infections": "🦠", "Endocrine": "🦋", 
-            "Obstetrics": "🤰", "Malignant": "🎗️", "Nutrition": "🍎",
-            "Musculoskeletal": "🦴", "Eye": "👁️", "Ear": "👂", 
-            "Skin": "🧴", "Immunological": "🛡️", "Anaesthesia": "💉"
+            "Gastro-intestinal": "🍔", "Cardiovascular": "🫀", "Respiratory": "🫁", "Central nervous": "🧠", "Infections": "🦠", "Endocrine": "🦋", 
+            "Obstetrics": "🤰", "Malignant": "🎗️", "Nutrition": "🍎", "Musculoskeletal": "🦴", "Eye": "👁️", "Ear": "👂", "Skin": "🧴", "Immunological": "🛡️", "Anaesthesia": "💉"
         };
 
         function getSystemIcon(sys) {
@@ -707,12 +632,12 @@
         function getSystemForDrug(drug) {
             if (drug.system && systemCategories.includes(drug.system)) return drug.system;
             const txt = (drug.class + " " + drug.indication + " " + drug.name).toLowerCase();
-            if (txt.includes("antacid") || txt.includes("ppi") || txt.includes("laxative") || txt.includes("gerd") || txt.includes("ulcer")) return "Gastro-intestinal system";
-            if (txt.includes("cardio") || txt.includes("arrhyth") || txt.includes("hypertension") || txt.includes("angina") || txt.includes("beta-blocker") || txt.includes("ace inhibitor") || txt.includes("statin")) return "Cardiovascular system";
-            if (txt.includes("asthma") || txt.includes("copd") || txt.includes("broncho") || txt.includes("mucolytic") || txt.includes("respiratory")) return "Respiratory system";
-            if (txt.includes("analgesic") || txt.includes("pain") || txt.includes("anxiety") || txt.includes("depress") || txt.includes("seizure") || txt.includes("epilepsy") || txt.includes("psychotic") || txt.includes("sedat")) return "Central nervous system";
-            if (txt.includes("infection") || txt.includes("antibiotic") || txt.includes("viral") || txt.includes("fungal") || txt.includes("bacterial") || txt.includes("tuberculosis") || txt.includes("pneumonia")) return "Infections";
-            if (txt.includes("diabetes") || txt.includes("insulin") || txt.includes("thyroid") || txt.includes("corticosteroid")) return "Endocrine system";
+            if (txt.includes("antacid") || txt.includes("ppi") || txt.includes("laxative")) return "Gastro-intestinal system";
+            if (txt.includes("cardio") || txt.includes("arrhyth") || txt.includes("hypertension") || txt.includes("beta-blocker")) return "Cardiovascular system";
+            if (txt.includes("asthma") || txt.includes("copd") || txt.includes("broncho")) return "Respiratory system";
+            if (txt.includes("analgesic") || txt.includes("pain") || txt.includes("anxiety") || txt.includes("seizure")) return "Central nervous system";
+            if (txt.includes("infection") || txt.includes("antibiotic") || txt.includes("viral")) return "Infections";
+            if (txt.includes("diabetes") || txt.includes("insulin") || txt.includes("thyroid")) return "Endocrine system";
             return "Other"; 
         }
 
@@ -721,24 +646,23 @@
             while (select.options.length > 1) { select.remove(1); }
             systemCategories.forEach(sys => {
                 const opt = document.createElement('option');
-                opt.value = sys; opt.innerText = sys; select.appendChild(opt);
+                opt.value = sys; opt.innerText = systemShortNames[sys] || sys; select.appendChild(opt);
             });
         }
 
         function processRawData(data) {
             let processed = [];
             data.forEach(item => {
-                if (item.name && typeof item.name === 'string' && item.name.includes(';')) {
+                if (item.name && item.name.includes(';')) {
                     item.name.split(';').forEach(n => { if(n.trim()) processed.push({ ...item, name: n.trim() }); });
                 } else { if(item.name) item.name = item.name.trim(); processed.push(item); }
             });
             return processed;
         }
 
-        // --- NEW MASTERY LOGIC ---
         function getMasteryLevel(drugName) {
             const s = quizStats[drugName];
-            if (!s || s.attempts === 0) return 'Focus'; // Default for new
+            if (!s || s.attempts === 0) return 'Focus';
             const pct = (s.correct / s.attempts) * 100;
             if (pct >= 80 && s.attempts >= 2) return 'Mastered';
             if (pct >= 50) return 'Learning';
@@ -752,23 +676,17 @@
             filteredList = activeSourceList.filter(drug => {
                 const sys = getSystemForDrug(drug);
                 drug.system = sys;
-                
-                // System Match
                 const sysMatch = (sysCategory === "All" || sys === sysCategory);
-                
-                // Mastery Match
                 let masteryMatch = true;
                 if (masteryCategory !== "All") {
                     const level = getMasteryLevel(drug.name);
                     masteryMatch = (level === masteryCategory);
                 }
-                
                 return sysMatch && masteryMatch;
             });
             
             if (filteredList.length === 0) {
                 alert("No drugs found matching these filters.");
-                // Reset Mastery if empty to avoid lock out
                 document.getElementById('mastery-filter').value = "All";
                 filteredList = [...activeSourceList];
             }
@@ -788,34 +706,23 @@
             const savedOR = localStorage.getItem('or_key'); if(savedOR) openRouterKey = savedOR;
             const savedDS = localStorage.getItem('ds_key'); if(savedDS) deepSeekKey = savedDS;
             const savedGH = localStorage.getItem('gh_key'); if(savedGH) githubKey = savedGH;
-            
-            // LOAD YINLI CONFIG
             const savedYinli = localStorage.getItem('yinli_key'); if(savedYinli) yinliKey = savedYinli;
             const savedYinliUrl = localStorage.getItem('yinli_url'); if(savedYinliUrl) yinliUrl = savedYinliUrl;
-            
-            // NEW: Load saved model
-            const savedYinliModel = localStorage.getItem('yinli_model'); 
-            if(savedYinliModel) yinliModel = savedYinliModel;
+            const savedYinliModel = localStorage.getItem('yinli_model'); if(savedYinliModel) yinliModel = savedYinliModel;
 
             const savedProv = localStorage.getItem('active_provider'); if(savedProv) currentProvider = savedProv;
             const savedTTS = localStorage.getItem('tts_provider'); if(savedTTS) ttsProvider = savedTTS;
             const savedVoice = localStorage.getItem('preferred_voice'); if(savedVoice) selectedVoiceURI = savedVoice;
 
-            // LOAD HISTORY & STATS
-            const savedHist = localStorage.getItem('drug_tutor_search_history');
-            if(savedHist) searchHistory = JSON.parse(savedHist);
-            
-            const savedStats = localStorage.getItem('drug_tutor_quiz_stats');
-            if(savedStats) quizStats = JSON.parse(savedStats);
+            const savedHist = localStorage.getItem('drug_tutor_search_history'); if(savedHist) searchHistory = JSON.parse(savedHist);
+            const savedStats = localStorage.getItem('drug_tutor_quiz_stats'); if(savedStats) quizStats = JSON.parse(savedStats);
 
             document.getElementById('openrouter-key').value = openRouterKey;
             document.getElementById('deepseek-key').value = deepSeekKey;
             document.getElementById('github-key').value = githubKey;
-            
-            // SET YINLI INPUTS
             document.getElementById('yinli-key').value = yinliKey;
             document.getElementById('yinli-url').value = yinliUrl;
-            document.getElementById('yinli-model').value = yinliModel; // Set input value
+            document.getElementById('yinli-model').value = yinliModel;
 
             document.getElementById('provider-select').value = currentProvider;
             document.getElementById('tts-provider-select').value = ttsProvider;
@@ -830,64 +737,41 @@
             populateVoiceList();
             if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoiceList;
 
-            // NEW: INIT FEATURES
-            renderHistory();
-            renderRecommendedSystems();
+            renderHistory(); renderRecommendedSystems();
             
             document.getElementById('search-input').addEventListener('keydown', function(e) {
-                if(e.key === 'Enter') {
-                    handleSearch();
-                    if(this.value.trim().length > 1) addToHistory(this.value.trim());
-                }
+                if(e.key === 'Enter') { handleSearch(); if(this.value.trim().length > 1) addToHistory(this.value.trim()); }
             });
 
             switchMode('search');
         }
 
-        // --- PROGRESS & STATS LOGIC ---
+        // --- STATS ---
         function getDrugStats(drugName) {
-            if (!quizStats[drugName]) {
-                quizStats[drugName] = { correct: 0, attempts: 0, weight: 10 }; 
-            }
+            if (!quizStats[drugName]) quizStats[drugName] = { correct: 0, attempts: 0, weight: 10 }; 
             return quizStats[drugName];
         }
-
-        function saveStats() {
-            localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
-        }
+        function saveStats() { localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats)); }
 
         function showProgressModal() {
             const modal = document.getElementById('progress-modal');
             const list = document.getElementById('progress-list-content');
             list.innerHTML = '';
-
             const keys = Object.keys(quizStats);
-            if(keys.length === 0) { list.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">No quiz data yet. Start quizzing!</div>'; }
+            if(keys.length === 0) { list.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">No quiz data yet.</div>'; }
             else {
-                // Sort by Mastery % (Low to High)
                 keys.sort((a,b) => {
-                    const sa = quizStats[a]; const sb = quizStats[b];
-                    const pa = sa.attempts === 0 ? 0 : sa.correct/sa.attempts;
-                    const pb = sb.attempts === 0 ? 0 : sb.correct/sb.attempts;
+                    const pa = quizStats[a].attempts === 0 ? 0 : quizStats[a].correct/quizStats[a].attempts;
+                    const pb = quizStats[b].attempts === 0 ? 0 : quizStats[b].correct/quizStats[b].attempts;
                     return pa - pb;
                 });
-
                 keys.forEach(key => {
                     const s = quizStats[key];
                     const pct = s.attempts === 0 ? 0 : Math.round((s.correct / s.attempts) * 100);
-                    let badgeClass = 'badge-low'; let badgeText = 'Needs Focus';
-                    if(pct >= 80 && s.attempts >= 3) { badgeClass = 'badge-master'; badgeText = 'Mastered'; }
-                    else if(pct >= 50) { badgeClass = 'badge-mid'; badgeText = 'Learning'; }
-
+                    let badgeColor = pct >= 80 ? '#dcfce7' : pct >= 50 ? '#fef9c3' : '#fee2e2';
                     const item = document.createElement('div');
-                    item.className = 'progress-item';
-                    item.innerHTML = `
-                        <div>
-                            <div class="prog-name">${key}</div>
-                            <div class="prog-stat">${s.correct} / ${s.attempts} correct (${pct}%)</div>
-                        </div>
-                        <div class="prog-badge ${badgeClass}">${badgeText}</div>
-                    `;
+                    item.style.cssText = 'display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;';
+                    item.innerHTML = `<div><div style="font-weight:600; font-size:0.9rem;">${key}</div><div style="font-size:0.75rem; color:#666;">${s.correct}/${s.attempts}</div></div><div style="background:${badgeColor}; padding:2px 8px; border-radius:10px; font-size:0.75rem;">${pct}%</div>`;
                     list.appendChild(item);
                 });
             }
@@ -895,7 +779,7 @@
         }
         function closeProgressModal() { document.getElementById('progress-modal').style.display = 'none'; }
 
-        // --- WEIGHTED QUIZ SELECTION ---
+        // --- QUIZ ---
         function generateQuizQuestion() {
             resetQuizUI();
             const container = document.getElementById('quiz-options');
@@ -905,36 +789,22 @@
 
             if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
 
-            // WEIGHTED RANDOM SELECTION
             let totalWeight = 0;
-            const candidates = quizList.filter(d => {
-                const s = getDrugStats(d.name);
-                totalWeight += s.weight;
-                return true;
-            });
-
+            const candidates = quizList.filter(d => { const s = getDrugStats(d.name); totalWeight += s.weight; return true; });
             if(totalWeight === 0) totalWeight = candidates.length * 10;
-
             let randomVal = Math.random() * totalWeight;
             let correctDrug = candidates[0];
-            
-            for (let d of candidates) {
-                const s = getDrugStats(d.name);
-                randomVal -= s.weight;
-                if (randomVal <= 0) { correctDrug = d; break; }
-            }
-
+            for (let d of candidates) { randomVal -= getDrugStats(d.name).weight; if (randomVal <= 0) { correctDrug = d; break; } }
             if(!correctDrug) correctDrug = candidates[Math.floor(Math.random() * candidates.length)];
 
             const qType = Math.floor(Math.random() * 4);
             let qText = "", correctText = "", optionType = ""; 
             switch (qType) {
-                case 0: qText = `Which drug is indicated for: "${correctDrug.indication}"?`; correctText = correctDrug.name; optionType = 'name'; break;
-                case 1: qText = `Which drug belongs to the class: "${correctDrug.class}"?`; correctText = correctDrug.name; optionType = 'name'; break;
-                case 2: qText = `What is the primary indication for: "${correctDrug.name}"?`; correctText = correctDrug.indication; optionType = 'indication'; break;
-                case 3: qText = `What is the drug class of: "${correctDrug.name}"?`; correctText = correctDrug.class; optionType = 'class'; break;
+                case 0: qText = `Which drug is for: "${correctDrug.indication}"?`; correctText = correctDrug.name; optionType = 'name'; break;
+                case 1: qText = `Which drug is class: "${correctDrug.class}"?`; correctText = correctDrug.name; optionType = 'name'; break;
+                case 2: qText = `Indication for: "${correctDrug.name}"?`; correctText = correctDrug.indication; optionType = 'indication'; break;
+                case 3: qText = `Class of: "${correctDrug.name}"?`; correctText = correctDrug.class; optionType = 'class'; break;
             }
-
             qEl.innerText = qText;
             let wrongOptions = []; let attempts = 0;
             while(wrongOptions.length < 3 && attempts < 100) {
@@ -960,10 +830,8 @@
         function checkAnswer(btn, selectedText, correctText, correctDrug, qText) {
             const btns = document.querySelectorAll('.option-btn'); 
             btns.forEach(b => b.onclick = null);
-            
             const stats = getDrugStats(correctDrug.name);
             stats.attempts++;
-
             let feedback = document.getElementById('quiz-feedback');
             feedback.style.display = 'block';
 
@@ -978,38 +846,18 @@
                 btn.classList.add('wrong'); 
                 btns.forEach(b => { if(b.innerText === correctText) b.classList.add('correct'); });
                 stats.weight += 4;
-                speakText(`Incorrect. The answer is ${correctText}.`, 'en');
+                speakText(`Wrong. Answer is ${correctText}.`, 'en');
                 feedback.innerHTML = `❌ <strong>Incorrect.</strong> Correct: ${correctText}`;
                 feedback.style.background = "#fee2e2"; feedback.style.borderColor = "#fca5a5";
             }
-            
-            const pct = Math.round((stats.correct / stats.attempts) * 100);
-            
-            // Generate link dynamically
-            const query = encodeURIComponent(`${correctDrug.name} all in hk traditional chinese`);
-            const googleUrl = `https://www.google.com/search?q=${query}`;
-            
-            feedback.innerHTML += `
-                <div style="margin-top:5px; font-size:0.8rem; color:#555;">
-                    Mastery for ${correctDrug.name}: ${pct}% (${stats.correct}/${stats.attempts})
-                </div>
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
-                    <a href="${googleUrl}" target="_blank"
-                       style="color: var(--primary); font-weight: 700; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                       🌐 Deep Research: Search "${correctDrug.name}" on Google
-                    </a>
-                </div>
-            `;
-
             saveStats(); 
-
             document.getElementById('next-quiz-btn').style.display = 'block'; 
             document.getElementById('btn-quiz-explain').style.display = 'flex'; 
             currentQuizData = { q: qText, u: selectedText, c: correctDrug, correctAnswerText: correctText };
         }
         function nextQuestion() { generateQuizQuestion(); }
 
-        // --- HISTORY & RECOMMENDATIONS ---
+        // --- SEARCH & UI ---
         function renderHistory() {
             const container = document.getElementById('history-container');
             const section = document.getElementById('history-section');
@@ -1023,7 +871,6 @@
                 container.appendChild(chip);
             });
         }
-
         function addToHistory(term) {
             const cleanTerm = term.trim();
             searchHistory = searchHistory.filter(t => t.toLowerCase() !== cleanTerm.toLowerCase());
@@ -1032,10 +879,7 @@
             localStorage.setItem('drug_tutor_search_history', JSON.stringify(searchHistory));
             renderHistory();
         }
-
-        function clearHistory() {
-            searchHistory = []; localStorage.removeItem('drug_tutor_search_history'); renderHistory();
-        }
+        function clearHistory() { searchHistory = []; localStorage.removeItem('drug_tutor_search_history'); renderHistory(); }
 
         function renderRecommendedSystems() {
             const container = document.getElementById('recommend-container');
@@ -1043,34 +887,29 @@
             systemCategories.forEach(sys => {
                 const chip = document.createElement('div');
                 chip.className = 'system-chip';
-                // UPDATED: Use the short name map for compact display
                 const shortName = systemShortNames[sys] || sys.replace('system', '').trim();
                 chip.innerText = `${getSystemIcon(sys)} ${shortName}`;
-                // Keep searching for the FULL system name so filtering still works
                 chip.onclick = () => { document.getElementById('search-input').value = sys; handleSearch(); addToHistory(sys); };
                 container.appendChild(chip);
             });
         }
 
-        // --- STANDARD UTILS ---
+        // --- UTILS ---
         function updateTTSUI() { populateVoiceList(); }
         async function populateVoiceList() {
             const select = document.getElementById('voice-select');
-            const provider = document.getElementById('tts-provider-select').value; 
             select.innerHTML = '<option value="">Default Voice</option>';
-            if (provider === 'browser') {
-                const voices = window.speechSynthesis.getVoices();
-                if(voices.length === 0) return;
-                voices.sort((a, b) => a.name.localeCompare(b.name)).forEach((voice) => {
-                    const option = document.createElement('option');
-                    const label = voice.name.includes("Enhanced") || voice.name.includes("Siri") ? `✨ ${voice.name}` : voice.name;
-                    option.textContent = `${label} (${voice.lang})`; option.value = voice.voiceURI;
-                    if(voice.voiceURI === selectedVoiceURI) option.selected = true;
-                    select.appendChild(option);
-                });
-            } 
+            const voices = window.speechSynthesis.getVoices();
+            if(voices.length === 0) return;
+            voices.sort((a, b) => a.name.localeCompare(b.name)).forEach((voice) => {
+                const option = document.createElement('option');
+                const label = voice.name.includes("Enhanced") ? `✨ ${voice.name}` : voice.name;
+                option.textContent = `${label} (${voice.lang})`; option.value = voice.voiceURI;
+                if(voice.voiceURI === selectedVoiceURI) option.selected = true;
+                select.appendChild(option);
+            });
         }
-        function testVoice() { speakText("Voice check. Testing audio quality.", 'en', true); }
+        function testVoice() { speakText("Voice check.", 'en', true); }
         function stopAudio() { window.speechSynthesis.cancel(); }
         function speakText(text, langCode = 'en', forceTest = false) {
             if (isMuted) return; stopAudio(); 
@@ -1096,31 +935,20 @@
             window.speechSynthesis.speak(utterance);
         }
         function saveSettings() {
-            const orInput = document.getElementById('openrouter-key').value.trim();
-            const dsInput = document.getElementById('deepseek-key').value.trim();
-            const ghInput = document.getElementById('github-key').value.trim();
+            openRouterKey = document.getElementById('openrouter-key').value.trim();
+            deepSeekKey = document.getElementById('deepseek-key').value.trim();
+            githubKey = document.getElementById('github-key').value.trim();
+            yinliKey = document.getElementById('yinli-key').value.trim();
+            yinliUrl = document.getElementById('yinli-url').value.trim();
+            yinliModel = document.getElementById('yinli-model').value.trim();
             
-            // SAVE YINLI
-            const yinliInput = document.getElementById('yinli-key').value.trim();
-            const yinliUrlInput = document.getElementById('yinli-url').value.trim();
-            const yinliModelInput = document.getElementById('yinli-model').value.trim(); // NEW
-            
-            if(yinliInput) { yinliKey = yinliInput; localStorage.setItem('yinli_key', yinliInput); }
-            if(yinliUrlInput) { yinliUrl = yinliUrlInput; localStorage.setItem('yinli_url', yinliUrlInput); }
-            
-            // NEW: Save Model
-            if(yinliModelInput) { 
-                yinliModel = yinliModelInput; 
-                localStorage.setItem('yinli_model', yinliModelInput); 
-            } else {
-                // Reset to default if empty
-                yinliModel = "gemini-2.5-flash";
-                localStorage.removeItem('yinli_model');
-            }
+            localStorage.setItem('or_key', openRouterKey);
+            localStorage.setItem('ds_key', deepSeekKey);
+            localStorage.setItem('gh_key', githubKey);
+            localStorage.setItem('yinli_key', yinliKey);
+            localStorage.setItem('yinli_url', yinliUrl);
+            localStorage.setItem('yinli_model', yinliModel);
 
-            if(orInput) { openRouterKey = orInput; localStorage.setItem('or_key', orInput); }
-            if(dsInput) { deepSeekKey = dsInput; localStorage.setItem('ds_key', dsInput); }
-            if(ghInput) { githubKey = ghInput; localStorage.setItem('gh_key', ghInput); }
             currentProvider = document.getElementById('provider-select').value;
             localStorage.setItem('active_provider', currentProvider);
             ttsProvider = document.getElementById('tts-provider-select').value;
@@ -1132,19 +960,18 @@
         function fetchSheetData() {
             const urlInput = document.getElementById('sheet-url').value.trim();
             const statusEl = document.getElementById('upload-status');
-            if (!urlInput) { statusEl.innerText = "❌ Please enter a URL."; return; }
-            statusEl.innerText = "⏳ Fetching Database...";
-            let fetchUrl = urlInput;
-            if (urlInput.includes("docs.google.com/spreadsheets") && urlInput.includes("/edit")) fetchUrl = urlInput.replace(/\/edit.*$/, "/export?format=csv");
-            fetch(fetchUrl).then(resp => { if(!resp.ok) throw new Error("Network error"); return resp.text(); }).then(csvText => {
+            if (!urlInput) { statusEl.innerText = "❌ No URL"; return; }
+            statusEl.innerText = "⏳ Loading...";
+            let fetchUrl = urlInput.replace(/\/edit.*$/, "/export?format=csv");
+            fetch(fetchUrl).then(resp => resp.text()).then(csvText => {
                 Papa.parse(csvText, { header: true, skipEmptyLines: true, complete: function(results) {
                         if (results.data.length > 0) {
-                            extendedDrugs = results.data; statusEl.innerText = `✅ Success! Loaded ${extendedDrugs.length} rows.`;
+                            extendedDrugs = results.data; statusEl.innerText = `✅ Loaded ${extendedDrugs.length} rows.`;
                             activeSourceList = extendedDrugs; activeSourceList.forEach(d => d.system = getSystemForDrug(d));
                             updateSetButton(); applyFilter(); 
-                        } else { statusEl.innerText = "❌ CSV empty."; }
+                        } else { statusEl.innerText = "❌ Empty CSV."; }
                     }});
-            }).catch(e => { statusEl.innerText = "❌ Failed. Check link."; });
+            }).catch(e => { statusEl.innerText = "❌ Failed."; });
         }
         function toggleSettings() {
             const panel = document.getElementById('settings-panel');
@@ -1152,17 +979,13 @@
         }
         function updateProviderDisplay() {
             const display = document.getElementById('provider-display');
-            const orDiv = document.getElementById('openrouter-config');
-            const dsDiv = document.getElementById('deepseek-config');
-            const ghDiv = document.getElementById('github-config');
-            const yinliDiv = document.getElementById('yinli-config');
+            const ids = ['openrouter-config','deepseek-config','github-config','yinli-config'];
+            ids.forEach(id => document.getElementById(id).style.display='none');
             
-            orDiv.style.display = 'none'; dsDiv.style.display = 'none'; ghDiv.style.display = 'none'; yinliDiv.style.display = 'none';
-            
-            if(currentProvider === 'openrouter') { display.innerText = "Provider: OpenRouter (Trinity Mini)"; orDiv.style.display = 'block'; } 
-            else if (currentProvider === 'github') { display.innerText = "Provider: GitHub Models (GPT-4o mini)"; ghDiv.style.display = 'block'; } 
-            else if (currentProvider === 'yinli') { display.innerText = "Provider: Yinli AI (" + (yinliModel || "Gemini Flash") + ")"; yinliDiv.style.display = 'block'; }
-            else { display.innerText = "Provider: DeepSeek Official"; dsDiv.style.display = 'block'; }
+            if(currentProvider === 'openrouter') { display.innerText = "Provider: OpenRouter"; document.getElementById('openrouter-config').style.display = 'block'; } 
+            else if (currentProvider === 'github') { display.innerText = "Provider: GitHub"; document.getElementById('github-config').style.display = 'block'; } 
+            else if (currentProvider === 'yinli') { display.innerText = "Provider: Yinli"; document.getElementById('yinli-config').style.display = 'block'; }
+            else { display.innerText = "Provider: DeepSeek"; document.getElementById('deepseek-config').style.display = 'block'; }
         }
         function toggleDrugSet() {
             if (activeSourceList === commonDrugs || (Array.isArray(commonDrugs) && activeSourceList[0]?.name === commonDrugs[0]?.name)) activeSourceList = extendedDrugs; 
@@ -1172,35 +995,67 @@
         }
         function updateSetButton() {
             const btn = document.getElementById('set-btn');
-            if(activeSourceList === extendedDrugs) { btn.innerText = "📚 Set: Online CSV"; btn.classList.add('set-extended'); btn.classList.remove('secondary'); } 
-            else { btn.innerText = "📚 Set: Common"; btn.classList.add('secondary'); btn.classList.remove('set-extended'); }
+            btn.innerText = activeSourceList === extendedDrugs ? "📚 Set: Online CSV" : "📚 Set: Common";
         }
         function toggleLanguage() {
             const btn = document.getElementById('lang-btn');
-            btn.classList.remove('secondary', 'lang-canto', 'lang-lihkg');
-            if (aiLanguage === 'english') { aiLanguage = 'cantonese'; btn.innerText = "🌐 Lang: Canto+Eng"; btn.classList.add('lang-canto'); } 
-            else if (aiLanguage === 'cantonese') { aiLanguage = 'lihkg'; btn.innerText = "🌐 Lang: LIHKG Mode"; btn.classList.add('lang-lihkg'); } 
-            else { aiLanguage = 'english'; btn.innerText = "🌐 Lang: English"; btn.classList.add('secondary'); }
+            if (aiLanguage === 'english') { aiLanguage = 'cantonese'; btn.innerText = "🌐 Lang: Canto"; } 
+            else if (aiLanguage === 'cantonese') { aiLanguage = 'lihkg'; btn.innerText = "🌐 Lang: LIHKG"; btn.style.background = 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)'; } 
+            else { aiLanguage = 'english'; btn.innerText = "🌐 Lang: Eng"; btn.style.background = 'white'; }
         }
         function toggleMute() {
             isMuted = !isMuted;
             const btn = document.getElementById('mute-btn');
-            if (isMuted) { stopAudio(); btn.innerText = "🔇 Audio: Off"; btn.classList.add('muted'); btn.classList.remove('secondary'); } 
-            else { btn.innerText = "🔊 Audio: On"; btn.classList.remove('muted'); btn.classList.add('secondary'); }
+            btn.innerText = isMuted ? "🔇 Audio: Off" : "🔊 Audio: On";
         }
         function renderCard() {
             if(flashcardList.length === 0) return;
             const drug = flashcardList[fcCurrentIndex];
-            fillCardData('fc', drug);
+            
+            // Safety
+            const highAlertKeywords = ["insulin", "heparin", "warfarin", "digoxin", "potassium", "opioid", "narcotic", "chemo", "methotrexate"];
+            const isHighAlert = highAlertKeywords.some(k => (drug.name + " " + drug.class).toLowerCase().includes(k));
+            const cardFront = document.querySelector('.card-front');
+            const existingBadge = document.getElementById('alert-badge');
+            if(existingBadge) existingBadge.remove();
+            if (isHighAlert) {
+                cardFront.classList.add('high-alert-border');
+                const badge = document.createElement('div');
+                badge.id = 'alert-badge'; badge.className = 'high-alert-badge'; badge.innerText = "⚠️ HIGH ALERT";
+                cardFront.insertBefore(badge, cardFront.firstChild);
+            } else { cardFront.classList.remove('high-alert-border'); }
+
+            // Monitors
+            const combinedText = (drug.nursing + " " + drug.SideEffects + " " + drug.indication).toLowerCase();
+            const monitorContainer = document.createElement('div');
+            monitorContainer.className = 'monitor-row';
+            const checks = [
+                { keys: ['pressure', 'hypotension', 'hypertension', 'bp', 'systolic'], label: '🛑 Check BP', cls: 'mon-bp' },
+                { keys: ['pulse', 'bradycardia', 'tachycardia', 'heart rate', 'hr <'], label: '❤️ Check HR', cls: 'mon-hr' },
+                { keys: ['potassium', 'kalemia', 'electrolyte', 'k+'], label: '🧪 Check K+', cls: 'mon-lab' },
+                { keys: ['glucose', 'sugar', 'insulin', 'hypoglyc'], label: '🍬 Check HGT', cls: 'mon-lab' },
+                { keys: ['respiratory', 'depression', 'breath', 'spo2'], label: '🫁 Check RR', cls: 'mon-resp' },
+                { keys: ['bleed', 'inr', 'aptt', 'platelet', 'hemorrhage'], label: '🩸 Check Coags', cls: 'mon-lab' }
+            ];
+            checks.forEach(check => {
+                if (check.keys.some(k => combinedText.includes(k))) {
+                    const badge = document.createElement('div'); badge.className = `monitor-badge ${check.cls}`; badge.innerText = check.label;
+                    monitorContainer.appendChild(badge);
+                }
+            });
+            const oldMon = cardFront.querySelector('.monitor-row'); if(oldMon) oldMon.remove();
+
+            fillCardData('fc', drug); 
+            const title = document.getElementById('fc-name');
+            title.parentNode.insertBefore(monitorContainer, title.nextSibling);
+
             document.getElementById('counter').innerText = `${fcCurrentIndex + 1} / ${flashcardList.length}`;
             resetAIUI('fc-ai-case', 'btn-case', 'btn-read-case');
-            
-            // UPDATED: Dynamically set href for Google Search Link
+            resetAIUI('ward-sheet-output', null, null); resetAIUI('isbar-box', null, null); resetAIUI('math-output', null, null);
+            document.getElementById('ward-sheet-output').style.display='none'; document.getElementById('isbar-box').style.display='none'; document.getElementById('math-output').style.display='none';
+
             const link = document.getElementById('fc-google-link');
-            if(link) {
-                const query = encodeURIComponent(`${drug.name} all in hk traditional chinese`);
-                link.href = `https://www.google.com/search?q=${query}`;
-            }
+            if(link) { const query = encodeURIComponent(`${drug.name} all in hk traditional chinese`); link.href = `https://www.google.com/search?q=${query}`; }
         }
         function fillCardData(prefix, drug) {
             document.getElementById(`${prefix}-name`).innerText = drug.name || "N/A";
@@ -1211,9 +1066,9 @@
             document.getElementById(`${prefix}-nursing`).innerText = drug.nursing || "N/A";
         }
         function resetAIUI(boxId, btnId, readBtnId) {
-            document.getElementById(boxId).style.display = 'none'; document.getElementById(boxId).innerHTML = '';
-            document.getElementById(readBtnId).style.display = 'none';
-            const btn = document.getElementById(btnId); btn.disabled = false; btn.innerHTML = '🏥 AI: Generate Integrated Patient Case';
+            const box = document.getElementById(boxId); if(box) { box.style.display = 'none'; box.innerHTML = ''; }
+            if(readBtnId) document.getElementById(readBtnId).style.display = 'none';
+            if(btnId) { const btn = document.getElementById(btnId); btn.disabled = false; btn.innerHTML = '🏥 AI: Patient Case'; }
         }
         function flipCard(event) {
             if (event && (event.target.tagName === 'BUTTON' || event.target.tagName === 'A' || event.target.closest('button') || event.target.closest('a'))) return;
@@ -1228,338 +1083,201 @@
             if(el) speakText(el.innerText, lang);
         }
 
-        // --- NEW STREAMING AI FUNCTION ---
-        // Handles fetching from all providers (DeepSeek, Yinli, OpenRouter, GitHub) and streaming chunks
         async function streamAIResponse(messages, onUpdate) {
             let apiUrl, headers, body;
-            
-            // 1. SELECT PROVIDER CONFIG
             if (currentProvider === 'deepseek') {
-                if(!deepSeekKey) throw new Error("DeepSeek Key Missing");
+                if(!deepSeekKey) throw new Error("Key Missing");
                 apiUrl = "https://api.deepseek.com/chat/completions";
                 headers = { "Authorization": `Bearer ${deepSeekKey}`, "Content-Type": "application/json" };
                 body = { model: "deepseek-chat", messages: messages, temperature: 0.7, stream: true };
-            } 
-            else if (currentProvider === 'github') {
-                if(!githubKey) throw new Error("GitHub Token Missing");
+            } else if (currentProvider === 'github') {
+                if(!githubKey) throw new Error("Key Missing");
                 apiUrl = "https://models.github.ai/inference/chat/completions";
                 headers = { "Authorization": `Bearer ${githubKey}`, "Content-Type": "application/json", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
                 body = { model: "gpt-4o-mini", messages: messages, temperature: 0.7, stream: true };
-            } 
-            else if (currentProvider === 'yinli') {
-                if(!yinliKey) throw new Error("Yinli Key Missing");
+            } else if (currentProvider === 'yinli') {
+                if(!yinliKey) throw new Error("Key Missing");
                 apiUrl = yinliUrl || "https://yinli.one/v1/chat/completions";
                 headers = { "Authorization": `Bearer ${yinliKey}`, "Content-Type": "application/json" };
-                
-                // UPDATED: Use the variable yinliModel
-                body = { 
-                    model: yinliModel || "gemini-2.5-flash", 
-                    messages: messages, 
-                    temperature: 0.7, 
-                    stream: true 
-                };
-            } 
-            else { // OpenRouter
-                if(!openRouterKey) throw new Error("OpenRouter Key Missing");
+                body = { model: yinliModel || "gemini-2.5-flash", messages: messages, temperature: 0.7, stream: true };
+            } else { 
+                if(!openRouterKey) throw new Error("Key Missing");
                 apiUrl = "https://openrouter.ai/api/v1/chat/completions";
                 headers = { "Authorization": `Bearer ${openRouterKey}`, "Content-Type": "application/json", "HTTP-Referer": window.location.href, "X-Title": "Drug Tutor AI" };
                 body = { model: "arcee-ai/trinity-mini:free", messages: messages, stream: true };
             }
 
-            // 2. START FETCH REQUEST
-            const response = await fetch(apiUrl, {
-                method: "POST", headers: headers, body: JSON.stringify(body)
-            });
+            const response = await fetch(apiUrl, { method: "POST", headers: headers, body: JSON.stringify(body) });
+            if (!response.ok) { const err = await response.text(); throw new Error(`API Error: ${err}`); }
 
-            if (!response.ok) {
-                const err = await response.text();
-                throw new Error(`API Error: ${err}`);
-            }
-
-            // 3. PROCESS STREAM
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
             let fullText = "";
-
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                
-                // Decode chunk
                 const chunk = decoder.decode(value, { stream: true });
                 const lines = chunk.split('\n');
-                
                 for (const line of lines) {
                     const trimmed = line.trim();
                     if (trimmed === '' || trimmed === 'data: [DONE]') continue;
-                    
                     if (trimmed.startsWith('data: ')) {
                         try {
-                            const jsonStr = trimmed.substring(6);
-                            const json = JSON.parse(jsonStr);
+                            const json = JSON.parse(trimmed.substring(6));
                             const content = json.choices[0]?.delta?.content || "";
-                            
-                            if (content) {
-                                fullText += content;
-                                // Call the callback function to update UI instantly
-                                onUpdate(fullText);
-                            }
-                        } catch (e) {
-                            // Ignore parsing errors for partial chunks
-                        }
+                            if (content) { fullText += content; onUpdate(fullText); }
+                        } catch (e) {}
                     }
                 }
             }
             return fullText;
         }
 
-        // --- NON-STREAMING HELPER (For JSON Search) ---
-        // Kept for triggerAISearch because it requires strict JSON validation before showing anything
-        async function getAIResponse(prompt) {
-            // Reusing the stream logic but waiting for full text is actually cleaner now, 
-            // but let's keep the existing logic structure for safety on the search feature.
+        async function getWardCheatSheet(drug) {
+            const box = document.getElementById('ward-sheet-output');
+            box.style.display = 'block';
+            box.innerHTML = '<span class="loading-spinner"></span> Checking protocols...';
+            let prompt = "";
+            if (aiLanguage === 'lihkg' || aiLanguage === 'cantonese') {
+                prompt = `You are a HK nursing mentor ("Old Seafood"). Create a "Ward Cheat Sheet" for ${drug.name} using HK colloquial Cantonese mixed with English medical terms.
+                Focus ONLY on logistics: 1. **Admin:** 碎唔碎得? 跟餐定空肚? IV speed? 2. **Hold:** When to Hold (e.g. SBP < 90). 3. **Teaching:** One sentence discharge advice. Keep concise.`;
+            } else {
+                prompt = `Create a brief "Ward Cheat Sheet" for "${drug.name}". Focus ONLY on logistics: 1. **Admin:** Crush? Food/Empty? IV speed? 2. **Hold:** When to Hold. 3. **Patient Teaching:** One sentence. Concise.`;
+            }
             const messages = [{ role: "user", content: prompt }];
-            return await streamAIResponse(messages, () => {}); // Just consume stream and return full
+            try { await streamAIResponse(messages, (partialText) => { box.innerHTML = marked.parse(partialText); }); } catch (e) { box.innerHTML = "Error."; }
+        }
+
+        async function playISBAR(drug) {
+            const box = document.getElementById('isbar-box');
+            box.style.display = 'block';
+            box.innerHTML = '<span class="loading-spinner"></span> Generating handover...';
+            let prompt = "";
+            if (aiLanguage === 'lihkg' || aiLanguage === 'cantonese') {
+                prompt = `Write a realistic, short ISBAR handover script for "${drug.name}". Style: HK nurse (Spoken Cantonese + English Medical Terms). Roleplay night shift nurse to student. Situation, Background, Assessment (vitals), Recommendation.`;
+            } else {
+                prompt = `Write a short, realistic nursing ISBAR handover script for "${drug.name}". Roleplay night shift nurse. Situation, Background, Assessment, Recommendation.`;
+            }
+            const messages = [{ role: "user", content: prompt }];
+            try {
+                let fullText = "";
+                await streamAIResponse(messages, (partialText) => { fullText = partialText; box.innerHTML = marked.parse(partialText); });
+                const speakLang = (aiLanguage === 'lihkg' || aiLanguage === 'cantonese') ? 'zh-HK' : 'en';
+                speakText(fullText.replace(/[*#]/g, ''), speakLang); 
+            } catch (e) { box.innerHTML = "Error."; }
+        }
+
+        async function generateMathProblem(drug) {
+            const box = document.getElementById('math-output');
+            box.style.display = 'block';
+            box.innerHTML = '<span class="loading-spinner"></span> Generating math...';
+            let prompt = "";
+            if (aiLanguage === 'lihkg') {
+                 prompt = `Create a nursing dosage calc problem for "${drug.name}" in HK context. Use English for terms. 1. Order. 2. Supply. 3. "How many mL?" 4. Show steps behind spoiler.`;
+            } else {
+                prompt = `Create a nursing dosage calc problem for "${drug.name}". 1. Order. 2. Supply. 3. "How many mL?" 4. Solution behind spoiler.`;
+            }
+            const messages = [{ role: "user", content: prompt }];
+            try { await streamAIResponse(messages, (partialText) => { box.innerHTML = marked.parse(partialText); }); } catch (e) { box.innerHTML = "Error."; }
+        }
+
+        async function getAIResponse(prompt) {
+            const messages = [{ role: "user", content: prompt }];
+            return await streamAIResponse(messages, () => {}); 
         }
 
         async function getIntegratedCaseStudy(drugObj, boxId, btnId, readBtnId) {
-            const btn = document.getElementById(btnId); 
-            const box = document.getElementById(boxId); 
-            const readBtn = document.getElementById(readBtnId);
-            
-            btn.innerHTML = '<span class="loading-spinner"></span> Simulating Patient...'; 
-            btn.disabled = true; 
-            box.style.display = 'block';
-            box.innerHTML = '<span style="color:#6b7280;">Generating case...</span>';
-
+            const btn = document.getElementById(btnId); const box = document.getElementById(boxId); const readBtn = document.getElementById(readBtnId);
+            btn.innerHTML = '<span class="loading-spinner"></span> Simulating...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = 'Generating...';
             const prompt = getCaseStudyPrompt(drugObj, aiLanguage);
             const messages = [{ role: "user", content: prompt }];
-
-            try {
-                // Use Streaming Function with Callback
-                await streamAIResponse(messages, (partialText) => {
-                    box.innerHTML = marked.parse(partialText);
-                });
-                
-                btn.innerHTML = '✅ Case Loaded'; 
-                readBtn.style.display = 'block';
-            } catch (e) { 
-                box.innerHTML = `Error: ${e.message}.`; 
-                btn.innerText = "Error"; 
-                btn.disabled = false; 
-            }
+            try { await streamAIResponse(messages, (partialText) => { box.innerHTML = marked.parse(partialText); }); btn.innerHTML = '✅ Case Loaded'; readBtn.style.display = 'block'; } catch (e) { box.innerHTML = `Error.`; btn.innerText = "Error"; btn.disabled = false; }
         }
 
         async function triggerQuizExplain() {
-            const btn = document.getElementById('btn-quiz-explain'); 
-            const box = document.getElementById('ai-content'); 
-            const container = document.getElementById('ai-container'); 
-            const readBtn = document.getElementById('btn-read-explain');
-            
-            btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; 
-            btn.disabled = true; 
-            container.style.display = 'block'; 
-            box.innerHTML = '<span style="color:#6b7280;">Analyzing...</span>';
-
+            const btn = document.getElementById('btn-quiz-explain'); const box = document.getElementById('ai-content'); const container = document.getElementById('ai-container'); const readBtn = document.getElementById('btn-read-explain');
+            btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; btn.disabled = true; container.style.display = 'block'; box.innerHTML = 'Analyzing...';
             const prompt = getQuizExplainPrompt(currentQuizData, aiLanguage);
             const messages = [{ role: "user", content: prompt }];
-
-            try {
-                await streamAIResponse(messages, (partialText) => {
-                    box.innerHTML = marked.parse(partialText);
-                });
-                
-                btn.innerHTML = '✅ Explained'; 
-                readBtn.style.display = 'block';
-            } catch (e) { 
-                box.innerHTML = `Error: ${e.message}.`; 
-                btn.innerText = "Error"; 
-            }
+            try { await streamAIResponse(messages, (partialText) => { box.innerHTML = marked.parse(partialText); }); btn.innerHTML = '✅ Explained'; readBtn.style.display = 'block'; } catch (e) { box.innerHTML = `Error.`; btn.innerText = "Error"; }
         }
 
         async function triggerSearchExplain(drugName, outputId, btnElement) {
-            btnElement.disabled = true;
-            btnElement.innerHTML = '<span class="loading-spinner"></span> Thinking...';
-            
-            const outputBox = document.getElementById(outputId);
-            outputBox.style.display = 'block';
-            outputBox.innerHTML = '<span style="color:#6b7280;">Generating explanation...</span>';
-
-            let prompt = "";
-            if (aiLanguage === 'lihkg') {
-                prompt = `Explain the drug ${drugName} to a Hong Kong nursing student using 'LIHKG style' (Cantonese slang, casual, funny but educational).
-                Include: 1. Mechanism of Action (simplified). 2. Key Memory Tips (Black box warnings). 3. A simple analogy. Format with markdown.`;
-            } else {
-                prompt = `Explain the drug ${drugName} for a nursing student.
-                Include: 1. Mechanism of Action (simplified). 2. Key Things to Remember. 3. A simple analogy. Format with markdown.`;
-            }
-            
+            btnElement.disabled = true; btnElement.innerHTML = '<span class="loading-spinner"></span>...';
+            const outputBox = document.getElementById(outputId); outputBox.style.display = 'block'; outputBox.innerHTML = 'Generating...';
+            let prompt = aiLanguage === 'lihkg' ? `Explain ${drugName} to a HK nursing student using 'LIHKG style' (Canto slang + English terms). Mechanism, Tips, Analogy.` : `Explain ${drugName} for a nursing student. Mechanism, Tips, Analogy.`;
             const messages = [{ role: "user", content: prompt }];
-
             try {
-                await streamAIResponse(messages, (partialText) => {
-                    outputBox.innerHTML = marked.parse(partialText);
-                });
-
-                // Re-append the read button after streaming finishes (or during if we want advanced logic, but after is safer for layout)
+                await streamAIResponse(messages, (partialText) => { outputBox.innerHTML = marked.parse(partialText); });
                 if (!outputBox.querySelector('.btn-read-ai')) {
-                    const readBtn = document.createElement('button');
-                    readBtn.className = 'btn-read-ai'; 
-                    readBtn.style.display = 'block'; 
-                    readBtn.style.marginTop = '10px';
-                    readBtn.innerText = '🔊 Read Explanation';
-                    readBtn.onclick = function() { speakText(outputBox.innerText, aiLanguage === 'lihkg' ? 'zh-HK' : 'en'); };
-                    outputBox.appendChild(readBtn);
+                    const readBtn = document.createElement('button'); readBtn.className = 'btn-read-ai'; readBtn.style.display = 'block'; readBtn.innerText = '🔊 Read';
+                    readBtn.onclick = function() { speakText(outputBox.innerText, aiLanguage === 'lihkg' ? 'zh-HK' : 'en'); }; outputBox.appendChild(readBtn);
                 }
-                
-                btnElement.innerHTML = '✅ Explain This'; 
-                btnElement.disabled = false;
-            } catch (e) { 
-                outputBox.innerHTML = `Error: ${e.message}`; 
-                btnElement.innerHTML = '❌ Error'; 
-                btnElement.disabled = false; 
-            }
+                btnElement.innerHTML = '✅ Explain'; btnElement.disabled = false;
+            } catch (e) { outputBox.innerHTML = `Error`; btnElement.innerHTML = '❌ Error'; btnElement.disabled = false; }
         }
 
-        // --- KEEP SEARCH AS IS (BLOCKING) ---
         async function triggerAISearch(query) {
-            const outputBox = document.getElementById('ai-search-output');
-            const btn = document.querySelector('#search-results button'); 
-            if(btn) { btn.innerHTML = '<span class="loading-spinner"></span> Searching Global Database...'; btn.disabled = true; }
-            outputBox.style.display = 'block'; outputBox.innerHTML = 'Thinking... (Generating structured data)';
-            const prompt = `You are a nursing tutor. The user is searching for the drug "${query}". 
-            Provide a clinical summary in strict JSON format with no extra text. 
-            Use these exact keys: "name", "class", "system", "indication", "SideEffects", "nursing".
-            IMPORTANT FORMATTING RULES:
-            1. For the "nursing" field, you MUST use a single string with bullet points separated by new lines (\\n).
-            2. For the "system" field, you MUST strictly choose the single best fit from this exact list:
-               [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
-            Example JSON format:
-            {
-              "name": "Drug generic Name (brandname in hk)", "class": "Class Name", "system": "Cardiovascular system",
-              "indication": "Brief indication", "SideEffects": "Common side effects",
-              "nursing": "- Monitor CBC for desired neutrophil increase.\\n- Manage bone pain."
-            }`;
+            const outputBox = document.getElementById('ai-search-output'); const btn = document.querySelector('#search-results button'); 
+            if(btn) { btn.innerHTML = '<span class="loading-spinner"></span> Searching...'; btn.disabled = true; }
+            outputBox.style.display = 'block'; outputBox.innerHTML = 'Thinking...';
+            const prompt = `You are a nursing tutor. User searching "${query}". Provide JSON summary: "name", "class", "system" (choose from standard list), "indication", "SideEffects", "nursing" (bullet points). JSON Only.`;
             try {
-                let content = await getAIResponse(prompt);
-                content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                let content = await getAIResponse(prompt); content = content.replace(/```json/g, '').replace(/```/g, '').trim();
                 const drugData = JSON.parse(content);
-                outputBox.innerHTML = `
-                    <div style="background:white; padding:15px; border-radius:8px; border:1px solid #e5e7eb;">
-                        <h3 style="margin-top:0; color:var(--primary);">${drugData.name}</h3>
-                        <p><strong>Class:</strong> ${drugData.class}</p> <p><strong>System:</strong> ${drugData.system}</p>
-                        <p><strong>Indication:</strong> ${drugData.indication}</p> <p><strong>Side Effects:</strong> ${drugData.SideEffects}</p>
-                        <p><strong>Nursing:</strong> ${drugData.nursing}</p>
-                        <div style="display:flex; gap:10px; margin-top:15px;">
-                            <button class="btn-read-ai" style="display:flex; margin:0;" onclick="speakText('${drugData.name}. ${drugData.indication}', 'en')">🔊 Speak</button>
-                            <button id="btn-save-sheet" class="btn-read-ai" style="display:flex; margin:0; background:#10B981; color:white; border-color:#059669;" onclick='saveToGoogleSheet(${JSON.stringify(drugData)})'>💾 Save to Database</button>
-                        </div>
-                        <div id="save-status" style="margin-top:10px; font-size:0.8rem; font-weight:bold;"></div>
-                    </div>`;
-                if(btn) btn.innerHTML = '✅ Found & Formatted';
-                addToHistory(query); 
-            } catch (e) { console.error(e); outputBox.innerHTML = `<span style="color:red;">Error: Could not generate valid JSON. Try again. (${e.message})</span>`; if(btn) { btn.innerText = '❌ Error'; btn.disabled = false; } }
+                outputBox.innerHTML = `<div style="background:white; padding:15px; border-radius:8px; border:1px solid #e5e7eb;"><h3 style="margin-top:0; color:var(--primary);">${drugData.name}</h3><p><strong>Class:</strong> ${drugData.class}</p><p><strong>System:</strong> ${drugData.system}</p><p><strong>Indication:</strong> ${drugData.indication}</p><p><strong>Side Effects:</strong> ${drugData.SideEffects}</p><p><strong>Nursing:</strong> ${drugData.nursing}</p><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn-read-ai" style="display:flex; margin:0;" onclick="speakText('${drugData.name}. ${drugData.indication}', 'en')">🔊 Speak</button><button id="btn-save-sheet" class="btn-read-ai" style="display:flex; margin:0; background:#10B981; color:white; border-color:#059669;" onclick='saveToGoogleSheet(${JSON.stringify(drugData)})'>💾 Save</button></div><div id="save-status" style="margin-top:10px; font-size:0.8rem; font-weight:bold;"></div></div>`;
+                if(btn) btn.innerHTML = '✅ Found'; addToHistory(query); 
+            } catch (e) { outputBox.innerHTML = `<span style="color:red;">Error JSON.</span>`; if(btn) { btn.innerText = '❌ Error'; btn.disabled = false; } }
         }
         
         function saveToGoogleSheet(drugData) {
-            const statusEl = document.getElementById('save-status');
-            const saveBtn = document.getElementById('btn-save-sheet');
-            if(!googleScriptURL || googleScriptURL.includes("INSERT_YOUR")) { alert("Please configure the 'googleScriptURL' variable!"); return; }
-            saveBtn.disabled = true; saveBtn.innerText = "⏳ Saving..."; statusEl.innerText = "Sending to cloud...";
+            const statusEl = document.getElementById('save-status'); const saveBtn = document.getElementById('btn-save-sheet');
+            if(!googleScriptURL || googleScriptURL.includes("INSERT_YOUR")) { alert("Configure URL!"); return; }
+            saveBtn.disabled = true; saveBtn.innerText = "⏳..."; statusEl.innerText = "Sending...";
             fetch(googleScriptURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(drugData) })
-            .then(() => { statusEl.innerText = "✅ Saved!"; statusEl.style.color = "green"; saveBtn.innerText = "💾 Saved"; extendedDrugs.push(drugData); activeSourceList = extendedDrugs; activeSourceList.forEach(d => d.system = getSystemForDrug(d)); applyFilter(); })
-            .catch(err => { statusEl.innerText = "❌ Error saving."; statusEl.style.color = "red"; saveBtn.disabled = false; });
+            .then(() => { statusEl.innerText = "✅ Saved!"; saveBtn.innerText = "💾 Saved"; extendedDrugs.push(drugData); activeSourceList = extendedDrugs; activeSourceList.forEach(d => d.system = getSystemForDrug(d)); applyFilter(); })
+            .catch(err => { statusEl.innerText = "❌ Error."; saveBtn.disabled = false; });
         }
         function handleSearch() {
-            const input = document.getElementById('search-input');
-            const query = input.value.toLowerCase().trim();
-            const container = document.getElementById('search-results');
-            container.innerHTML = '';
-            if(query.length === 0) { container.innerHTML = '<div style="text-align:center; color:#9ca3af; margin-top:20px;">Type above to search...</div>'; return; }
-            const matches = activeSourceList.filter(d => {
-                return (d.name || '').toLowerCase().includes(query) || (d.class || '').toLowerCase().includes(query) || (d.system || '').toLowerCase().includes(query);
-            });
+            const input = document.getElementById('search-input'); const query = input.value.toLowerCase().trim(); const container = document.getElementById('search-results'); container.innerHTML = '';
+            if(query.length === 0) { container.innerHTML = '<div style="text-align:center; color:#9ca3af; margin-top:20px; font-size:0.9rem;">Type above to search...</div>'; return; }
+            const matches = activeSourceList.filter(d => (d.name || '').toLowerCase().includes(query) || (d.class || '').toLowerCase().includes(query) || (d.system || '').toLowerCase().includes(query));
             if(matches.length === 0) {
-                 container.innerHTML = `
-                    <div style="text-align:center; color:#9ca3af; margin-top:20px; margin-bottom:15px;">No local drugs found for "${query}".</div>
-                    <button onclick="triggerAISearch('${query.replace(/'/g, "\\'")}')" class="ai-btn-small btn-sim" style="justify-content:center; width:100%;">✨ Ask AI to find "${input.value}"</button>
-                    <div id="ai-search-output" class="ai-output-box" style="margin-top:15px;"></div>
-                 `;
-                 return;
+                 container.innerHTML = `<div style="text-align:center; color:#9ca3af; margin-top:20px; margin-bottom:15px;">No local drugs.</div><button onclick="triggerAISearch('${query.replace(/'/g, "\\'")}')" class="ai-btn-small btn-sim" style="justify-content:center; width:100%;">✨ Ask AI</button><div id="ai-search-output" class="ai-output-box" style="margin-top:15px;"></div>`; return;
             }
             matches.forEach((drug, index) => {
-                const div = document.createElement('div');
-                div.className = 'result-card';
+                const div = document.createElement('div'); div.className = 'result-card';
                 const safeName = (drug.name || "").replace(/'/g, "\\'"); const safeInd = (drug.indication || "").replace(/'/g, "\\'");
                 const explainId = 'explain-' + index + '-' + Math.floor(Math.random() * 1000);
-                
-                // UPDATED: Dynamically generate Google URL for anchor tag
                 const googleQuery = encodeURIComponent(`${drug.name} all in hk traditional chinese`);
-                const googleUrl = `https://www.google.com/search?q=${googleQuery}`;
-                
-                div.innerHTML = `
-                    <div class="result-header"><span>${drug.name}</span><span class="result-sub">${drug.class}</span></div>
-                    <div class="result-detail">
-                        <strong>🫀 System:</strong> ${drug.system || "N/A"}<br>
-                        <strong>📌 Indication:</strong> ${drug.indication}<br>
-                        <div style="margin-top:8px; font-size:0.85rem; color:#4b5563;"><strong>👩‍⚕️ Nursing:</strong> ${drug.nursing}</div>
-                        
-                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
-                            <button class="btn-read-ai" style="display:inline-flex; margin:0; width:auto; padding:6px 12px;" onclick="event.stopPropagation(); speakText('${safeName}. ${safeInd}', 'en')">🔊 Read</button>
-                            <button class="btn-search-explain" onclick="event.stopPropagation(); triggerSearchExplain('${safeName}', '${explainId}', this)">🤖 Explain This</button>
-                            
-                            <a href="${googleUrl}" target="_blank" class="btn-search-google" onclick="event.stopPropagation();">🌐 Google</a>
-                        </div>
-                        
-                        <div id="${explainId}" class="ai-output-box"></div>
-                    </div>`;
-                div.onclick = (e) => { 
-                    // Prevent card collapse if clicking on interactive elements
-                    if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
-                        div.classList.toggle('expanded'); 
-                    }
-                };
+                div.innerHTML = `<div class="result-header"><span>${drug.name}</span><span class="result-sub">${drug.class}</span></div><div class="result-detail"><strong>🫀 System:</strong> ${drug.system || "N/A"}<br><strong>📌 Indication:</strong> ${drug.indication}<br><div style="margin-top:8px; font-size:0.85rem; color:#4b5563;"><strong>👩‍⚕️ Nursing:</strong> ${drug.nursing}</div><div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;"><button class="btn-read-ai" style="display:inline-flex; margin:0; width:auto; padding:4px 8px;" onclick="event.stopPropagation(); speakText('${safeName}. ${safeInd}', 'en')">🔊 Read</button><button class="btn-search-explain" style="padding:4px 8px; font-size:0.8rem;" onclick="event.stopPropagation(); triggerSearchExplain('${safeName}', '${explainId}', this)">🤖 Explain</button><a href="https://www.google.com/search?q=${googleQuery}" target="_blank" class="btn-search-google" style="padding:4px 8px; font-size:0.8rem;" onclick="event.stopPropagation();">🌐 Google</a></div><div id="${explainId}" class="ai-output-box"></div></div>`;
+                div.onclick = (e) => { if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') { div.classList.toggle('expanded'); } };
                 container.appendChild(div);
             });
         }
         function resetQuizUI() {
-            document.getElementById('next-quiz-btn').style.display = 'none';
-            document.getElementById('ai-container').style.display = 'none';
-            document.getElementById('btn-read-explain').style.display = 'none';
-            document.getElementById('btn-quiz-explain').style.display = 'none';
-            document.getElementById('btn-quiz-explain').innerHTML = '🤖 Explain Why (AI Tutor)';
-            document.getElementById('btn-quiz-explain').disabled = false;
+            document.getElementById('next-quiz-btn').style.display = 'none'; document.getElementById('ai-container').style.display = 'none'; document.getElementById('btn-read-explain').style.display = 'none'; document.getElementById('btn-quiz-explain').style.display = 'none'; document.getElementById('btn-quiz-explain').innerHTML = '🤖 Explain Why'; document.getElementById('btn-quiz-explain').disabled = false;
         }
 
-        // CHANGED: Added logic to toggle filter visibility
         function switchMode(mode) {
-            document.getElementById('flashcard-section').style.display = 'none'; 
-            document.getElementById('quiz-section').style.display = 'none'; 
-            document.getElementById('search-section').style.display = 'none';
-            document.getElementById('mode-flashcard').classList.remove('mode-active'); document.getElementById('mode-flashcard').classList.add('secondary');
-            document.getElementById('mode-quiz').classList.remove('mode-active'); document.getElementById('mode-quiz').classList.add('secondary');
-            document.getElementById('mode-search').classList.remove('mode-active'); document.getElementById('mode-search').classList.add('secondary');
+            document.getElementById('flashcard-section').style.display = 'none'; document.getElementById('quiz-section').style.display = 'none'; document.getElementById('search-section').style.display = 'none';
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('mode-' + mode).classList.add('active');
             
             const sysFilter = document.getElementById('system-filter');
             const mastFilter = document.getElementById('mastery-filter');
             
             if (mode === 'flashcard') { 
                 document.getElementById('flashcard-section').style.display = 'block'; 
-                document.getElementById('mode-flashcard').classList.add('mode-active'); document.getElementById('mode-flashcard').classList.remove('secondary'); 
-                sysFilter.style.display = 'inline-block'; 
-                mastFilter.style.display = 'inline-block'; 
+                sysFilter.style.display = 'block'; mastFilter.style.display = 'block'; 
             } else if (mode === 'quiz') { 
                 document.getElementById('quiz-section').style.display = 'block'; 
-                document.getElementById('mode-quiz').classList.add('mode-active'); document.getElementById('mode-quiz').classList.remove('secondary'); 
                 if(quizCurrentIndex === 0) generateQuizQuestion(); 
-                sysFilter.style.display = 'inline-block'; 
-                mastFilter.style.display = 'none'; 
+                sysFilter.style.display = 'block'; mastFilter.style.display = 'none'; 
             } else if (mode === 'search') {
                 document.getElementById('search-section').style.display = 'block';
-                document.getElementById('mode-search').classList.add('mode-active'); document.getElementById('mode-search').classList.remove('secondary'); 
                 document.getElementById('search-input').focus();
-                sysFilter.style.display = 'none'; 
-                mastFilter.style.display = 'none'; 
+                sysFilter.style.display = 'none'; mastFilter.style.display = 'none'; 
             }
             stopAudio();
         }
