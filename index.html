@@ -92,8 +92,8 @@
         .result-detail { display: none; margin-top: 10px; border-top: 1px solid #f3f4f6; padding-top: 10px; font-size: 0.9rem; }
         .result-card.expanded .result-detail { display: block; animation: fadeIn 0.2s; }
         
-        /* New Saved Badge */
         .saved-badge { position: absolute; top: -8px; right: -5px; background: #10B981; color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; }
+        .preview-badge { position: absolute; top: -8px; right: -5px; background: #f59e0b; color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
         /* Tool Buttons */
         .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; width: 100%; margin-top: 10px; }
@@ -102,11 +102,10 @@
         .tool-cheat { background: #e0f2fe; color: #075985; }
         .tool-mix { background: #f3e8ff; color: #6b21a8; }
         
-        /* Updated Google Button Style */
         .tool-google { 
             background: white; color: #374151; border: 1px solid #d1d5db; 
             text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
-            width: 32px; height: 32px; border-radius: 50%; /* Circle */
+            width: 32px; height: 32px; border-radius: 50%;
             font-size: 1.2rem; font-weight: 800; font-family: 'Inter', sans-serif;
             flex-shrink: 0;
         }
@@ -125,11 +124,20 @@
         .spinner { width: 12px; height: 12px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite; margin-right: 5px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* AI Search Button */
         .btn-ai-add {
             width: 100%; margin-top: 20px; background: linear-gradient(135deg, #6366f1, #a855f7); 
             color: white; padding: 12px; border-radius: 12px; font-size: 0.95rem; font-weight: bold;
             box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-confirm-save {
+            width: 100%; margin-top: 10px; background: #10B981; color: white; padding: 10px; 
+            border-radius: 8px; font-weight: bold; cursor: pointer; border: none;
+        }
+        
+        .settings-input {
+            width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; 
+            margin-bottom: 10px; box-sizing: border-box; font-family: monospace;
         }
     </style>
 </head>
@@ -143,7 +151,6 @@
 <div class="top-bar">
     <button id="mode-search" class="mode-active" onclick="switchMode('search')">Search</button>
     <button id="mode-flashcard" class="secondary" onclick="switchMode('flashcard')">Cards</button>
-    <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz</button>
     <button onclick="toggleSettings()" class="secondary">⚙️</button>
 </div>
 
@@ -155,15 +162,14 @@
     </div>
     
     <label style="font-weight:bold; font-size:0.8rem;">AI Provider</label>
-    <select id="provider-select" onchange="saveSettings()" style="width:100%; padding:8px; margin-bottom:10px;">
+    <select id="provider-select" onchange="updateSettingsUI()" style="width:100%; padding:8px; margin-bottom:10px;">
         <option value="deepseek">DeepSeek (Official)</option>
-        <option value="yinli">Yinli (Gemini)</option>
+        <option value="yinli">Yinli (Gemini/Any)</option>
         <option value="github">GitHub Models</option>
     </select>
     
-    <label style="font-weight:bold; font-size:0.8rem;">API Keys</label>
-    <input type="password" id="deepseek-key" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="DeepSeek Key">
-    <input type="password" id="yinli-key" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="Yinli Key">
+    <div id="settings-dynamic-fields">
+        </div>
     
     <button onclick="fetchSheetData()" class="secondary" style="width:100%;">Force Reload Database</button>
     <button onclick="toggleSettings()" style="width:100%; margin-top:10px; background:var(--text-main); color:white;">Close</button>
@@ -220,17 +226,6 @@
         </div>
     </div>
 
-    <div id="quiz-section" style="display:none; background:white; padding:20px; border-radius:12px; height:100%;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <h3 style="margin:0;">Quiz</h3>
-            <span id="quiz-score" style="background:#ecfccb; padding:2px 8px; border-radius:10px; font-size:0.8rem;">Score: 0</span>
-        </div>
-        <p id="quiz-question" style="font-size:1.1rem; font-weight:bold; margin-bottom:20px;">Question...</p>
-        <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
-        <div id="quiz-feedback" class="ai-output-box"></div>
-        <button id="quiz-next" onclick="nextQuestion()" style="width:100%; margin-top:15px; background:var(--text-main); color:white; display:none;">Next →</button>
-    </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -248,9 +243,15 @@
     let searchHistory = [];
     let fcCurrentIndex = 0;
     let aiLanguage = 'lihkg';
+    
+    // --- KEYS ---
     let provider = 'deepseek';
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "", github: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
+    let yinliModel = "gemini-2.5-flash"; // Default
+
+    // --- TEMP DATA FOR SAVE ---
+    let pendingDrugSave = null;
 
     const systems = [
         {id: "Gastro", name: "🍔 GI System", full: "Gastro-intestinal system"},
@@ -268,11 +269,10 @@
         if(localStorage.getItem('ai_provider')) provider = localStorage.getItem('ai_provider');
         if(localStorage.getItem('ds_key')) keys.deepseek = localStorage.getItem('ds_key');
         if(localStorage.getItem('yl_key')) keys.yinli = localStorage.getItem('yl_key');
+        if(localStorage.getItem('yl_model')) yinliModel = localStorage.getItem('yl_model');
         if(localStorage.getItem('search_hist')) searchHistory = JSON.parse(localStorage.getItem('search_hist'));
 
-        document.getElementById('deepseek-key').value = keys.deepseek;
-        document.getElementById('yinli-key').value = keys.yinli;
-        document.getElementById('provider-select').value = provider;
+        updateSettingsUI();
         
         // AUTO CONNECT TO DB
         fetchSheetData(true); 
@@ -281,11 +281,36 @@
         renderHistory();
     }
 
-    // --- AI SEARCH & SAVE ---
-    async function triggerAISearchAndSave(query) {
+    // --- SETTINGS UI ---
+    function updateSettingsUI() {
+        const prov = document.getElementById('provider-select').value;
+        const container = document.getElementById('settings-dynamic-fields');
+        container.innerHTML = '';
+
+        if (prov === 'yinli') {
+            container.innerHTML = `
+                <label style="font-weight:bold; font-size:0.8rem;">Yinli API Key</label>
+                <input type="password" id="yinli-key" class="settings-input" value="${keys.yinli}" placeholder="sk-...">
+                <label style="font-weight:bold; font-size:0.8rem;">Model ID (e.g. gemini-2.0-flash)</label>
+                <input type="text" id="yinli-model" class="settings-input" value="${yinliModel}" placeholder="gemini-2.5-flash">
+            `;
+        } else if (prov === 'deepseek') {
+            container.innerHTML = `
+                <label style="font-weight:bold; font-size:0.8rem;">DeepSeek API Key</label>
+                <input type="password" id="deepseek-key" class="settings-input" value="${keys.deepseek}" placeholder="sk-...">
+            `;
+        } else {
+             container.innerHTML = `
+                <label style="font-weight:bold; font-size:0.8rem;">GitHub Token</label>
+                <input type="password" id="github-key" class="settings-input" value="${keys.github}" placeholder="ghp_...">
+            `;
+        }
+    }
+
+    // --- AI SEARCH & GENERATE ---
+    async function triggerAISearchAndGenerate(query) {
         const btn = document.getElementById('btn-ai-search');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner"></span> Consulting Pharmacist & Saving...';
+        btn.innerHTML = '<span class="spinner"></span> Consulting Pharmacist...';
         btn.disabled = true;
 
         const prompt = `You are a strict pharmacology database.
@@ -295,34 +320,37 @@
         - "class": (Pharmacological Class)
         - "indication": (Short summary)
         - "system": (Choose STRICTLY one: Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia)
+        - "SideEffects": (Common side effects)
         - "nursing": (Key monitoring points)
         
-        Output ONLY the JSON object. No markdown, no conversation.`;
+        Output ONLY the JSON object. No markdown.`;
 
         try {
-            // 1. GET AI DATA
             let jsonString = await getFullAIResponse(prompt);
-            // Cleanup markdown code blocks if present
             jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
-            
             const drugData = JSON.parse(jsonString);
 
-            // 2. SAVE TO LOCAL (Optimistic UI)
-            drugs.push(drugData);
-            flashcardList = [...drugs];
-            
-            // 3. RENDER RESULT IMMEDIATELY
-            const container = document.getElementById('search-results');
-            container.innerHTML = '';
-            renderResult(drugData, drugs.length - 1, container, true); // true = newly saved
+            // STORE TEMP
+            pendingDrugSave = drugData;
 
-            // 4. UPLOAD TO GOOGLE SHEET (Background)
-            fetch(UPLOAD_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(drugData)
-            });
+            // RENDER PREVIEW
+            const container = document.getElementById('search-results');
+            container.innerHTML = `
+                <div style="background:#fff7ed; border:2px solid #f97316; padding:15px; border-radius:10px; position:relative;">
+                    <div style="font-weight:bold; color:#c2410c; margin-bottom:10px;">✨ AI Preview (Not Saved Yet)</div>
+                    <div style="font-size:1.1rem; font-weight:800;">${drugData.name}</div>
+                    <div>${drugData.class}</div>
+                    <hr style="border:0; border-top:1px solid #fed7aa; margin:10px 0;">
+                    <div style="font-size:0.9rem;">
+                        <p><strong>System:</strong> ${drugData.system}</p>
+                        <p><strong>Indication:</strong> ${drugData.indication}</p>
+                        <p><strong>Nursing:</strong> ${drugData.nursing}</p>
+                    </div>
+                    <button class="btn-confirm-save" onclick="confirmSaveDrug()">
+                        💾 Confirm & Save to Database
+                    </button>
+                </div>
+            `;
 
         } catch (e) {
             btn.innerHTML = `❌ Error: ${e.message}`;
@@ -330,12 +358,44 @@
         }
     }
 
+    function confirmSaveDrug() {
+        if(!pendingDrugSave) return;
+        
+        // 1. Add to local
+        drugs.push(pendingDrugSave);
+        flashcardList = [...drugs];
+        
+        // 2. Upload to Cloud
+        const btn = document.querySelector('.btn-confirm-save');
+        btn.innerHTML = "⏳ Uploading to Cloud...";
+        btn.disabled = true;
+
+        fetch(UPLOAD_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(pendingDrugSave)
+        });
+
+        // 3. Update UI to "Saved" state immediately (Optimistic)
+        setTimeout(() => {
+            const container = document.getElementById('search-results');
+            container.innerHTML = '';
+            renderResult(pendingDrugSave, drugs.length - 1, container, true);
+            pendingDrugSave = null;
+        }, 1000);
+    }
+
     async function getFullAIResponse(prompt) {
         let url = "https://api.deepseek.com/chat/completions";
         let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
         let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
 
-        if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = "gemini-2.5-flash"; }
+        if(provider === 'yinli') { 
+            url = yinliUrl; 
+            headers["Authorization"] = `Bearer ${keys.yinli}`; 
+            body.model = yinliModel; // Use Custom Model
+        }
         
         const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
         const json = await response.json();
@@ -362,16 +422,12 @@
         if (matches.length > 0) {
             matches.forEach((d, idx) => renderResult(d, idx, container));
         } else {
-            // SHOW AI SEARCH BUTTON
             container.innerHTML = `
                 <div style="text-align:center; padding:20px;">
                     <div style="color:#666; margin-bottom:10px;">Drug not found locally.</div>
-                    <button id="btn-ai-search" class="btn-ai-add" onclick="triggerAISearchAndSave('${q}')">
-                        ✨ AI Search & Auto-Save
+                    <button id="btn-ai-search" class="btn-ai-add" onclick="triggerAISearchAndGenerate('${q}')">
+                        ✨ AI Search & Preview
                     </button>
-                    <div style="font-size:0.8rem; color:#999; margin-top:10px;">
-                        This will fetch data and save it to your database automatically.
-                    </div>
                 </div>
             `;
         }
@@ -386,7 +442,7 @@
         const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
         
         div.innerHTML = `
-            ${isNew ? '<div class="saved-badge">✅ Saved to Database</div>' : ''}
+            ${isNew ? '<div class="saved-badge" style="display:block;">✅ Saved to Database</div>' : ''}
             <div class="result-header">
                 <span>${d.name}</span>
                 <span style="font-size:0.8rem; color:#666; font-weight:normal;">${d.class}</span>
@@ -425,7 +481,6 @@
         }).catch(e => { if(!silent) alert("Connection Failed"); });
     }
 
-    // ... (Existing Render, AI Prompting, and Utility functions remain same but are required) ...
     function renderSystemChips() {
         const c = document.getElementById('system-chips');
         c.innerHTML = `<div class="filter-chip chip-sys active" onclick="filterBySystem('All', this)">All</div>`;
@@ -498,7 +553,12 @@
         let url = "https://api.deepseek.com/chat/completions";
         let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
         let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: true };
-        if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = "gemini-2.5-flash"; }
+        
+        if(provider === 'yinli') { 
+            url = yinliUrl; 
+            headers["Authorization"] = `Bearer ${keys.yinli}`; 
+            body.model = yinliModel; // Use Custom Model
+        }
 
         const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
         const reader = response.body.getReader();
@@ -525,7 +585,6 @@
     function switchMode(mode) {
         document.getElementById('search-section').style.display = 'none';
         document.getElementById('flashcard-section').style.display = 'none';
-        document.getElementById('quiz-section').style.display = 'none';
         document.querySelectorAll('.top-bar button').forEach(b => { b.classList.remove('mode-active'); b.classList.add('secondary'); });
         document.getElementById('mode-'+mode).classList.add('mode-active');
         document.getElementById('mode-'+mode).classList.remove('secondary');
@@ -548,11 +607,22 @@
     }
 
     function saveSettings() {
-        keys.deepseek = document.getElementById('deepseek-key').value;
-        keys.yinli = document.getElementById('yinli-key').value;
         provider = document.getElementById('provider-select').value;
-        localStorage.setItem('ds_key', keys.deepseek);
         localStorage.setItem('active_provider', provider);
+
+        if(document.getElementById('deepseek-key')) {
+             keys.deepseek = document.getElementById('deepseek-key').value;
+             localStorage.setItem('ds_key', keys.deepseek);
+        }
+        if(document.getElementById('yinli-key')) {
+             keys.yinli = document.getElementById('yinli-key').value;
+             localStorage.setItem('yl_key', keys.yinli);
+        }
+        if(document.getElementById('yinli-model')) {
+             yinliModel = document.getElementById('yinli-model').value;
+             localStorage.setItem('yl_model', yinliModel);
+        }
+
         toggleSettings();
     }
     
@@ -561,14 +631,8 @@
         p.style.display = p.style.display === 'block' ? 'none' : 'block';
     }
     
-    function toggleDrugSet() {
-        // Toggle logic if you have multiple sets
-        alert("Switched sets");
-    }
-    function toggleMute() {
-        // Mute logic
-        alert("Mute toggled");
-    }
+    function toggleDrugSet() { alert("Switched sets"); }
+    function toggleMute() { alert("Mute toggled"); }
 
     init();
 </script>
