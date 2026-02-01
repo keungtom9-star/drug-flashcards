@@ -3,22 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Drug Tutor">
+    <meta name="theme-color" content="#F2F2F7">
+
     <title>AI Drug Tutor</title>
-    
-    <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' rx='220' fill='%23007AFF'/%3E%3Cg transform='translate(130, 130) scale(0.75)'%3E%3Cpath d='M706.3 317.7c-58.5-58.5-153.3-58.5-211.8 0L266 546.2c-58.5 58.5-58.5 153.3 0 211.8 58.5 58.5 153.3 58.5 211.8 0L706.3 529.5c58.5-58.5 58.5-153.3 0-211.8z' fill='%23ffffff'/%3E%3Cpath d='M529.5 494.5L317.7 706.3c-40 40-104.8 40-144.8 0-40-40-40-104.8 0-144.8L384.7 349.7' fill='%2380CFFF'/%3E%3C/g%3E%3C/svg%3E">
-    
-    <link rel="icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' rx='220' fill='%23007AFF'/%3E%3Cg transform='translate(130, 130) scale(0.75)'%3E%3Cpath d='M706.3 317.7c-58.5-58.5-153.3-58.5-211.8 0L266 546.2c-58.5 58.5-58.5 153.3 0 211.8 58.5 58.5 153.3 58.5 211.8 0L706.3 529.5c58.5-58.5 58.5-153.3 0-211.8z' fill='%23ffffff'/%3E%3Cpath d='M529.5 494.5L317.7 706.3c-40 40-104.8 40-144.8 0-40-40-40-104.8 0-144.8L384.7 349.7' fill='%2380CFFF'/%3E%3C/g%3E%3C/svg%3E">
+
+    <script>
+        (function() {
+            // 1. Define the Vector Icon (Blue Rounded Square + White/Blue Pill)
+            const svgSource = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+                <rect width="512" height="512" rx="110" fill="#007AFF"/>
+                <g transform="translate(64, 64) scale(0.75)">
+                    <path d="M353.1 158.8c-29.2-29.2-76.6-29.2-105.9 0L133 273.1c-29.2 29.2-29.2 76.6 0 105.9 29.2 29.2 76.6 29.2 105.9 0L353.1 264.7c29.2-29.2 29.2-76.6 0-105.9z" fill="#ffffff"/>
+                    <path d="M264.7 247.2L158.8 353.1c-20 20-52.4 20-72.4 0-20-20-20-52.4 0-72.4L192.3 174.8" fill="#80CFFF"/>
+                </g>
+            </svg>`;
+
+            // 2. Helper to set link tags
+            function setLink(rel, href) {
+                let link = document.querySelector(`link[rel="${rel}"]`) || document.createElement('link');
+                link.rel = rel;
+                link.href = href;
+                document.head.appendChild(link);
+            }
+
+            // 3. Rasterize SVG to PNG via Canvas
+            const img = new Image();
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource);
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // Get the high-res PNG Data URI
+                const pngUrl = canvas.toDataURL('image/png');
+
+                // A. Update iOS & Browser Icons
+                setLink('apple-touch-icon', pngUrl);
+                setLink('icon', pngUrl);
+
+                // B. Generate Dynamic Manifest for Android
+                const manifest = {
+                    "name": "Drug Tutor",
+                    "short_name": "Drug Tutor",
+                    "start_url": ".",
+                    "display": "standalone",
+                    "background_color": "#F2F2F7",
+                    "theme_color": "#F2F2F7",
+                    "icons": [{
+                        "src": pngUrl,
+                        "sizes": "512x512",
+                        "type": "image/png"
+                    }]
+                };
+                
+                const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+                const manifestUrl = URL.createObjectURL(manifestBlob);
+                setLink('manifest', manifestUrl);
+                
+                // C. Update the visual Header Icon
+                const headerIcon = document.getElementById('header-icon-display');
+                if(headerIcon) headerIcon.src = pngUrl;
+            };
+        })();
+    </script>
 
     <style>
         :root {
-            --primary: #007AFF;       /* iOS Blue */
-            --secondary: #34C759;     /* iOS Green */
-            --danger: #FF3B30;        /* iOS Red */
+            --primary: #007AFF;
+            --secondary: #34C759;
+            --danger: #FF3B30;
             --surface: #ffffff;
-            --background: #F2F2F7;    /* iOS System Gray 6 */
+            --background: #F2F2F7;
             --text-main: #000000;
             --text-secondary: #8E8E93;
             --radius: 16px;
@@ -63,12 +125,12 @@
             letter-spacing: -0.5px;
         }
 
-        /* HEADER ICON STYLE */
         .app-icon-img {
             width: 32px;
             height: 32px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: #007AFF; /* Placeholder color before load */
         }
 
         .icon-btn {
@@ -329,9 +391,7 @@
 
 <div class="app-header">
     <h1>
-        <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' rx='220' fill='%23007AFF'/%3E%3Cg transform='translate(130, 130) scale(0.75)'%3E%3Cpath d='M706.3 317.7c-58.5-58.5-153.3-58.5-211.8 0L266 546.2c-58.5 58.5-58.5 153.3 0 211.8 58.5 58.5 153.3 58.5 211.8 0L706.3 529.5c58.5-58.5 58.5-153.3 0-211.8z' fill='%23ffffff'/%3E%3Cpath d='M529.5 494.5L317.7 706.3c-40 40-104.8 40-144.8 0-40-40-40-104.8 0-144.8L384.7 349.7' fill='%2380CFFF'/%3E%3C/g%3E%3C/svg%3E" 
-             alt="App Icon" 
-             class="app-icon-img">
+        <img id="header-icon-display" src="" alt="App Icon" class="app-icon-img">
         Drug Tutor
     </h1>
     <button onclick="toggleSettings()" class="icon-btn">⚙️</button>
