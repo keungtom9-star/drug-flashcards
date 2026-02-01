@@ -439,7 +439,7 @@
         if(isNew) div.style.border = "2px solid #10B981";
         
         const aiId = `ai-res-${Math.random().toString(36).substr(2, 9)}`;
-        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
+        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + 'all in hk traditional chinese')}`;
         
         div.innerHTML = `
             ${isNew ? '<div class="saved-badge" style="display:block;">✅ Saved to Database</div>' : ''}
@@ -521,7 +521,7 @@
         document.getElementById('fc-name').innerText = d.name;
         document.getElementById('fc-details').innerHTML = `<p><strong>Class:</strong> ${d.class}</p><p><strong>Indication:</strong> ${d.indication}</p><p><strong>System:</strong> ${d.system}</p>`;
         document.getElementById('counter').innerText = `${fcCurrentIndex+1}/${flashcardList.length}`;
-        document.getElementById('fc-google').href = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
+        document.getElementById('fc-google').href = `https://www.google.com/search?q=${encodeURIComponent(d.name + 'all in hk traditional chinese')}`;
     }
     
     function flipCard(e) { if(!e.target.closest('button') && !e.target.closest('a')) document.getElementById('flashcard').classList.toggle('flipped'); }
