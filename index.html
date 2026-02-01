@@ -2,334 +2,365 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Drug Tutor + Ward Cheatsheet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Drug Tutor Mobile</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        /* CSS Omitted for brevity - same as previous version */
-        :root { --primary: #4F46E5; --primary-hover: #4338ca; --secondary: #10B981; --accent: #F43F5E; --surface: #ffffff; --background: #F3F4F6; --text-main: #111827; --text-muted: #6B7280; --radius: 16px; --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05); --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-        body { font-family: 'Inter', sans-serif; background-color: var(--background); background-image: radial-gradient(#E5E7EB 1px, transparent 1px); background-size: 20px 20px; color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 40px 20px; line-height: 1.6; }
-        h1 { color: var(--text-main); margin-bottom: 5px; text-align: center; font-weight: 800; letter-spacing: -0.025em; font-size: 2.2rem; display: flex; align-items: center; justify-content: center; gap: 15px; }
-        .app-logo { height: 45px; width: 45px; min-width: 45px; border-radius: 12px; box-shadow: var(--shadow-sm); transition: transform 0.3s ease; }
-        .app-logo:hover { transform: rotate(10deg) scale(1.1); }
-        .subtitle { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 30px; text-align: center; font-weight: 500; background: #e5e7eb; padding: 4px 12px; border-radius: 20px; display: inline-block; }
-        .notice-banner { background-color: #fffbeb; border: 1px solid #fcd34d; color: #92400e; width: 100%; max-width: 850px; padding: 12px 20px; margin-bottom: 20px; border-radius: 12px; box-sizing: border-box; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .notice-img { height: 60px; width: auto; object-fit: contain; display: block; }
-        .notice-text { font-size: 0.95rem; line-height: 1.4; font-weight: 500; }
-        @media (max-width: 680px) { .notice-banner { flex-direction: column; text-align: center; } }
-        .top-bar { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 30px; width: 100%; max-width: 800px; flex-wrap: wrap; background: var(--surface); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid #e5e7eb; box-sizing: border-box; }
-        button, .system-select, .mastery-select, a.btn-link-style { height: 42px; padding: 0 18px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.9rem; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; transition: all 0.2s ease; text-decoration: none; }
-        button { border: none; gap: 6px; }
-        button:hover, a.btn-link-style:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        button:active, a.btn-link-style:active { transform: translateY(0); }
-        button.mode-active { background-color: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-        button.secondary, a.secondary { background-color: white; color: var(--text-main); border: 1px solid #d1d5db; }
-        button.secondary:hover, a.secondary:hover { background-color: #f9fafb; border-color: #9ca3af; }
-        button.lang-lihkg { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: white; }
-        button.set-extended { background-color: #7c3aed; color: white; }
-        button.muted { background-color: var(--accent); color: white; }
-        button.btn-search-explain { background-color: #8b5cf6; color: white; font-size: 0.85rem; padding: 6px 12px; height: auto; min-height: 36px; }
-        button.btn-search-explain:hover { opacity: 0.9; }
-        a.btn-search-google { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; font-size: 0.85rem; padding: 6px 12px; height: auto; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 10px; font-weight: 600; box-sizing: border-box; transition: all 0.2s ease; }
-        a.btn-search-google:hover { background-color: #e5e7eb; border-color: #9ca3af; transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        .system-select, .mastery-select { border: 1px solid #d1d5db; background-color: white; color: var(--text-main); max-width: 250px; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 35px; display: none; }
-        .system-select:focus, .mastery-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-        #settings-panel { display: none; background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow-lg); margin-bottom: 30px; width: 100%; max-width: 600px; border: 1px solid #e5e7eb; box-sizing: border-box; animation: slideDown 0.3s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .settings-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-main); }
-        .settings-input, select.settings-select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; font-family: inherit; font-size: 0.95rem; transition: border-color 0.2s; }
-        .settings-input:focus, select.settings-select:focus { border-color: var(--primary); outline: 3px solid #e0e7ff; }
-        .import-wrapper { border: 1px solid #d1d5db; padding: 15px; border-radius: 8px; background: #f9fafb; margin-bottom: 15px; }
-        .url-input-group { display: flex; gap: 8px; }
-        .url-input-group input { flex-grow: 1; }
-        #app-container { width: 100%; max-width: 800px; perspective: 1000px; }
-        .flashcard-container { width: 100%; height: 720px; position: relative; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .flashcard-container.flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 24px; box-shadow: var(--shadow-lg); background-color: var(--surface); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; box-sizing: border-box; text-align: center; border: 1px solid rgba(0,0,0,0.02); }
-        .card-front { background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%); }
-        .card-back { transform: rotateY(180deg); align-items: flex-start; text-align: left; overflow-y: auto; padding-top: 25px; }
-        .card-back::-webkit-scrollbar { width: 6px; }
-        .card-back::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
-        .card-title { font-size: 1.8rem; font-weight: 800; background: -webkit-linear-gradient(45deg, var(--primary), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 15px 0; }
-        .detail-row { margin-bottom: 15px; width: 100%; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; }
-        .detail-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .detail-content { font-size: 1rem; color: var(--text-main); font-weight: 500; }
-        .quiz-container, #search-section { background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow-lg); border: 1px solid #e5e7eb; display: none; box-sizing: border-box; min-height: 400px; }
-        .quiz-question { font-size: 1.3rem; font-weight: 700; margin-bottom: 25px; color: var(--text-main); }
-        .option-btn { background-color: #f9fafb; color: var(--text-main); text-align: left; border: 1px solid #e5e7eb; padding: 16px 20px; border-radius: 12px; transition: all 0.2s; font-size: 1rem; margin-bottom: 10px; width: 100%; cursor: pointer; }
-        .option-btn:hover { border-color: var(--primary); background-color: #eef2ff; }
-        .option-btn.correct { background-color: #ecfdf5; border-color: var(--secondary); color: #065f46; }
-        .option-btn.wrong { background-color: #fef2f2; border-color: var(--accent); color: #991b1b; }
-        .search-bar { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e5e7eb; font-size: 1.1rem; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; }
-        .search-bar:focus { border-color: var(--primary); outline: none; }
-        .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
-        .chip-label { width: 100%; font-size: 0.75rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .history-chip, .system-chip { font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; font-weight: 500; }
-        .history-chip { background-color: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
-        .history-chip:hover { background-color: #e5e7eb; border-color: #d1d5db; }
-        .history-clear { color: #ef4444; font-size: 0.8rem; cursor: pointer; margin-left: auto; text-decoration: underline; }
-        .system-chip { background-color: #e0e7ff; color: var(--primary); border-color: #c7d2fe; }
-        .system-chip:hover { background-color: #c7d2fe; transform: translateY(-1px); }
-        .results-grid { display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; padding-right: 5px; }
-        .results-grid::-webkit-scrollbar { width: 6px; }
-        .results-grid::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
-        .result-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; cursor: pointer; transition: all 0.2s; }
-        .result-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        .result-header { font-weight: 700; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
-        .result-sub { font-size: 0.8rem; color: #6b7280; font-weight: normal; }
-        .result-detail { margin-top: 12px; display: none; border-top: 1px solid #f3f4f6; padding-top: 12px; font-size: 0.9rem; color: var(--text-main); line-height: 1.5; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; max-width: 100%; }
-        .result-card.expanded .result-detail { display: block; animation: fadeIn 0.3s; }
-        .result-card.expanded { border-color: var(--primary); background-color: #fcfaff; }
-        .ai-btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; width: 100%; }
-        .ai-btn-small { font-size: 0.9rem; padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; }
-        .btn-sim { background-color: var(--secondary); color: white; border: none;}
-        .btn-explain { background-color: var(--primary); color: white; width: 100%; margin-top: 20px; display: none; justify-content: center;}
-        .ai-output-box { margin-top: 20px; padding: 20px; border-radius: 12px; font-size: 0.95rem; line-height: 1.7; background: #f0fdfa; border-left: 5px solid var(--secondary); animation: fadeIn 0.5s; display: none; width: 100%; box-sizing: border-box; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; max-width: 100%; }
-        .ai-output-box h3 { margin: 15px 0 8px 0; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; font-weight: 800; }
-        .ai-output-box ul { padding-left: 20px; margin: 8px 0; }
-        .btn-read-ai { background-color: #e0e7ff; color: var(--primary); margin-top: 10px; width: 100%; font-size: 0.85rem; display: none; justify-content: center; padding: 8px 12px; border: 1px solid #c7d2fe; border-radius: 8px; cursor: pointer; }
-        .btn-read-ai:hover { background-color: #c7d2fe; }
-        .nav-controls { margin-top: 25px; display: flex; justify-content: space-between; width: 100%; background: white; padding: 10px; border-radius: 50px; box-shadow: var(--shadow-md); }
-        .nav-controls button { border-radius: 40px; padding: 12px 24px; background: transparent; color: var(--text-main); box-shadow: none; }
-        .nav-controls button:hover { background: #f3f4f6; transform: none; box-shadow: none; }
-        #progress-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .progress-content { background: white; width: 90%; max-width: 500px; height: 80vh; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;}
-        .progress-list { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
-        .progress-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; }
-        .prog-name { font-weight: 600; color: var(--text-main); }
-        .prog-stat { font-size: 0.8rem; color: var(--text-muted); }
-        .prog-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
-        .badge-master { background: #dcfce7; color: #166534; }
-        .badge-mid { background: #fef9c3; color: #854d0e; }
-        .badge-low { background: #fee2e2; color: #991b1b; }
-        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @media (max-width: 600px) { .system-select, .mastery-select { width: 100%; max-width: 100%; order: 5; margin-top: 5px;} .top-bar { flex-direction: row; justify-content: space-between; } .top-bar button { flex-grow: 1; } }
+        :root {
+            --primary: #4F46E5;       
+            --secondary: #10B981;     
+            --surface: #ffffff;
+            --background: #F3F4F6;
+            --text-main: #111827;
+            --text-muted: #6B7280;
+            --radius: 16px;
+            --bottom-nav-height: 70px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0 0 var(--bottom-nav-height) 0; /* Space for bottom nav */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Prevent scrolling body, scroll content instead */
+        }
+
+        /* --- Header --- */
+        .mobile-header {
+            background: var(--surface);
+            padding: 10px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .app-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* --- Main Content Area --- */
+        #app-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* --- Flashcards (Compact Mode) --- */
+        .flashcard-container {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            perspective: 1000px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .flashcard-inner {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .flashcard-container.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            background: var(--surface);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 25px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card-front {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            align-items: flex-start;
+            text-align: left;
+            overflow-y: auto;
+            padding-bottom: 80px; /* Space for next button */
+        }
+
+        .tap-hint {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+            animation: pulse 2s infinite;
+        }
+
+        /* --- Images in Card --- */
+        .card-image {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            object-fit: contain;
+            display: none; /* Hidden by default */
+        }
+
+        /* --- Search (Compact) --- */
+        .search-bar {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        .result-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #f3f4f6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--bottom-nav-height);
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            gap: 4px;
+            background: none;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-icon { font-size: 1.4rem; }
+
+        /* --- Buttons --- */
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-icon { background: #f3f4f6; color: #333; padding: 8px; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;}
+        
+        .ai-output-box {
+            background: #f0fdfa;
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            display: none;
+        }
+
+        /* --- Settings Drawer --- */
+        #settings-drawer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: none;
+            justify-content: flex-end;
+        }
+        .drawer-content {
+            width: 80%;
+            max-width: 300px;
+            background: white;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        
+        /* Utility */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<h1>
-    <svg class="app-logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="64" height="64" rx="16" fill="#4F46E5"/>
-        <path d="M32 16V48" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M16 32H48" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="42" cy="22" r="6" fill="#10B981" stroke="#4F46E5" stroke-width="2"/>
-    </svg>
-    Integrated Drug
-</h1>
-    <div class="subtitle" id="provider-display">Provider: Not Configured</div>
-    <div class="notice-banner">
-    <img src="notice.png" alt="Notice Icon" class="notice-img" loading="lazy" onerror="this.style.display='none'">
-    <span class="notice-text">
-        <strong>📢 May every whispered wish reach you on the breeze.
-    </span>
-</div>
-    
-    <div class="top-bar">
-        <button id="mode-search" class="mode-active" onclick="switchMode('search')">Search</button>
-        <button id="mode-flashcard" class="secondary" onclick="switchMode('flashcard')">Flashcards</button>
-        <button id="mode-quiz" class="secondary" onclick="switchMode('quiz')">Quiz</button>
-        
-        <select id="system-filter" onchange="applyFilter()" class="system-select">
-            <option value="All">Show All Systems</option>
-        </select>
-
-        <select id="mastery-filter" onchange="applyFilter()" class="mastery-select">
-            <option value="All">All Mastery Levels</option>
-            <option value="Focus">⚠️ Needs Focus (Low)</option>
-            <option value="Learning">🟡 Learning (Mid)</option>
-            <option value="Mastered">✅ Mastered (High)</option>
-        </select>
-
-        <button onclick="toggleSettings()" class="secondary">⚙️ Settings</button>
-    </div>
-
-    <div id="settings-panel">
-        <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-            <label class="settings-label" style="margin-bottom: 10px;">⚡ Quick Controls</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                 <button onclick="toggleDrugSet()" id="set-btn" class="secondary" style="width:100%; font-size:0.85rem;">📚 Set: Common</button>
-                 <button onclick="toggleLanguage()" id="lang-btn" class="lang-lihkg" style="width:100%; font-size:0.85rem;">🌐 Lang: LIHKG</button>
-                 <button onclick="toggleMute()" id="mute-btn" class="secondary" style="grid-column: span 2; width:100%;">🔊 Audio: On</button>
-            </div>
+    <header class="mobile-header">
+        <div class="app-title">
+            <span style="font-size:1.5rem;">💊</span> Drug Tutor
         </div>
-
-        <h3 style="margin-top:0;">Configuration</h3>
-        
-        <div class="settings-group" style="border-bottom: 1px solid #eee; padding-bottom:15px; margin-bottom:15px;">
-            <label class="settings-label">🔊 Text-to-Speech Provider:</label>
-            <select id="tts-provider-select" onchange="updateTTSUI()" class="settings-select">
-                <option value="browser">Browser Native (Free/Offline)</option>
-            </select>
-
-            <label class="settings-label" style="margin-top:15px;">Preferred Voice:</label>
-            <select id="voice-select" class="settings-select">
-                <option value="">Default Voice</option>
-            </select>
-            
-            <button onclick="testVoice()" style="margin-top:10px; font-size:0.8rem; padding:8px 12px; width:100%; border:1px solid #d1d5db;">🔊 Test Selected Voice</button>
+        <div class="header-controls">
+            <button class="btn-icon" onclick="toggleSettings()">⚙️</button>
         </div>
-
-        <div class="settings-group">
-            <label class="settings-label">Select Active AI Provider:</label>
-            <select id="provider-select" onchange="updateProviderDisplay()" class="settings-select">
-                <option value="deepseek" selected>DeepSeek Official</option>
-                <option value="yinli">Yinli AI (Gemini Flash)</option>
-                <option value="openrouter">OpenRouter (Trinity Mini)</option>
-                <option value="github">GitHub Models (GPT-4o mini)</option>
-            </select>
-            
-            <div id="yinli-config" style="display:none;">
-                <label class="settings-label">Yinli AI URL (Routing Address):</label>
-                <input type="text" id="yinli-url" class="settings-input" value="https://yinli.one/v1/chat/completions" placeholder="https://yinli.one/v1/chat/completions" />
-                
-                <label class="settings-label">Yinli Model Name:</label>
-                <input type="text" id="yinli-model" class="settings-input" placeholder="gemini-2.5-flash" />
-                <div style="font-size:0.8rem; color:#6b7280; margin-bottom:10px;">Default: gemini-2.5-flash</div>
-                
-                <label class="settings-label">Yinli API Key (sk-...):</label>
-                <input type="password" id="yinli-key" class="settings-input" placeholder="Enter Yinli Key" />
-            </div>
-
-            <div id="github-config" style="display:none;">
-                <label class="settings-label">GitHub PAT (Token):</label>
-                <input type="password" id="github-key" class="settings-input" placeholder="github_pat_..." />
-                <div style="font-size:0.8rem; color:#6b7280; margin-bottom:15px;">Use a Classic or Fine-grained Token with public access.</div>
-            </div>
-
-            <div id="openrouter-config" style="display:none;">
-                <label class="settings-label">OpenRouter API Key (sk-or...):</label>
-                <input type="password" id="openrouter-key" class="settings-input" placeholder="Enter OpenRouter Key" />
-            </div>
-            
-            <div id="deepseek-config">
-                <label class="settings-label">DeepSeek API Key (sk-...):</label>
-                <input type="password" id="deepseek-key" class="settings-input" placeholder="Enter DeepSeek Key" />
-            </div>
-        </div>
-
-        <div class="settings-group">
-            <label class="settings-label">Load External Data (Google Sheet/Online CSV):</label>
-            <div class="import-wrapper">
-                <div class="url-input-group">
-                    <input type="text" id="sheet-url" class="settings-input" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-bottom:0;" />
-                    <button onclick="fetchSheetData()" style="padding: 5px 15px;">Load</button>
-                </div>
-                <div id="upload-status" style="font-size:0.8rem; margin-top:5px; color:var(--primary); font-weight:bold;"></div>
-            </div>
-        </div>
-
-        <button onclick="saveSettings()" style="width:100%; background-color: var(--secondary);">💾 Save & Close</button>
-    </div>
-
-    <div id="progress-modal">
-        <div class="progress-content">
-            <div class="progress-header">
-                <h3 style="margin:0;">📊 Knowledge Bank</h3>
-                <button onclick="closeProgressModal()" style="height:32px; padding:0 12px; background:#f3f4f6; color:#333;">Close</button>
-            </div>
-            <div class="progress-list" id="progress-list-content">
-                </div>
-            <div style="margin-top:15px; font-size:0.8rem; color:#6b7280; text-align:center;">
-                * Lower mastery items appear more often in quiz.
-            </div>
-        </div>
-    </div>
+    </header>
 
     <div id="app-container">
         
-        <div id="search-section">
-            <div style="text-align:center; margin-bottom:15px; font-weight:800; color:var(--primary); font-size:1.2rem;">🔍 Drug Database Search</div>
-            <input type="text" id="search-input" class="search-bar" placeholder="Type drug name or press 'Enter' to save history..." oninput="handleSearch()">
+        <div id="view-search">
+            <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search drug name..." oninput="handleSearch()">
             
-            <div id="history-section" style="display:none;">
-                <div style="display:flex; align-items:center; margin-bottom:4px;">
-                    <div class="chip-label">🕒 Recent Searches</div>
-                    <span class="history-clear" onclick="clearHistory()">Clear</span>
+            <div id="search-results">
+                <div style="text-align:center; color:#9ca3af; margin-top:40px;">
+                    <div style="font-size:3rem; opacity:0.2;">🔍</div>
+                    <p>Type to search database</p>
                 </div>
-                <div id="history-container" class="chip-container"></div>
             </div>
-            
-            <div id="recommend-section">
-                <div class="chip-label">🫁 Body Systems</div>
-                <div id="recommend-container" class="chip-container"></div>
-            </div>
-
-            <div id="search-results" class="results-grid">
-                <div style="text-align:center; color:#9ca3af; margin-top:20px;">Type above to search...</div>
-            </div>
+            <div id="history-chips" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:20px;"></div>
         </div>
 
-        <div id="flashcard-section" style="display:none;">
-            <div class="flashcard-container" id="flashcard" onclick="flipCard(event)">
-                <div class="card-face card-front">
-                    <div style="font-size: 3.5rem; margin-bottom: 20px;">💊</div>
-                    <h2 id="fc-name" class="card-title">Drug Name</h2>
-                    <p style="color: #9ca3af; font-size: 0.9rem;">(Tap to flip)</p>
-                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name, 'en')" style="margin-top: 20px; background:#e0e7ff; color:var(--primary);">🔊 Read Name</button>
-                </div>
-                <div class="card-face card-back">
-                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content" id="fc-class">...</div></div>
-                    <div class="detail-row"><div class="detail-label">Body System</div><div class="detail-content" id="fc-system">...</div></div>
-                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content" id="fc-indication">...</div></div>
-                    <div class="detail-row"><div class="detail-label">SideEffects</div><div class="detail-content" id="fc-SideEffects">...</div></div>
-                    <div class="detail-row" style="border:none;"><div class="detail-label">Nursing Considerations</div><div class="detail-content" id="fc-nursing">...</div></div>
-
-                    <div class="ai-btn-group">
-                        <button onclick="event.stopPropagation(); getIntegratedCaseStudy(flashcardList[fcCurrentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="ai-btn-small btn-sim" id="btn-case">🏥 AI: Generate Integrated Patient Case</button>
-                        
-                        <a id="fc-google-link" href="#" target="_blank" onclick="event.stopPropagation();" 
-                                class="ai-btn-small secondary btn-link-style" 
-                                style="background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; justify-content: center;">
-                            🌐 Search on Google
-                        </a>
-                        
-                        <div id="fc-ai-case" class="ai-output-box"></div>
-                        <button onclick="event.stopPropagation(); readAIContent('fc-ai-case')" class="btn-read-ai" id="btn-read-case">🔊 Read Out Loud</button>
+        <div id="view-flashcard" class="hidden" style="height: 100%;">
+            <div class="flashcard-container" id="flashcard-el">
+                <div class="flashcard-inner" id="flashcard-inner">
+                    
+                    <div class="card-face card-front">
+                        <div style="position:absolute; top:15px; right:15px; font-size:0.8rem; color:#9ca3af;" id="fc-counter">1/10</div>
+                        <div style="font-size: 3rem; margin-bottom: 10px;">💊</div>
+                        <img id="fc-image-front" class="card-image" src="" alt="Drug Image">
+                        <h2 id="fc-name" style="margin: 0; font-size: 1.8rem; color: var(--primary);">Loading...</h2>
+                        <div class="tap-hint">👆 Tap to Flip</div>
                     </div>
-                    <button onclick="event.stopPropagation(); speakBack(flashcardList[fcCurrentIndex])" style="margin-top: 20px; width:100%; background:#e0e7ff; color:var(--primary); font-size:0.8rem;">🔊 Read Basic Details</button>
+
+                    <div class="card-face card-back">
+                        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <strong style="color:var(--primary);">Details</strong>
+                            <button onclick="event.stopPropagation(); speakBack(flashcardList[fcCurrentIndex])" style="background:#e0e7ff; color:var(--primary); padding:4px 8px; font-size:0.8rem;">🔊</button>
+                        </div>
+                        
+                        <div style="font-size:0.95rem; line-height:1.6; width:100%;">
+                            <p><strong>Class:</strong> <span id="fc-class"></span></p>
+                            <p><strong>Indication:</strong> <span id="fc-indication"></span></p>
+                            <p><strong>Nursing:</strong> <span id="fc-nursing"></span></p>
+                        </div>
+
+                        <div style="margin-top:20px; padding:15px; background:#f0fff4; border:1px solid #bbf7d0; border-radius:10px; width:100%; box-sizing:border-box; text-align:center; color:#166534; font-weight:bold;">
+                            👆 Tap anywhere for Next
+                        </div>
+
+                        <div id="fc-ai-case" class="ai-output-box"></div>
+                        
+                        <div style="margin-top:auto; padding-top:20px; display:flex; gap:10px; width:100%;">
+                            <button onclick="event.stopPropagation(); getIntegratedCaseStudy(flashcardList[fcCurrentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" id="btn-case" style="flex:1; background:var(--secondary); color:white; font-size:0.85rem;">🏥 Generate Case</button>
+                             <button onclick="event.stopPropagation(); readAIContent('fc-ai-case')" id="btn-read-case" style="display:none; background:#e0e7ff; color:var(--primary);">🔊</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            <div class="nav-controls">
-                <button onclick="prevCard()">← Prev</button>
-                <span id="counter" style="align-self: center; font-weight: bold; color:#6b7280;">1 / 10</span>
-                <button onclick="nextCard()">Next →</button>
+        </div>
+
+        <div id="view-quiz" class="hidden">
+            <h3 style="margin-top:0; color:var(--primary);">Speed Quiz</h3>
+            <div id="quiz-box" style="background:white; padding:20px; border-radius:12px; border:1px solid #e5e7eb; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                <p id="quiz-question" style="font-weight:700; font-size:1.1rem; margin-bottom:20px;">Loading...</p>
+                <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
+                <div id="quiz-feedback" class="ai-output-box" style="margin-top:15px; display:none;"></div>
+                <button id="quiz-next-btn" onclick="nextQuestion()" class="hidden" style="width:100%; margin-top:15px; background:var(--primary); color:white; padding:12px;">Next Question →</button>
             </div>
         </div>
 
-        <div id="quiz-section" class="quiz-container" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0; font-size:1.1rem; color:var(--primary);">Adaptive Quiz</h3>
-                <button onclick="showProgressModal()" style="font-size:0.8rem; padding:6px 12px; background:white; border:1px solid #d1d5db; color:#333;">📊 My Progress</button>
-            </div>
-            
-            <div id="quiz-content">
-                <p class="quiz-question" id="quiz-question">Question...</p>
-                <div class="quiz-options" id="quiz-options"></div>
-            </div>
-            
-            <div id="quiz-feedback" style="display:none; margin-top:15px; padding:10px; background:#f0f9ff; border-radius:8px; border:1px solid #bae6fd; font-size:0.9rem; text-align:center;"></div>
+    </div>
 
-            <button id="btn-quiz-explain" class="btn-explain" onclick="triggerQuizExplain()">🤖 Explain Why (AI Tutor)</button>
-            <div id="ai-container" style="display:none;">
-                <h3><span id="ai-status-icon">🤖</span> AI Tutor Explanation</h3>
-                <div id="ai-content" class="ai-output-box" style="display:block;"></div>
-                <button onclick="readAIContent('ai-content')" class="btn-read-ai" id="btn-read-explain" style="margin-bottom:0;">🔊 Read Out Loud</button>
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchView('search', this)">
+            <span class="nav-icon">🔍</span>
+            <span>Search</span>
+        </button>
+        <button class="nav-item" onclick="switchView('flashcard', this)">
+            <span class="nav-icon">🃏</span>
+            <span>Cards</span>
+        </button>
+        <button class="nav-item" onclick="switchView('quiz', this)">
+            <span class="nav-icon">🧠</span>
+            <span>Quiz</span>
+        </button>
+    </nav>
+
+    <div id="settings-drawer" onclick="toggleSettings()">
+        <div class="drawer-content" onclick="event.stopPropagation()">
+            <h3>Settings</h3>
+            
+            <label style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+                <span>🔊 Auto-Play Audio</span>
+                <input type="checkbox" id="setting-auto-audio" onchange="toggleAutoAudio()">
+            </label>
+            
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Data Source</label>
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <button onclick="setSource('common')" class="btn-primary" style="flex:1; font-size:0.8rem;">Common</button>
+                <button onclick="setSource('csv')" style="flex:1; background:#eee; font-size:0.8rem;">Online CSV</button>
             </div>
-            <div class="nav-controls" style="justify-content: flex-end;">
-                <button onclick="nextQuestion()" id="next-quiz-btn" style="display:none;">Next Question →</button>
-            </div>
+
+            <label style="display:block; margin-bottom:5px; font-weight:600;">System Filter</label>
+            <select id="system-select" onchange="applyMobileFilter()" style="width:100%; padding:10px; margin-bottom:20px;">
+                <option value="All">All Systems</option>
+            </select>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+            <p style="font-size:0.8rem; color:#999;">API Keys & Advanced settings are in the desktop version code (prompts.js).</p>
         </div>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -338,926 +369,289 @@
     <script src="prompts.js"></script>
 
     <script>
-        // --- CONFIGURATION ---
-        let currentProvider = 'deepseek'; 
-        let openRouterKey = ""; 
-        let deepSeekKey = "sk-92db3cf721454bd7b351ca6ef40eaaf7";
-        let githubKey = "";
+        // --- STATE ---
+        let activeList = []; 
+        let currentView = 'search';
+        let fcIndex = 0;
+        let isFlipped = false;
+        let autoAudio = false;
+        let aiLanguage = 'lihkg'; // Default for fun
+        let searchHistory = JSON.parse(localStorage.getItem('dt_history') || '[]');
         
-        // YINLI CONFIG
-        let yinliKey = "";
-        let yinliUrl = "https://yinli.one/v1/chat/completions";
-        let yinliModel = "gemini-2.5-flash"; // NEW VARIABLE FOR MODEL
-
-        let googleScriptURL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec"; 
-        
-        // --- AUDIO ---
-        let ttsProvider = 'browser'; 
-        let selectedVoiceURI = ""; 
-        let isMuted = false;
-        let aiLanguage = 'lihkg'; 
-        const defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
-
-        // --- DATA & STATE ---
-        let extendedDrugs = []; 
-        let activeSourceList = []; 
-        let filteredList = [];     
-        let flashcardList = []; 
-        let quizList = [];      
-        let searchHistory = []; 
-        let quizStats = {}; // { drugName: { correct: 0, attempts: 0, weight: 10 } }
-        let fcCurrentIndex = 0;
-        let quizCurrentIndex = 0;
-        let currentQuizData = null;
-
-        const systemCategories = [
-            "Gastro-intestinal system", "Cardiovascular system", "Respiratory system", "Central nervous system", "Infections", "Endocrine system",
-            "Obstetrics, gynaecology, and urinary-tract disorders", "Malignant disease and immunosuppression", "Nutrition and blood",
-            "Musculoskeletal and joint disease", "Eye", "Ear, nose, and oropharynx", "Skin", "Immunological products and vaccines", "Anaesthesia"
-        ];
-        
-        // UPDATED: Short names for compact view
-        const systemShortNames = {
-            "Gastro-intestinal system": "GI System",
-            "Cardiovascular system": "Cardio",
-            "Respiratory system": "Respiratory",
-            "Central nervous system": "CNS / Neuro",
-            "Infections": "Infections",
-            "Endocrine system": "Endocrine",
-            "Obstetrics, gynaecology, and urinary-tract disorders": "ObGyn / GU",
-            "Malignant disease and immunosuppression": "Oncology",
-            "Nutrition and blood": "Nutrition / Blood",
-            "Musculoskeletal and joint disease": "MSK / Bone",
-            "Eye": "Eye",
-            "Ear, nose, and oropharynx": "ENT",
-            "Skin": "Skin",
-            "Immunological products and vaccines": "Immune / Vax",
-            "Anaesthesia": "Anaesthesia"
+        // --- INIT ---
+        window.onload = function() {
+            if(typeof commonDrugs !== 'undefined') activeList = [...commonDrugs];
+            populateSystems();
+            renderHistory();
+            
+            // Interaction: Tap Flow
+            const cardEl = document.getElementById('flashcard-el');
+            cardEl.addEventListener('click', handleCardTap);
         };
 
-        // --- ICONS MAPPING ---
-        const systemIcons = {
-            "Gastro-intestinal": "🍔", "Cardiovascular": "🫀", "Respiratory": "🫁", 
-            "Central nervous": "🧠", "Infections": "🦠", "Endocrine": "🦋", 
-            "Obstetrics": "🤰", "Malignant": "🎗️", "Nutrition": "🍎",
-            "Musculoskeletal": "🦴", "Eye": "👁️", "Ear": "👂", 
-            "Skin": "🧴", "Immunological": "🛡️", "Anaesthesia": "💉"
-        };
-
-        function getSystemIcon(sys) {
-            for(let k in systemIcons) { if(sys.includes(k) || k.includes(sys.split(' ')[0])) return systemIcons[k]; }
-            return "💊";
-        }
-
-        function getSystemForDrug(drug) {
-            if (drug.system && systemCategories.includes(drug.system)) return drug.system;
-            const txt = (drug.class + " " + drug.indication + " " + drug.name).toLowerCase();
-            if (txt.includes("antacid") || txt.includes("ppi") || txt.includes("laxative") || txt.includes("gerd") || txt.includes("ulcer")) return "Gastro-intestinal system";
-            if (txt.includes("cardio") || txt.includes("arrhyth") || txt.includes("hypertension") || txt.includes("angina") || txt.includes("beta-blocker") || txt.includes("ace inhibitor") || txt.includes("statin")) return "Cardiovascular system";
-            if (txt.includes("asthma") || txt.includes("copd") || txt.includes("broncho") || txt.includes("mucolytic") || txt.includes("respiratory")) return "Respiratory system";
-            if (txt.includes("analgesic") || txt.includes("pain") || txt.includes("anxiety") || txt.includes("depress") || txt.includes("seizure") || txt.includes("epilepsy") || txt.includes("psychotic") || txt.includes("sedat")) return "Central nervous system";
-            if (txt.includes("infection") || txt.includes("antibiotic") || txt.includes("viral") || txt.includes("fungal") || txt.includes("bacterial") || txt.includes("tuberculosis") || txt.includes("pneumonia")) return "Infections";
-            if (txt.includes("diabetes") || txt.includes("insulin") || txt.includes("thyroid") || txt.includes("corticosteroid")) return "Endocrine system";
-            return "Other"; 
-        }
-
-        function initSystemDropdown() {
-            const select = document.getElementById('system-filter');
-            while (select.options.length > 1) { select.remove(1); }
-            systemCategories.forEach(sys => {
-                const opt = document.createElement('option');
-                opt.value = sys; opt.innerText = sys; select.appendChild(opt);
-            });
-        }
-
-        function processRawData(data) {
-            let processed = [];
-            data.forEach(item => {
-                if (item.name && typeof item.name === 'string' && item.name.includes(';')) {
-                    item.name.split(';').forEach(n => { if(n.trim()) processed.push({ ...item, name: n.trim() }); });
-                } else { if(item.name) item.name = item.name.trim(); processed.push(item); }
-            });
-            return processed;
-        }
-
-        // --- NEW MASTERY LOGIC ---
-        function getMasteryLevel(drugName) {
-            const s = quizStats[drugName];
-            if (!s || s.attempts === 0) return 'Focus'; // Default for new
-            const pct = (s.correct / s.attempts) * 100;
-            if (pct >= 80 && s.attempts >= 2) return 'Mastered';
-            if (pct >= 50) return 'Learning';
-            return 'Focus';
-        }
-
-        function applyFilter() {
-            const sysCategory = document.getElementById('system-filter').value;
-            const masteryCategory = document.getElementById('mastery-filter').value;
+        // --- NAVIGATION ---
+        function switchView(viewId, btn) {
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
             
-            filteredList = activeSourceList.filter(drug => {
-                const sys = getSystemForDrug(drug);
-                drug.system = sys;
-                
-                // System Match
-                const sysMatch = (sysCategory === "All" || sys === sysCategory);
-                
-                // Mastery Match
-                let masteryMatch = true;
-                if (masteryCategory !== "All") {
-                    const level = getMasteryLevel(drug.name);
-                    masteryMatch = (level === masteryCategory);
-                }
-                
-                return sysMatch && masteryMatch;
-            });
+            document.getElementById('view-search').classList.add('hidden');
+            document.getElementById('view-flashcard').classList.add('hidden');
+            document.getElementById('view-quiz').classList.add('hidden');
             
-            if (filteredList.length === 0) {
-                alert("No drugs found matching these filters.");
-                // Reset Mastery if empty to avoid lock out
-                document.getElementById('mastery-filter').value = "All";
-                filteredList = [...activeSourceList];
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            currentView = viewId;
+
+            if(viewId === 'flashcard') {
+                reshuffle();
+            } else if (viewId === 'quiz') {
+                nextQuestion();
             }
-            reshuffle();
+        }
+
+        function toggleSettings() {
+            const el = document.getElementById('settings-drawer');
+            el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // --- FLASHCARD LOGIC (The "Click and Next" Flow) ---
+        function handleCardTap(e) {
+            // Don't trigger if clicked on a button inside the card
+            if(e.target.tagName === 'BUTTON') return;
+
+            const inner = document.getElementById('flashcard-inner');
+            const container = document.getElementById('flashcard-el');
+
+            if (!isFlipped) {
+                // Front -> Back
+                container.classList.add('flipped');
+                isFlipped = true;
+                // Speak Basic Details automatically on flip? Optional.
+            } else {
+                // Back -> Next Card (Front)
+                nextCard();
+            }
+        }
+
+        function nextCard() {
+            const container = document.getElementById('flashcard-el');
+            
+            // 1. Reset Flip visually first
+            container.classList.remove('flipped');
+            isFlipped = false;
+
+            // 2. Wait small delay for flip animation to start back, then swap data
+            setTimeout(() => {
+                fcIndex = (fcIndex + 1) % activeList.length;
+                renderCard();
+            }, 200);
+        }
+
+        function renderCard() {
+            if(activeList.length === 0) return;
+            const d = activeList[fcIndex];
+            
+            document.getElementById('fc-counter').innerText = `${fcIndex+1} / ${activeList.length}`;
+            document.getElementById('fc-name').innerText = d.name;
+            document.getElementById('fc-class').innerText = d.class;
+            document.getElementById('fc-indication').innerText = d.indication;
+            document.getElementById('fc-nursing').innerText = d.nursing;
+            
+            // Image Handling (if database has it)
+            const imgEl = document.getElementById('fc-image-front');
+            if (d.image) {
+                imgEl.src = d.image;
+                imgEl.style.display = 'block';
+            } else {
+                imgEl.style.display = 'none';
+            }
+
+            // Reset AI box
+            document.getElementById('fc-ai-case').style.display = 'none';
+            document.getElementById('fc-ai-case').innerHTML = '';
+            document.getElementById('btn-read-case').style.display = 'none';
+            document.getElementById('btn-case').disabled = false;
+            document.getElementById('btn-case').innerText = '🏥 Generate Case';
+
+            // Auto Audio
+            if(autoAudio) {
+                speakText(d.name, 'en');
+            }
         }
 
         function reshuffle() {
-            if(!filteredList || filteredList.length === 0) filteredList = [...activeSourceList];
-            flashcardList = [...filteredList];
-            for (let i = flashcardList.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [flashcardList[i], flashcardList[j]] = [flashcardList[j], flashcardList[i]]; }
-            quizList = processRawData(filteredList);
-            fcCurrentIndex = 0; quizCurrentIndex = 0;
-            renderCard(); generateQuizQuestion(); resetQuizUI();
-        }
-
-        function init() {
-            const savedOR = localStorage.getItem('or_key'); if(savedOR) openRouterKey = savedOR;
-            const savedDS = localStorage.getItem('ds_key'); if(savedDS) deepSeekKey = savedDS;
-            const savedGH = localStorage.getItem('gh_key'); if(savedGH) githubKey = savedGH;
-            
-            // LOAD YINLI CONFIG
-            const savedYinli = localStorage.getItem('yinli_key'); if(savedYinli) yinliKey = savedYinli;
-            const savedYinliUrl = localStorage.getItem('yinli_url'); if(savedYinliUrl) yinliUrl = savedYinliUrl;
-            
-            // NEW: Load saved model
-            const savedYinliModel = localStorage.getItem('yinli_model'); 
-            if(savedYinliModel) yinliModel = savedYinliModel;
-
-            const savedProv = localStorage.getItem('active_provider'); if(savedProv) currentProvider = savedProv;
-            const savedTTS = localStorage.getItem('tts_provider'); if(savedTTS) ttsProvider = savedTTS;
-            const savedVoice = localStorage.getItem('preferred_voice'); if(savedVoice) selectedVoiceURI = savedVoice;
-
-            // LOAD HISTORY & STATS
-            const savedHist = localStorage.getItem('drug_tutor_search_history');
-            if(savedHist) searchHistory = JSON.parse(savedHist);
-            
-            const savedStats = localStorage.getItem('drug_tutor_quiz_stats');
-            if(savedStats) quizStats = JSON.parse(savedStats);
-
-            document.getElementById('openrouter-key').value = openRouterKey;
-            document.getElementById('deepseek-key').value = deepSeekKey;
-            document.getElementById('github-key').value = githubKey;
-            
-            // SET YINLI INPUTS
-            document.getElementById('yinli-key').value = yinliKey;
-            document.getElementById('yinli-url').value = yinliUrl;
-            document.getElementById('yinli-model').value = yinliModel; // Set input value
-
-            document.getElementById('provider-select').value = currentProvider;
-            document.getElementById('tts-provider-select').value = ttsProvider;
-            document.getElementById('sheet-url').value = defaultSheetUrl;
-            
-            updateProviderDisplay(); updateTTSUI(); 
-
-            if(typeof commonDrugs !== 'undefined') activeSourceList = [...commonDrugs];
-            activeSourceList.forEach(d => d.system = getSystemForDrug(d));
-            initSystemDropdown(); applyFilter(); fetchSheetData();
-            
-            populateVoiceList();
-            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoiceList;
-
-            // NEW: INIT FEATURES
-            renderHistory();
-            renderRecommendedSystems();
-            
-            document.getElementById('search-input').addEventListener('keydown', function(e) {
-                if(e.key === 'Enter') {
-                    handleSearch();
-                    if(this.value.trim().length > 1) addToHistory(this.value.trim());
-                }
-            });
-
-            switchMode('search');
-        }
-
-        // --- PROGRESS & STATS LOGIC ---
-        function getDrugStats(drugName) {
-            if (!quizStats[drugName]) {
-                quizStats[drugName] = { correct: 0, attempts: 0, weight: 10 }; 
+            // Simple shuffle
+            for (let i = activeList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [activeList[i], activeList[j]] = [activeList[j], activeList[i]];
             }
-            return quizStats[drugName];
+            fcIndex = 0;
+            renderCard();
         }
 
-        function saveStats() {
-            localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
-        }
-
-        function showProgressModal() {
-            const modal = document.getElementById('progress-modal');
-            const list = document.getElementById('progress-list-content');
-            list.innerHTML = '';
-
-            const keys = Object.keys(quizStats);
-            if(keys.length === 0) { list.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">No quiz data yet. Start quizzing!</div>'; }
-            else {
-                // Sort by Mastery % (Low to High)
-                keys.sort((a,b) => {
-                    const sa = quizStats[a]; const sb = quizStats[b];
-                    const pa = sa.attempts === 0 ? 0 : sa.correct/sa.attempts;
-                    const pb = sb.attempts === 0 ? 0 : sb.correct/sb.attempts;
-                    return pa - pb;
-                });
-
-                keys.forEach(key => {
-                    const s = quizStats[key];
-                    const pct = s.attempts === 0 ? 0 : Math.round((s.correct / s.attempts) * 100);
-                    let badgeClass = 'badge-low'; let badgeText = 'Needs Focus';
-                    if(pct >= 80 && s.attempts >= 3) { badgeClass = 'badge-master'; badgeText = 'Mastered'; }
-                    else if(pct >= 50) { badgeClass = 'badge-mid'; badgeText = 'Learning'; }
-
-                    const item = document.createElement('div');
-                    item.className = 'progress-item';
-                    item.innerHTML = `
-                        <div>
-                            <div class="prog-name">${key}</div>
-                            <div class="prog-stat">${s.correct} / ${s.attempts} correct (${pct}%)</div>
-                        </div>
-                        <div class="prog-badge ${badgeClass}">${badgeText}</div>
-                    `;
-                    list.appendChild(item);
-                });
-            }
-            modal.style.display = 'flex';
-        }
-        function closeProgressModal() { document.getElementById('progress-modal').style.display = 'none'; }
-
-        // --- WEIGHTED QUIZ SELECTION ---
-        function generateQuizQuestion() {
-            resetQuizUI();
-            const container = document.getElementById('quiz-options');
-            const qEl = document.getElementById('quiz-question');
-            container.innerHTML = '';
-            document.getElementById('quiz-feedback').style.display = 'none';
-
-            if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
-
-            // WEIGHTED RANDOM SELECTION
-            let totalWeight = 0;
-            const candidates = quizList.filter(d => {
-                const s = getDrugStats(d.name);
-                totalWeight += s.weight;
-                return true;
-            });
-
-            if(totalWeight === 0) totalWeight = candidates.length * 10;
-
-            let randomVal = Math.random() * totalWeight;
-            let correctDrug = candidates[0];
-            
-            for (let d of candidates) {
-                const s = getDrugStats(d.name);
-                randomVal -= s.weight;
-                if (randomVal <= 0) { correctDrug = d; break; }
-            }
-
-            if(!correctDrug) correctDrug = candidates[Math.floor(Math.random() * candidates.length)];
-
-            const qType = Math.floor(Math.random() * 4);
-            let qText = "", correctText = "", optionType = ""; 
-            switch (qType) {
-                case 0: qText = `Which drug is indicated for: "${correctDrug.indication}"?`; correctText = correctDrug.name; optionType = 'name'; break;
-                case 1: qText = `Which drug belongs to the class: "${correctDrug.class}"?`; correctText = correctDrug.name; optionType = 'name'; break;
-                case 2: qText = `What is the primary indication for: "${correctDrug.name}"?`; correctText = correctDrug.indication; optionType = 'indication'; break;
-                case 3: qText = `What is the drug class of: "${correctDrug.name}"?`; correctText = correctDrug.class; optionType = 'class'; break;
-            }
-
-            qEl.innerText = qText;
-            let wrongOptions = []; let attempts = 0;
-            while(wrongOptions.length < 3 && attempts < 100) {
-                attempts++;
-                const randomDrug = quizList[Math.floor(Math.random() * quizList.length)];
-                if (randomDrug.name === correctDrug.name) continue;
-                const optText = randomDrug[optionType];
-                if (!optText || optText === "N/A" || optText === correctText || wrongOptions.includes(optText)) continue;
-                wrongOptions.push(optText);
-            }
-            while(wrongOptions.length < 3) { wrongOptions.push("N/A"); }
-            let optionsArr = [correctText, ...wrongOptions];
-            optionsArr.sort(() => Math.random() - 0.5);
-
-            optionsArr.forEach(optText => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn'; btn.innerText = optText;
-                btn.onclick = () => checkAnswer(btn, optText, correctText, correctDrug, qText);
-                container.appendChild(btn);
-            });
-        }
-        
-        function checkAnswer(btn, selectedText, correctText, correctDrug, qText) {
-            const btns = document.querySelectorAll('.option-btn'); 
-            btns.forEach(b => b.onclick = null);
-            
-            const stats = getDrugStats(correctDrug.name);
-            stats.attempts++;
-
-            let feedback = document.getElementById('quiz-feedback');
-            feedback.style.display = 'block';
-
-            if (selectedText === correctText) { 
-                btn.classList.add('correct');
-                stats.correct++;
-                stats.weight = Math.max(1, stats.weight - 2); 
-                speakText(`Correct!`, 'en');
-                feedback.innerHTML = `✅ <strong>Correct!</strong>`;
-                feedback.style.background = "#dcfce7"; feedback.style.borderColor = "#86efac";
-            } else { 
-                btn.classList.add('wrong'); 
-                btns.forEach(b => { if(b.innerText === correctText) b.classList.add('correct'); });
-                stats.weight += 4;
-                speakText(`Incorrect. The answer is ${correctText}.`, 'en');
-                feedback.innerHTML = `❌ <strong>Incorrect.</strong> Correct: ${correctText}`;
-                feedback.style.background = "#fee2e2"; feedback.style.borderColor = "#fca5a5";
-            }
-            
-            const pct = Math.round((stats.correct / stats.attempts) * 100);
-            
-            // Generate link dynamically
-            const query = encodeURIComponent(`${correctDrug.name} all in hk traditional chinese`);
-            const googleUrl = `https://www.google.com/search?q=${query}`;
-            
-            feedback.innerHTML += `
-                <div style="margin-top:5px; font-size:0.8rem; color:#555;">
-                    Mastery for ${correctDrug.name}: ${pct}% (${stats.correct}/${stats.attempts})
-                </div>
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
-                    <a href="${googleUrl}" target="_blank"
-                       style="color: var(--primary); font-weight: 700; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                       🌐 Deep Research: Search "${correctDrug.name}" on Google
-                    </a>
-                </div>
-            `;
-
-            saveStats(); 
-
-            document.getElementById('next-quiz-btn').style.display = 'block'; 
-            document.getElementById('btn-quiz-explain').style.display = 'flex'; 
-            currentQuizData = { q: qText, u: selectedText, c: correctDrug, correctAnswerText: correctText };
-        }
-        function nextQuestion() { generateQuizQuestion(); }
-
-        // --- HISTORY & RECOMMENDATIONS ---
-        function renderHistory() {
-            const container = document.getElementById('history-container');
-            const section = document.getElementById('history-section');
-            container.innerHTML = '';
-            if(searchHistory.length === 0) { section.style.display = 'none'; return; }
-            section.style.display = 'block';
-            searchHistory.forEach(term => {
-                const chip = document.createElement('div');
-                chip.className = 'history-chip'; chip.innerText = term;
-                chip.onclick = () => { document.getElementById('search-input').value = term; handleSearch(); };
-                container.appendChild(chip);
-            });
-        }
-
-        function addToHistory(term) {
-            const cleanTerm = term.trim();
-            searchHistory = searchHistory.filter(t => t.toLowerCase() !== cleanTerm.toLowerCase());
-            searchHistory.unshift(cleanTerm);
-            if(searchHistory.length > 5) searchHistory.pop();
-            localStorage.setItem('drug_tutor_search_history', JSON.stringify(searchHistory));
-            renderHistory();
-        }
-
-        function clearHistory() {
-            searchHistory = []; localStorage.removeItem('drug_tutor_search_history'); renderHistory();
-        }
-
-        function renderRecommendedSystems() {
-            const container = document.getElementById('recommend-container');
-            container.innerHTML = '';
-            systemCategories.forEach(sys => {
-                const chip = document.createElement('div');
-                chip.className = 'system-chip';
-                // UPDATED: Use the short name map for compact display
-                const shortName = systemShortNames[sys] || sys.replace('system', '').trim();
-                chip.innerText = `${getSystemIcon(sys)} ${shortName}`;
-                // Keep searching for the FULL system name so filtering still works
-                chip.onclick = () => { document.getElementById('search-input').value = sys; handleSearch(); addToHistory(sys); };
-                container.appendChild(chip);
-            });
-        }
-
-        // --- STANDARD UTILS ---
-        function updateTTSUI() { populateVoiceList(); }
-        async function populateVoiceList() {
-            const select = document.getElementById('voice-select');
-            const provider = document.getElementById('tts-provider-select').value; 
-            select.innerHTML = '<option value="">Default Voice</option>';
-            if (provider === 'browser') {
-                const voices = window.speechSynthesis.getVoices();
-                if(voices.length === 0) return;
-                voices.sort((a, b) => a.name.localeCompare(b.name)).forEach((voice) => {
-                    const option = document.createElement('option');
-                    const label = voice.name.includes("Enhanced") || voice.name.includes("Siri") ? `✨ ${voice.name}` : voice.name;
-                    option.textContent = `${label} (${voice.lang})`; option.value = voice.voiceURI;
-                    if(voice.voiceURI === selectedVoiceURI) option.selected = true;
-                    select.appendChild(option);
-                });
-            } 
-        }
-        function testVoice() { speakText("Voice check. Testing audio quality.", 'en', true); }
-        function stopAudio() { window.speechSynthesis.cancel(); }
-        function speakText(text, langCode = 'en', forceTest = false) {
-            if (isMuted) return; stopAudio(); 
-            let targetLang = langCode;
-            if ((aiLanguage === 'cantonese' || aiLanguage === 'lihkg') && langCode !== 'en') targetLang = 'zh-HK'; 
-            speakBrowser(text, targetLang, forceTest); 
-        }
-        function speakBrowser(text, targetLang, forceTest) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = targetLang; utterance.rate = 0.95;
-            const voices = window.speechSynthesis.getVoices();
-            if (selectedVoiceURI && !forceTest) {
-                const preferred = voices.find(v => v.voiceURI === selectedVoiceURI);
-                if(preferred) utterance.voice = preferred;
-            } else if (voices.length > 0) {
-                 const bestMatch = voices.find(v => v.lang.includes(targetLang) && (v.name.includes("Enhanced") || v.name.includes("Siri")));
-                 if(bestMatch) utterance.voice = bestMatch;
-            }
-            if(forceTest) {
-                const select = document.getElementById('voice-select');
-                if(select.value) { const testVoice = voices.find(v => v.voiceURI === select.value); if(testVoice) utterance.voice = testVoice; }
-            }
-            window.speechSynthesis.speak(utterance);
-        }
-        function saveSettings() {
-            const orInput = document.getElementById('openrouter-key').value.trim();
-            const dsInput = document.getElementById('deepseek-key').value.trim();
-            const ghInput = document.getElementById('github-key').value.trim();
-            
-            // SAVE YINLI
-            const yinliInput = document.getElementById('yinli-key').value.trim();
-            const yinliUrlInput = document.getElementById('yinli-url').value.trim();
-            const yinliModelInput = document.getElementById('yinli-model').value.trim(); // NEW
-            
-            if(yinliInput) { yinliKey = yinliInput; localStorage.setItem('yinli_key', yinliInput); }
-            if(yinliUrlInput) { yinliUrl = yinliUrlInput; localStorage.setItem('yinli_url', yinliUrlInput); }
-            
-            // NEW: Save Model
-            if(yinliModelInput) { 
-                yinliModel = yinliModelInput; 
-                localStorage.setItem('yinli_model', yinliModelInput); 
-            } else {
-                // Reset to default if empty
-                yinliModel = "gemini-2.5-flash";
-                localStorage.removeItem('yinli_model');
-            }
-
-            if(orInput) { openRouterKey = orInput; localStorage.setItem('or_key', orInput); }
-            if(dsInput) { deepSeekKey = dsInput; localStorage.setItem('ds_key', dsInput); }
-            if(ghInput) { githubKey = ghInput; localStorage.setItem('gh_key', ghInput); }
-            currentProvider = document.getElementById('provider-select').value;
-            localStorage.setItem('active_provider', currentProvider);
-            ttsProvider = document.getElementById('tts-provider-select').value;
-            localStorage.setItem('tts_provider', ttsProvider);
-            selectedVoiceURI = document.getElementById('voice-select').value;
-            localStorage.setItem('preferred_voice', selectedVoiceURI);
-            updateProviderDisplay(); toggleSettings();
-        }
-        function fetchSheetData() {
-            const urlInput = document.getElementById('sheet-url').value.trim();
-            const statusEl = document.getElementById('upload-status');
-            if (!urlInput) { statusEl.innerText = "❌ Please enter a URL."; return; }
-            statusEl.innerText = "⏳ Fetching Database...";
-            let fetchUrl = urlInput;
-            if (urlInput.includes("docs.google.com/spreadsheets") && urlInput.includes("/edit")) fetchUrl = urlInput.replace(/\/edit.*$/, "/export?format=csv");
-            fetch(fetchUrl).then(resp => { if(!resp.ok) throw new Error("Network error"); return resp.text(); }).then(csvText => {
-                Papa.parse(csvText, { header: true, skipEmptyLines: true, complete: function(results) {
-                        if (results.data.length > 0) {
-                            extendedDrugs = results.data; statusEl.innerText = `✅ Success! Loaded ${extendedDrugs.length} rows.`;
-                            activeSourceList = extendedDrugs; activeSourceList.forEach(d => d.system = getSystemForDrug(d));
-                            updateSetButton(); applyFilter(); 
-                        } else { statusEl.innerText = "❌ CSV empty."; }
-                    }});
-            }).catch(e => { statusEl.innerText = "❌ Failed. Check link."; });
-        }
-        function toggleSettings() {
-            const panel = document.getElementById('settings-panel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-        function updateProviderDisplay() {
-            const display = document.getElementById('provider-display');
-            const orDiv = document.getElementById('openrouter-config');
-            const dsDiv = document.getElementById('deepseek-config');
-            const ghDiv = document.getElementById('github-config');
-            const yinliDiv = document.getElementById('yinli-config');
-            
-            orDiv.style.display = 'none'; dsDiv.style.display = 'none'; ghDiv.style.display = 'none'; yinliDiv.style.display = 'none';
-            
-            if(currentProvider === 'openrouter') { display.innerText = "Provider: OpenRouter (Trinity Mini)"; orDiv.style.display = 'block'; } 
-            else if (currentProvider === 'github') { display.innerText = "Provider: GitHub Models (GPT-4o mini)"; ghDiv.style.display = 'block'; } 
-            else if (currentProvider === 'yinli') { display.innerText = "Provider: Yinli AI (" + (yinliModel || "Gemini Flash") + ")"; yinliDiv.style.display = 'block'; }
-            else { display.innerText = "Provider: DeepSeek Official"; dsDiv.style.display = 'block'; }
-        }
-        function toggleDrugSet() {
-            if (activeSourceList === commonDrugs || (Array.isArray(commonDrugs) && activeSourceList[0]?.name === commonDrugs[0]?.name)) activeSourceList = extendedDrugs; 
-            else if(typeof commonDrugs !== 'undefined') activeSourceList = [...commonDrugs];
-            activeSourceList.forEach(d => d.system = getSystemForDrug(d));
-            updateSetButton(); applyFilter();
-        }
-        function updateSetButton() {
-            const btn = document.getElementById('set-btn');
-            if(activeSourceList === extendedDrugs) { btn.innerText = "📚 Set: Online CSV"; btn.classList.add('set-extended'); btn.classList.remove('secondary'); } 
-            else { btn.innerText = "📚 Set: Common"; btn.classList.add('secondary'); btn.classList.remove('set-extended'); }
-        }
-        function toggleLanguage() {
-            const btn = document.getElementById('lang-btn');
-            btn.classList.remove('secondary', 'lang-canto', 'lang-lihkg');
-            if (aiLanguage === 'english') { aiLanguage = 'cantonese'; btn.innerText = "🌐 Lang: Canto+Eng"; btn.classList.add('lang-canto'); } 
-            else if (aiLanguage === 'cantonese') { aiLanguage = 'lihkg'; btn.innerText = "🌐 Lang: LIHKG Mode"; btn.classList.add('lang-lihkg'); } 
-            else { aiLanguage = 'english'; btn.innerText = "🌐 Lang: English"; btn.classList.add('secondary'); }
-        }
-        function toggleMute() {
-            isMuted = !isMuted;
-            const btn = document.getElementById('mute-btn');
-            if (isMuted) { stopAudio(); btn.innerText = "🔇 Audio: Off"; btn.classList.add('muted'); btn.classList.remove('secondary'); } 
-            else { btn.innerText = "🔊 Audio: On"; btn.classList.remove('muted'); btn.classList.add('secondary'); }
-        }
-        function renderCard() {
-            if(flashcardList.length === 0) return;
-            const drug = flashcardList[fcCurrentIndex];
-            fillCardData('fc', drug);
-            document.getElementById('counter').innerText = `${fcCurrentIndex + 1} / ${flashcardList.length}`;
-            resetAIUI('fc-ai-case', 'btn-case', 'btn-read-case');
-            
-            // UPDATED: Dynamically set href for Google Search Link
-            const link = document.getElementById('fc-google-link');
-            if(link) {
-                const query = encodeURIComponent(`${drug.name} all in hk traditional chinese`);
-                link.href = `https://www.google.com/search?q=${query}`;
-            }
-        }
-        function fillCardData(prefix, drug) {
-            document.getElementById(`${prefix}-name`).innerText = drug.name || "N/A";
-            document.getElementById(`${prefix}-class`).innerText = drug.class || "N/A";
-            document.getElementById(`${prefix}-system`).innerText = drug.system || "N/A";
-            document.getElementById(`${prefix}-indication`).innerText = drug.indication || "N/A";
-            document.getElementById(`${prefix}-SideEffects`).innerText = drug.SideEffects || "N/A";
-            document.getElementById(`${prefix}-nursing`).innerText = drug.nursing || "N/A";
-        }
-        function resetAIUI(boxId, btnId, readBtnId) {
-            document.getElementById(boxId).style.display = 'none'; document.getElementById(boxId).innerHTML = '';
-            document.getElementById(readBtnId).style.display = 'none';
-            const btn = document.getElementById(btnId); btn.disabled = false; btn.innerHTML = '🏥 AI: Generate Integrated Patient Case';
-        }
-        function flipCard(event) {
-            if (event && (event.target.tagName === 'BUTTON' || event.target.tagName === 'A' || event.target.closest('button') || event.target.closest('a'))) return;
-            const card = document.getElementById('flashcard'); card.classList.toggle('flipped'); stopAudio();
-        }
-        function nextCard() { if (fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; document.getElementById('flashcard').classList.remove('flipped'); renderCard(); } }
-        function prevCard() { if (fcCurrentIndex > 0) { fcCurrentIndex--; document.getElementById('flashcard').classList.remove('flipped'); renderCard(); } }
-        function speakBack(drug) { speakText(`System: ${drug.system || 'Unknown'}. Class: ${drug.class}. Indication: ${drug.indication}. Nursing: ${drug.nursing}`, 'en'); }
-        function readAIContent(id) {
-            const el = document.getElementById(id);
-            const lang = (aiLanguage === 'cantonese' || aiLanguage === 'lihkg') ? 'zh-HK' : 'en';
-            if(el) speakText(el.innerText, lang);
-        }
-
-        // --- NEW STREAMING AI FUNCTION ---
-        // Handles fetching from all providers (DeepSeek, Yinli, OpenRouter, GitHub) and streaming chunks
-        async function streamAIResponse(messages, onUpdate) {
-            let apiUrl, headers, body;
-            
-            // 1. SELECT PROVIDER CONFIG
-            if (currentProvider === 'deepseek') {
-                if(!deepSeekKey) throw new Error("DeepSeek Key Missing");
-                apiUrl = "https://api.deepseek.com/chat/completions";
-                headers = { "Authorization": `Bearer ${deepSeekKey}`, "Content-Type": "application/json" };
-                body = { model: "deepseek-chat", messages: messages, temperature: 0.7, stream: true };
-            } 
-            else if (currentProvider === 'github') {
-                if(!githubKey) throw new Error("GitHub Token Missing");
-                apiUrl = "https://models.github.ai/inference/chat/completions";
-                headers = { "Authorization": `Bearer ${githubKey}`, "Content-Type": "application/json", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
-                body = { model: "gpt-4o-mini", messages: messages, temperature: 0.7, stream: true };
-            } 
-            else if (currentProvider === 'yinli') {
-                if(!yinliKey) throw new Error("Yinli Key Missing");
-                apiUrl = yinliUrl || "https://yinli.one/v1/chat/completions";
-                headers = { "Authorization": `Bearer ${yinliKey}`, "Content-Type": "application/json" };
-                
-                // UPDATED: Use the variable yinliModel
-                body = { 
-                    model: yinliModel || "gemini-2.5-flash", 
-                    messages: messages, 
-                    temperature: 0.7, 
-                    stream: true 
-                };
-            } 
-            else { // OpenRouter
-                if(!openRouterKey) throw new Error("OpenRouter Key Missing");
-                apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-                headers = { "Authorization": `Bearer ${openRouterKey}`, "Content-Type": "application/json", "HTTP-Referer": window.location.href, "X-Title": "Drug Tutor AI" };
-                body = { model: "arcee-ai/trinity-mini:free", messages: messages, stream: true };
-            }
-
-            // 2. START FETCH REQUEST
-            const response = await fetch(apiUrl, {
-                method: "POST", headers: headers, body: JSON.stringify(body)
-            });
-
-            if (!response.ok) {
-                const err = await response.text();
-                throw new Error(`API Error: ${err}`);
-            }
-
-            // 3. PROCESS STREAM
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let fullText = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                // Decode chunk
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-                
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (trimmed === '' || trimmed === 'data: [DONE]') continue;
-                    
-                    if (trimmed.startsWith('data: ')) {
-                        try {
-                            const jsonStr = trimmed.substring(6);
-                            const json = JSON.parse(jsonStr);
-                            const content = json.choices[0]?.delta?.content || "";
-                            
-                            if (content) {
-                                fullText += content;
-                                // Call the callback function to update UI instantly
-                                onUpdate(fullText);
-                            }
-                        } catch (e) {
-                            // Ignore parsing errors for partial chunks
-                        }
-                    }
-                }
-            }
-            return fullText;
-        }
-
-        // --- NON-STREAMING HELPER (For JSON Search) ---
-        // Kept for triggerAISearch because it requires strict JSON validation before showing anything
-        async function getAIResponse(prompt) {
-            // Reusing the stream logic but waiting for full text is actually cleaner now, 
-            // but let's keep the existing logic structure for safety on the search feature.
-            const messages = [{ role: "user", content: prompt }];
-            return await streamAIResponse(messages, () => {}); // Just consume stream and return full
-        }
-
-        async function getIntegratedCaseStudy(drugObj, boxId, btnId, readBtnId) {
-            const btn = document.getElementById(btnId); 
-            const box = document.getElementById(boxId); 
-            const readBtn = document.getElementById(readBtnId);
-            
-            btn.innerHTML = '<span class="loading-spinner"></span> Simulating Patient...'; 
-            btn.disabled = true; 
-            box.style.display = 'block';
-            box.innerHTML = '<span style="color:#6b7280;">Generating case...</span>';
-
-            // UPDATED: Now calls function from prompts.js
-            const prompt = getCaseStudyPrompt(drugObj, aiLanguage);
-            const messages = [{ role: "user", content: prompt }];
-
-            try {
-                // Use Streaming Function with Callback
-                await streamAIResponse(messages, (partialText) => {
-                    box.innerHTML = marked.parse(partialText);
-                });
-                
-                btn.innerHTML = '✅ Case Loaded'; 
-                readBtn.style.display = 'block';
-            } catch (e) { 
-                box.innerHTML = `Error: ${e.message}.`; 
-                btn.innerText = "Error"; 
-                btn.disabled = false; 
-            }
-        }
-
-        async function triggerQuizExplain() {
-            const btn = document.getElementById('btn-quiz-explain'); 
-            const box = document.getElementById('ai-content'); 
-            const container = document.getElementById('ai-container'); 
-            const readBtn = document.getElementById('btn-read-explain');
-            
-            btn.innerHTML = '<span class="loading-spinner"></span> Thinking...'; 
-            btn.disabled = true; 
-            container.style.display = 'block'; 
-            box.innerHTML = '<span style="color:#6b7280;">Analyzing...</span>';
-
-            // UPDATED: Now calls function from prompts.js
-            const prompt = getQuizExplainPrompt(currentQuizData, aiLanguage);
-            const messages = [{ role: "user", content: prompt }];
-
-            try {
-                await streamAIResponse(messages, (partialText) => {
-                    box.innerHTML = marked.parse(partialText);
-                });
-                
-                btn.innerHTML = '✅ Explained'; 
-                readBtn.style.display = 'block';
-            } catch (e) { 
-                box.innerHTML = `Error: ${e.message}.`; 
-                btn.innerText = "Error"; 
-            }
-        }
-
-        async function triggerSearchExplain(drugName, outputId, btnElement) {
-            btnElement.disabled = true;
-            btnElement.innerHTML = '<span class="loading-spinner"></span> Preparing...';
-            
-            const outputBox = document.getElementById(outputId);
-            outputBox.style.display = 'block';
-            outputBox.style.borderLeftColor = '#0d9488'; // Enforce teal border
-            outputBox.style.backgroundColor = '#f0fdfa'; // Enforce teal bg
-            outputBox.innerHTML = '<span style="color:#6b7280;">Compiling clinical data...</span>';
-
-            // UPDATED: Calls the new Ward Cheatsheet prompt from prompts.js
-            const prompt = getWardCheatsheetPrompt(drugName, aiLanguage);
-            
-            const messages = [{ role: "user", content: prompt }];
-
-            try {
-                await streamAIResponse(messages, (partialText) => {
-                    outputBox.innerHTML = marked.parse(partialText);
-                });
-
-                if (!outputBox.querySelector('.btn-read-ai')) {
-                    const readBtn = document.createElement('button');
-                    readBtn.className = 'btn-read-ai'; 
-                    readBtn.style.display = 'block'; 
-                    readBtn.style.marginTop = '10px';
-                    readBtn.innerText = '🔊 Read Cheatsheet';
-                    readBtn.onclick = function() { speakText(outputBox.innerText, aiLanguage === 'lihkg' ? 'zh-HK' : 'en'); };
-                    outputBox.appendChild(readBtn);
-                }
-                
-                btnElement.innerHTML = '✅ Cheatsheet Ready'; 
-                btnElement.disabled = false;
-            } catch (e) { 
-                outputBox.innerHTML = `Error: ${e.message}`; 
-                btnElement.innerHTML = '❌ Error'; 
-                btnElement.disabled = false; 
-            }
-        }
-
-        // --- KEEP SEARCH AS IS (BLOCKING) ---
-        async function triggerAISearch(query) {
-            const outputBox = document.getElementById('ai-search-output');
-            const btn = document.querySelector('#search-results button'); 
-            if(btn) { btn.innerHTML = '<span class="loading-spinner"></span> Searching Global Database...'; btn.disabled = true; }
-            outputBox.style.display = 'block'; outputBox.innerHTML = 'Thinking... (Generating structured data)';
-            
-            // UPDATED: Calls the new Search prompt from prompts.js
-            const prompt = getAISearchPrompt(query);
-
-            try {
-                let content = await getAIResponse(prompt);
-                content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-                const drugData = JSON.parse(content);
-                outputBox.innerHTML = `
-                    <div style="background:white; padding:15px; border-radius:8px; border:1px solid #e5e7eb;">
-                        <h3 style="margin-top:0; color:var(--primary);">${drugData.name}</h3>
-                        <p><strong>Class:</strong> ${drugData.class}</p> <p><strong>System:</strong> ${drugData.system}</p>
-                        <p><strong>Indication:</strong> ${drugData.indication}</p> <p><strong>Side Effects:</strong> ${drugData.SideEffects}</p>
-                        <p><strong>Nursing:</strong> ${drugData.nursing}</p>
-                        <div style="display:flex; gap:10px; margin-top:15px;">
-                            <button class="btn-read-ai" style="display:flex; margin:0;" onclick="speakText('${drugData.name}. ${drugData.indication}', 'en')">🔊 Speak</button>
-                            <button id="btn-save-sheet" class="btn-read-ai" style="display:flex; margin:0; background:#10B981; color:white; border-color:#059669;" onclick='saveToGoogleSheet(${JSON.stringify(drugData)})'>💾 Save to Database</button>
-                        </div>
-                        <div id="save-status" style="margin-top:10px; font-size:0.8rem; font-weight:bold;"></div>
-                    </div>`;
-                if(btn) btn.innerHTML = '✅ Found & Formatted';
-                addToHistory(query); 
-            } catch (e) { console.error(e); outputBox.innerHTML = `<span style="color:red;">Error: Could not generate valid JSON. Try again. (${e.message})</span>`; if(btn) { btn.innerText = '❌ Error'; btn.disabled = false; } }
-        }
-        
-        function saveToGoogleSheet(drugData) {
-            const statusEl = document.getElementById('save-status');
-            const saveBtn = document.getElementById('btn-save-sheet');
-            if(!googleScriptURL || googleScriptURL.includes("INSERT_YOUR")) { alert("Please configure the 'googleScriptURL' variable!"); return; }
-            saveBtn.disabled = true; saveBtn.innerText = "⏳ Saving..."; statusEl.innerText = "Sending to cloud...";
-            fetch(googleScriptURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(drugData) })
-            .then(() => { statusEl.innerText = "✅ Saved!"; statusEl.style.color = "green"; saveBtn.innerText = "💾 Saved"; extendedDrugs.push(drugData); activeSourceList = extendedDrugs; activeSourceList.forEach(d => d.system = getSystemForDrug(d)); applyFilter(); })
-            .catch(err => { statusEl.innerText = "❌ Error saving."; statusEl.style.color = "red"; saveBtn.disabled = false; });
-        }
+        // --- SEARCH LOGIC ---
         function handleSearch() {
-            const input = document.getElementById('search-input');
-            const query = input.value.toLowerCase().trim();
+            const q = document.getElementById('search-input').value.toLowerCase();
             const container = document.getElementById('search-results');
             container.innerHTML = '';
-            if(query.length === 0) { container.innerHTML = '<div style="text-align:center; color:#9ca3af; margin-top:20px;">Type above to search...</div>'; return; }
-            const matches = activeSourceList.filter(d => {
-                return (d.name || '').toLowerCase().includes(query) || (d.class || '').toLowerCase().includes(query) || (d.system || '').toLowerCase().includes(query);
-            });
+            
+            if(q.length < 1) return;
+
+            const matches = activeList.filter(d => d.name.toLowerCase().includes(q));
+            
             if(matches.length === 0) {
-                 container.innerHTML = `
-                    <div style="text-align:center; color:#9ca3af; margin-top:20px; margin-bottom:15px;">No local drugs found for "${query}".</div>
-                    <button onclick="triggerAISearch('${query.replace(/'/g, "\\'")}')" class="ai-btn-small btn-sim" style="justify-content:center; width:100%;">✨ Ask AI to find "${input.value}"</button>
-                    <div id="ai-search-output" class="ai-output-box" style="margin-top:15px;"></div>
-                 `;
+                 container.innerHTML = `<div style="text-align:center; padding:20px;">
+                    <p>No matches.</p>
+                    <button class="btn-primary" onclick="triggerAISearch('${q}')">✨ Ask AI to Find</button>
+                    <div id="ai-search-output" class="ai-output-box"></div>
+                 </div>`;
                  return;
             }
-            matches.forEach((drug, index) => {
+
+            matches.forEach(d => {
+                const safeName = d.name.replace(/'/g, "\\'");
                 const div = document.createElement('div');
                 div.className = 'result-card';
-                const safeName = (drug.name || "").replace(/'/g, "\\'"); const safeInd = (drug.indication || "").replace(/'/g, "\\'");
-                const explainId = 'explain-' + index + '-' + Math.floor(Math.random() * 1000);
-                
-                // UPDATED: Dynamically generate Google URL for anchor tag
-                const googleQuery = encodeURIComponent(`${drug.name} all in hk traditional chinese`);
-                const googleUrl = `https://www.google.com/search?q=${googleQuery}`;
-                
                 div.innerHTML = `
-                    <div class="result-header"><span>${drug.name}</span><span class="result-sub">${drug.class}</span></div>
-                    <div class="result-detail">
-                        <strong>🫀 System:</strong> ${drug.system || "N/A"}<br>
-                        <strong>📌 Indication:</strong> ${drug.indication}<br>
-                        <div style="margin-top:8px; font-size:0.85rem; color:#4b5563;"><strong>👩‍⚕️ Nursing:</strong> ${drug.nursing}</div>
-                        
-                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
-                            <button class="btn-read-ai" style="display:inline-flex; margin:0; width:auto; padding:6px 12px;" onclick="event.stopPropagation(); speakText('${safeName}. ${safeInd}', 'en')">🔊 Read</button>
-                            <button class="btn-search-explain" style="background-color: #0d9488;" onclick="event.stopPropagation(); triggerSearchExplain('${safeName}', '${explainId}', this)">📋 Ward Cheatsheet</button>
-                            
-                            <a href="${googleUrl}" target="_blank" class="btn-search-google" onclick="event.stopPropagation();">🌐 Google</a>
-                        </div>
-                        
-                        <div id="${explainId}" class="ai-output-box" style="border-left-color: #0d9488; background-color: #f0fdfa;"></div>
-                    </div>`;
-                div.onclick = (e) => { 
-                    // Prevent card collapse if clicking on interactive elements
-                    if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
-                        div.classList.toggle('expanded'); 
-                    }
-                };
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${d.name}</strong>
+                        <span style="font-size:0.8rem; background:#eee; padding:2px 6px; border-radius:4px;">${d.class}</span>
+                    </div>
+                    <div style="font-size:0.9rem; color:#555; margin-top:5px;">${d.indication}</div>
+                    <div style="margin-top:10px; display:flex; gap:10px;">
+                        <button class="btn-primary" style="font-size:0.8rem; padding:6px 10px; background:#0d9488;" onclick="triggerSearchExplain('${safeName}', 'cs-${d.name}', this)">📋 Ward Cheatsheet</button>
+                        <button onclick="speakText('${safeName}', 'en')" style="background:#eee; padding:6px;">🔊</button>
+                    </div>
+                    <div id="cs-${d.name}" class="ai-output-box"></div>
+                `;
                 container.appendChild(div);
             });
         }
-        function resetQuizUI() {
-            document.getElementById('next-quiz-btn').style.display = 'none';
-            document.getElementById('ai-container').style.display = 'none';
-            document.getElementById('btn-read-explain').style.display = 'none';
-            document.getElementById('btn-quiz-explain').style.display = 'none';
-            document.getElementById('btn-quiz-explain').innerHTML = '🤖 Explain Why (AI Tutor)';
-            document.getElementById('btn-quiz-explain').disabled = false;
-        }
 
-        // CHANGED: Added logic to toggle filter visibility
-        function switchMode(mode) {
-            document.getElementById('flashcard-section').style.display = 'none'; 
-            document.getElementById('quiz-section').style.display = 'none'; 
-            document.getElementById('search-section').style.display = 'none';
-            document.getElementById('mode-flashcard').classList.remove('mode-active'); document.getElementById('mode-flashcard').classList.add('secondary');
-            document.getElementById('mode-quiz').classList.remove('mode-active'); document.getElementById('mode-quiz').classList.add('secondary');
-            document.getElementById('mode-search').classList.remove('mode-active'); document.getElementById('mode-search').classList.add('secondary');
-            
-            const sysFilter = document.getElementById('system-filter');
-            const mastFilter = document.getElementById('mastery-filter');
-            
-            if (mode === 'flashcard') { 
-                document.getElementById('flashcard-section').style.display = 'block'; 
-                document.getElementById('mode-flashcard').classList.add('mode-active'); document.getElementById('mode-flashcard').classList.remove('secondary'); 
-                sysFilter.style.display = 'inline-block'; 
-                mastFilter.style.display = 'inline-block'; 
-            } else if (mode === 'quiz') { 
-                document.getElementById('quiz-section').style.display = 'block'; 
-                document.getElementById('mode-quiz').classList.add('mode-active'); document.getElementById('mode-quiz').classList.remove('secondary'); 
-                if(quizCurrentIndex === 0) generateQuizQuestion(); 
-                sysFilter.style.display = 'inline-block'; 
-                mastFilter.style.display = 'none'; 
-            } else if (mode === 'search') {
-                document.getElementById('search-section').style.display = 'block';
-                document.getElementById('mode-search').classList.add('mode-active'); document.getElementById('mode-search').classList.remove('secondary'); 
-                document.getElementById('search-input').focus();
-                sysFilter.style.display = 'none'; 
-                mastFilter.style.display = 'none'; 
+        // --- QUIZ LOGIC ---
+        function nextQuestion() {
+            const qEl = document.getElementById('quiz-question');
+            const optEl = document.getElementById('quiz-options');
+            const fbEl = document.getElementById('quiz-feedback');
+            const nextBtn = document.getElementById('quiz-next-btn');
+
+            fbEl.style.display = 'none';
+            nextBtn.classList.add('hidden');
+            optEl.innerHTML = '';
+
+            const correct = activeList[Math.floor(Math.random() * activeList.length)];
+            qEl.innerText = `Which drug is indicated for: ${correct.indication}?`;
+
+            // Generate distractors
+            let options = [correct];
+            while(options.length < 3) {
+                let d = activeList[Math.floor(Math.random() * activeList.length)];
+                if(!options.includes(d)) options.push(d);
             }
-            stopAudio();
+            options.sort(() => Math.random() - 0.5);
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.style.padding = "15px";
+                btn.style.textAlign = "left";
+                btn.style.background = "#f9fafb";
+                btn.style.border = "1px solid #e5e7eb";
+                btn.innerText = opt.name;
+                btn.onclick = () => {
+                    if(opt === correct) {
+                        btn.style.background = "#dcfce7";
+                        fbEl.style.display = 'block';
+                        fbEl.innerHTML = "✅ Correct! " + correct.nursing;
+                        speakText("Correct", 'en');
+                    } else {
+                        btn.style.background = "#fee2e2";
+                        fbEl.style.display = 'block';
+                        fbEl.innerHTML = "❌ Wrong. Answer: " + correct.name;
+                    }
+                    nextBtn.classList.remove('hidden');
+                };
+                optEl.appendChild(btn);
+            });
         }
 
-        init();
+        // --- UTILS ---
+        function toggleAutoAudio() {
+            autoAudio = document.getElementById('setting-auto-audio').checked;
+        }
+
+        function setSource(src) {
+            if(src === 'common') activeList = [...commonDrugs];
+            else alert("Add CSV logic here (from prompts.js integration)");
+            reshuffle();
+            toggleSettings();
+        }
+
+        function populateSystems() {
+            const sel = document.getElementById('system-select');
+            const systems = [...new Set(activeList.map(d => d.system || "Other"))];
+            systems.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s; opt.innerText = s;
+                sel.appendChild(opt);
+            });
+        }
+
+        function applyMobileFilter() {
+            const sys = document.getElementById('system-select').value;
+            if(sys === "All") activeList = [...commonDrugs];
+            else activeList = commonDrugs.filter(d => d.system === sys);
+            reshuffle();
+        }
+        
+        function renderHistory() {
+            const div = document.getElementById('history-chips');
+            div.innerHTML = '';
+            searchHistory.forEach(h => {
+                const sp = document.createElement('span');
+                sp.innerText = h;
+                sp.style.cssText = "background:#f3f4f6; padding:4px 8px; border-radius:15px; font-size:0.8rem; color:#666;";
+                div.appendChild(sp);
+            });
+        }
+
+        // --- PROMPTS.JS CONNECTIONS ---
+        // These rely on prompts.js being loaded
+        async function triggerSearchExplain(drugName, boxId, btn) {
+            btn.disabled = true; btn.innerText = "⏳ ...";
+            const box = document.getElementById(boxId);
+            box.style.display = 'block';
+            box.innerText = "Generating...";
+            
+            // Using prompt from prompts.js
+            const prompt = getWardCheatsheetPrompt(drugName, aiLanguage);
+            
+            // Mocking the stream function if not fully integrated
+            try {
+                if(typeof streamAIResponse !== 'undefined') {
+                    await streamAIResponse([{role:"user", content: prompt}], (text) => {
+                        box.innerHTML = marked.parse(text);
+                    });
+                } else {
+                    box.innerText = "Error: AI function not linked. Ensure prompts.js and AI logic are present.";
+                }
+                btn.innerText = "✅ Done";
+            } catch(e) {
+                box.innerText = "Error";
+                btn.disabled = false;
+            }
+        }
+        
+        // --- SPEECH ---
+        function speakText(txt, lang) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(txt);
+            u.lang = lang === 'en' ? 'en-US' : 'zh-HK';
+            window.speechSynthesis.speak(u);
+        }
+
+        function speakBack(d) {
+            speakText(`${d.name}. ${d.indication}.`, 'en');
+        }
+
     </script>
 </body>
 </html>
