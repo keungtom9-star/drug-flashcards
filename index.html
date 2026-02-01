@@ -11,9 +11,12 @@
 
     <title>AI Drug Tutor</title>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
     <script>
+        // Dynamic Icon Generation (unchanged logic, just optimized)
         (function() {
-            // 1. Define the Vector Icon (Blue Rounded Square + White/Blue Pill)
             const svgSource = `
             <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
                 <rect width="512" height="512" rx="110" fill="#007AFF"/>
@@ -22,52 +25,23 @@
                     <path d="M264.7 247.2L158.8 353.1c-20 20-52.4 20-72.4 0-20-20-20-52.4 0-72.4L192.3 174.8" fill="#80CFFF"/>
                 </g>
             </svg>`;
-
-            // 2. Helper to set link tags
+            
             function setLink(rel, href) {
                 let link = document.querySelector(`link[rel="${rel}"]`) || document.createElement('link');
-                link.rel = rel;
-                link.href = href;
-                document.head.appendChild(link);
+                link.rel = rel; link.href = href; document.head.appendChild(link);
             }
 
-            // 3. Rasterize SVG to PNG via Canvas
             const img = new Image();
             img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource);
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                canvas.width = 512;
-                canvas.height = 512;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                // Get the high-res PNG Data URI
+                canvas.width = 512; canvas.height = 512;
+                canvas.getContext('2d').drawImage(img, 0, 0);
                 const pngUrl = canvas.toDataURL('image/png');
-
-                // A. Update iOS & Browser Icons
                 setLink('apple-touch-icon', pngUrl);
                 setLink('icon', pngUrl);
-
-                // B. Generate Dynamic Manifest for Android
-                const manifest = {
-                    "name": "Drug Tutor",
-                    "short_name": "Drug Tutor",
-                    "start_url": ".",
-                    "display": "standalone",
-                    "background_color": "#F2F2F7",
-                    "theme_color": "#F2F2F7",
-                    "icons": [{
-                        "src": pngUrl,
-                        "sizes": "512x512",
-                        "type": "image/png"
-                    }]
-                };
                 
-                const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-                const manifestUrl = URL.createObjectURL(manifestBlob);
-                setLink('manifest', manifestUrl);
-                
-                // C. Update the visual Header Icon
+                // Set the header icon
                 const headerIcon = document.getElementById('header-icon-display');
                 if(headerIcon) headerIcon.src = pngUrl;
             };
@@ -76,314 +50,274 @@
 
     <style>
         :root {
+            /* Light Mode Defaults */
             --primary: #007AFF;
             --secondary: #34C759;
             --danger: #FF3B30;
             --surface: #ffffff;
+            --surface-secondary: #F2F2F7;
             --background: #F2F2F7;
             --text-main: #000000;
             --text-secondary: #8E8E93;
-            --radius: 16px;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            --border: rgba(0,0,0,0.1);
+            --input-bg: #E3E3E8;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --radius: 18px;
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dark Mode Overrides */
+                --surface: #1C1C1E;
+                --surface-secondary: #2C2C2E;
+                --background: #000000;
+                --text-main: #FFFFFF;
+                --text-secondary: #98989D;
+                --border: rgba(255,255,255,0.15);
+                --input-bg: #1C1C1E;
+                --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--background);
             color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            padding-bottom: var(--safe-bottom);
+            margin: 0; padding: 0;
+            padding-bottom: calc(var(--safe-bottom) + 20px);
             -webkit-font-smoothing: antialiased;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- STICKY HEADER --- */
+        /* --- HEADER --- */
         .app-header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(242, 242, 247, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: calc(var(--safe-top) + 10px) 16px 10px 16px;
-            border-bottom: 0.5px solid rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(var(--background), 0.8); /* Fallback */
+            background: var(--surface-secondary);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            padding: calc(var(--safe-top) + 6px) 16px 12px 16px;
+            border-bottom: 0.5px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.3s;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .app-header { background: rgba(28, 28, 30, 0.75); }
         }
 
         h1 {
-            margin: 0;
-            font-size: 1.4rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: -0.5px;
+            margin: 0; font-size: 1.3rem; font-weight: 700;
+            display: flex; align-items: center; gap: 10px;
         }
 
         .app-icon-img {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            background: #007AFF; /* Placeholder color before load */
+            width: 28px; height: 28px; border-radius: 7px;
+            background: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .icon-btn {
             background: rgba(118, 118, 128, 0.12);
-            border: none;
-            width: 36px;
-            height: 36px;
+            border: none; width: 32px; height: 32px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1.1rem;
+            transition: transform 0.1s;
         }
-        .icon-btn:active { background: rgba(118, 118, 128, 0.24); transform: scale(0.95); }
+        .icon-btn:active { transform: scale(0.9); background: rgba(118, 118, 128, 0.24); }
 
-        /* --- SEARCH AREA --- */
+        /* --- SEARCH --- */
         .search-container {
             padding: 10px 16px;
             background: transparent;
         }
-
-        .search-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
+        .search-wrapper { position: relative; width: 100%; }
         .search-bar {
-            width: 100%;
-            padding: 12px 12px 12px 40px;
-            border-radius: 12px;
-            border: none;
-            background: #E3E3E8;
-            font-size: 17px;
-            color: var(--text-main);
-            box-sizing: border-box;
-            outline: none;
-            transition: background 0.2s;
+            width: 100%; padding: 12px 12px 12px 42px;
+            border-radius: 12px; border: none;
+            background: var(--input-bg);
+            font-size: 17px; color: var(--text-main);
+            outline: none; transition: all 0.2s;
         }
-        .search-bar:focus { background: #d1d1d6; }
-        
+        .search-bar:focus { background: var(--surface); box-shadow: 0 0 0 2px var(--primary); }
         .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
+            position: absolute; left: 14px; top: 50%;
             transform: translateY(-50%);
-            color: var(--text-secondary);
-            font-size: 18px;
+            color: var(--text-secondary); font-size: 18px;
             pointer-events: none;
         }
 
         /* --- CHIPS --- */
         .chip-scroll-row {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 5px 16px 15px 16px;
-            -webkit-overflow-scrolling: touch;
+            display: flex; gap: 8px; overflow-x: auto;
+            padding: 8px 16px 16px 16px;
             scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
         .chip-scroll-row::-webkit-scrollbar { display: none; }
 
         .filter-chip {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-            flex-shrink: 0;
-            cursor: pointer;
-            border: none;
-            background: var(--surface);
-            color: var(--text-main);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: all 0.2s;
+            padding: 8px 16px; border-radius: 20px;
+            font-size: 13px; font-weight: 600;
+            white-space: nowrap; flex-shrink: 0;
+            cursor: pointer; border: 1px solid transparent;
+            background: var(--surface); color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
         }
         .filter-chip.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+            background: var(--primary); color: white;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            border-color: transparent;
         }
-        .filter-chip:active { transform: scale(0.96); }
+        .filter-chip:active { transform: scale(0.95); }
 
-        .section-label {
-            padding: 0 16px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-top: 10px;
-            margin-bottom: 8px;
+        /* --- SKELETON LOADING --- */
+        .skeleton-loader {
+            padding: 0 16px; display: flex; flex-direction: column; gap: 15px; margin-top: 10px;
         }
+        .sk-card {
+            height: 80px; width: 100%; background: var(--surface);
+            border-radius: var(--radius);
+            position: relative; overflow: hidden;
+        }
+        .sk-shimmer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
         /* --- RESULTS --- */
         .results-grid {
             padding: 0 16px 40px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            display: flex; flex-direction: column; gap: 14px;
         }
 
         .result-card {
             background: var(--surface);
-            padding: 16px;
+            padding: 18px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            position: relative;
-            transition: transform 0.2s;
-            overflow: hidden;
+            position: relative; overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 1px solid var(--border);
         }
-        .result-card:active { transform: scale(0.99); }
+        .result-card:active { transform: scale(0.98); }
 
         .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
         }
         
-        .drug-name { font-size: 18px; font-weight: 700; color: var(--text-main); }
-        .drug-class { font-size: 14px; color: var(--text-secondary); }
+        .drug-name { font-size: 19px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+        .drug-class { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+        .chevron { 
+            color: var(--text-secondary); opacity: 0.5; font-size: 24px; font-weight: 300; 
+            transition: transform 0.3s;
+        }
+        .result-card.expanded .chevron { transform: rotate(90deg); color: var(--primary); opacity: 1; }
 
         .result-detail {
-            display: none;
-            margin-top: 16px;
-            border-top: 0.5px solid rgba(0,0,0,0.1);
+            display: none; margin-top: 20px;
+            border-top: 0.5px solid var(--border);
             padding-top: 16px;
         }
-        .result-card.expanded .result-detail { display: block; animation: slideDown 0.3s ease-out; }
+        .result-card.expanded .result-detail { display: block; animation: slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .detail-row { margin-bottom: 12px; }
-        .d-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
+        .detail-row { margin-bottom: 16px; }
+        .d-label { display: block; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
         .d-content { font-size: 16px; color: var(--text-main); line-height: 1.5; }
 
-        /* --- TOOLS & BUTTONS --- */
-        .tool-row { display: flex; gap: 10px; overflow-x: auto; padding: 4px 0; margin-top: 16px; }
+        /* --- TOOLS --- */
+        .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; margin-top: 20px; }
         .btn-tool {
-            font-size: 13px;
-            padding: 8px 14px;
-            border-radius: 18px;
-            border: none;
-            font-weight: 600;
-            flex-shrink: 0;
-            cursor: pointer;
+            font-size: 13px; padding: 8px 16px; border-radius: 20px;
+            border: none; font-weight: 600; flex-shrink: 0;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
-        .tool-isbar { background: #FFD60A; color: #000; }
-        .tool-cheat { background: #5AC8FA; color: #fff; }
-        .tool-mix { background: #AF52DE; color: #fff; }
+        .tool-isbar { background: rgba(255, 214, 10, 0.15); color: #FFD60A; }
+        .tool-cheat { background: rgba(90, 200, 250, 0.15); color: #5AC8FA; }
+        .tool-mix { background: rgba(175, 82, 222, 0.15); color: #AF52DE; }
+        .tool-google { background: var(--input-bg); color: var(--text-main); text-decoration: none; }
+
+        /* Dark Mode adjustments for tool colors to pop */
+        @media (prefers-color-scheme: light) {
+            .tool-isbar { background: #FFF6D6; color: #9A7D00; }
+            .tool-cheat { background: #DFF6FF; color: #0070A3; }
+            .tool-mix { background: #F6E5FF; color: #8200AD; }
+        }
 
         .btn-action {
-            width: 100%;
-            background: #F2F2F7;
-            color: var(--primary);
-            font-weight: 600;
-            padding: 12px;
-            border-radius: 12px;
-            border: none;
-            font-size: 15px;
-            margin-top: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
+            width: 100%; background: var(--surface-secondary);
+            color: var(--primary); font-weight: 600;
+            padding: 14px; border-radius: 14px;
+            border: none; font-size: 16px; margin-top: 12px;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+            transition: background 0.2s;
         }
-        .btn-action:active { background: #E5E5EA; }
+        .btn-action:active { background: var(--border); opacity: 0.8; }
 
-        /* --- SETTINGS --- */
+        /* --- SETTINGS SHEET --- */
         #settings-overlay {
-            display: none;
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-            align-items: flex-end;
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 1000;
+            backdrop-filter: blur(4px); align-items: flex-end;
         }
-        
         .settings-sheet {
-            background: var(--surface);
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            border-radius: 20px 20px 0 0;
-            padding: 20px;
-            box-sizing: border-box;
+            background: var(--surface); width: 100%; max-width: 600px;
+            margin: 0 auto; border-radius: 24px 24px 0 0;
+            padding: 24px; box-sizing: border-box;
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            max-height: 85vh;
-            overflow-y: auto;
+            max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
         }
-        
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
         .settings-group {
-            background: var(--background);
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 20px;
+            background: var(--surface-secondary); border-radius: 12px;
+            padding: 0; margin-bottom: 24px; overflow: hidden;
         }
-        
         .settings-row {
-            padding: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 0.5px solid rgba(0,0,0,0.1);
+            padding: 16px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 0.5px solid var(--border);
+            background: var(--surface-secondary);
         }
         .settings-row:last-child { border-bottom: none; }
         
         .settings-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #C7C7CC;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background: #fff;
+            width: 100%; padding: 14px; border: 1px solid var(--border);
+            border-radius: 10px; font-size: 16px;
+            background: var(--surface); color: var(--text-main);
             margin-top: 8px;
         }
 
+        .ai-output-box {
+            margin-top: 16px; padding: 16px; border-radius: 12px;
+            font-size: 15px; background: var(--surface-secondary);
+            color: var(--text-main); display: none; line-height: 1.6;
+        }
+        .ai-output-box p { margin: 8px 0; }
+        .ai-output-box strong { color: var(--primary); }
+
         .spinner {
-            width: 16px; height: 16px;
-            border: 2px solid rgba(0,0,0,0.1);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            display: inline-block;
-            animation: spin 0.8s linear infinite;
+            width: 18px; height: 18px; border: 2px solid rgba(128,128,128,0.3);
+            border-top-color: var(--primary); border-radius: 50%;
+            display: inline-block; animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .ai-output-box {
-            margin-top: 16px;
-            padding: 16px;
-            border-radius: 12px;
-            font-size: 15px;
-            background: #F2F2F7;
-            color: var(--text-main);
-            display: none;
-            line-height: 1.6;
-        }
-        
-        .saved-badge {
-            background: var(--secondary);
-            color: white;
-            font-size: 10px;
-            padding: 4px 8px;
-            border-radius: 10px;
-            font-weight: 700;
-            display: inline-block;
-            margin-bottom: 8px;
+        .section-label {
+            padding: 0 16px; font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); text-transform: uppercase;
+            margin-top: 16px; margin-bottom: 8px; letter-spacing: 0.5px;
         }
     </style>
 </head>
@@ -391,7 +325,7 @@
 
 <div class="app-header">
     <h1>
-        <img id="header-icon-display" src="" alt="App Icon" class="app-icon-img">
+        <img id="header-icon-display" src="" alt="" class="app-icon-img">
         Drug Tutor
     </h1>
     <button onclick="toggleSettings()" class="icon-btn">⚙️</button>
@@ -404,59 +338,72 @@
     </div>
 </div>
 
-<div id="system-chips" class="chip-scroll-row"></div>
+<div id="system-chips" class="chip-scroll-row">
+    </div>
 
 <div id="history-container" style="display:none;">
-    <div class="section-label">🕒 Recent</div>
+    <div class="section-label">Recent Searches</div>
     <div id="history-list" class="chip-scroll-row" style="padding-top:0;"></div>
 </div>
 
+<div id="loading-skeleton" class="skeleton-loader">
+    <div class="sk-card"><div class="sk-shimmer"></div></div>
+    <div class="sk-card"><div class="sk-shimmer"></div></div>
+    <div class="sk-card"><div class="sk-shimmer"></div></div>
+</div>
+
 <div id="search-results" class="results-grid">
-    <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
-        <div style="font-size:3rem; opacity:0.3; margin-bottom:10px;">🩺</div>
+    <div style="text-align:center; color:var(--text-secondary); margin-top:60px; display:none;" id="empty-state-msg">
+        <div style="font-size:4rem; opacity:0.2; margin-bottom:10px;">🩺</div>
         <div>Start typing to search database...</div>
     </div>
 </div>
 
 <div id="settings-overlay" onclick="if(event.target===this) toggleSettings()">
     <div class="settings-sheet">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="margin:0; font-size:20px;">Settings</h2>
-            <button onclick="toggleSettings()" style="background:#E5E5EA; border:none; padding:8px 16px; border-radius:16px; font-weight:600;">Done</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <h2 style="margin:0; font-size:22px;">Settings</h2>
+            <button onclick="toggleSettings()" style="background:var(--input-bg); color:var(--text-main); border:none; padding:8px 16px; border-radius:20px; font-weight:600;">Done</button>
         </div>
 
         <div class="settings-group">
             <div class="settings-row">
-                <span>📚 Data Set</span>
-                <span style="color:var(--text-secondary)">Common</span>
+                <span>📚 Data Source</span>
+                <span style="color:var(--text-secondary)">Google Sheets</span>
             </div>
-            <div class="settings-row" onclick="toggleLanguage()">
-                <span>🌐 AI Language</span>
+            <div class="settings-row" onclick="toggleLanguage()" style="cursor:pointer;">
+                <span>🌐 AI Persona</span>
                 <span id="lang-display" style="color:var(--primary); font-weight:600;">LIHKG Mode</span>
             </div>
         </div>
         
-        <h3 style="font-size:14px; color:var(--text-secondary); margin-left:12px; margin-bottom:8px; text-transform:uppercase;">Voice</h3>
-        <select id="voice-select" onchange="saveSettings()" style="width:100%; padding:12px; border-radius:12px; border:1px solid #C7C7CC; background:#fff; margin-bottom:10px; font-size:16px;">
-            <option value="">Auto-Detect Best</option>
-        </select>
-        <button onclick="testVoice()" class="btn-action">🔊 Test Voice</button>
+        <h3 class="section-label">Voice Settings</h3>
+        <div class="settings-group">
+            <div class="settings-row" style="display:block; padding:10px;">
+                <select id="voice-select" onchange="saveSettings()" style="width:100%; padding:10px; border:none; background:transparent; font-size:16px; color:var(--text-main);">
+                    <option value="">Auto-Detect Best</option>
+                </select>
+            </div>
+            <div class="settings-row" onclick="testVoice()" style="cursor:pointer; justify-content:center; color:var(--primary); font-weight:600;">
+                🔊 Test Audio
+            </div>
+        </div>
 
-        <h3 style="font-size:14px; color:var(--text-secondary); margin-left:12px; margin-bottom:8px; margin-top:20px; text-transform:uppercase;">AI Configuration</h3>
-        <select id="provider-select" onchange="updateSettingsUI()" style="width:100%; padding:12px; border-radius:12px; border:1px solid #C7C7CC; background:#fff; margin-bottom:10px; font-size:16px;">
-            <option value="deepseek">DeepSeek (Official)</option>
-            <option value="yinli">Yinli (Gemini/Any)</option>
-            <option value="github">GitHub Models</option>
-        </select>
+        <h3 class="section-label">AI Configuration</h3>
+        <div class="settings-group" style="padding:10px;">
+            <select id="provider-select" onchange="updateSettingsUI()" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:16px;">
+                <option value="deepseek">DeepSeek (Official)</option>
+                <option value="yinli">Yinli (Gemini/Any)</option>
+                <option value="github">GitHub Models</option>
+            </select>
+            <div id="settings-dynamic-fields"></div>
+        </div>
         
-        <div id="settings-dynamic-fields"></div>
-        
-        <button onclick="fetchSheetData()" class="btn-action" style="margin-top:20px; color:var(--text-main);">🔄 Reload Database</button>
+        <button onclick="fetchSheetData()" class="btn-action" style="margin-top:20px; background:var(--input-bg); color:var(--text-main);">
+            🔄 Reload Database
+        </button>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
 <script>
     // --- CONFIGURATION ---
@@ -482,13 +429,13 @@
     const systems = [
         {id: "Gastro", name: "🍔 GI System", full: "Gastro-intestinal system"},
         {id: "Cardio", name: "🫀 Cardio", full: "Cardiovascular system"},
-        {id: "Resp", name: "🫁 Respiratory", full: "Respiratory system"},
-        {id: "CNS", name: "🧠 CNS / Neuro", full: "Central nervous system"},
-        {id: "Infection", name: "🦠 Infections", full: "Infections"},
-        {id: "Endo", name: "🦋 Endocrine", full: "Endocrine system"},
+        {id: "Resp", name: "🫁 Resp", full: "Respiratory system"},
+        {id: "CNS", name: "🧠 Neuro", full: "Central nervous system"},
+        {id: "Infection", name: "🦠 Infect", full: "Infections"},
+        {id: "Endo", name: "🦋 Endo", full: "Endocrine system"},
         {id: "ObGyn", name: "🤰 ObGyn", full: "Obstetrics"},
-        {id: "Onco", name: "🎗️ Oncology", full: "Malignant disease"},
-        {id: "MSK", name: "🦴 MSK / Bone", full: "Musculoskeletal"}
+        {id: "Onco", name: "🎗️ Onco", full: "Malignant disease"},
+        {id: "MSK", name: "🦴 MSK", full: "Musculoskeletal"}
     ];
 
     function init() {
@@ -506,8 +453,8 @@
             loadVoices();
         }
 
-        fetchSheetData(true); 
         renderSystemChips();
+        fetchSheetData(true); 
         renderHistory();
     }
     
@@ -575,16 +522,17 @@
     function handleSearch() {
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
+        const emptyState = document.getElementById('empty-state-msg');
+        
         container.innerHTML = '';
+        container.appendChild(emptyState); // Always keep empty state in DOM
         
         if(!q) {
-             container.innerHTML = `
-                <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
-                    <div style="font-size:3rem; opacity:0.3; margin-bottom:10px;">🩺</div>
-                    <div>Start typing to search database...</div>
-                </div>`;
+            emptyState.style.display = 'block';
             return;
         }
+        
+        emptyState.style.display = 'none';
 
         if(q.length > 3 && !searchHistory.includes(q)) {
             searchHistory.unshift(q);
@@ -606,14 +554,16 @@
         if (matches.length > 0) {
             matches.forEach((d, idx) => renderResult(d, idx, container));
         } else {
-            container.innerHTML = `
-                <div style="text-align:center; padding:20px;">
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div style="text-align:center; padding:30px;">
                     <div style="color:var(--text-secondary); margin-bottom:15px;">Drug not found locally.</div>
-                    <button id="btn-ai-search" class="btn-action" style="background:var(--primary); color:white; width:auto; margin:0 auto; padding-left:20px; padding-right:20px;" onclick="triggerAISearchAndGenerate('${q}')">
-                        ✨ Search with AI
+                    <button id="btn-ai-search" class="btn-action" style="background:var(--primary); color:white; width:auto; margin:0 auto; padding-left:24px; padding-right:24px;" onclick="triggerAISearchAndGenerate('${q}')">
+                        ✨ Ask AI Pharmacist
                     </button>
                 </div>
             `;
+            container.appendChild(div);
         }
     }
 
@@ -623,16 +573,16 @@
         if(isNew) div.style.border = "2px solid var(--secondary)";
         
         const aiId = `ai-res-${Math.random().toString(36).substr(2, 9)}`;
-        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' all in hk traditional chinese')}`;
+        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' nursing considerations')}`;
         
         div.innerHTML = `
-            ${isNew ? '<div class="saved-badge">✅ Saved to Database</div>' : ''}
+            ${isNew ? '<div style="background:var(--secondary); color:white; font-size:10px; padding:4px 8px; border-radius:10px; display:inline-block; margin-bottom:8px; font-weight:700;">✅ Saved</div>' : ''}
             <div class="result-header">
                 <div>
                     <div class="drug-name">${d.name}</div>
                     <div class="drug-class">${d.class}</div>
                 </div>
-                <div style="color:var(--primary); font-size:20px;">›</div>
+                <div class="chevron">›</div>
             </div>
             <div class="result-detail">
                 <div class="detail-row"><span class="d-label">System</span><span class="d-content">${d.system || "N/A"}</span></div>
@@ -644,10 +594,12 @@
                     <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button>
                     <button class="btn-tool tool-cheat" onclick="event.stopPropagation(); triggerAIContext(null, 'cheat', '${aiId}', this, '${d.name}')">📋 Cheat</button>
                     <button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(null, 'mix', '${aiId}', this, '${d.name}')">🧪 Recon</button>
-                    <a href="${googleLink}" target="_blank" class="btn-tool" style="background:#E5E5EA; color:#000; text-decoration:none; display:flex; align-items:center;" onclick="event.stopPropagation();">G</a>
+                    <a href="${googleLink}" target="_blank" class="btn-tool tool-google" onclick="event.stopPropagation();">G</a>
                 </div>
                 
-                <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-action">🔊 Read Aloud</button>
+                <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-action">
+                    🔊 Read Aloud
+                </button>
 
                 <div id="${aiId}" class="ai-output-box"></div>
             </div>
@@ -661,7 +613,7 @@
     // --- AI FUNCTIONS ---
     async function triggerAISearchAndGenerate(query) {
         const btn = document.getElementById('btn-ai-search');
-        btn.innerHTML = '<span class="spinner"></span> Consulting Pharmacist...';
+        btn.innerHTML = '<span class="spinner"></span> Consulting...';
         btn.disabled = true;
 
         const prompt = `You are a strict pharmacology database.
@@ -684,18 +636,18 @@
 
             const container = document.getElementById('search-results');
             container.innerHTML = `
-                <div style="background:#fff; border:2px solid var(--primary); padding:20px; border-radius:16px;">
-                    <div style="font-weight:700; color:var(--primary); margin-bottom:10px;">✨ AI Preview</div>
-                    <div style="font-size:1.4rem; font-weight:800; margin-bottom:4px;">${drugData.name}</div>
-                    <div style="color:var(--text-secondary); margin-bottom:16px;">${drugData.class}</div>
+                <div style="background:var(--surface); border:2px solid var(--primary); padding:24px; border-radius:16px;">
+                    <div style="font-weight:700; color:var(--primary); margin-bottom:10px; text-transform:uppercase; font-size:12px;">✨ AI Generated Preview</div>
+                    <div style="font-size:1.6rem; font-weight:800; margin-bottom:4px; color:var(--text-main);">${drugData.name}</div>
+                    <div style="color:var(--text-secondary); margin-bottom:20px;">${drugData.class}</div>
                     
-                    <div style="font-size:0.95rem; line-height:1.5;">
+                    <div style="font-size:1rem; line-height:1.6; color:var(--text-main);">
                         <p><strong>System:</strong> ${drugData.system}</p>
                         <p><strong>Indication:</strong> ${drugData.indication}</p>
                         <p><strong>Side Effects:</strong> ${drugData.SideEffects}</p>
                         <p><strong>Nursing:</strong> ${drugData.nursing}</p>
                     </div>
-                    <button class="btn-action" style="background:var(--secondary); color:white;" onclick="confirmSaveDrug()">
+                    <button class="btn-action" style="background:var(--primary); color:white;" onclick="confirmSaveDrug()">
                         💾 Save to Database
                     </button>
                 </div>
@@ -710,7 +662,7 @@
         if(!pendingDrugSave) return;
         drugs.push(pendingDrugSave);
         
-        const btn = document.querySelector('.btn-action'); // The Save button
+        const btn = document.querySelector('.btn-action');
         btn.innerHTML = "⏳ Uploading...";
         btn.disabled = true;
 
@@ -732,9 +684,12 @@
     async function triggerAIContext(obj, type, outputId, btn, drugNameOverride) {
         const out = document.getElementById(outputId);
         const name = drugNameOverride || obj.name;
-        const originalText = btn.innerText;
-        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
-        out.style.display = 'block'; out.innerHTML = '<span style="color:#8E8E93;">AI is thinking...</span>';
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true; 
+        btn.innerHTML = '<span class="spinner"></span>';
+        out.style.display = 'block'; 
+        out.innerHTML = '<span style="color:var(--text-secondary);">AI is thinking...</span>';
         
         let prompt = "";
         const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style, casual)." : "Use professional English.";
@@ -746,7 +701,7 @@
             await streamAI(prompt, (chunk) => { out.innerHTML = marked.parse(chunk); });
             btn.innerHTML = "✅";
         } catch (e) { out.innerHTML = `Error: ${e.message}`; btn.innerHTML = "❌"; } 
-        finally { btn.disabled = false; setTimeout(() => btn.innerText = originalText, 3000); }
+        finally { btn.disabled = false; setTimeout(() => btn.innerHTML = originalText, 3000); }
     }
 
     async function streamAI(prompt, onChunk) {
@@ -800,15 +755,31 @@
 
     // --- UTILS ---
     function fetchSheetData(silent = false) {
+        const loading = document.getElementById('loading-skeleton');
+        const results = document.getElementById('search-results');
+        const emptyState = document.getElementById('empty-state-msg');
+        
+        if(!silent) {
+            results.style.display = 'none';
+            loading.style.display = 'flex';
+        }
+
         fetch(DB_URL).then(r=>r.text()).then(csv=>{
             Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
                 if(res.data.length){ 
                     drugs=res.data; 
+                    // Hide skeleton, show empty state
+                    loading.style.display = 'none';
+                    results.style.display = 'flex';
+                    emptyState.style.display = 'block';
                     if(!silent) alert(`✅ Loaded ${drugs.length} drugs`);
                     renderSystemChips();
                 }
             }});
-        }).catch(e => { if(!silent) alert("Connection Failed"); });
+        }).catch(e => { 
+            if(!silent) alert("Connection Failed"); 
+            loading.style.display = 'none';
+        });
     }
 
     function renderSystemChips() {
@@ -823,11 +794,18 @@
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const container = document.getElementById('search-results');
+        const emptyState = document.getElementById('empty-state-msg');
+        
         container.innerHTML = '';
+        container.appendChild(emptyState);
+        emptyState.style.display = 'none';
+        
         document.getElementById('search-input').value = '';
         const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
         matches.sort((a,b) => (a.name||"").localeCompare(b.name||""));
         matches.forEach((d, idx) => renderResult(d, idx, container));
+        
+        if(matches.length === 0) emptyState.style.display = 'block';
     }
 
     function renderHistory() {
@@ -837,7 +815,7 @@
         box.style.display = 'block';
         c.innerHTML = '';
         searchHistory.forEach(term => {
-            c.innerHTML += `<button class="filter-chip" style="background:#E5E5EA; color:#000;" onclick="clickHistory('${term}')">${term}</button>`;
+            c.innerHTML += `<button class="filter-chip" style="background:var(--input-bg); color:var(--text-main);" onclick="clickHistory('${term}')">${term}</button>`;
         });
     }
     
@@ -869,14 +847,14 @@
 
         if (prov === 'yinli') {
             container.innerHTML = `
-                <div style="font-size:12px; font-weight:600; color:#8E8E93; margin-top:10px;">Yinli API Key</div>
+                <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">Yinli API Key</div>
                 <input type="password" id="yinli-key" class="settings-input" value="${keys.yinli}" placeholder="sk-...">
-                <div style="font-size:12px; font-weight:600; color:#8E8E93; margin-top:10px;">Model ID</div>
+                <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">Model ID</div>
                 <input type="text" id="yinli-model" class="settings-input" value="${yinliModel}" placeholder="gemini-2.5-flash">
             `;
         } else if (prov === 'deepseek') {
             container.innerHTML = `
-                <div style="font-size:12px; font-weight:600; color:#8E8E93; margin-top:10px;">DeepSeek API Key</div>
+                <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">DeepSeek API Key</div>
                 <input type="password" id="deepseek-key" class="settings-input" value="${keys.deepseek}" placeholder="sk-...">
             `;
         }
