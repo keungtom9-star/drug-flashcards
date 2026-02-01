@@ -345,7 +345,7 @@
     // --- UTILS ---
     let pendingDrugSave = null;
 
-    // --- 📋 SYSTEM FILTER LIST (Full) ---
+    // --- 📋 SYSTEM FILTER LIST ---
     const systems = [
         {id: "GI", name: "🍽️ Gastro", full: "Gastro-intestinal system"},
         {id: "CVS", name: "🫀 Cardio", full: "Cardiovascular system"},
@@ -380,29 +380,56 @@
         renderHistory();
     }
     
-    // --- 🔊 STABLE AUDIO ENGINE (System Native) ---
+    // --- 🔊 SMART AUDIO ENGINE ---
     function speakText(text, lang = "en") {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang === 'zh-HK' ? 'zh-HK' : 'en-US';
-        u.rate = 0.9; 
         
-        // Try to find "Enhanced" or premium voices
+        // 1. Set Language
+        const targetLang = lang === 'zh-HK' ? 'zh-HK' : 'en-US';
+        u.lang = targetLang;
+        u.rate = 0.95; // Slightly slower for medical clarity
+        
+        // 2. 🧠 SMART VOICE SELECTION (The "Force Best" Logic)
         const voices = window.speechSynthesis.getVoices();
-        const bestVoice = voices.find(v => v.lang === u.lang && (v.name.includes('Enhanced') || v.name.includes('Siri'))) || voices.find(v => v.lang === u.lang);
+        const available = voices.filter(v => v.lang.includes(targetLang.replace('-', '_')) || v.lang.includes(targetLang));
+        
+        // Priority Search for High Quality
+        let bestVoice = null;
+
+        // Try to find "Premium" (Best on iOS)
+        bestVoice = available.find(v => v.name.includes('Premium'));
+        
+        // If no Premium, try "Enhanced" (Very good on iOS)
+        if (!bestVoice) bestVoice = available.find(v => v.name.includes('Enhanced'));
+        
+        // If on Android, try "Google" (Best on Android)
+        if (!bestVoice) bestVoice = available.find(v => v.name.includes('Google'));
+        
+        // Fallback to whatever is available
+        if (!bestVoice) bestVoice = available[0];
+
         if (bestVoice) u.voice = bestVoice;
 
+        // 3. Speak
         window.speechSynthesis.speak(u);
 
-        // Visual Feedback
+        // 4. Visual Feedback
         const buttons = document.querySelectorAll('.btn-action');
         let btn = null;
         buttons.forEach(b => { if(b.innerHTML.includes('Read Aloud')) btn = b; });
         if(btn) {
             const originalText = "🔊 Read Aloud";
             btn.innerHTML = "🗣️ Speaking...";
+            // Show which voice is being used (Good for debugging)
+            console.log(`Using voice: ${bestVoice ? bestVoice.name : 'Default'}`); 
             setTimeout(() => { btn.innerHTML = originalText; }, text.length * 80); 
         }
+    }
+
+    // Force load voices immediately
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
     
     function speakDetails(d) {
@@ -414,9 +441,6 @@
         }
         speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
     }
-
-    // Ensure voices are loaded
-    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 
     // --- SEARCH LOGIC ---
     function handleSearch() {
