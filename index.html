@@ -1,14 +1,3 @@
-Here is the **complete, finalized code**.
-
-### 🌟 Key Features Added:
-
-1. **🎓 "Explain to Student" Button:** I added a green `Explain` button next to the other tools. When clicked, the AI will use a simple analogy (e.g., "Think of this drug like a traffic cop") to explain the mechanism of action.
-2. **🔊 Enhanced Audio Engine:** It now defaults to the high-quality **Google Translate TTS** ("The Hack"). If that fails (e.g., poor internet), it automatically switches to the robotic System Voice so the user is never left in silence.
-3. **🛡️ Safety First:** Included the red "Hold Parameters" and the IV Push Timer you requested earlier.
-
-You can save this as `index.html` and it is ready to go.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -362,16 +351,24 @@ You can save this as `index.html` and it is ready to go.
     // --- UTILS ---
     let pendingDrugSave = null;
 
+    // --- 📋 SYSTEM FILTER LIST ---
     const systems = [
-        {id: "Gastro", name: "🍔 GI System", full: "Gastro-intestinal system"},
-        {id: "Cardio", name: "🫀 Cardio", full: "Cardiovascular system"},
+        {id: "GI", name: "🍽️ Gastro", full: "Gastro-intestinal system"},
+        {id: "CVS", name: "🫀 Cardio", full: "Cardiovascular system"},
         {id: "Resp", name: "🫁 Resp", full: "Respiratory system"},
-        {id: "CNS", name: "🧠 Neuro", full: "Central nervous system"},
-        {id: "Infection", name: "🦠 Infect", full: "Infections"},
+        {id: "CNS", name: "🧠 CNS", full: "Central nervous system"},
+        {id: "Inf", name: "🦠 Infect", full: "Infections"},
         {id: "Endo", name: "🦋 Endo", full: "Endocrine system"},
-        {id: "ObGyn", name: "🤰 ObGyn", full: "Obstetrics"},
-        {id: "Onco", name: "🎗️ Onco", full: "Malignant disease"},
-        {id: "MSK", name: "🦴 MSK", full: "Musculoskeletal"}
+        {id: "ObGyn", name: "🤰 ObGyn/GU", full: "Obstetrics, gynaecology, and urinary-tract disorders"},
+        {id: "Malig", name: "🎗️ Onco", full: "Malignant disease and immunosuppression"},
+        {id: "Nutri", name: "🩸 Blood/Nut", full: "Nutrition and blood"},
+        {id: "MSK", name: "🦴 MSK", full: "Musculoskeletal and joint disease"},
+        {id: "Eye", name: "👁️ Eye", full: "Eye"},
+        {id: "ENT", name: "👂 ENT", full: "Ear, nose, and oropharynx"},
+        {id: "Skin", name: "🧴 Skin", full: "Skin"},
+        {id: "Immuno", name: "💉 Vaccine", full: "Immunological products and vaccines"},
+        {id: "Anaes", name: "💤 Anaes", full: "Anaesthesia"},
+        
     ];
 
     function init() {
@@ -550,6 +547,7 @@ You can save this as `index.html` and it is ready to go.
                 <div class="tool-row">
                     <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button>
                     <button class="btn-tool tool-explain" onclick="event.stopPropagation(); triggerAIContext(null, 'explain', '${aiId}', this, '${d.name}')">🎓 Explain</button>
+                    <button class="btn-tool tool-cheat" onclick="event.stopPropagation(); triggerAIContext(null, 'cheat', '${aiId}', this, '${d.name}')">📋 Ward Sheet</button>
                     <button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(null, 'mix', '${aiId}', this, '${d.name}')">🧪 Recon</button>
                     <a href="${googleLink}" target="_blank" class="btn-tool tool-google" onclick="event.stopPropagation();">G</a>
                 </div>
@@ -618,6 +616,26 @@ You can save this as `index.html` and it is ready to go.
         if (type === 'isbar') prompt = `Write a nursing handover for ${name} using ISBAR format. Invent a realistic scenario. Concise. ${langInstruction}`;
         else if (type === 'mix') prompt = `Reconstitution and administration guide for ${name} (IV/IM). Diluent, Rate, Stability. ${langInstruction}`;
         else if (type === 'explain') prompt = `Explain the drug ${name} to a nursing student using a simple analogy. Focus on Mechanism of Action and ONE key danger. Keep it short and fun. ${langInstruction}`;
+        else if (type === 'cheat') {
+            if (aiLanguage === 'lihkg') {
+                prompt = `Create a "Ward Survival Cheatsheet" for ${name}. 
+                Format as a table/list with two columns: 
+                1. English Medical Term (e.g., "Hypokalemia")
+                2. Cantonese Explanation/Patient Phrase (e.g., "低鉀，記得食蕉").
+                Include:
+                - 🛑 Critical Checks (Before giving)
+                - 📉 Monitoring (Vitals/Labs)
+                - 🗣️ Patient Teaching (One key phrase)
+                Keep it concise for quick ward reference.`;
+            } else {
+                prompt = `Create a "Ward Survival Cheatsheet" for ${name}. Bullet points only.
+                Sections:
+                1. 🛑 STOP Checks (Hold if...)
+                2. 📉 Monitoring (What to watch)
+                3. ⚡️ Red Flags (Call doctor if...)
+                Keep it ultra-concise for a busy ward.`;
+            }
+        }
 
         try {
             await streamAI(prompt, (chunk) => { out.innerHTML = marked.parse(chunk); });
@@ -793,5 +811,3 @@ You can save this as `index.html` and it is ready to go.
 </script>
 </body>
 </html>
-
-```
