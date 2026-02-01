@@ -719,3 +719,130 @@
                     } catch (e) {}
                 }
             }
+        }
+    }
+    
+    async function getFullAIResponse(prompt) {
+        let url = "https://api.deepseek.com/chat/completions";
+        let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
+        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
+
+        if(provider === 'yinli') { 
+            url = yinliUrl; 
+            headers["Authorization"] = `Bearer ${keys.yinli}`; 
+            body.model = yinliModel; 
+        }
+        
+        const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+        const json = await response.json();
+        return json.choices[0].message.content;
+    }
+
+    // --- UTILS ---
+    function fetchSheetData(silent = false) {
+        fetch(DB_URL).then(r=>r.text()).then(csv=>{
+            Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
+                if(res.data.length){ 
+                    drugs=res.data; 
+                    if(!silent) alert(`✅ Loaded ${drugs.length} drugs`);
+                    renderSystemChips();
+                }
+            }});
+        }).catch(e => { if(!silent) alert("Connection Failed"); });
+    }
+
+    function renderSystemChips() {
+        const c = document.getElementById('system-chips');
+        c.innerHTML = `<button class="filter-chip active" onclick="filterBySystem('All', this)">All</button>`;
+        systems.forEach(s => {
+            c.innerHTML += `<button class="filter-chip" onclick="filterBySystem('${s.full}', this)">${s.name}</button>`;
+        });
+    }
+
+    function filterBySystem(sys, btn) {
+        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const container = document.getElementById('search-results');
+        container.innerHTML = '';
+        document.getElementById('search-input').value = '';
+        const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
+        matches.sort((a,b) => (a.name||"").localeCompare(b.name||""));
+        matches.forEach((d, idx) => renderResult(d, idx, container));
+    }
+
+    function renderHistory() {
+        const c = document.getElementById('history-list');
+        const box = document.getElementById('history-container');
+        if(searchHistory.length === 0) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        c.innerHTML = '';
+        searchHistory.forEach(term => {
+            c.innerHTML += `<button class="filter-chip" style="background:#E5E5EA; color:#000;" onclick="clickHistory('${term}')">${term}</button>`;
+        });
+    }
+    
+    function clickHistory(term) {
+        document.getElementById('search-input').value = term;
+        handleSearch();
+    }
+
+    function toggleSettings() {
+        const p = document.getElementById('settings-overlay');
+        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function toggleLanguage() {
+        const display = document.getElementById('lang-display');
+        if(aiLanguage === 'english') { 
+            aiLanguage = 'lihkg'; 
+            display.innerText = "LIHKG Mode"; 
+        } else { 
+            aiLanguage = 'english'; 
+            display.innerText = "English"; 
+        }
+    }
+
+    function updateSettingsUI() {
+        const prov = document.getElementById('provider-select').value;
+        const container = document.getElementById('settings-dynamic-fields');
+        container.innerHTML = '';
+
+        if (prov === 'yinli') {
+            container.innerHTML = `
+                <div style="font-size:12px; font-weight:600; color:#8E8E93; margin-top:10px;">Yinli API Key</div>
+                <input type="password" id="yinli-key" class="settings-input" value="${keys.yinli}" placeholder="sk-...">
+                <div style="font-size:12px; font-weight:600; color:#8E8E93; margin-top:10px;">Model ID</div>
+                <input type="text" id="yinli-model" class="settings-input" value="${yinliModel}" placeholder="gemini-2.5-flash">
+            `;
+        } else if (prov === 'deepseek') {
+            container.innerHTML = `
+                <div style="font-size:12px; font-weight:600; color:#8E8E93; margin-top:10px;">DeepSeek API Key</div>
+                <input type="password" id="deepseek-key" class="settings-input" value="${keys.deepseek}" placeholder="sk-...">
+            `;
+        }
+    }
+
+    function saveSettings() {
+        provider = document.getElementById('provider-select').value;
+        localStorage.setItem('active_provider', provider);
+        selectedVoiceURI = document.getElementById('voice-select').value;
+        localStorage.setItem('voice_uri', selectedVoiceURI);
+
+        if(document.getElementById('deepseek-key')) {
+             keys.deepseek = document.getElementById('deepseek-key').value;
+             localStorage.setItem('ds_key', keys.deepseek);
+        }
+        if(document.getElementById('yinli-key')) {
+             keys.yinli = document.getElementById('yinli-key').value;
+             localStorage.setItem('yl_key', keys.yinli);
+        }
+        if(document.getElementById('yinli-model')) {
+             yinliModel = document.getElementById('yinli-model').value;
+             localStorage.setItem('yl_model', yinliModel);
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
