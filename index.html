@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Drug Tutor">
     <title>AI Drug Tutor</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23007AFF%22/><text x=%2250%22 y=%2250%22 font-size=%2260%22 text-anchor=%22middle%22 dy=%22.35em%22>💊</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23007AFF%22/><text x=%2250%22 y=%2250%22 font-size=%2260%22 text-anchor=%22middle%22 dy=%22.35em%22>💊</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' rx='220' fill='%23007AFF'/%3E%3Cg transform='translate(130, 130) scale(0.75)'%3E%3Cpath d='M706.3 317.7c-58.5-58.5-153.3-58.5-211.8 0L266 546.2c-58.5 58.5-58.5 153.3 0 211.8 58.5 58.5 153.3 58.5 211.8 0L706.3 529.5c58.5-58.5 58.5-153.3 0-211.8z' fill='%23ffffff'/%3E%3Cpath d='M529.5 494.5L317.7 706.3c-40 40-104.8 40-144.8 0-40-40-40-104.8 0-144.8L384.7 349.7' fill='%2380CFFF'/%3E%3C/g%3E%3C/svg%3E">
     
+    <link rel="icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' rx='220' fill='%23007AFF'/%3E%3Cg transform='translate(130, 130) scale(0.75)'%3E%3Cpath d='M706.3 317.7c-58.5-58.5-153.3-58.5-211.8 0L266 546.2c-58.5 58.5-58.5 153.3 0 211.8 58.5 58.5 153.3 58.5 211.8 0L706.3 529.5c58.5-58.5 58.5-153.3 0-211.8z' fill='%23ffffff'/%3E%3Cpath d='M529.5 494.5L317.7 706.3c-40 40-104.8 40-144.8 0-40-40-40-104.8 0-144.8L384.7 349.7' fill='%2380CFFF'/%3E%3C/g%3E%3C/svg%3E">
+
     <style>
         :root {
             --primary: #007AFF;       /* iOS Blue */
@@ -41,7 +43,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(242, 242, 247, 0.85); /* Translucent background */
+            background: rgba(242, 242, 247, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             padding: calc(var(--safe-top) + 10px) 16px 10px 16px;
@@ -57,15 +59,15 @@
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             letter-spacing: -0.5px;
         }
 
-        /* The App Icon in Header */
+        /* HEADER ICON STYLE */
         .app-icon-img {
             width: 32px;
             height: 32px;
-            border-radius: 8px; /* Squircle approximation */
+            border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
@@ -97,10 +99,10 @@
 
         .search-bar {
             width: 100%;
-            padding: 12px 12px 12px 40px; /* Space for icon */
+            padding: 12px 12px 12px 40px;
             border-radius: 12px;
             border: none;
-            background: #E3E3E8; /* iOS System Gray 5 */
+            background: #E3E3E8;
             font-size: 17px;
             color: var(--text-main);
             box-sizing: border-box;
@@ -217,9 +219,9 @@
             flex-shrink: 0;
             cursor: pointer;
         }
-        .tool-isbar { background: #FFD60A; color: #000; } /* iOS Yellow */
-        .tool-cheat { background: #5AC8FA; color: #fff; } /* iOS Blue/Cyan */
-        .tool-mix { background: #AF52DE; color: #fff; }   /* iOS Purple */
+        .tool-isbar { background: #FFD60A; color: #000; }
+        .tool-cheat { background: #5AC8FA; color: #fff; }
+        .tool-mix { background: #AF52DE; color: #fff; }
 
         .btn-action {
             width: 100%;
@@ -238,14 +240,14 @@
         }
         .btn-action:active { background: #E5E5EA; }
 
-        /* --- SETTINGS PANEL --- */
+        /* --- SETTINGS --- */
         #settings-overlay {
             display: none;
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.4);
             z-index: 1000;
             backdrop-filter: blur(5px);
-            align-items: flex-end; /* Sheet style */
+            align-items: flex-end;
         }
         
         .settings-sheet {
@@ -290,7 +292,6 @@
             margin-top: 8px;
         }
 
-        /* Loading Spinner */
         .spinner {
             width: 16px; height: 16px;
             border: 2px solid rgba(0,0,0,0.1);
@@ -328,7 +329,7 @@
 
 <div class="app-header">
     <h1>
-        <img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23007AFF%22/><text x=%2250%22 y=%2250%22 font-size=%2260%22 text-anchor=%22middle%22 dy=%22.35em%22>💊</text></svg>" 
+        <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' rx='220' fill='%23007AFF'/%3E%3Cg transform='translate(130, 130) scale(0.75)'%3E%3Cpath d='M706.3 317.7c-58.5-58.5-153.3-58.5-211.8 0L266 546.2c-58.5 58.5-58.5 153.3 0 211.8 58.5 58.5 153.3 58.5 211.8 0L706.3 529.5c58.5-58.5 58.5-153.3 0-211.8z' fill='%23ffffff'/%3E%3Cpath d='M529.5 494.5L317.7 706.3c-40 40-104.8 40-144.8 0-40-40-40-104.8 0-144.8L384.7 349.7' fill='%2380CFFF'/%3E%3C/g%3E%3C/svg%3E" 
              alt="App Icon" 
              class="app-icon-img">
         Drug Tutor
@@ -343,8 +344,7 @@
     </div>
 </div>
 
-<div id="system-chips" class="chip-scroll-row">
-    </div>
+<div id="system-chips" class="chip-scroll-row"></div>
 
 <div id="history-container" style="display:none;">
     <div class="section-label">🕒 Recent</div>
