@@ -86,3 +86,26 @@ function getQuizExplainPrompt(quizData, language) {
     
     Language: ${langInstruction}.`;
 }
+
+// prompts.js
+function getWardCheatsheetPrompt(drugName, language) {
+    const langInstruction = (language === 'lihkg') ? "Traditional Chinese (Cantonese Style)" : "English";
+    return `Act as a senior pharmacist. Create a concise "Ward Cheatsheet" for ${drugName}.
+    Include:
+    1. 💊 **Admin**: Route, dilution, push rate.
+    2. ⚠️ **Critical**: Black box warnings.
+    3. 🩺 **Monitor**: Vitals/Labs.
+    Use Markdown. Keep it brief. Language: ${langInstruction}.`;
+}
+
+function getISBARPrompt(drug, language) {
+    const langInstruction = (language === 'lihkg') ? "Traditional Chinese (HK Nursing Style)" : "English";
+    return `Write an ISBAR handover to a doctor for a patient needing ${drug.name}.
+    Structure: Identity, Situation, Background, Assessment, Recommendation.
+    Language: ${langInstruction}.`;
+}
+
+function getCaseStudyPrompt(drug, language) {
+    const langInstruction = (language === 'lihkg') ? "Traditional Chinese" : "English";
+    return `Create a short nursing case study for ${drug.name}. Include Scenario, Order, Pre-check, and Outcome. Language: ${langInstruction}.`;
+}
