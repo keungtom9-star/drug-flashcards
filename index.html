@@ -63,7 +63,7 @@
         .mode-active { background-color: var(--primary); color: white; }
         .secondary { background-color: white; color: var(--text-main); border: 1px solid #d1d5db; }
 
-        /* SEARCH & FILTER SECTION */
+        /* SEARCH SECTION */
         #search-section { background: var(--surface); padding: 15px; border-radius: var(--radius); height: 100%; display: flex; flex-direction: column; width: 100%; max-width: 800px; box-sizing: border-box; }
         .search-bar { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e5e7eb; font-size: 16px; margin-bottom: 5px; box-sizing: border-box; }
         
@@ -93,7 +93,6 @@
         .result-card.expanded .result-detail { display: block; animation: fadeIn 0.2s; }
         
         .saved-badge { position: absolute; top: -8px; right: -5px; background: #10B981; color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; }
-        .preview-badge { position: absolute; top: -8px; right: -5px; background: #f59e0b; color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
         /* Tool Buttons */
         .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; width: 100%; margin-top: 10px; }
@@ -102,6 +101,7 @@
         .tool-cheat { background: #e0f2fe; color: #075985; }
         .tool-mix { background: #f3e8ff; color: #6b21a8; }
         
+        /* Compact Google Button */
         .tool-google { 
             background: white; color: #374151; border: 1px solid #d1d5db; 
             text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
@@ -248,7 +248,7 @@
     let provider = 'deepseek';
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "", github: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
-    let yinliModel = "gemini-2.5-flash"; // Default
+    let yinliModel = "gemini-2.5-flash"; 
 
     // --- TEMP DATA FOR SAVE ---
     let pendingDrugSave = null;
@@ -330,10 +330,8 @@
             jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
             const drugData = JSON.parse(jsonString);
 
-            // STORE TEMP
             pendingDrugSave = drugData;
 
-            // RENDER PREVIEW
             const container = document.getElementById('search-results');
             container.innerHTML = `
                 <div style="background:#fff7ed; border:2px solid #f97316; padding:15px; border-radius:10px; position:relative;">
@@ -361,11 +359,9 @@
     function confirmSaveDrug() {
         if(!pendingDrugSave) return;
         
-        // 1. Add to local
         drugs.push(pendingDrugSave);
         flashcardList = [...drugs];
         
-        // 2. Upload to Cloud
         const btn = document.querySelector('.btn-confirm-save');
         btn.innerHTML = "⏳ Uploading to Cloud...";
         btn.disabled = true;
@@ -377,7 +373,6 @@
             body: JSON.stringify(pendingDrugSave)
         });
 
-        // 3. Update UI to "Saved" state immediately (Optimistic)
         setTimeout(() => {
             const container = document.getElementById('search-results');
             container.innerHTML = '';
@@ -394,7 +389,7 @@
         if(provider === 'yinli') { 
             url = yinliUrl; 
             headers["Authorization"] = `Bearer ${keys.yinli}`; 
-            body.model = yinliModel; // Use Custom Model
+            body.model = yinliModel; 
         }
         
         const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
@@ -402,7 +397,7 @@
         return json.choices[0].message.content;
     }
 
-    // --- SEARCH LOGIC ---
+    // --- SEARCH LOGIC (SORTED) ---
     function handleSearch() {
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
@@ -419,6 +414,34 @@
 
         const matches = drugs.filter(d => (d.name+d.class+d.indication+d.system).toLowerCase().includes(q));
         
+        // --- UPDATED SORTING LOGIC ---
+        matches.sort((a, b) => {
+            const nameA = (a.name || "").toLowerCase();
+            const nameB = (b.name || "").toLowerCase();
+            const query = q;
+
+            // Priority 1: Name match status
+            const aNameMatch = nameA.includes(query);
+            const bNameMatch = nameB.includes(query);
+
+            if (aNameMatch && !bNameMatch) return -1;
+            if (!aNameMatch && bNameMatch) return 1;
+
+            if (aNameMatch && bNameMatch) {
+                // Priority 1a: Exact match
+                if (nameA === query && nameB !== query) return -1;
+                if (nameB === query && nameA !== query) return 1;
+                
+                // Priority 1b: Starts with
+                if (nameA.startsWith(query) && !nameB.startsWith(query)) return -1;
+                if (!nameA.startsWith(query) && nameB.startsWith(query)) return 1;
+            }
+
+            // Finally: Alphabetical
+            return nameA.localeCompare(nameB);
+        });
+        // -----------------------------
+
         if (matches.length > 0) {
             matches.forEach((d, idx) => renderResult(d, idx, container));
         } else {
@@ -439,7 +462,7 @@
         if(isNew) div.style.border = "2px solid #10B981";
         
         const aiId = `ai-res-${Math.random().toString(36).substr(2, 9)}`;
-        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + 'all in hk traditional chinese')}`;
+        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
         
         div.innerHTML = `
             ${isNew ? '<div class="saved-badge" style="display:block;">✅ Saved to Database</div>' : ''}
@@ -507,6 +530,8 @@
         container.innerHTML = '';
         document.getElementById('search-input').value = '';
         const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
+        // Sort System Filter Results too
+        matches.sort((a,b) => (a.name||"").localeCompare(b.name||""));
         matches.forEach((d, idx) => renderResult(d, idx, container));
     }
 
@@ -521,7 +546,7 @@
         document.getElementById('fc-name').innerText = d.name;
         document.getElementById('fc-details').innerHTML = `<p><strong>Class:</strong> ${d.class}</p><p><strong>Indication:</strong> ${d.indication}</p><p><strong>System:</strong> ${d.system}</p>`;
         document.getElementById('counter').innerText = `${fcCurrentIndex+1}/${flashcardList.length}`;
-        document.getElementById('fc-google').href = `https://www.google.com/search?q=${encodeURIComponent(d.name + 'all in hk traditional chinese')}`;
+        document.getElementById('fc-google').href = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
     }
     
     function flipCard(e) { if(!e.target.closest('button') && !e.target.closest('a')) document.getElementById('flashcard').classList.toggle('flipped'); }
@@ -557,7 +582,7 @@
         if(provider === 'yinli') { 
             url = yinliUrl; 
             headers["Authorization"] = `Bearer ${keys.yinli}`; 
-            body.model = yinliModel; // Use Custom Model
+            body.model = yinliModel; 
         }
 
         const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
