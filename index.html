@@ -15,112 +15,242 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
+        // Dynamic Icon Generation
         (function() {
-            const svgSource = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#007AFF"/><g transform="translate(64, 64) scale(0.75)"><path d="M353.1 158.8c-29.2-29.2-76.6-29.2-105.9 0L133 273.1c-29.2 29.2-29.2 76.6 0 105.9 29.2 29.2 76.6 29.2 105.9 0L353.1 264.7c29.2-29.2 29.2-76.6 0-105.9z" fill="#ffffff"/><path d="M264.7 247.2L158.8 353.1c-20 20-52.4 20-72.4 0-20-20-20-52.4 0-72.4L192.3 174.8" fill="#80CFFF"/></g></svg>`;
-            function setLink(rel, href) { let link = document.querySelector(`link[rel="${rel}"]`) || document.createElement('link'); link.rel = rel; link.href = href; document.head.appendChild(link); }
-            const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource);
+            const svgSource = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+                <rect width="512" height="512" rx="110" fill="#007AFF"/>
+                <g transform="translate(64, 64) scale(0.75)">
+                    <path d="M353.1 158.8c-29.2-29.2-76.6-29.2-105.9 0L133 273.1c-29.2 29.2-29.2 76.6 0 105.9 29.2 29.2 76.6 29.2 105.9 0L353.1 264.7c29.2-29.2 29.2-76.6 0-105.9z" fill="#ffffff"/>
+                    <path d="M264.7 247.2L158.8 353.1c-20 20-52.4 20-72.4 0-20-20-20-52.4 0-72.4L192.3 174.8" fill="#80CFFF"/>
+                </g>
+            </svg>`;
+            
+            function setLink(rel, href) {
+                let link = document.querySelector(`link[rel="${rel}"]`) || document.createElement('link');
+                link.rel = rel; link.href = href; document.head.appendChild(link);
+            }
+
+            const img = new Image();
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource);
             img.onload = function() {
-                const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
-                canvas.getContext('2d').drawImage(img, 0, 0); const pngUrl = canvas.toDataURL('image/png');
-                setLink('apple-touch-icon', pngUrl); setLink('icon', pngUrl);
-                const headerIcon = document.getElementById('header-icon-display'); if(headerIcon) headerIcon.src = pngUrl;
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 512;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                const pngUrl = canvas.toDataURL('image/png');
+                setLink('apple-touch-icon', pngUrl);
+                setLink('icon', pngUrl);
+                const headerIcon = document.getElementById('header-icon-display');
+                if(headerIcon) headerIcon.src = pngUrl;
             };
         })();
     </script>
 
     <style>
         :root {
-            --primary: #007AFF; --secondary: #34C759; --danger: #FF3B30;
-            --surface: #ffffff; --surface-secondary: #F2F2F7; --background: #F2F2F7;
-            --text-main: #000000; --text-secondary: #8E8E93; --border: rgba(0,0,0,0.1);
-            --input-bg: #E3E3E8; --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            --radius: 18px; --safe-top: env(safe-area-inset-top, 20px); --safe-bottom: env(safe-area-inset-bottom, 20px);
+            /* Light Mode Defaults */
+            --primary: #007AFF;
+            --secondary: #34C759;
+            --danger: #FF3B30;
+            --surface: #ffffff;
+            --surface-secondary: #F2F2F7;
+            --background: #F2F2F7;
+            --text-main: #000000;
+            --text-secondary: #8E8E93;
+            --border: rgba(0,0,0,0.1);
+            --input-bg: #E3E3E8;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --radius: 18px;
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
+
         @media (prefers-color-scheme: dark) {
             :root {
-                --surface: #1C1C1E; --surface-secondary: #2C2C2E; --background: #000000;
-                --text-main: #FFFFFF; --text-secondary: #98989D; --border: rgba(255,255,255,0.15);
-                --input-bg: #1C1C1E; --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                /* Dark Mode Overrides */
+                --surface: #1C1C1E;
+                --surface-secondary: #2C2C2E;
+                --background: #000000;
+                --text-main: #FFFFFF;
+                --text-secondary: #98989D;
+                --border: rgba(255,255,255,0.15);
+                --input-bg: #1C1C1E;
+                --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             }
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--background); color: var(--text-main); margin: 0; padding: 0; padding-bottom: calc(var(--safe-bottom) + 20px); -webkit-font-smoothing: antialiased; }
 
-        .app-header { position: sticky; top: 0; z-index: 100; background: var(--surface-secondary); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); padding: calc(var(--safe-top) + 6px) 16px 12px 16px; border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        @media (prefers-color-scheme: dark) { .app-header { background: rgba(28, 28, 30, 0.75); } }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0; padding: 0;
+            padding-bottom: calc(var(--safe-bottom) + 20px);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- HEADER --- */
+        .app-header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(var(--background), 0.8);
+            background: var(--surface-secondary);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            padding: calc(var(--safe-top) + 6px) 16px 12px 16px;
+            border-bottom: 0.5px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .app-header { background: rgba(28, 28, 30, 0.75); }
+        }
+
         h1 { margin: 0; font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+
         .app-icon-img { width: 28px; height: 28px; border-radius: 7px; background: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .icon-btn { background: rgba(118, 118, 128, 0.12); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: transform 0.1s; }
+
+        .icon-btn {
+            background: rgba(118, 118, 128, 0.12);
+            border: none; width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1.1rem; transition: transform 0.1s;
+        }
         .icon-btn:active { transform: scale(0.9); background: rgba(118, 118, 128, 0.24); }
 
+        /* --- SEARCH --- */
         .search-container { padding: 10px 16px; background: transparent; }
         .search-wrapper { position: relative; width: 100%; }
-        .search-bar { width: 100%; padding: 12px 12px 12px 42px; border-radius: 12px; border: none; background: var(--input-bg); font-size: 17px; color: var(--text-main); outline: none; transition: all 0.2s; }
+        .search-bar {
+            width: 100%; padding: 12px 12px 12px 42px; border-radius: 12px; border: none;
+            background: var(--input-bg); font-size: 17px; color: var(--text-main);
+            outline: none; transition: all 0.2s;
+        }
         .search-bar:focus { background: var(--surface); box-shadow: 0 0 0 2px var(--primary); }
         .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px; pointer-events: none; }
 
+        /* --- CHIPS --- */
         .chip-scroll-row { display: flex; gap: 8px; overflow-x: auto; padding: 8px 16px 16px 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .chip-scroll-row::-webkit-scrollbar { display: none; }
-        .filter-chip { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0; cursor: pointer; border: 1px solid transparent; background: var(--surface); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.2s ease; }
+
+        .filter-chip {
+            padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+            white-space: nowrap; flex-shrink: 0; cursor: pointer; border: 1px solid transparent;
+            background: var(--surface); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+        }
         .filter-chip.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); border-color: transparent; }
         .filter-chip:active { transform: scale(0.95); }
 
+        /* --- SKELETON LOADING --- */
         .skeleton-loader { padding: 0 16px; display: flex; flex-direction: column; gap: 15px; margin-top: 10px; }
         .sk-card { height: 80px; width: 100%; background: var(--surface); border-radius: var(--radius); position: relative; overflow: hidden; }
-        .sk-shimmer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 1.5s infinite; }
+        .sk-shimmer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 1.5s infinite;
+        }
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
+        /* --- RESULTS --- */
         .results-grid { padding: 0 16px 40px 16px; display: flex; flex-direction: column; gap: 14px; }
-        .result-card { background: var(--surface); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform 0.15s, box-shadow 0.15s; border: 1px solid var(--border); }
+
+        .result-card {
+            background: var(--surface); padding: 18px; border-radius: var(--radius);
+            box-shadow: var(--shadow); position: relative; overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.15s; border: 1px solid var(--border);
+        }
         .result-card:active { transform: scale(0.98); }
+
         .result-header { display: flex; justify-content: space-between; align-items: center; }
         .drug-name { font-size: 19px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
         .drug-class { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
         .chevron { color: var(--text-secondary); opacity: 0.5; font-size: 24px; font-weight: 300; transition: transform 0.3s; }
         .result-card.expanded .chevron { transform: rotate(90deg); color: var(--primary); opacity: 1; }
+
         .result-detail { display: none; margin-top: 20px; border-top: 0.5px solid var(--border); padding-top: 16px; }
         .result-card.expanded .result-detail { display: block; animation: slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
         .detail-row { margin-bottom: 16px; }
         .d-label { display: block; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
         .d-content { font-size: 16px; color: var(--text-main); line-height: 1.5; }
 
-        .alert-box { background: rgba(255, 59, 48, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-        .timer-btn { background: var(--primary); color: white; border: none; border-radius: 30px; padding: 8px 16px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; }
+        /* --- SAFETY & TOOLS --- */
+        .alert-box {
+            background: rgba(255, 59, 48, 0.1); border: 1px solid var(--danger); color: var(--danger);
+            padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+        }
+        
+        .timer-btn {
+            background: var(--primary); color: white; border: none; border-radius: 30px;
+            padding: 8px 16px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+            cursor: pointer; transition: all 0.2s;
+        }
         .timer-btn.running { background: #FF9500; animation: pulse 1s infinite; }
         @keyframes pulse { 0% {opacity: 1;} 50% {opacity: 0.7;} 100% {opacity: 1;} }
+
         .calc-panel { background: var(--input-bg); padding: 16px; border-radius: 12px; margin-top: 16px; display: none; }
         .calc-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .calc-input { flex: 1; padding: 10px; border-radius: 8px; border: none; background: var(--surface); text-align: center; font-size: 16px; color:var(--text-main); }
 
+        /* --- TOOLS & BUTTONS --- */
         .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; margin-top: 20px; }
-        .btn-tool { font-size: 13px; padding: 8px 16px; border-radius: 20px; border: none; font-weight: 600; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-tool {
+            font-size: 13px; padding: 8px 16px; border-radius: 20px; border: none; font-weight: 600;
+            flex-shrink: 0; cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
         .tool-isbar { background: rgba(255, 214, 10, 0.15); color: #FFD60A; }
         .tool-cheat { background: rgba(90, 200, 250, 0.15); color: #5AC8FA; }
         .tool-mix { background: rgba(175, 82, 222, 0.15); color: #AF52DE; }
         .tool-explain { background: rgba(52, 199, 89, 0.15); color: #34C759; } 
         .tool-google { background: var(--input-bg); color: var(--text-main); text-decoration: none; }
+
+        /* Dark Mode Tool Overrides */
         @media (prefers-color-scheme: light) {
             .tool-isbar { background: #FFF6D6; color: #9A7D00; }
             .tool-cheat { background: #DFF6FF; color: #0070A3; }
             .tool-mix { background: #F6E5FF; color: #8200AD; }
             .tool-explain { background: #E2F9E6; color: #007D2C; }
         }
-        .btn-action { width: 100%; background: var(--surface-secondary); color: var(--primary); font-weight: 600; padding: 14px; border-radius: 14px; border: none; font-size: 16px; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
+
+        .btn-action {
+            width: 100%; background: var(--surface-secondary); color: var(--primary); font-weight: 600;
+            padding: 14px; border-radius: 14px; border: none; font-size: 16px; margin-top: 12px;
+            display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s;
+        }
         .btn-action:active { background: var(--border); opacity: 0.8; }
 
-        #settings-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(4px); align-items: flex-end; }
-        .settings-sheet { background: var(--surface); width: 100%; max-width: 600px; margin: 0 auto; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 85vh; overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); }
+        /* --- SETTINGS SHEET --- */
+        #settings-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(4px); align-items: flex-end;
+        }
+        .settings-sheet {
+            background: var(--surface); width: 100%; max-width: 600px; margin: 0 auto;
+            border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+        }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
         .settings-group { background: var(--surface-secondary); border-radius: 12px; padding: 0; margin-bottom: 24px; overflow: hidden; }
         .settings-row { padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); background: var(--surface-secondary); }
         .settings-row:last-child { border-bottom: none; }
         .settings-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--surface); color: var(--text-main); margin-top: 8px; }
 
-        .ai-output-box { margin-top: 16px; padding: 16px; border-radius: 12px; font-size: 15px; background: var(--surface-secondary); color: var(--text-main); display: none; line-height: 1.6; }
+        .ai-output-box {
+            margin-top: 16px; padding: 16px; border-radius: 12px; font-size: 15px;
+            background: var(--surface-secondary); color: var(--text-main); display: none; line-height: 1.6;
+        }
         .ai-output-box p { margin: 8px 0; }
         .ai-output-box strong { color: var(--primary); }
-        .spinner { width: 18px; height: 18px; border: 2px solid rgba(128,128,128,0.3); border-top-color: var(--primary); border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite; }
+
+        .spinner {
+            width: 18px; height: 18px; border: 2px solid rgba(128,128,128,0.3);
+            border-top-color: var(--primary); border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
         .section-label { padding: 0 16px; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-top: 16px; margin-bottom: 8px; letter-spacing: 0.5px; }
     </style>
@@ -142,16 +272,20 @@
     </div>
 </div>
 
-<div id="system-chips" class="chip-scroll-row"></div>
+<div id="system-chips" class="chip-scroll-row">
+    </div>
+
 <div id="history-container" style="display:none;">
     <div class="section-label">Recent Searches</div>
     <div id="history-list" class="chip-scroll-row" style="padding-top:0;"></div>
 </div>
+
 <div id="loading-skeleton" class="skeleton-loader">
     <div class="sk-card"><div class="sk-shimmer"></div></div>
     <div class="sk-card"><div class="sk-shimmer"></div></div>
     <div class="sk-card"><div class="sk-shimmer"></div></div>
 </div>
+
 <div id="search-results" class="results-grid">
     <div style="text-align:center; color:var(--text-secondary); margin-top:60px; display:none;" id="empty-state-msg">
         <div style="font-size:4rem; opacity:0.2; margin-bottom:10px;">🩺</div>
@@ -179,16 +313,16 @@
         
         <h3 class="section-label">Voice Settings</h3>
         <div class="settings-group">
-            <div class="settings-row" style="display:block;">
-                <select id="voice-select" onchange="saveVoiceSettings()" style="width:100%; padding:12px; border:none; background:transparent; font-size:16px; color:var(--text-main);">
-                    <option value="">🤖 Smart Auto-Detect (Best)</option>
-                    </select>
+            <div class="settings-row" style="display:block; padding:10px;">
+                <select id="voice-select" onchange="saveVoiceSelection()" style="width:100%; padding:10px; border:none; background:transparent; font-size:16px; color:var(--text-main);">
+                    <option value="">🤖 Auto-Detect Best (Default)</option>
+                </select>
             </div>
-            <div class="settings-row" onclick="speakText('This is a test of the selected voice settings.')" style="cursor:pointer; justify-content:center; color:var(--primary); font-weight:600;">
+            <div class="settings-row" onclick="testVoice()" style="cursor:pointer; justify-content:center; color:var(--primary); font-weight:600;">
                 🔊 Test Audio
             </div>
         </div>
-
+        
         <h3 class="section-label">AI Configuration</h3>
         <div class="settings-group" style="padding:10px;">
             <select id="provider-select" onchange="updateSettingsUI()" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:16px;">
@@ -198,12 +332,14 @@
             <div id="settings-dynamic-fields"></div>
         </div>
         
-        <button onclick="fetchSheetData()" class="btn-action" style="margin-top:20px; background:var(--input-bg); color:var(--text-main);">🔄 Reload Database</button>
+        <button onclick="fetchSheetData()" class="btn-action" style="margin-top:20px; background:var(--input-bg); color:var(--text-main);">
+            🔄 Reload Database
+        </button>
     </div>
 </div>
 
 <script>
-    // --- CONFIG ---
+    // --- CONFIGURATION ---
     const DB_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
     const UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
 
@@ -211,15 +347,19 @@
     let drugs = [];
     let searchHistory = [];
     let aiLanguage = 'lihkg';
-    let preferredVoiceURI = '';
+    let availableVoices = [];
+    let selectedVoiceURI = '';
     
-    // --- KEYS ---
+    // --- KEYS (Default) ---
     let provider = 'deepseek';
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
     let yinliModel = "gemini-2.5-flash"; 
     
+    // --- UTILS ---
     let pendingDrugSave = null;
+
+    // --- 📋 SYSTEM FILTER LIST ---
     const systems = [
         {id: "GI", name: "🍽️ Gastro", full: "Gastro-intestinal system"},
         {id: "CVS", name: "🫀 Cardio", full: "Cardiovascular system"},
@@ -247,59 +387,78 @@
         if(localStorage.getItem('yl_key')) keys.yinli = localStorage.getItem('yl_key');
         if(localStorage.getItem('yl_model')) yinliModel = localStorage.getItem('yl_model');
         if(localStorage.getItem('search_hist')) searchHistory = JSON.parse(localStorage.getItem('search_hist'));
-        if(localStorage.getItem('preferred_voice')) preferredVoiceURI = localStorage.getItem('preferred_voice');
+        if(localStorage.getItem('voice_uri')) selectedVoiceURI = localStorage.getItem('voice_uri');
+
+        // Init Voice Loader
+        if (window.speechSynthesis) {
+             window.speechSynthesis.onvoiceschanged = loadVoices;
+             loadVoices();
+        }
 
         updateSettingsUI();
         renderSystemChips();
         fetchSheetData(true); 
         renderHistory();
-        
-        // Init Voice List
-        window.speechSynthesis.onvoiceschanged = populateVoiceList;
-        populateVoiceList();
     }
-    
-    // --- 🔊 SMART AUDIO ENGINE ---
-    function populateVoiceList() {
+
+    // --- 🗣️ VOICE SELECTION LOGIC ---
+    function loadVoices() {
+        availableVoices = window.speechSynthesis.getVoices();
         const select = document.getElementById('voice-select');
-        const voices = window.speechSynthesis.getVoices();
-        if(voices.length === 0) return;
+        select.innerHTML = '<option value="">🤖 Auto-Detect Best (Default)</option>';
         
-        select.innerHTML = '<option value="">🤖 Smart Auto-Detect (Best)</option>';
-        voices.sort((a, b) => a.name.localeCompare(b.name));
-        
-        voices.forEach(v => {
+        // Sort: Premium/Enhanced first
+        availableVoices.sort((a, b) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+            const isPremA = aName.includes('premium') || aName.includes('enhanced');
+            const isPremB = bName.includes('premium') || bName.includes('enhanced');
+            if (isPremA && !isPremB) return -1;
+            if (!isPremA && isPremB) return 1;
+            return aName.localeCompare(bName);
+        });
+
+        availableVoices.forEach(voice => {
             const opt = document.createElement('option');
-            opt.value = v.voiceURI;
-            opt.textContent = `${v.name} (${v.lang})`;
-            if(v.voiceURI === preferredVoiceURI) opt.selected = true;
+            opt.value = voice.voiceURI;
+            opt.innerText = `${voice.name} (${voice.lang})`;
+            if(voice.voiceURI === selectedVoiceURI) opt.selected = true;
             select.appendChild(opt);
         });
     }
 
-    function saveVoiceSettings() {
-        preferredVoiceURI = document.getElementById('voice-select').value;
-        localStorage.setItem('preferred_voice', preferredVoiceURI);
+    function saveVoiceSelection() {
+        selectedVoiceURI = document.getElementById('voice-select').value;
+        localStorage.setItem('voice_uri', selectedVoiceURI);
     }
-
+    
+    function testVoice() {
+        speakText("This is a test of the selected voice. Monitoring vitals.");
+    }
+    
+    // --- 🔊 SMART AUDIO ENGINE ---
     function speakText(text, lang = "en") {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
+        
+        // 1. Set Language
         const targetLang = lang === 'zh-HK' ? 'zh-HK' : 'en-US';
         u.lang = targetLang;
         u.rate = 0.95; 
         
-        const voices = window.speechSynthesis.getVoices();
-        
-        // 1. If user manually selected a voice, try to use it
+        // 2. 🧠 VOICE SELECTION
         let bestVoice = null;
-        if(preferredVoiceURI) {
-            bestVoice = voices.find(v => v.voiceURI === preferredVoiceURI);
+
+        // A) If User Manually Selected a Voice in Settings
+        if (selectedVoiceURI) {
+            bestVoice = window.speechSynthesis.getVoices().find(v => v.voiceURI === selectedVoiceURI);
         }
 
-        // 2. If no manual select, use Smart Logic
-        if(!bestVoice) {
+        // B) If No Manual Selection, Auto-Detect Best "Premium" Voice
+        if (!bestVoice) {
+            const voices = window.speechSynthesis.getVoices();
             const available = voices.filter(v => v.lang.includes(targetLang.replace('-', '_')) || v.lang.includes(targetLang));
+            
             bestVoice = available.find(v => v.name.includes('Premium'));
             if (!bestVoice) bestVoice = available.find(v => v.name.includes('Enhanced'));
             if (!bestVoice) bestVoice = available.find(v => v.name.includes('Google'));
@@ -307,15 +466,18 @@
         }
 
         if (bestVoice) u.voice = bestVoice;
+
+        // 3. Speak
         window.speechSynthesis.speak(u);
 
-        // Feedback
+        // 4. Visual Feedback
         const buttons = document.querySelectorAll('.btn-action');
         let btn = null;
         buttons.forEach(b => { if(b.innerHTML.includes('Read Aloud')) btn = b; });
         if(btn) {
             const originalText = "🔊 Read Aloud";
             btn.innerHTML = "🗣️ Speaking...";
+            console.log(`Using voice: ${bestVoice ? bestVoice.name : 'Default'}`); 
             setTimeout(() => { btn.innerHTML = originalText; }, text.length * 80); 
         }
     }
@@ -335,27 +497,45 @@
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
         const emptyState = document.getElementById('empty-state-msg');
-        container.innerHTML = ''; container.appendChild(emptyState); 
-        if(!q) { emptyState.style.display = 'block'; return; }
+        
+        container.innerHTML = '';
+        container.appendChild(emptyState); 
+        
+        if(!q) {
+            emptyState.style.display = 'block';
+            return;
+        }
+        
         emptyState.style.display = 'none';
 
         if(q.length > 3 && !searchHistory.includes(q)) {
-            searchHistory.unshift(q); if(searchHistory.length > 5) searchHistory.pop();
-            localStorage.setItem('search_hist', JSON.stringify(searchHistory)); renderHistory();
+            searchHistory.unshift(q);
+            if(searchHistory.length > 5) searchHistory.pop();
+            localStorage.setItem('search_hist', JSON.stringify(searchHistory));
+            renderHistory();
         }
 
         const matches = drugs.filter(d => (d.name+d.class+d.indication+d.system).toLowerCase().includes(q));
         matches.sort((a, b) => {
-            const nameA = (a.name || "").toLowerCase(); const nameB = (b.name || "").toLowerCase();
+            const nameA = (a.name || "").toLowerCase();
+            const nameB = (b.name || "").toLowerCase();
             if (nameA.startsWith(q) && !nameB.startsWith(q)) return -1;
             if (!nameA.startsWith(q) && nameB.startsWith(q)) return 1;
             return nameA.localeCompare(nameB);
         });
 
-        if (matches.length > 0) matches.forEach((d, idx) => renderResult(d, idx, container));
-        else {
+        if (matches.length > 0) {
+            matches.forEach((d, idx) => renderResult(d, idx, container));
+        } else {
             const div = document.createElement('div');
-            div.innerHTML = `<div style="text-align:center; padding:30px;"><div style="color:var(--text-secondary); margin-bottom:15px;">Drug not found locally.</div><button id="btn-ai-search" class="btn-action" style="background:var(--primary); color:white; width:auto; margin:0 auto; padding-left:24px; padding-right:24px;" onclick="triggerAISearchAndGenerate('${q}')">✨ Ask AI Pharmacist</button></div>`;
+            div.innerHTML = `
+                <div style="text-align:center; padding:30px;">
+                    <div style="color:var(--text-secondary); margin-bottom:15px;">Drug not found locally.</div>
+                    <button id="btn-ai-search" class="btn-action" style="background:var(--primary); color:white; width:auto; margin:0 auto; padding-left:24px; padding-right:24px;" onclick="triggerAISearchAndGenerate('${q}')">
+                        ✨ Ask AI Pharmacist
+                    </button>
+                </div>
+            `;
             container.appendChild(div);
         }
     }
@@ -364,88 +544,318 @@
         const div = document.createElement('div');
         div.className = 'result-card';
         if(isNew) div.style.border = "2px solid var(--secondary)";
+        
         const uniqueId = Math.random().toString(36).substr(2, 9);
         const aiId = `ai-${uniqueId}`;
         const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' nursing considerations')}`;
         
+        // Safety Features
         let holdHtml = '';
-        if (d.hold_param) holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`;
-
-        let adminTools = '';
-        if ((d.system && d.system.includes('Cardio')) || (d.admin_type && d.admin_type.includes('IV'))) {
-            adminTools = `<div style="display:flex; gap:10px; margin-bottom:16px; border-bottom:0.5px solid var(--border); padding-bottom:16px;"><button class="timer-btn" onclick="event.stopPropagation(); startPushTimer(this, 120)">⏱ 2 Min Push</button><button class="timer-btn" style="background:var(--text-secondary);" onclick="event.stopPropagation(); toggleCalc('calc-${uniqueId}')">🧮 Drip Calc</button></div><div id="calc-${uniqueId}" class="calc-panel"><div style="font-size:12px; font-weight:700; margin-bottom:8px; color:var(--text-secondary);">IV DRIP CALCULATOR</div><div class="calc-row"><input type="number" id="vol-${uniqueId}" class="calc-input" placeholder="Vol (ml)"><input type="number" id="time-${uniqueId}" class="calc-input" placeholder="Min"><input type="number" id="drop-${uniqueId}" class="calc-input" placeholder="Gtt (20)"></div><button class="btn-action" style="padding:8px;" onclick="event.stopPropagation(); calculateIV('${uniqueId}')">Calculate</button><div id="res-${uniqueId}" style="text-align:center; font-size:24px; font-weight:800; color:var(--primary); margin-top:10px;">--</div></div>`;
+        if (d.hold_param) {
+            holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`;
         }
 
-        div.innerHTML = `${isNew ? '<div style="background:var(--secondary); color:white; font-size:10px; padding:4px 8px; border-radius:10px; display:inline-block; margin-bottom:8px; font-weight:700;">✅ Saved</div>' : ''}<div class="result-header"><div><div class="drug-name">${d.name}</div><div class="drug-class">${d.class}</div></div><div class="chevron">›</div></div><div class="result-detail">${holdHtml}${adminTools}<div class="detail-row"><span class="d-label">System</span><span class="d-content">${d.system || "N/A"}</span></div><div class="detail-row"><span class="d-label">Indication</span><span class="d-content">${d.indication || "N/A"}</span></div><div class="detail-row"><span class="d-label">Side Effects</span><span class="d-content">${d.SideEffects || "N/A"}</span></div><div class="detail-row"><span class="d-label">Nursing</span><span class="d-content">${d.nursing || "N/A"}</span></div><div class="tool-row"><button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button><button class="btn-tool tool-explain" onclick="event.stopPropagation(); triggerAIContext(null, 'explain', '${aiId}', this, '${d.name}')">🎓 Explain</button><button class="btn-tool tool-cheat" onclick="event.stopPropagation(); triggerAIContext(null, 'cheat', '${aiId}', this, '${d.name}')">📋 Ward Sheet</button><button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(null, 'mix', '${aiId}', this, '${d.name}')">🧪 Recon</button><a href="${googleLink}" target="_blank" class="btn-tool tool-google" onclick="event.stopPropagation();">G</a></div><button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-action">🔊 Read Aloud</button><div id="${aiId}" class="ai-output-box"></div></div>`;
-        div.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('a') && !e.target.closest('input')) div.classList.toggle('expanded'); };
+        // Admin Tools
+        let adminTools = '';
+        if ((d.system && d.system.includes('Cardio')) || (d.admin_type && d.admin_type.includes('IV'))) {
+            adminTools = `
+                <div style="display:flex; gap:10px; margin-bottom:16px; border-bottom:0.5px solid var(--border); padding-bottom:16px;">
+                    <button class="timer-btn" onclick="event.stopPropagation(); startPushTimer(this, 120)">⏱ 2 Min Push</button>
+                    <button class="timer-btn" style="background:var(--text-secondary);" onclick="event.stopPropagation(); toggleCalc('calc-${uniqueId}')">🧮 Drip Calc</button>
+                </div>
+                <div id="calc-${uniqueId}" class="calc-panel">
+                    <div style="font-size:12px; font-weight:700; margin-bottom:8px; color:var(--text-secondary);">IV DRIP CALCULATOR</div>
+                    <div class="calc-row">
+                        <input type="number" id="vol-${uniqueId}" class="calc-input" placeholder="Vol (ml)">
+                        <input type="number" id="time-${uniqueId}" class="calc-input" placeholder="Min">
+                        <input type="number" id="drop-${uniqueId}" class="calc-input" placeholder="Gtt (20)">
+                    </div>
+                    <button class="btn-action" style="padding:8px;" onclick="event.stopPropagation(); calculateIV('${uniqueId}')">Calculate</button>
+                    <div id="res-${uniqueId}" style="text-align:center; font-size:24px; font-weight:800; color:var(--primary); margin-top:10px;">--</div>
+                </div>
+            `;
+        }
+
+        div.innerHTML = `
+            ${isNew ? '<div style="background:var(--secondary); color:white; font-size:10px; padding:4px 8px; border-radius:10px; display:inline-block; margin-bottom:8px; font-weight:700;">✅ Saved</div>' : ''}
+            <div class="result-header">
+                <div>
+                    <div class="drug-name">${d.name}</div>
+                    <div class="drug-class">${d.class}</div>
+                </div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="result-detail">
+                ${holdHtml}
+                ${adminTools}
+
+                <div class="detail-row"><span class="d-label">System</span><span class="d-content">${d.system || "N/A"}</span></div>
+                <div class="detail-row"><span class="d-label">Indication</span><span class="d-content">${d.indication || "N/A"}</span></div>
+                <div class="detail-row"><span class="d-label">Side Effects</span><span class="d-content">${d.SideEffects || "N/A"}</span></div>
+                <div class="detail-row"><span class="d-label">Nursing</span><span class="d-content">${d.nursing || "N/A"}</span></div>
+                
+                <div class="tool-row">
+                    <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button>
+                    <button class="btn-tool tool-explain" onclick="event.stopPropagation(); triggerAIContext(null, 'explain', '${aiId}', this, '${d.name}')">🎓 Explain</button>
+                    <button class="btn-tool tool-cheat" onclick="event.stopPropagation(); triggerAIContext(null, 'cheat', '${aiId}', this, '${d.name}')">📋 Ward Sheet</button>
+                    <button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(null, 'mix', '${aiId}', this, '${d.name}')">🧪 Recon</button>
+                    <a href="${googleLink}" target="_blank" class="btn-tool tool-google" onclick="event.stopPropagation();">G</a>
+                </div>
+                
+                <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-action">
+                    🔊 Read Aloud
+                </button>
+
+                <div id="${aiId}" class="ai-output-box"></div>
+            </div>
+        `;
+        div.onclick = (e) => { 
+            if(!e.target.closest('button') && !e.target.closest('a') && !e.target.closest('input')) div.classList.toggle('expanded'); 
+        };
         container.appendChild(div);
     }
 
     // --- TOOL LOGIC ---
-    function toggleCalc(id) { const p = document.getElementById(id); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
-    function calculateIV(id) { const vol = parseFloat(document.getElementById(`vol-${id}`).value)||0; const time = parseFloat(document.getElementById(`time-${id}`).value)||1; const drop = parseFloat(document.getElementById(`drop-${id}`).value)||20; document.getElementById(`res-${id}`).innerText = `${Math.round((vol*drop)/time)} gtt/min`; }
-    function startPushTimer(btn, dur) {
-        if(btn.classList.contains('running')) return; 
-        const originalText = btn.innerHTML; let left = dur; btn.classList.add('running'); btn.innerHTML = `⏳ ${left}s`;
-        const interval = setInterval(() => { left--; if(left<=0) { clearInterval(interval); btn.classList.remove('running'); btn.style.background = "#34C759"; btn.innerHTML = "✅ Done"; if(navigator.vibrate) navigator.vibrate([200,100,200]); setTimeout(() => { btn.style.background=""; btn.innerHTML=originalText; },3000); } else btn.innerHTML = `⏳ ${left}s`; }, 1000);
+    function toggleCalc(id) {
+        const p = document.getElementById(id);
+        p.style.display = p.style.display === 'block' ? 'none' : 'block';
     }
 
-    // --- AI ---
+    function calculateIV(id) {
+        const vol = parseFloat(document.getElementById(`vol-${id}`).value) || 0;
+        const time = parseFloat(document.getElementById(`time-${id}`).value) || 1;
+        const drop = parseFloat(document.getElementById(`drop-${id}`).value) || 20; 
+        const result = Math.round((vol * drop) / time);
+        document.getElementById(`res-${id}`).innerText = `${result} gtt/min`;
+    }
+
+    function startPushTimer(btn, durationSeconds) {
+        if(btn.classList.contains('running')) return; 
+        const originalText = btn.innerHTML;
+        let left = durationSeconds;
+        btn.classList.add('running');
+        btn.innerHTML = `⏳ ${left}s`;
+        
+        const interval = setInterval(() => {
+            left--;
+            if (left <= 0) {
+                clearInterval(interval);
+                btn.classList.remove('running');
+                btn.style.background = "#34C759"; 
+                btn.innerHTML = "✅ Done";
+                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                setTimeout(() => { btn.style.background = ""; btn.innerHTML = originalText; }, 3000);
+            } else {
+                btn.innerHTML = `⏳ ${left}s`;
+            }
+        }, 1000);
+    }
+
+    // --- AI FUNCTIONS ---
     async function triggerAIContext(obj, type, outputId, btn, drugNameOverride) {
-        const out = document.getElementById(outputId); const name = drugNameOverride || obj.name; const originalText = btn.innerHTML;
-        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; out.style.display = 'block'; out.innerHTML = '<span style="color:var(--text-secondary);">AI is thinking...</span>';
-        let prompt = ""; const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style, casual/slang)." : "Use plain English suitable for a student.";
+        const out = document.getElementById(outputId);
+        const name = drugNameOverride || obj.name;
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+        out.style.display = 'block'; out.innerHTML = '<span style="color:var(--text-secondary);">AI is thinking...</span>';
+        
+        let prompt = "";
+        const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style, casual/slang)." : "Use plain English suitable for a student.";
+        
         if (type === 'isbar') prompt = `Write a nursing handover for ${name} using ISBAR format. Invent a realistic scenario. Concise. ${langInstruction}`;
         else if (type === 'mix') prompt = `Reconstitution and administration guide for ${name} (IV/IM). Diluent, Rate, Stability. ${langInstruction}`;
         else if (type === 'explain') prompt = `Explain the drug ${name} to a nursing student using a simple analogy. Focus on Mechanism of Action and ONE key danger. Keep it short and fun. ${langInstruction}`;
-        else if (type === 'cheat') prompt = aiLanguage === 'lihkg' ? `Create a "Ward Survival Cheatsheet" for ${name}. Format as a table/list: 1. English Medical Term (e.g. Hypokalemia) 2. Cantonese Patient Phrase (e.g. 低鉀食蕉). Include Critical Checks, Monitoring, Patient Teaching. Concise.` : `Create a "Ward Survival Cheatsheet" for ${name}. Bullet points: STOP Checks, Monitoring, Red Flags. Concise.`;
-        try { await streamAI(prompt, (chunk) => { out.innerHTML = marked.parse(chunk); }); btn.innerHTML = "✅"; } catch (e) { out.innerHTML = `Error: ${e.message}`; btn.innerHTML = "❌"; } finally { btn.disabled = false; setTimeout(() => btn.innerHTML = originalText, 3000); }
+        else if (type === 'cheat') {
+            if (aiLanguage === 'lihkg') {
+                prompt = `Create a "Ward Survival Cheatsheet" for ${name}. 
+                Format as a table/list with two columns: 
+                1. English Medical Term (e.g., "Hypokalemia")
+                2. Cantonese Explanation/Patient Phrase (e.g., "低鉀，記得食蕉").
+                Include:
+                - 🛑 Critical Checks (Before giving)
+                - 📉 Monitoring (Vitals/Labs)
+                - 🗣️ Patient Teaching (One key phrase)
+                Keep it concise for quick ward reference.`;
+            } else {
+                prompt = `Create a "Ward Survival Cheatsheet" for ${name}. Bullet points only.
+                Sections:
+                1. 🛑 STOP Checks (Hold if...)
+                2. 📉 Monitoring (What to watch)
+                3. ⚡️ Red Flags (Call doctor if...)
+                Keep it ultra-concise for a busy ward.`;
+            }
+        }
+
+        try {
+            await streamAI(prompt, (chunk) => { out.innerHTML = marked.parse(chunk); });
+            btn.innerHTML = "✅";
+        } catch (e) { out.innerHTML = `Error: ${e.message}`; btn.innerHTML = "❌"; } 
+        finally { btn.disabled = false; setTimeout(() => btn.innerHTML = originalText, 3000); }
     }
 
     async function streamAI(prompt, onChunk) {
-        let url = "https://api.deepseek.com/chat/completions"; let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` }; let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: true };
-        if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = yinliModel; }
+        let url = "https://api.deepseek.com/chat/completions";
+        let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
+        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: true };
+        
+        if(provider === 'yinli') { 
+            url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = yinliModel; 
+        }
+
         const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
-        const reader = response.body.getReader(); const decoder = new TextDecoder();
-        while (true) { const { done, value } = await reader.read(); if (done) break; const chunk = decoder.decode(value); const lines = chunk.split('\n'); for (const line of lines) { if (line.startsWith('data: ') && line !== 'data: [DONE]') { try { const json = JSON.parse(line.substring(6)); onChunk(json.choices[0]?.delta?.content || ""); } catch (e) {} } } }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+                if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                    try {
+                        const json = JSON.parse(line.substring(6));
+                        const content = json.choices[0]?.delta?.content || "";
+                        fullText += content;
+                        onChunk(fullText);
+                    } catch (e) {}
+                }
+            }
+        }
     }
 
+    // --- GENERATE AI DRUG ---
     async function triggerAISearchAndGenerate(query) {
-        const btn = document.getElementById('btn-ai-search'); btn.innerHTML = '<span class="spinner"></span> Consulting...'; btn.disabled = true;
-        const prompt = `You are a strict pharmacology database. Task: Output a JSON object for the drug "${query}". Keys: "name", "class", "indication", "system" (Strictly choose one from provided list), "SideEffects", "nursing", "hold_param" (optional), "admin_type" (optional). Output ONLY JSON.`;
+        const btn = document.getElementById('btn-ai-search');
+        btn.innerHTML = '<span class="spinner"></span> Consulting...';
+        btn.disabled = true;
+
+        const prompt = `You are a strict pharmacology database.
+        Task: Output a JSON object for the drug "${query}".
+        Keys: 
+        - "name": (Generic Name)
+        - "class": (Pharmacological Class)
+        - "indication": (Short summary)
+        - "system": (Choose STRICTLY one: Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia)
+        - "SideEffects": (Common side effects)
+        - "nursing": (Key monitoring points)
+        - "hold_param": (Optional: e.g. "HR<60")
+        - "admin_type": (Optional: "IV" or "Oral")
+        
+        Output ONLY the JSON object. No markdown.`;
+
         try {
-            let jsonString = await getFullAIResponse(prompt); jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
-            pendingDrugSave = JSON.parse(jsonString);
+            let jsonString = await getFullAIResponse(prompt);
+            jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            const drugData = JSON.parse(jsonString);
+            pendingDrugSave = drugData;
+
             const container = document.getElementById('search-results');
-            container.innerHTML = `<div style="background:var(--surface); border:2px solid var(--primary); padding:24px; border-radius:16px;"><div style="font-weight:700; color:var(--primary); margin-bottom:10px; text-transform:uppercase; font-size:12px;">✨ AI Generated Preview</div><div style="font-size:1.6rem; font-weight:800; margin-bottom:4px; color:var(--text-main);">${pendingDrugSave.name}</div><div style="color:var(--text-secondary); margin-bottom:20px;">${pendingDrugSave.class}</div><div style="font-size:1rem; line-height:1.6; color:var(--text-main);"><p><strong>System:</strong> ${pendingDrugSave.system}</p><p><strong>Indication:</strong> ${pendingDrugSave.indication}</p><p><strong>Nursing:</strong> ${pendingDrugSave.nursing}</p></div><button class="btn-action" style="background:var(--primary); color:white;" onclick="confirmSaveDrug()">💾 Save to Database</button></div>`;
-        } catch (e) { btn.innerHTML = `❌ Error: ${e.message}`; btn.disabled = false; }
+            container.innerHTML = `
+                <div style="background:var(--surface); border:2px solid var(--primary); padding:24px; border-radius:16px;">
+                    <div style="font-weight:700; color:var(--primary); margin-bottom:10px; text-transform:uppercase; font-size:12px;">✨ AI Generated Preview</div>
+                    <div style="font-size:1.6rem; font-weight:800; margin-bottom:4px; color:var(--text-main);">${drugData.name}</div>
+                    <div style="color:var(--text-secondary); margin-bottom:20px;">${drugData.class}</div>
+                    <div style="font-size:1rem; line-height:1.6; color:var(--text-main);">
+                        <p><strong>System:</strong> ${drugData.system}</p>
+                        <p><strong>Indication:</strong> ${drugData.indication}</p>
+                        <p><strong>Nursing:</strong> ${drugData.nursing}</p>
+                    </div>
+                    <button class="btn-action" style="background:var(--primary); color:white;" onclick="confirmSaveDrug()">💾 Save to Database</button>
+                </div>
+            `;
+        } catch (e) {
+            btn.innerHTML = `❌ Error: ${e.message}`;
+            btn.disabled = false;
+        }
     }
     
     async function getFullAIResponse(prompt) {
-        let url = "https://api.deepseek.com/chat/completions"; let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` }; let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
+        let url = "https://api.deepseek.com/chat/completions";
+        let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
+        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
         if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = yinliModel; }
-        const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) }); return (await response.json()).choices[0].message.content;
+        const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+        const json = await response.json();
+        return json.choices[0].message.content;
     }
 
     function confirmSaveDrug() {
-        if(!pendingDrugSave) return; drugs.push(pendingDrugSave);
-        document.querySelector('.btn-action').innerHTML = "⏳ Uploading..."; document.querySelector('.btn-action').disabled = true;
+        if(!pendingDrugSave) return;
+        drugs.push(pendingDrugSave);
+        const btn = document.querySelector('.btn-action');
+        btn.innerHTML = "⏳ Uploading...";
+        btn.disabled = true;
         fetch(UPLOAD_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(pendingDrugSave) });
-        setTimeout(() => { document.getElementById('search-results').innerHTML = ''; renderResult(pendingDrugSave, drugs.length - 1, document.getElementById('search-results'), true); pendingDrugSave = null; }, 1000);
+        setTimeout(() => {
+            const container = document.getElementById('search-results');
+            container.innerHTML = '';
+            renderResult(pendingDrugSave, drugs.length - 1, container, true);
+            pendingDrugSave = null;
+        }, 1000);
     }
 
-    // --- UI HELPERS ---
+    // --- SETTINGS UI ---
     function fetchSheetData(silent = false) {
-        if(!silent) { document.getElementById('search-results').style.display = 'none'; document.getElementById('loading-skeleton').style.display = 'flex'; }
-        fetch(DB_URL).then(r=>r.text()).then(csv=>{ Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{ if(res.data.length){ drugs=res.data; document.getElementById('loading-skeleton').style.display = 'none'; document.getElementById('search-results').style.display = 'flex'; document.getElementById('empty-state-msg').style.display = 'block'; if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); renderSystemChips(); } }}); }).catch(e => { if(!silent) alert("Connection Failed"); document.getElementById('loading-skeleton').style.display = 'none'; });
+        const loading = document.getElementById('loading-skeleton');
+        const results = document.getElementById('search-results');
+        const emptyState = document.getElementById('empty-state-msg');
+        if(!silent) { results.style.display = 'none'; loading.style.display = 'flex'; }
+        fetch(DB_URL).then(r=>r.text()).then(csv=>{
+            Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
+                if(res.data.length){ 
+                    drugs=res.data; loading.style.display = 'none'; results.style.display = 'flex'; emptyState.style.display = 'block';
+                    if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); renderSystemChips();
+                }
+            }});
+        }).catch(e => { if(!silent) alert("Connection Failed"); loading.style.display = 'none'; });
     }
-    function renderSystemChips() { const c = document.getElementById('system-chips'); c.innerHTML = `<button class="filter-chip active" onclick="filterBySystem('All', this)">All</button>`; systems.forEach(s => { c.innerHTML += `<button class="filter-chip" onclick="filterBySystem('${s.full}', this)">${s.name}</button>`; }); }
-    function filterBySystem(sys, btn) { document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active')); btn.classList.add('active'); const c = document.getElementById('search-results'); const e = document.getElementById('empty-state-msg'); c.innerHTML = ''; c.appendChild(e); e.style.display = 'none'; document.getElementById('search-input').value = ''; const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys)); matches.sort((a,b) => (a.name||"").localeCompare(b.name||"")); matches.forEach((d, idx) => renderResult(d, idx, c)); if(matches.length === 0) e.style.display = 'block'; }
-    function renderHistory() { const c = document.getElementById('history-list'); const box = document.getElementById('history-container'); if(searchHistory.length === 0) { box.style.display = 'none'; return; } box.style.display = 'block'; c.innerHTML = ''; searchHistory.forEach(term => { c.innerHTML += `<button class="filter-chip" style="background:var(--input-bg); color:var(--text-main);" onclick="clickHistory('${term}')">${term}</button>`; }); }
+
+    function renderSystemChips() {
+        const c = document.getElementById('system-chips');
+        c.innerHTML = `<button class="filter-chip active" onclick="filterBySystem('All', this)">All</button>`;
+        systems.forEach(s => { c.innerHTML += `<button class="filter-chip" onclick="filterBySystem('${s.full}', this)">${s.name}</button>`; });
+    }
+
+    function filterBySystem(sys, btn) {
+        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const container = document.getElementById('search-results');
+        const emptyState = document.getElementById('empty-state-msg');
+        container.innerHTML = ''; container.appendChild(emptyState); emptyState.style.display = 'none';
+        document.getElementById('search-input').value = '';
+        const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
+        matches.sort((a,b) => (a.name||"").localeCompare(b.name||""));
+        matches.forEach((d, idx) => renderResult(d, idx, container));
+        if(matches.length === 0) emptyState.style.display = 'block';
+    }
+
+    function renderHistory() {
+        const c = document.getElementById('history-list');
+        const box = document.getElementById('history-container');
+        if(searchHistory.length === 0) { box.style.display = 'none'; return; }
+        box.style.display = 'block'; c.innerHTML = '';
+        searchHistory.forEach(term => { c.innerHTML += `<button class="filter-chip" style="background:var(--input-bg); color:var(--text-main);" onclick="clickHistory('${term}')">${term}</button>`; });
+    }
+    
     function clickHistory(term) { document.getElementById('search-input').value = term; handleSearch(); }
-    function toggleSettings() { const p = document.getElementById('settings-overlay'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; if(p.style.display==='flex') populateVoiceList(); }
-    function toggleLanguage() { const d = document.getElementById('lang-display'); if(aiLanguage === 'english') { aiLanguage = 'lihkg'; d.innerText = "LIHKG Mode"; } else { aiLanguage = 'english'; d.innerText = "English"; } }
-    function updateSettingsUI() { const p = document.getElementById('provider-select').value; const c = document.getElementById('settings-dynamic-fields'); c.innerHTML = ''; if (p === 'yinli') c.innerHTML = `<div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">Yinli API Key</div><input type="password" id="yinli-key" class="settings-input" value="${keys.yinli}" placeholder="sk-...">`; else if (p === 'deepseek') c.innerHTML = `<div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">DeepSeek API Key</div><input type="password" id="deepseek-key" class="settings-input" value="${keys.deepseek}" placeholder="sk-...">`; }
+    function toggleSettings() { const p = document.getElementById('settings-overlay'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; }
+    function toggleLanguage() {
+        const display = document.getElementById('lang-display');
+        if(aiLanguage === 'english') { aiLanguage = 'lihkg'; display.innerText = "LIHKG Mode"; } 
+        else { aiLanguage = 'english'; display.innerText = "English"; }
+    }
+    function updateSettingsUI() {
+        const prov = document.getElementById('provider-select').value;
+        const container = document.getElementById('settings-dynamic-fields');
+        container.innerHTML = '';
+        if (prov === 'yinli') {
+            container.innerHTML = `<div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">Yinli API Key</div><input type="password" id="yinli-key" class="settings-input" value="${keys.yinli}" placeholder="sk-...">`;
+        } else if (prov === 'deepseek') {
+            container.innerHTML = `<div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">DeepSeek API Key</div><input type="password" id="deepseek-key" class="settings-input" value="${keys.deepseek}" placeholder="sk-...">`;
+        }
+    }
 
     init();
 </script>
