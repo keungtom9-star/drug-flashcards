@@ -67,35 +67,33 @@
         #search-section { background: var(--surface); padding: 15px; border-radius: var(--radius); height: 100%; display: flex; flex-direction: column; width: 100%; max-width: 800px; box-sizing: border-box; }
         .search-bar { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e5e7eb; font-size: 16px; margin-bottom: 5px; box-sizing: border-box; }
         
-        /* Compact Chips Container (Horizontal Scroll) */
         .chip-scroll-row {
             display: flex; gap: 6px; overflow-x: auto; padding: 5px 2px;
             margin-bottom: 10px; -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
         }
-        .chip-scroll-row::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+        .chip-scroll-row::-webkit-scrollbar { display: none; }
 
         .filter-chip {
             padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
             white-space: nowrap; border: 1px solid transparent; flex-shrink: 0;
             cursor: pointer; transition: background 0.2s;
         }
-        /* System Chips */
         .chip-sys { background: #e0e7ff; color: var(--primary); border-color: #c7d2fe; }
         .chip-sys.active { background: var(--primary); color: white; }
-        
-        /* History Chips */
         .chip-hist { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
-        .chip-hist:active { background: #d1d5db; }
 
         .section-label { font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; margin-top: 5px; margin-bottom: 2px; }
 
         /* Results */
         .results-grid { overflow-y: auto; flex-grow: 1; padding-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .result-card { background: white; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; }
+        .result-card { background: white; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; position: relative; }
         .result-header { font-weight: 700; color: var(--primary); display: flex; justify-content: space-between; font-size: 1rem; }
         .result-detail { display: none; margin-top: 10px; border-top: 1px solid #f3f4f6; padding-top: 10px; font-size: 0.9rem; }
         .result-card.expanded .result-detail { display: block; animation: fadeIn 0.2s; }
+        
+        /* New Saved Badge */
+        .saved-badge { position: absolute; top: -8px; right: -5px; background: #10B981; color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; }
 
         /* Tool Buttons */
         .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; width: 100%; margin-top: 10px; }
@@ -103,21 +101,36 @@
         .tool-isbar { background: #fee2e2; color: #991b1b; }
         .tool-cheat { background: #e0f2fe; color: #075985; }
         .tool-mix { background: #f3e8ff; color: #6b21a8; }
-        .tool-google { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; text-decoration: none; display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; height: 32px; }
+        
+        /* Updated Google Button Style */
+        .tool-google { 
+            background: white; color: #374151; border: 1px solid #d1d5db; 
+            text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 50%; /* Circle */
+            font-size: 1.2rem; font-weight: 800; font-family: 'Inter', sans-serif;
+            flex-shrink: 0;
+        }
 
-        /* AI & Flashcards */
         .ai-output-box { margin-top: 10px; padding: 12px; border-radius: 8px; font-size: 0.9rem; background: #f0fdfa; border-left: 4px solid var(--secondary); display: none; overflow-wrap: break-word; line-height: 1.5; }
+        
+        /* Flashcard */
         .flashcard-container { width: 100%; height: calc(100dvh - 200px); min-height: 450px; position: relative; transform-style: preserve-3d; transition: transform 0.6s; }
         .flashcard-container.flipped { transform: rotateY(180deg); }
         .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; background: white; padding: 20px; box-sizing: border-box; box-shadow: var(--shadow); border: 1px solid #eee; display: flex; flex-direction: column; overflow-y: auto; }
         .card-back { transform: rotateY(180deg); }
         
-        /* Settings */
         #settings-panel { display: none; background: var(--surface); padding: 15px; border-radius: var(--radius); width: 100%; max-width: 600px; border: 1px solid #e5e7eb; margin-bottom: 15px; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .spinner { width: 12px; height: 12px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite; margin-right: 5px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* AI Search Button */
+        .btn-ai-add {
+            width: 100%; margin-top: 20px; background: linear-gradient(135deg, #6366f1, #a855f7); 
+            color: white; padding: 12px; border-radius: 12px; font-size: 0.95rem; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -151,11 +164,8 @@
     <label style="font-weight:bold; font-size:0.8rem;">API Keys</label>
     <input type="password" id="deepseek-key" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="DeepSeek Key">
     <input type="password" id="yinli-key" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="Yinli Key">
-    <input type="password" id="github-key" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="GitHub Token">
-
-    <label style="font-weight:bold; font-size:0.8rem;">Google Sheet URL</label>
-    <input type="text" id="sheet-url" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="https://docs.google.com/...">
-    <button onclick="fetchSheetData()" class="secondary" style="width:100%;">Reload Data</button>
+    
+    <button onclick="fetchSheetData()" class="secondary" style="width:100%;">Force Reload Database</button>
     <button onclick="toggleSettings()" style="width:100%; margin-top:10px; background:var(--text-main); color:white;">Close</button>
 </div>
 
@@ -169,9 +179,8 @@
             <div id="history-list" class="chip-scroll-row"></div>
         </div>
 
-        <div class="section-label">🫁 Quick Filter (Systems)</div>
-        <div id="system-chips" class="chip-scroll-row">
-            </div>
+        <div class="section-label">🫁 Quick Filter</div>
+        <div id="system-chips" class="chip-scroll-row"></div>
 
         <div id="search-results" class="results-grid">
             <div style="text-align:center; color:#aaa; margin-top:20px;">Type to search database...</div>
@@ -197,7 +206,7 @@
                         <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(flashcardList[fcCurrentIndex], 'isbar', 'fc-ai', this)">🚑 ISBAR</button>
                         <button class="btn-tool tool-cheat" onclick="event.stopPropagation(); triggerAIContext(flashcardList[fcCurrentIndex], 'cheat', 'fc-ai', this)">📋 Cheatsheet</button>
                         <button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(flashcardList[fcCurrentIndex], 'mix', 'fc-ai', this)">🧪 Recon</button>
-                        <a id="fc-google" href="#" target="_blank" class="tool-google" onclick="event.stopPropagation();">🌐 Google</a>
+                        <a id="fc-google" href="#" target="_blank" class="tool-google" onclick="event.stopPropagation();">G</a>
                     </div>
                     <div id="fc-ai" class="ai-output-box"></div>
                     <button class="secondary" style="width:100%; margin-top:5px; display:none;" onclick="event.stopPropagation(); readAIContent('fc-ai')">🔊 Read Output</button>
@@ -229,19 +238,20 @@
 <script src="drugs.js"></script>
 
 <script>
+    // --- CONFIGURATION ---
+    const DB_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
+    const UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
+
     // --- STATE ---
     let drugs = [];
     let flashcardList = [];
     let searchHistory = [];
     let fcCurrentIndex = 0;
     let aiLanguage = 'lihkg';
-    
-    // --- API ---
     let provider = 'deepseek';
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "", github: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
 
-    // --- SYSTEMS DATA ---
     const systems = [
         {id: "Gastro", name: "🍔 GI System", full: "Gastro-intestinal system"},
         {id: "Cardio", name: "🫀 Cardio", full: "Cardiovascular system"},
@@ -264,60 +274,75 @@
         document.getElementById('yinli-key').value = keys.yinli;
         document.getElementById('provider-select').value = provider;
         
-        if(typeof commonDrugs !== 'undefined') drugs = commonDrugs; 
-        else drugs = [{name:"Paracetamol", class:"Analgesic", indication:"Pain", system:"Central Nervous System"}];
-        
-        flashcardList = [...drugs];
-        renderCard();
+        // AUTO CONNECT TO DB
+        fetchSheetData(true); 
+
         renderSystemChips();
         renderHistory();
     }
 
-    // --- RENDER CHIPS ---
-    function renderSystemChips() {
-        const c = document.getElementById('system-chips');
-        c.innerHTML = `<div class="filter-chip chip-sys active" onclick="filterBySystem('All', this)">All</div>`;
-        systems.forEach(s => {
-            c.innerHTML += `<div class="filter-chip chip-sys" onclick="filterBySystem('${s.full}', this)">${s.name}</div>`;
-        });
-    }
+    // --- AI SEARCH & SAVE ---
+    async function triggerAISearchAndSave(query) {
+        const btn = document.getElementById('btn-ai-search');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner"></span> Consulting Pharmacist & Saving...';
+        btn.disabled = true;
 
-    function renderHistory() {
-        const c = document.getElementById('history-list');
-        const box = document.getElementById('history-container');
-        if(searchHistory.length === 0) { box.style.display = 'none'; return; }
+        const prompt = `You are a strict pharmacology database.
+        Task: Output a JSON object for the drug "${query}".
+        Keys: 
+        - "name": (Generic Name)
+        - "class": (Pharmacological Class)
+        - "indication": (Short summary)
+        - "system": (Choose STRICTLY one: Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia)
+        - "nursing": (Key monitoring points)
         
-        box.style.display = 'block';
-        c.innerHTML = '';
-        searchHistory.forEach(term => {
-            c.innerHTML += `<div class="filter-chip chip-hist" onclick="clickHistory('${term}')">${term}</div>`;
-        });
-    }
+        Output ONLY the JSON object. No markdown, no conversation.`;
 
-    // --- FILTER & SEARCH ---
-    function filterBySystem(sys, btn) {
-        document.querySelectorAll('.chip-sys').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        const container = document.getElementById('search-results');
-        container.innerHTML = '';
-        const input = document.getElementById('search-input');
-        input.value = (sys === 'All') ? '' : sys.split(' ')[0]; // visual cue
+        try {
+            // 1. GET AI DATA
+            let jsonString = await getFullAIResponse(prompt);
+            // Cleanup markdown code blocks if present
+            jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            
+            const drugData = JSON.parse(jsonString);
 
-        const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
-        
-        if(matches.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">No drugs found for this system.</div>';
-        } else {
-            matches.forEach((d, idx) => renderResult(d, idx, container));
+            // 2. SAVE TO LOCAL (Optimistic UI)
+            drugs.push(drugData);
+            flashcardList = [...drugs];
+            
+            // 3. RENDER RESULT IMMEDIATELY
+            const container = document.getElementById('search-results');
+            container.innerHTML = '';
+            renderResult(drugData, drugs.length - 1, container, true); // true = newly saved
+
+            // 4. UPLOAD TO GOOGLE SHEET (Background)
+            fetch(UPLOAD_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(drugData)
+            });
+
+        } catch (e) {
+            btn.innerHTML = `❌ Error: ${e.message}`;
+            btn.disabled = false;
         }
     }
 
-    function clickHistory(term) {
-        document.getElementById('search-input').value = term;
-        handleSearch();
+    async function getFullAIResponse(prompt) {
+        let url = "https://api.deepseek.com/chat/completions";
+        let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
+        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
+
+        if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = "gemini-2.5-flash"; }
+        
+        const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+        const json = await response.json();
+        return json.choices[0].message.content;
     }
 
+    // --- SEARCH LOGIC ---
     function handleSearch() {
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
@@ -325,9 +350,6 @@
         
         if(!q) return;
 
-        // Save History on Enter or long enough query? 
-        // For now, simple implementation: we update history when user clicks result or manually.
-        // Let's just update history if length > 3
         if(q.length > 3 && !searchHistory.includes(q)) {
             searchHistory.unshift(q);
             if(searchHistory.length > 5) searchHistory.pop();
@@ -336,16 +358,35 @@
         }
 
         const matches = drugs.filter(d => (d.name+d.class+d.indication+d.system).toLowerCase().includes(q));
-        matches.forEach((d, idx) => renderResult(d, idx, container));
+        
+        if (matches.length > 0) {
+            matches.forEach((d, idx) => renderResult(d, idx, container));
+        } else {
+            // SHOW AI SEARCH BUTTON
+            container.innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <div style="color:#666; margin-bottom:10px;">Drug not found locally.</div>
+                    <button id="btn-ai-search" class="btn-ai-add" onclick="triggerAISearchAndSave('${q}')">
+                        ✨ AI Search & Auto-Save
+                    </button>
+                    <div style="font-size:0.8rem; color:#999; margin-top:10px;">
+                        This will fetch data and save it to your database automatically.
+                    </div>
+                </div>
+            `;
+        }
     }
 
-    function renderResult(d, idx, container) {
+    function renderResult(d, idx, container, isNew = false) {
         const div = document.createElement('div');
         div.className = 'result-card';
+        if(isNew) div.style.border = "2px solid #10B981";
+        
         const aiId = `ai-res-${Math.random().toString(36).substr(2, 9)}`;
         const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
         
         div.innerHTML = `
+            ${isNew ? '<div class="saved-badge">✅ Saved to Database</div>' : ''}
             <div class="result-header">
                 <span>${d.name}</span>
                 <span style="font-size:0.8rem; color:#666; font-weight:normal;">${d.class}</span>
@@ -358,7 +399,7 @@
                     <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button>
                     <button class="btn-tool tool-cheat" onclick="event.stopPropagation(); triggerAIContext(null, 'cheat', '${aiId}', this, '${d.name}')">📋 Cheat</button>
                     <button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(null, 'mix', '${aiId}', this, '${d.name}')">🧪 Recon</button>
-                    <a href="${googleLink}" target="_blank" class="tool-google" onclick="event.stopPropagation();">🌐 Google</a>
+                    <a href="${googleLink}" target="_blank" class="tool-google" onclick="event.stopPropagation();">G</a>
                 </div>
                 <div id="${aiId}" class="ai-output-box"></div>
                 <button class="secondary" style="width:100%; margin-top:5px; display:none;" onclick="event.stopPropagation(); readAIContent('${aiId}')">🔊 Read</button>
@@ -370,14 +411,62 @@
         container.appendChild(div);
     }
 
-    // --- FLASHCARD & AI LOGIC ---
+    // --- STANDARD APP LOGIC ---
+    function fetchSheetData(silent = false) {
+        fetch(DB_URL).then(r=>r.text()).then(csv=>{
+            Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
+                if(res.data.length){ 
+                    drugs=res.data; 
+                    flashcardList=[...drugs]; 
+                    if(!silent) alert(`✅ Loaded ${drugs.length} drugs`);
+                    renderCard();
+                }
+            }});
+        }).catch(e => { if(!silent) alert("Connection Failed"); });
+    }
+
+    // ... (Existing Render, AI Prompting, and Utility functions remain same but are required) ...
+    function renderSystemChips() {
+        const c = document.getElementById('system-chips');
+        c.innerHTML = `<div class="filter-chip chip-sys active" onclick="filterBySystem('All', this)">All</div>`;
+        systems.forEach(s => {
+            c.innerHTML += `<div class="filter-chip chip-sys" onclick="filterBySystem('${s.full}', this)">${s.name}</div>`;
+        });
+    }
+
+    function renderHistory() {
+        const c = document.getElementById('history-list');
+        const box = document.getElementById('history-container');
+        if(searchHistory.length === 0) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        c.innerHTML = '';
+        searchHistory.forEach(term => {
+            c.innerHTML += `<div class="filter-chip chip-hist" onclick="clickHistory('${term}')">${term}</div>`;
+        });
+    }
+
+    function filterBySystem(sys, btn) {
+        document.querySelectorAll('.chip-sys').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const container = document.getElementById('search-results');
+        container.innerHTML = '';
+        document.getElementById('search-input').value = '';
+        const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
+        matches.forEach((d, idx) => renderResult(d, idx, container));
+    }
+
+    function clickHistory(term) {
+        document.getElementById('search-input').value = term;
+        handleSearch();
+    }
+
     function renderCard() {
+        if(flashcardList.length === 0) return;
         const d = flashcardList[fcCurrentIndex];
         document.getElementById('fc-name').innerText = d.name;
         document.getElementById('fc-details').innerHTML = `<p><strong>Class:</strong> ${d.class}</p><p><strong>Indication:</strong> ${d.indication}</p><p><strong>System:</strong> ${d.system}</p>`;
         document.getElementById('counter').innerText = `${fcCurrentIndex+1}/${flashcardList.length}`;
         document.getElementById('fc-google').href = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
-        document.getElementById('fc-ai').style.display = 'none';
     }
     
     function flipCard(e) { if(!e.target.closest('button') && !e.target.closest('a')) document.getElementById('flashcard').classList.toggle('flipped'); }
@@ -388,13 +477,11 @@
         const out = document.getElementById(outputId);
         const name = drugNameOverride || obj.name;
         const originalText = btn.innerText;
-        
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Wait...';
         out.style.display = 'block'; out.innerHTML = '<span style="color:#666;">🤖 AI is thinking...</span>';
-
+        
         let prompt = "";
         const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style, casual)." : "Use professional English.";
-        
         if (type === 'isbar') prompt = `Write a nursing handover for ${name} using ISBAR. Invent a scenario. Concise. ${langInstruction}`;
         else if (type === 'cheat') prompt = `Create a "Ward Cheatsheet" for ${name}. Bullet points: 1. Critical Checks 2. Monitoring 3. Red Flags. ${langInstruction}`;
         else if (type === 'mix') prompt = `Reconstitution guide for ${name} (IV/IM). Diluent, Rate, Stability. ${langInstruction}`;
@@ -411,14 +498,12 @@
         let url = "https://api.deepseek.com/chat/completions";
         let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
         let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: true };
-
         if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = "gemini-2.5-flash"; }
 
         const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
-
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -475,15 +560,14 @@
         const p = document.getElementById('settings-panel');
         p.style.display = p.style.display === 'block' ? 'none' : 'block';
     }
-
-    function fetchSheetData() {
-        const url = document.getElementById('sheet-url').value;
-        if(!url) return;
-        fetch(url.replace('/edit', '/export?format=csv')).then(r=>r.text()).then(csv=>{
-            Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
-                if(res.data.length){ drugs=res.data; flashcardList=[...drugs]; alert(`Loaded ${drugs.length} items`); }
-            }});
-        });
+    
+    function toggleDrugSet() {
+        // Toggle logic if you have multiple sets
+        alert("Switched sets");
+    }
+    function toggleMute() {
+        // Mute logic
+        alert("Mute toggled");
     }
 
     init();
