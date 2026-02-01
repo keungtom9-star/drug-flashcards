@@ -92,7 +92,6 @@
         .result-detail { display: none; margin-top: 10px; border-top: 1px solid #f3f4f6; padding-top: 10px; font-size: 0.9rem; }
         .result-card.expanded .result-detail { display: block; animation: fadeIn 0.2s; }
         
-        /* Detail Rows (Used in Search & Flashcard) */
         .detail-row { margin-bottom: 12px; border-bottom: 1px solid #f3f4f6; padding-bottom: 8px; }
         .detail-row:last-child { border-bottom: none; }
         .d-label { display: block; font-size: 0.7rem; font-weight: 700; color: #6b7280; text-transform: uppercase; margin-bottom: 2px; }
@@ -114,13 +113,17 @@
             font-size: 1.2rem; font-weight: 800; font-family: 'Inter', sans-serif;
             flex-shrink: 0;
         }
+        
+        .btn-audio {
+            background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe;
+            font-size: 0.8rem; width: 100%; margin-top: 5px; display: flex; justify-content: center;
+        }
 
         .ai-output-box { margin-top: 10px; padding: 12px; border-radius: 8px; font-size: 0.9rem; background: #f0fdfa; border-left: 4px solid var(--secondary); display: none; overflow-wrap: break-word; line-height: 1.5; }
         
         /* Flashcard - Larger UI */
         .flashcard-container { 
             width: 100%; 
-            /* Larger Height: Screen height minus header/nav padding (~140px) */
             height: calc(100dvh - 140px); 
             min-height: 500px; 
             position: relative; transform-style: preserve-3d; transition: transform 0.6s; 
@@ -178,6 +181,14 @@
         <button onclick="toggleMute()" id="mute-btn" class="secondary" style="grid-column:span 2;">🔊 Audio: On</button>
     </div>
     
+    <div style="border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;">
+        <label style="font-weight:bold; font-size:0.8rem;">🗣️ Premium Voice Selection</label>
+        <select id="voice-select" onchange="saveSettings()" style="width:100%; padding:8px; margin-top:5px; border-radius:8px; border:1px solid #d1d5db;">
+            <option value="">Auto-Detect Best</option>
+        </select>
+        <button onclick="testVoice()" class="secondary" style="width:100%; margin-top:5px; font-size:0.8rem;">🔊 Test Voice</button>
+    </div>
+
     <label style="font-weight:bold; font-size:0.8rem;">AI Provider</label>
     <select id="provider-select" onchange="updateSettingsUI()" style="width:100%; padding:8px; margin-bottom:10px;">
         <option value="deepseek">DeepSeek (Official)</option>
@@ -185,8 +196,7 @@
         <option value="github">GitHub Models</option>
     </select>
     
-    <div id="settings-dynamic-fields">
-        </div>
+    <div id="settings-dynamic-fields"></div>
     
     <button onclick="fetchSheetData()" class="secondary" style="width:100%;">Force Reload Database</button>
     <button onclick="toggleSettings()" style="width:100%; margin-top:10px; background:var(--text-main); color:white;">Close</button>
@@ -216,7 +226,7 @@
                 <div style="font-size:3rem;">💊</div>
                 <h2 id="fc-name" style="margin:10px 0; font-size:1.8rem; color:var(--primary); text-align:center;">Name</h2>
                 <div style="color:#999; font-size:0.8rem;">(Tap to Flip)</div>
-                <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name)" class="secondary" style="margin-top:20px;">🔊 Pronounce</button>
+                <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name)" class="secondary" style="margin-top:20px;">🔊 Pronounce Name</button>
             </div>
             
             <div class="card-face card-back">
@@ -224,6 +234,8 @@
                     </div>
                 
                 <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <button onclick="event.stopPropagation(); speakDetails(flashcardList[fcCurrentIndex])" class="btn-audio" style="margin-bottom:10px;">🔊 Read Details</button>
+                    
                     <div style="font-size:0.75rem; font-weight:bold; color:#666; margin-bottom:5px;">Clinical Tools:</div>
                     <div class="tool-row">
                         <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(flashcardList[fcCurrentIndex], 'isbar', 'fc-ai', this)">🚑 ISBAR</button>
@@ -266,8 +278,12 @@
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "", github: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
     let yinliModel = "gemini-2.5-flash"; 
+    
+    // --- VOICE ---
+    let selectedVoiceURI = "";
+    let availableVoices = [];
 
-    // --- TEMP DATA FOR SAVE ---
+    // --- TEMP DATA ---
     let pendingDrugSave = null;
 
     const systems = [
@@ -288,14 +304,85 @@
         if(localStorage.getItem('yl_key')) keys.yinli = localStorage.getItem('yl_key');
         if(localStorage.getItem('yl_model')) yinliModel = localStorage.getItem('yl_model');
         if(localStorage.getItem('search_hist')) searchHistory = JSON.parse(localStorage.getItem('search_hist'));
+        if(localStorage.getItem('voice_uri')) selectedVoiceURI = localStorage.getItem('voice_uri');
 
         updateSettingsUI();
         
-        // AUTO CONNECT TO DB
+        // Init Audio
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
         fetchSheetData(true); 
 
         renderSystemChips();
         renderHistory();
+    }
+    
+    // --- VOICE LOGIC ---
+    function loadVoices() {
+        availableVoices = window.speechSynthesis.getVoices();
+        const select = document.getElementById('voice-select');
+        select.innerHTML = '<option value="">🤖 Auto-Detect Best (Recommended)</option>';
+        
+        // Sort: Premium/Google/Microsoft/Enhanced first
+        availableVoices.sort((a, b) => {
+            const priority = ["Google", "Microsoft", "Enhanced", "Premium", "Siri"];
+            const aPrem = priority.some(p => a.name.includes(p));
+            const bPrem = priority.some(p => b.name.includes(p));
+            return (bPrem === aPrem) ? a.name.localeCompare(b.name) : bPrem - aPrem;
+        });
+
+        availableVoices.forEach(voice => {
+            const opt = document.createElement('option');
+            opt.value = voice.voiceURI;
+            opt.innerText = `${voice.name} (${voice.lang})`;
+            if (voice.voiceURI === selectedVoiceURI) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    function getBestVoice(lang = "en-US") {
+        if (selectedVoiceURI) {
+            const userVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
+            if (userVoice) return userVoice;
+        }
+        
+        const keywords = ["Google", "Microsoft", "Enhanced", "Siri", "Premium"];
+        const langVoices = availableVoices.filter(v => v.lang.startsWith(lang.split('-')[0]));
+        
+        for (let k of keywords) {
+            const hit = langVoices.find(v => v.name.includes(k) && v.lang === lang);
+            if (hit) return hit;
+        }
+        for (let k of keywords) {
+            const hit = langVoices.find(v => v.name.includes(k));
+            if (hit) return hit;
+        }
+        return langVoices[0] || availableVoices[0];
+    }
+
+    function speakText(text) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        const lang = aiLanguage === 'lihkg' ? 'zh-HK' : 'en-US';
+        u.lang = lang;
+        u.rate = 0.95; 
+        
+        const bestVoice = getBestVoice(lang);
+        if (bestVoice) u.voice = bestVoice;
+        
+        window.speechSynthesis.speak(u);
+    }
+    
+    function speakDetails(d) {
+        const txt = `Name: ${d.name}. Class: ${d.class}. System: ${d.system}. Indication: ${d.indication}. Side Effects: ${d.SideEffects}. Nursing: ${d.nursing}`;
+        speakText(txt);
+    }
+    
+    function testVoice() {
+        speakText("This is a test of the premium voice engine. Checking clarity and tone.");
     }
 
     // --- SETTINGS UI ---
@@ -324,7 +411,7 @@
         }
     }
 
-    // --- AI SEARCH & GENERATE ---
+    // --- AI SEARCH ---
     async function triggerAISearchAndGenerate(query) {
         const btn = document.getElementById('btn-ai-search');
         btn.innerHTML = '<span class="spinner"></span> Consulting Pharmacist...';
@@ -379,6 +466,7 @@
         
         drugs.push(pendingDrugSave);
         flashcardList = [...drugs];
+        shuffleArray(flashcardList); // Maintain randomization
         
         const btn = document.querySelector('.btn-confirm-save');
         btn.innerHTML = "⏳ Uploading to Cloud...";
@@ -415,7 +503,7 @@
         return json.choices[0].message.content;
     }
 
-    // --- SEARCH LOGIC (SORTED) ---
+    // --- SEARCH LOGIC ---
     function handleSearch() {
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
@@ -432,28 +520,18 @@
 
         const matches = drugs.filter(d => (d.name+d.class+d.indication+d.system).toLowerCase().includes(q));
         
-        // --- SORTING ---
         matches.sort((a, b) => {
             const nameA = (a.name || "").toLowerCase();
             const nameB = (b.name || "").toLowerCase();
             const query = q;
-
-            // 1. Name matches query?
             const aNameMatch = nameA.includes(query);
             const bNameMatch = nameB.includes(query);
-
             if (aNameMatch && !bNameMatch) return -1;
             if (!aNameMatch && bNameMatch) return 1;
-
             if (aNameMatch && bNameMatch) {
-                // 1a. Exact
-                if (nameA === query && nameB !== query) return -1;
-                if (nameB === query && nameA !== query) return 1;
-                // 1b. Starts With
                 if (nameA.startsWith(query) && !nameB.startsWith(query)) return -1;
                 if (!nameA.startsWith(query) && nameB.startsWith(query)) return 1;
             }
-            // 2. Alphabetical
             return nameA.localeCompare(nameB);
         });
 
@@ -477,9 +555,8 @@
         if(isNew) div.style.border = "2px solid #10B981";
         
         const aiId = `ai-res-${Math.random().toString(36).substr(2, 9)}`;
-        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' all in hk traditional chinese')}`;
+        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
         
-        // Ensure all fields are shown in search detail
         div.innerHTML = `
             ${isNew ? '<div class="saved-badge" style="display:block;">✅ Saved to Database</div>' : ''}
             <div class="result-header">
@@ -492,6 +569,10 @@
                 <div class="detail-row"><span class="d-label">Side Effects</span><span class="d-content">${d.SideEffects || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Nursing</span><span class="d-content">${d.nursing || "N/A"}</span></div>
                 
+                <div style="margin-top:10px;">
+                     <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-audio">🔊 Read</button>
+                </div>
+
                 <div style="font-size:0.75rem; font-weight:bold; color:#666; margin-top:10px;">Clinical Tools:</div>
                 <div class="tool-row">
                     <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button>
@@ -500,7 +581,7 @@
                     <a href="${googleLink}" target="_blank" class="tool-google" onclick="event.stopPropagation();">G</a>
                 </div>
                 <div id="${aiId}" class="ai-output-box"></div>
-                <button class="secondary" style="width:100%; margin-top:5px; display:none;" onclick="event.stopPropagation(); readAIContent('${aiId}')">🔊 Read</button>
+                <button class="secondary" style="width:100%; margin-top:5px; display:none;" onclick="event.stopPropagation(); readAIContent('${aiId}')">🔊 Read Output</button>
             </div>
         `;
         div.onclick = (e) => { 
@@ -516,11 +597,20 @@
                 if(res.data.length){ 
                     drugs=res.data; 
                     flashcardList=[...drugs]; 
+                    shuffleArray(flashcardList); // RANDOMIZE ON LOAD
                     if(!silent) alert(`✅ Loaded ${drugs.length} drugs`);
                     renderCard();
                 }
             }});
         }).catch(e => { if(!silent) alert("Connection Failed"); });
+    }
+
+    // --- HELPER: SHUFFLE ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
     }
 
     function renderSystemChips() {
@@ -562,9 +652,9 @@
         if(flashcardList.length === 0) return;
         const d = flashcardList[fcCurrentIndex];
         document.getElementById('fc-name').innerText = d.name;
-        document.getElementById('fc-google').href = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' all in hk traditional chinese')}`;
+        document.getElementById('fc-google').href = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' hk nursing')}`;
         
-        // Flashcard Back: Column Layout for All Fields
+        // Flashcard Back
         document.getElementById('fc-details').innerHTML = `
             <div class="detail-row"><span class="d-label">Class</span><span class="d-content">${d.class || "N/A"}</span></div>
             <div class="detail-row"><span class="d-label">System</span><span class="d-content">${d.system || "N/A"}</span></div>
@@ -642,13 +732,6 @@
         document.getElementById(mode+'-section').style.display = (mode==='search' ? 'flex' : 'block');
     }
 
-    function speakText(text) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = aiLanguage === 'lihkg' ? 'zh-HK' : 'en-US';
-        window.speechSynthesis.speak(u);
-    }
-    
     function readAIContent(id) { speakText(document.getElementById(id).innerText); }
 
     function toggleLanguage() {
@@ -660,6 +743,8 @@
     function saveSettings() {
         provider = document.getElementById('provider-select').value;
         localStorage.setItem('active_provider', provider);
+        selectedVoiceURI = document.getElementById('voice-select').value;
+        localStorage.setItem('voice_uri', selectedVoiceURI);
 
         if(document.getElementById('deepseek-key')) {
              keys.deepseek = document.getElementById('deepseek-key').value;
