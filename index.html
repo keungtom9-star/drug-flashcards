@@ -309,12 +309,6 @@
                 <span>🌐 AI Persona</span>
                 <span id="lang-display" style="color:var(--primary); font-weight:600;">LIHKG Mode</span>
             </div>
-            <div class="settings-row" style="display:block;">
-                <div style="font-weight:600; margin-bottom:4px;">🗣️ About Voice</div>
-                <div style="font-size:13px; color:var(--text-secondary); line-height:1.4;">
-                    We use a high-quality online voice (Google Translate API) for natural pronunciation. If internet is slow, it automatically falls back to your device's system voice.
-                </div>
-            </div>
         </div>
         
         <h3 class="section-label">AI Configuration</h3>
@@ -351,7 +345,7 @@
     // --- UTILS ---
     let pendingDrugSave = null;
 
-    // --- 📋 SYSTEM FILTER LIST ---
+    // --- 📋 SYSTEM FILTER LIST (Full) ---
     const systems = [
         {id: "GI", name: "🍽️ Gastro", full: "Gastro-intestinal system"},
         {id: "CVS", name: "🫀 Cardio", full: "Cardiovascular system"},
@@ -368,7 +362,9 @@
         {id: "Skin", name: "🧴 Skin", full: "Skin"},
         {id: "Immuno", name: "💉 Vaccine", full: "Immunological products and vaccines"},
         {id: "Anaes", name: "💤 Anaes", full: "Anaesthesia"},
-        
+        {id: "RespOb", name: "🫁🤰 Resp+Ob", full: "Respiratory system, Obstetrics, gynaecology, and urinary-tract disorders"},
+        {id: "CVSEndo", name: "🫀🦋 Cardio+Endo", full: "Cardiovascular system, Endocrine system"},
+        {id: "MSKAnaes", name: "🦴💤 MSK+Anaes", full: "Musculoskeletal and joint disease, Anaesthesia"}
     ];
 
     function init() {
@@ -384,63 +380,43 @@
         renderHistory();
     }
     
-    // --- 🔊 AUDIO ENGINE (Google Hack + Fallback) ---
+    // --- 🔊 STABLE AUDIO ENGINE (System Native) ---
     function speakText(text, lang = "en") {
-        // Find the active card's button (crude selector but works for context)
-        const buttons = document.querySelectorAll('.btn-action');
-        let btn = null;
-        // Find the button that was just clicked (contains "Read Aloud")
-        buttons.forEach(b => { if(b.innerHTML.includes('Read Aloud')) btn = b; });
-        if(!btn) return;
-
-        const originalText = "🔊 Read Aloud";
-        btn.innerHTML = "🔄 Loading Audio...";
-        btn.style.opacity = "0.7";
-
-        // 1. Try Google Translate API
-        // Use zh-TW for Cantonese/Traditional Chinese to get better results from Google
-        const googleLang = lang === 'zh-HK' ? 'zh-TW' : 'en'; 
-        const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${googleLang}&client=tw-ob`;
-
-        const audio = new Audio(googleUrl);
-        
-        audio.oncanplaythrough = () => {
-            audio.play();
-            btn.innerHTML = "🔊 Playing...";
-            setTimeout(() => { 
-                btn.innerHTML = originalText; 
-                btn.style.opacity = "1";
-            }, text.length * 100 + 1000); 
-        };
-
-        audio.onerror = () => {
-            console.log("Google TTS failed, switching to System Voice.");
-            btn.innerHTML = "⚠️ System Voice...";
-            speakSystemFallback(text);
-            setTimeout(() => { 
-                btn.innerHTML = originalText; 
-                btn.style.opacity = "1";
-            }, 1000);
-        };
-    }
-
-    function speakSystemFallback(text) {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = aiLanguage === 'lihkg' ? 'zh-HK' : 'en-US';
-        u.rate = 0.9;
+        u.lang = lang === 'zh-HK' ? 'zh-HK' : 'en-US';
+        u.rate = 0.9; 
+        
+        // Try to find "Enhanced" or premium voices
+        const voices = window.speechSynthesis.getVoices();
+        const bestVoice = voices.find(v => v.lang === u.lang && (v.name.includes('Enhanced') || v.name.includes('Siri'))) || voices.find(v => v.lang === u.lang);
+        if (bestVoice) u.voice = bestVoice;
+
         window.speechSynthesis.speak(u);
+
+        // Visual Feedback
+        const buttons = document.querySelectorAll('.btn-action');
+        let btn = null;
+        buttons.forEach(b => { if(b.innerHTML.includes('Read Aloud')) btn = b; });
+        if(btn) {
+            const originalText = "🔊 Read Aloud";
+            btn.innerHTML = "🗣️ Speaking...";
+            setTimeout(() => { btn.innerHTML = originalText; }, text.length * 80); 
+        }
     }
     
     function speakDetails(d) {
         let txt = "";
         if (aiLanguage === 'lihkg') {
-            txt = `藥名: ${d.name}。 類別: ${d.class}。 用途: ${d.indication}。 副作用: ${d.SideEffects}。 護理要點: ${d.nursing}`;
+            txt = `藥名: ${d.name}。 類別: ${d.class}。 用途: ${d.indication}。 副作用: ${d.SideEffects}。 護理: ${d.nursing}`;
         } else {
-            txt = `Drug Name: ${d.name}. Class: ${d.class}. Indication: ${d.indication}. Side Effects: ${d.SideEffects}. Nursing Considerations: ${d.nursing}`;
+            txt = `Drug Name: ${d.name}. Class: ${d.class}. Indication: ${d.indication}. Side Effects: ${d.SideEffects}. Nursing: ${d.nursing}`;
         }
         speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
     }
+
+    // Ensure voices are loaded
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 
     // --- SEARCH LOGIC ---
     function handleSearch() {
