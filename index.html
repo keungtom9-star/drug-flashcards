@@ -223,15 +223,16 @@
         .btn-action:active { background: var(--border); opacity: 0.8; }
 
         /* --- SETTINGS SHEET --- */
-        #settings-overlay {
+        #settings-overlay, #vs-overlay {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(4px); align-items: flex-end;
         }
-        .settings-sheet {
+        .settings-sheet, .vs-sheet {
             background: var(--surface); width: 100%; max-width: 600px; margin: 0 auto;
             border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box;
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 85vh; overflow-y: auto;
             box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+            display:flex; flex-direction:column;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
@@ -253,6 +254,23 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .section-label { padding: 0 16px; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-top: 16px; margin-bottom: 8px; letter-spacing: 0.5px; }
+        
+        /* VS Modal Styles */
+        .vs-input-group { margin-bottom: 15px; position:relative; }
+        .vs-label { font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:5px; display:block; text-transform:uppercase; }
+        .vs-input { width:100%; padding:14px; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); font-size:16px; color:var(--text-main); }
+        .vs-suggestions { 
+            position:absolute; top:100%; left:0; right:0; background:var(--surface); 
+            border:1px solid var(--border); border-radius:12px; max-height:150px; overflow-y:auto; 
+            z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.1); display:none;
+        }
+        .vs-suggestion-item { padding:10px; border-bottom:1px solid var(--border); font-size:14px; cursor:pointer; }
+        .vs-suggestion-item:last-child { border-bottom:none; }
+        .vs-suggestion-item:active { background:var(--input-bg); }
+        
+        table { width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
+        th, td { border:1px solid var(--border); padding:8px; text-align:left; vertical-align:top; }
+        th { background:var(--input-bg); font-weight:700; }
     </style>
 </head>
 <body>
@@ -262,7 +280,10 @@
         <img id="header-icon-display" src="" alt="" class="app-icon-img">
         Drug Tutor
     </h1>
-    <button onclick="toggleSettings()" class="icon-btn">⚙️</button>
+    <div style="display:flex; gap:10px;">
+        <button onclick="toggleVS()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">🆚 Compare</button>
+        <button onclick="toggleSettings()" class="icon-btn">⚙️</button>
+    </div>
 </div>
 
 <div class="search-container">
@@ -335,6 +356,35 @@
         <button onclick="fetchSheetData()" class="btn-action" style="margin-top:20px; background:var(--input-bg); color:var(--text-main);">
             🔄 Reload Database
         </button>
+    </div>
+</div>
+
+<div id="vs-overlay" onclick="if(event.target===this) toggleVS()">
+    <div class="vs-sheet" style="height:90vh;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; font-size:22px;">Drug Comparison</h2>
+            <button onclick="toggleVS()" style="background:var(--input-bg); color:var(--text-main); border:none; padding:8px 16px; border-radius:20px; font-weight:600;">Close</button>
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+            <div class="vs-input-group" style="flex:1;">
+                <span class="vs-label">Drug A</span>
+                <input type="text" id="vs-input-a" class="vs-input" placeholder="e.g. Panadol" oninput="handleVsSuggest('a')">
+                <div id="vs-suggest-a" class="vs-suggestions"></div>
+            </div>
+            <div style="display:flex; align-items:center; padding-top:10px; font-weight:800; color:var(--primary);">VS</div>
+            <div class="vs-input-group" style="flex:1;">
+                <span class="vs-label">Drug B</span>
+                <input type="text" id="vs-input-b" class="vs-input" placeholder="e.g. Aspirin" oninput="handleVsSuggest('b')">
+                <div id="vs-suggest-b" class="vs-suggestions"></div>
+            </div>
+        </div>
+
+        <button id="btn-compare" class="btn-action" style="margin-top:0; margin-bottom:15px; background:var(--primary); color:white;" onclick="triggerCompare()">
+            ⚔️ Compare Now
+        </button>
+
+        <div id="vs-result-area" class="ai-output-box" style="flex:1; overflow-y:auto; display:none; background:var(--input-bg);"></div>
     </div>
 </div>
 
@@ -431,8 +481,6 @@
         availableVoices = window.speechSynthesis.getVoices();
         const select = document.getElementById('voice-select');
         select.innerHTML = '<option value="">🤖 Auto-Detect Best (Default)</option>';
-        
-        // Sort: Premium/Enhanced first
         availableVoices.sort((a, b) => {
             const aName = a.name.toLowerCase();
             const bName = b.name.toLowerCase();
@@ -442,7 +490,6 @@
             if (!isPremA && isPremB) return 1;
             return aName.localeCompare(bName);
         });
-
         availableVoices.forEach(voice => {
             const opt = document.createElement('option');
             opt.value = voice.voiceURI;
@@ -465,44 +512,31 @@
     function speakText(text, lang = "en") {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        
-        // 1. Set Language
         const targetLang = lang === 'zh-HK' ? 'zh-HK' : 'en-US';
         u.lang = targetLang;
         u.rate = 0.95; 
         
-        // 2. 🧠 VOICE SELECTION
         let bestVoice = null;
-
-        // A) If User Manually Selected a Voice in Settings
         if (selectedVoiceURI) {
             bestVoice = window.speechSynthesis.getVoices().find(v => v.voiceURI === selectedVoiceURI);
         }
-
-        // B) If No Manual Selection, Auto-Detect Best "Premium" Voice
         if (!bestVoice) {
             const voices = window.speechSynthesis.getVoices();
             const available = voices.filter(v => v.lang.includes(targetLang.replace('-', '_')) || v.lang.includes(targetLang));
-            
             bestVoice = available.find(v => v.name.includes('Premium'));
             if (!bestVoice) bestVoice = available.find(v => v.name.includes('Enhanced'));
             if (!bestVoice) bestVoice = available.find(v => v.name.includes('Google'));
             if (!bestVoice) bestVoice = available[0];
         }
-
         if (bestVoice) u.voice = bestVoice;
-
-        // 3. Speak
         window.speechSynthesis.speak(u);
 
-        // 4. Visual Feedback
         const buttons = document.querySelectorAll('.btn-action');
         let btn = null;
         buttons.forEach(b => { if(b.innerHTML.includes('Read Aloud')) btn = b; });
         if(btn) {
             const originalText = "🔊 Read Aloud";
             btn.innerHTML = "🗣️ Speaking...";
-            console.log(`Using voice: ${bestVoice ? bestVoice.name : 'Default'}`); 
             setTimeout(() => { btn.innerHTML = originalText; }, text.length * 80); 
         }
     }
@@ -517,26 +551,20 @@
         speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
     }
 
-    // --- SEARCH LOGIC (FIXED: CRASH PROTECTION) ---
+    // --- SEARCH LOGIC ---
     function handleSearch() {
         pendingDrugSave = null; 
-        
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
-        
-        // FIX: Reconstruct empty state if missing
         const emptyState = getOrCreateEmptyState();
         
-        // If Search is cleared, reset to ALL
         if(!q) {
             document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
             const allBtn = document.querySelector('.filter-chip'); 
             if(allBtn) allBtn.classList.add('active');
-
             container.innerHTML = '';
             container.appendChild(emptyState);
             emptyState.style.display = 'none';
-            
             const allDrugs = [...drugs].sort((a,b) => (a.name||"").localeCompare(b.name||""));
             allDrugs.forEach((d, idx) => renderResult(d, idx, container));
             return;
@@ -582,15 +610,12 @@
         const div = document.createElement('div');
         div.className = 'result-card';
         if(isNew) div.style.border = "2px solid var(--secondary)";
-        
         const uniqueId = Math.random().toString(36).substr(2, 9);
         const aiId = `ai-${uniqueId}`;
         const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' nursing considerations')}`;
         
         let holdHtml = '';
-        if (d.hold_param) {
-            holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`;
-        }
+        if (d.hold_param) { holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`; }
 
         let adminTools = '';
         if ((d.system && d.system.includes('Cardio')) || (d.admin_type && d.admin_type.includes('IV'))) {
@@ -624,12 +649,10 @@
             <div class="result-detail">
                 ${holdHtml}
                 ${adminTools}
-
                 <div class="detail-row"><span class="d-label">System</span><span class="d-content">${d.system || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Indication</span><span class="d-content">${d.indication || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Side Effects</span><span class="d-content">${d.SideEffects || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Nursing</span><span class="d-content">${d.nursing || "N/A"}</span></div>
-                
                 <div class="tool-row">
                     <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button>
                     <button class="btn-tool tool-explain" onclick="event.stopPropagation(); triggerAIContext(null, 'explain', '${aiId}', this, '${d.name}')">🎓 Explain</button>
@@ -637,11 +660,9 @@
                     <button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(null, 'mix', '${aiId}', this, '${d.name}')">🧪 Recon</button>
                     <a href="${googleLink}" target="_blank" class="btn-tool tool-google" onclick="event.stopPropagation();">G</a>
                 </div>
-                
                 <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-action">
                     🔊 Read Aloud
                 </button>
-
                 <div id="${aiId}" class="ai-output-box"></div>
             </div>
         `;
@@ -671,7 +692,6 @@
         let left = durationSeconds;
         btn.classList.add('running');
         btn.innerHTML = `⏳ ${left}s`;
-        
         const interval = setInterval(() => {
             left--;
             if (left <= 0) {
@@ -685,6 +705,74 @@
                 btn.innerHTML = `⏳ ${left}s`;
             }
         }, 1000);
+    }
+
+    // --- VS (COMPARE) LOGIC ---
+    function toggleVS() {
+        const p = document.getElementById('vs-overlay');
+        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function handleVsSuggest(side) {
+        const input = document.getElementById(`vs-input-${side}`);
+        const box = document.getElementById(`vs-suggest-${side}`);
+        const val = input.value.toLowerCase().trim();
+        box.innerHTML = '';
+        box.style.display = 'none';
+        
+        if (val.length < 2) return;
+
+        // Auto-suggest from local DB
+        const matches = drugs.filter(d => d.name.toLowerCase().includes(val)).slice(0, 5);
+        if(matches.length > 0) {
+            box.style.display = 'block';
+            matches.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'vs-suggestion-item';
+                div.innerText = d.name;
+                div.onclick = () => {
+                    input.value = d.name;
+                    box.style.display = 'none';
+                };
+                box.appendChild(div);
+            });
+        }
+    }
+
+    async function triggerCompare() {
+        const a = document.getElementById('vs-input-a').value.trim();
+        const b = document.getElementById('vs-input-b').value.trim();
+        const btn = document.getElementById('btn-compare');
+        const res = document.getElementById('vs-result-area');
+        
+        if (!a || !b) { alert("Please enter two drugs!"); return; }
+
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Comparing...';
+        res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">AI is analyzing difference...</span>';
+
+        const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style)." : "Use English.";
+        const prompt = `Compare "${a}" vs "${b}" for a nursing student.
+        Format as a Markdown Table.
+        Columns: Feature, ${a}, ${b}.
+        Rows to include:
+        1. Class/Type
+        2. Indication (Main use)
+        3. Mechanism (Simple)
+        4. Side Effects (Key diff)
+        5. Nursing (Safety)
+        
+        After the table, add a one-sentence "Winner" summary for a specific situation (e.g. "Use X for pain, Y for inflammation").
+        ${langInstruction}`;
+
+        try {
+            await streamAI(prompt, (chunk) => { res.innerHTML = marked.parse(chunk); });
+            btn.innerHTML = "✅ Done";
+        } catch(e) {
+            res.innerHTML = "Error: " + e.message;
+            btn.innerHTML = "❌ Retry";
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     // --- AI FUNCTIONS ---
@@ -832,42 +920,31 @@
         }, 1000);
     }
 
-    // --- SETTINGS UI ---
-    // --- UPDATED FETCH LOGIC (Instant Load + Background Sync) ---
+    // --- FETCH (INSTANT LOAD) ---
     function fetchSheetData(silent = false) {
         const loading = document.getElementById('loading-skeleton');
         const results = document.getElementById('search-results');
-        const emptyState = document.getElementById('empty-state-msg');
+        const emptyState = getOrCreateEmptyState();
         
-        // 1. Try to load from Local Storage first (INSTANT)
+        // 1. Try Cache
         const localData = localStorage.getItem('drug_db_cache');
         if (localData) {
-            console.log("⚡️ Loaded from Cache");
             drugs = JSON.parse(localData);
             loading.style.display = 'none';
             results.style.display = 'flex';
             renderSystemChips();
-            
-            // Automatically select 'All' if we have cached data
             const allBtn = document.querySelector('.filter-chip');
             if(allBtn && !document.querySelector('.filter-chip.active')) filterBySystem('All', allBtn);
         } else {
-            // Only show loader if we have NO cache
             if(!silent) { results.style.display = 'none'; loading.style.display = 'flex'; }
         }
 
-        // 2. Fetch fresh data in the background (Silent Update)
+        // 2. Fetch Background
         fetch(DB_URL).then(r=>r.text()).then(csv=>{
             Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
                 if(res.data.length){ 
-                    // Update global data
                     drugs = res.data;
-                    
-                    // Save to Cache
                     localStorage.setItem('drug_db_cache', JSON.stringify(drugs));
-                    console.log("🔄 Background Sync Complete");
-
-                    // If this was the first load (no cache), render now
                     if (!localData) {
                         loading.style.display = 'none'; 
                         results.style.display = 'flex'; 
@@ -879,11 +956,7 @@
                 }
             }});
         }).catch(e => { 
-            console.warn("Background sync failed", e);
-            if(!localData && !silent) {
-                alert("Connection Failed"); 
-                loading.style.display = 'none'; 
-            }
+            if(!localData && !silent) { alert("Connection Failed"); loading.style.display = 'none'; }
         });
     }
 
@@ -894,20 +967,14 @@
     }
 
     function filterBySystem(sys, btn) {
-        // MOD: Ensure clearing system also clears AI state
         pendingDrugSave = null;
         document.getElementById('search-input').value = '';
 
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const container = document.getElementById('search-results');
-        
-        // FIX: Reconstruct empty state if missing
         const emptyState = getOrCreateEmptyState();
-        
-        container.innerHTML = ''; 
-        container.appendChild(emptyState); 
-        emptyState.style.display = 'none';
+        container.innerHTML = ''; container.appendChild(emptyState); emptyState.style.display = 'none';
         
         const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
         matches.sort((a,b) => (a.name||"").localeCompare(b.name||""));
