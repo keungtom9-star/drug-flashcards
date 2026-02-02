@@ -15,14 +15,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
-        // Dynamic Icon Generation
+        // Dynamic Icon Generation (PURPLE ICON)
         (function() {
             const svgSource = `
             <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-                <rect width="512" height="512" rx="110" fill="#007AFF"/>
+                <rect width="512" height="512" rx="110" fill="#AF52DE"/>
                 <g transform="translate(64, 64) scale(0.75)">
                     <path d="M353.1 158.8c-29.2-29.2-76.6-29.2-105.9 0L133 273.1c-29.2 29.2-29.2 76.6 0 105.9 29.2 29.2 76.6 29.2 105.9 0L353.1 264.7c29.2-29.2 29.2-76.6 0-105.9z" fill="#ffffff"/>
-                    <path d="M264.7 247.2L158.8 353.1c-20 20-52.4 20-72.4 0-20-20-20-52.4 0-72.4L192.3 174.8" fill="#80CFFF"/>
+                    <path d="M264.7 247.2L158.8 353.1c-20 20-52.4 20-72.4 0-20-20-20-52.4 0-72.4L192.3 174.8" fill="#E0B0FF"/>
                 </g>
             </svg>`;
             
@@ -48,8 +48,8 @@
 
     <style>
         :root {
-            /* Light Mode Defaults */
-            --primary: #007AFF;
+            /* Light Mode Defaults - PURPLE THEME */
+            --primary: #AF52DE;
             --secondary: #34C759;
             --danger: #FF3B30;
             --surface: #ffffff;
@@ -139,7 +139,8 @@
             background: var(--surface); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             transition: all 0.2s ease;
         }
-        .filter-chip.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); border-color: transparent; }
+        /* Updated Shadow to Purple */
+        .filter-chip.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(175, 82, 222, 0.3); border-color: transparent; }
         .filter-chip:active { transform: scale(0.95); }
 
         /* --- SKELETON LOADING --- */
@@ -281,7 +282,7 @@
         Drug Tutor
     </h1>
     <div style="display:flex; gap:10px;">
-        <button onclick="toggleVS()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">🆚 Compare</button>
+        <button onclick="toggleVS()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(175, 82, 222, 0.1);">🆚 Compare</button>
         <button onclick="toggleSettings()" class="icon-btn">⚙️</button>
     </div>
 </div>
@@ -858,7 +859,7 @@
         const prompt = `You are a strict pharmacology database.
         Task: Output a JSON object for the drug "${query}".
         Keys: 
-        - "name": (Generic Name(brandname in HK))
+        - "name": (Generic Name)
         - "class": (Pharmacological Class)
         - "indication": (Short summary)
         - "system": (Choose STRICTLY one: Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia)
