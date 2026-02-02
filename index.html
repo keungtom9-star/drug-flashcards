@@ -401,6 +401,25 @@
         renderHistory();
     }
 
+    // --- HELPER: SAFE EMPTY STATE ---
+    // FIX: Creates the empty state element if it was deleted by AI card
+    function getOrCreateEmptyState() {
+        let el = document.getElementById('empty-state-msg');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'empty-state-msg';
+            el.style.textAlign = 'center';
+            el.style.color = 'var(--text-secondary)';
+            el.style.marginTop = '60px';
+            el.style.display = 'none';
+            el.innerHTML = `
+                <div style="font-size:4rem; opacity:0.2; margin-bottom:10px;">🩺</div>
+                <div>Start typing to search database...</div>
+            `;
+        }
+        return el;
+    }
+
     // --- HELPER: RESET TO HOME ---
     function resetToHome() {
         document.getElementById('search-input').value = '';
@@ -499,14 +518,15 @@
         speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
     }
 
-    // --- SEARCH LOGIC (MODIFIED for Auto-Cancel) ---
+    // --- SEARCH LOGIC (FIXED: CRASH PROTECTION) ---
     function handleSearch() {
-        // MOD: Ensure we clear pending save state if interacting with search
         pendingDrugSave = null; 
         
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
-        const emptyState = document.getElementById('empty-state-msg');
+        
+        // FIX: Reconstruct empty state if missing
+        const emptyState = getOrCreateEmptyState();
         
         // If Search is cleared, reset to ALL
         if(!q) {
@@ -849,8 +869,13 @@
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const container = document.getElementById('search-results');
-        const emptyState = document.getElementById('empty-state-msg');
-        container.innerHTML = ''; container.appendChild(emptyState); emptyState.style.display = 'none';
+        
+        // FIX: Reconstruct empty state if missing
+        const emptyState = getOrCreateEmptyState();
+        
+        container.innerHTML = ''; 
+        container.appendChild(emptyState); 
+        emptyState.style.display = 'none';
         
         const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
         matches.sort((a,b) => (a.name||"").localeCompare(b.name||""));
