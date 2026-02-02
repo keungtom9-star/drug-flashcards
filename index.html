@@ -15,7 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
-        // Dynamic Icon Generation
+        // Dynamic Icon Generation (BLUE ICON)
         (function() {
             const svgSource = `
             <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
@@ -48,7 +48,7 @@
 
     <style>
         :root {
-            /* Light Mode Defaults */
+            /* Light Mode Defaults - BLUE THEME */
             --primary: #007AFF;
             --secondary: #34C759;
             --danger: #FF3B30;
@@ -223,11 +223,11 @@
         .btn-action:active { background: var(--border); opacity: 0.8; }
 
         /* --- SETTINGS SHEET --- */
-        #settings-overlay, #vs-overlay {
+        #settings-overlay, #vs-overlay, #gen-overlay {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(4px); align-items: flex-end;
         }
-        .settings-sheet, .vs-sheet {
+        .settings-sheet, .vs-sheet, .gen-sheet {
             background: var(--surface); width: 100%; max-width: 600px; margin: 0 auto;
             border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box;
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 85vh; overflow-y: auto;
@@ -281,7 +281,8 @@
         Drug Tutor
     </h1>
     <div style="display:flex; gap:10px;">
-        <button onclick="toggleVS()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">🆚 Compare</button>
+        <button onclick="toggleGen()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">📝 HA Script</button>
+        <button onclick="toggleVS()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">🆚 VS</button>
         <button onclick="toggleSettings()" class="icon-btn">⚙️</button>
     </div>
 </div>
@@ -385,6 +386,26 @@
         </button>
 
         <div id="vs-result-area" class="ai-output-box" style="flex:1; overflow-y:auto; display:none; background:var(--input-bg);"></div>
+    </div>
+</div>
+
+<div id="gen-overlay" onclick="if(event.target===this) toggleGen()">
+    <div class="gen-sheet" style="height:90vh;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; font-size:22px;">📝 HA Script Generator</h2>
+            <button onclick="toggleGen()" style="background:var(--input-bg); color:var(--text-main); border:none; padding:8px 16px; border-radius:20px; font-weight:600;">Close</button>
+        </div>
+        
+        <div class="vs-input-group">
+            <span class="vs-label">Patient Condition / Co-morbidities</span>
+            <textarea id="gen-input" class="vs-input" style="height:100px; resize:none;" placeholder="e.g. Patient with HTN, T2DM, Gout, and recent UTI. Needs discharge meds."></textarea>
+        </div>
+
+        <button id="btn-gen" class="btn-action" style="margin-top:0; margin-bottom:15px; background:var(--primary); color:white;" onclick="triggerGen()">
+            ✨ Generate Medication List
+        </button>
+
+        <div id="gen-result-area" class="ai-output-box" style="flex:1; overflow-y:auto; display:none; background:var(--input-bg); white-space: pre-wrap;"></div>
     </div>
 </div>
 
@@ -763,6 +784,45 @@
         
         After the table, add a one-sentence "Winner" summary for a specific situation (e.g. "Use X for pain, Y for inflammation").
         ${langInstruction}`;
+
+        try {
+            await streamAI(prompt, (chunk) => { res.innerHTML = marked.parse(chunk); });
+            btn.innerHTML = "✅ Done";
+        } catch(e) {
+            res.innerHTML = "Error: " + e.message;
+            btn.innerHTML = "❌ Retry";
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // --- GENERATOR LOGIC (HA SCRIPT) ---
+    function toggleGen() {
+        const p = document.getElementById('gen-overlay');
+        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    async function triggerGen() {
+        const input = document.getElementById('gen-input').value.trim();
+        const btn = document.getElementById('btn-gen');
+        const res = document.getElementById('gen-result-area');
+
+        if (!input) { alert("Please enter patient details!"); return; }
+
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating...';
+        res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">Creating HA Prescription...</span>';
+
+        const prompt = `Act as a clinical pharmacist or nurse. Generate a medication list for a patient with: ${input}.
+        Format the output exactly in the Hospital Authority (HA) outpatient prescription style shown below.
+        
+        Formatting Rules:
+         * Use a numbered list.
+         * Line 1: GENERIC NAME (BRAND NAME) form
+         * Line 2: Indented with specific syntax: route : dose frequency for duration
+
+        Example Format:
+         1. PANTOPRAZOLE SODIUM SESQUIHYDRATE (PANTOLOC) tablet
+            oral : 20 mg daily for 16 weeks`;
 
         try {
             await streamAI(prompt, (chunk) => { res.innerHTML = marked.parse(chunk); });
