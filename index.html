@@ -402,7 +402,6 @@
     }
 
     // --- HELPER: SAFE EMPTY STATE ---
-    // FIX: Creates the empty state element if it was deleted by AI card
     function getOrCreateEmptyState() {
         let el = document.getElementById('empty-state-msg');
         if (!el) {
@@ -834,25 +833,58 @@
     }
 
     // --- SETTINGS UI ---
+    // --- UPDATED FETCH LOGIC (Instant Load + Background Sync) ---
     function fetchSheetData(silent = false) {
         const loading = document.getElementById('loading-skeleton');
         const results = document.getElementById('search-results');
         const emptyState = document.getElementById('empty-state-msg');
-        if(!silent) { results.style.display = 'none'; loading.style.display = 'flex'; }
+        
+        // 1. Try to load from Local Storage first (INSTANT)
+        const localData = localStorage.getItem('drug_db_cache');
+        if (localData) {
+            console.log("⚡️ Loaded from Cache");
+            drugs = JSON.parse(localData);
+            loading.style.display = 'none';
+            results.style.display = 'flex';
+            renderSystemChips();
+            
+            // Automatically select 'All' if we have cached data
+            const allBtn = document.querySelector('.filter-chip');
+            if(allBtn && !document.querySelector('.filter-chip.active')) filterBySystem('All', allBtn);
+        } else {
+            // Only show loader if we have NO cache
+            if(!silent) { results.style.display = 'none'; loading.style.display = 'flex'; }
+        }
+
+        // 2. Fetch fresh data in the background (Silent Update)
         fetch(DB_URL).then(r=>r.text()).then(csv=>{
             Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
                 if(res.data.length){ 
-                    drugs=res.data; 
-                    loading.style.display = 'none'; 
-                    results.style.display = 'flex'; 
+                    // Update global data
+                    drugs = res.data;
                     
-                    if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); 
-                    renderSystemChips();
-                    const allBtn = document.querySelector('.filter-chip');
-                    if(allBtn) filterBySystem('All', allBtn);
+                    // Save to Cache
+                    localStorage.setItem('drug_db_cache', JSON.stringify(drugs));
+                    console.log("🔄 Background Sync Complete");
+
+                    // If this was the first load (no cache), render now
+                    if (!localData) {
+                        loading.style.display = 'none'; 
+                        results.style.display = 'flex'; 
+                        if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); 
+                        renderSystemChips();
+                        const allBtn = document.querySelector('.filter-chip');
+                        if(allBtn) filterBySystem('All', allBtn);
+                    }
                 }
             }});
-        }).catch(e => { if(!silent) alert("Connection Failed"); loading.style.display = 'none'; });
+        }).catch(e => { 
+            console.warn("Background sync failed", e);
+            if(!localData && !silent) {
+                alert("Connection Failed"); 
+                loading.style.display = 'none'; 
+            }
+        });
     }
 
     function renderSystemChips() {
