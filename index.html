@@ -268,7 +268,7 @@
 <div class="search-container">
     <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" class="search-bar" placeholder="Search drug..." oninput="handleSearch()">
+        <input type="text" id="search-input" class="search-bar" placeholder="Search drug..." oninput="handleSearch()" onfocus="handleSearch()" onclick="handleSearch()">
     </div>
 </div>
 
@@ -401,6 +401,13 @@
         renderHistory();
     }
 
+    // --- HELPER: RESET TO HOME ---
+    function resetToHome() {
+        document.getElementById('search-input').value = '';
+        const allBtn = document.querySelector('.filter-chip');
+        if(allBtn) filterBySystem('All', allBtn);
+    }
+
     // --- 🗣️ VOICE SELECTION LOGIC ---
     function loadVoices() {
         availableVoices = window.speechSynthesis.getVoices();
@@ -492,13 +499,16 @@
         speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
     }
 
-    // --- SEARCH LOGIC (FIXED) ---
+    // --- SEARCH LOGIC (MODIFIED for Auto-Cancel) ---
     function handleSearch() {
+        // MOD: Ensure we clear pending save state if interacting with search
+        pendingDrugSave = null; 
+        
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
         const emptyState = document.getElementById('empty-state-msg');
         
-        // FIX: Reset to 'All' filter if search is cleared
+        // If Search is cleared, reset to ALL
         if(!q) {
             document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
             const allBtn = document.querySelector('.filter-chip'); 
@@ -770,6 +780,7 @@
                         <p><strong>Nursing:</strong> ${drugData.nursing}</p>
                     </div>
                     <button class="btn-action" style="background:var(--primary); color:white;" onclick="confirmSaveDrug()">💾 Save to Database</button>
+                    <button class="btn-action" style="background:transparent; color:var(--text-secondary); margin-top:0;" onclick="resetToHome()">Cancel / Back to List</button>
                 </div>
             `;
         } catch (e) {
@@ -796,10 +807,9 @@
         btn.disabled = true;
         fetch(UPLOAD_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(pendingDrugSave) });
         setTimeout(() => {
-            const container = document.getElementById('search-results');
-            container.innerHTML = '';
-            renderResult(pendingDrugSave, drugs.length - 1, container, true);
+            alert("✅ Drug Saved!");
             pendingDrugSave = null;
+            resetToHome(); 
         }, 1000);
     }
 
@@ -818,8 +828,6 @@
                     
                     if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); 
                     renderSystemChips();
-
-                    // FIX: Click 'All' automatically
                     const allBtn = document.querySelector('.filter-chip');
                     if(allBtn) filterBySystem('All', allBtn);
                 }
@@ -834,7 +842,8 @@
     }
 
     function filterBySystem(sys, btn) {
-        // FIX: Clear search when filtering
+        // MOD: Ensure clearing system also clears AI state
+        pendingDrugSave = null;
         document.getElementById('search-input').value = '';
 
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
