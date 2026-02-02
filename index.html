@@ -492,20 +492,29 @@
         speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
     }
 
-    // --- SEARCH LOGIC ---
+    // --- SEARCH LOGIC (FIXED) ---
     function handleSearch() {
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
         const emptyState = document.getElementById('empty-state-msg');
         
-        container.innerHTML = '';
-        container.appendChild(emptyState); 
-        
+        // FIX: Reset to 'All' filter if search is cleared
         if(!q) {
-            emptyState.style.display = 'block';
+            document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+            const allBtn = document.querySelector('.filter-chip'); 
+            if(allBtn) allBtn.classList.add('active');
+
+            container.innerHTML = '';
+            container.appendChild(emptyState);
+            emptyState.style.display = 'none';
+            
+            const allDrugs = [...drugs].sort((a,b) => (a.name||"").localeCompare(b.name||""));
+            allDrugs.forEach((d, idx) => renderResult(d, idx, container));
             return;
         }
         
+        container.innerHTML = '';
+        container.appendChild(emptyState); 
         emptyState.style.display = 'none';
 
         if(q.length > 3 && !searchHistory.includes(q)) {
@@ -549,13 +558,11 @@
         const aiId = `ai-${uniqueId}`;
         const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' nursing considerations')}`;
         
-        // Safety Features
         let holdHtml = '';
         if (d.hold_param) {
             holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`;
         }
 
-        // Admin Tools
         let adminTools = '';
         if ((d.system && d.system.includes('Cardio')) || (d.admin_type && d.admin_type.includes('IV'))) {
             adminTools = `
@@ -805,8 +812,16 @@
         fetch(DB_URL).then(r=>r.text()).then(csv=>{
             Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
                 if(res.data.length){ 
-                    drugs=res.data; loading.style.display = 'none'; results.style.display = 'flex'; emptyState.style.display = 'block';
-                    if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); renderSystemChips();
+                    drugs=res.data; 
+                    loading.style.display = 'none'; 
+                    results.style.display = 'flex'; 
+                    
+                    if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); 
+                    renderSystemChips();
+
+                    // FIX: Click 'All' automatically
+                    const allBtn = document.querySelector('.filter-chip');
+                    if(allBtn) filterBySystem('All', allBtn);
                 }
             }});
         }).catch(e => { if(!silent) alert("Connection Failed"); loading.style.display = 'none'; });
@@ -819,12 +834,15 @@
     }
 
     function filterBySystem(sys, btn) {
+        // FIX: Clear search when filtering
+        document.getElementById('search-input').value = '';
+
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const container = document.getElementById('search-results');
         const emptyState = document.getElementById('empty-state-msg');
         container.innerHTML = ''; container.appendChild(emptyState); emptyState.style.display = 'none';
-        document.getElementById('search-input').value = '';
+        
         const matches = (sys === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(sys));
         matches.sort((a,b) => (a.name||"").localeCompare(b.name||""));
         matches.forEach((d, idx) => renderResult(d, idx, container));
