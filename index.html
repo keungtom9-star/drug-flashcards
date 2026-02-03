@@ -814,188 +814,119 @@
 
         const prompt = `Act as a clinical pharmacist or nurse. Generate a medication list for a patient with: ${input}.
         Format the output exactly in the Hospital Authority (HA) outpatient prescription style shown below.
-        PART 2: SCENARIO DEVELOPMENT (Fill in details for a realistic case)
-Patient Profile:
-text
-[Patient Demographics]:
-- Age: [65-85 years]
-- Gender: [M/F]
-- Living situation: [Community-dwelling/Elderly home/Carer support]
-- Functional status: [Independent/Requires assistance with ADLs]
-- Health literacy: [Basic/Fair/Good with visual aids]
-
-[Medical History - Select 3-4 from below]:
-Primary: Type 2 Diabetes Mellitus (diagnosed [year])
-Secondary:
-1. Hypertension ([duration])
-2. Ischemic Heart Disease (s/p [MI/PCI/CABG] in [year])
-3. Chronic Kidney Disease (Stage [II-III])
-4. Chronic Obstructive Pulmonary Disease (GOLD Stage [II-III])
-5. Osteoarthritis (knees/hips)
-6. Osteoporosis (with/without previous fracture)
-7. Atrial Fibrillation ([paroxysmal/persistent])
-8. Heart Failure (HFrEF/HFpEF)
-9. Depression/Anxiety
-
-[Recent Clinical Parameters]:
-- HbA1c: [6.5-9.0]%
-- BP: [130-160]/[70-90] mmHg
-- eGFR: [30-60] mL/min/1.73m²
-- LDL-C: [1.8-3.0] mmol/L
-- FEV1/FVC: [60-70]% (if COPD)
-
-[Social/Behavioral Factors]:
-- Smoking: [Ex-smoker (30 pack-years)/Current]
-- Alcohol: [Social/None]
-- Exercise: [Walks 30min daily/Sedentary]
-- Diet: [Traditional Chinese/Western mix]
-
-[Current Symptoms/Concerns]:
-- [e.g., "Increasing SOB on exertion", "Occasional dizziness on standing", "Worsening knee pain affecting mobility"]
-Clinical Setting & Context:
-text
-[Encounter Type]:
-- [ ] General Out-patient Clinic (GOPC) follow-up
-- [ ] Specialist Out-patient Clinic (Medical/Cardio/Respiratory)
-- [ ] Hospital discharge planning
-- [ ] Community Health Centre visit
-- [ ] Nurse-led Chronic Disease Management Clinic
-
-[Recent Healthcare Events]:
-- [e.g., "Recent hospitalization for COPD exacerbation 1 month ago", "Newly diagnosed osteoporosis on DXA scan", "Cardiology review with plan to continue dual antiplatelet therapy"]
-PART 3: MEDICATION LIST CONSTRUCTION REQUIREMENTS
-Table Structure with Detailed Rationale:
-Create a 7-column table with the following headers:
-
-Drug Name (Generic & Brand)
-
-Include why this specific drug is chosen within class
-
-Example: "Metformin (Glucophage) - First-line per HKHA DM guidelines due to efficacy, cardiovascular neutrality, and low cost"
-
-Dosage, Form & Administration Timing
-
-Include titration schedule if applicable
-
-*Example: "Start 5mg OD, increase to 10mg OD after 2 weeks if BP >140/90"*
-
-Frequency & Route
-
-*Consider pharmacokinetics: "BD dosing for consistent 24-hour coverage"*
-
-Primary Indication
-
-Link directly to specific comorbidity
-
-*Example: "Hypertension - Target BP <130/80 per 2023 HKHA HTN guidelines"*
-
-Secondary Benefits/Risks
-
-Identify pleiotropic effects or specific concerns
-
-Example: "SGLT2 inhibitor: Also provides renal protection in CKD and reduces HF hospitalization risk"
-
-Nursing Considerations & Patient Education Points
-
-Monitoring: What to track and frequency
-
-Adverse Effects: What to watch for and report
-
-Administration Tips: Practical guidance
-
-Lifestyle Integration: How to incorporate into daily routine
-
-Example for Warfarin: "Monitor for bruising, bleeding gums. Consistent vitamin K intake. Use medication diary. Carry anticoagulation card."
-
-HKHA-Specific Notes
-
-Formulary restrictions, nurse clinic roles, refill procedures
-
-Example: "Requires GOPC doctor prescription renewal every 4 months. Dose adjustment through Nurse Telephone Consultation Service available."
-
-PART 4: SPECIAL SECTIONS FOR COMPREHENSIVE LEARNING
-A. Drug Interaction Matrix:
-Identify and explain 3 key potential interactions in your regimen:
-
-Pharmacokinetic: e.g., "PPI may reduce absorption of levothyroxine - administer 4 hours apart"
-
-Pharmacodynamic: e.g., "NSAID may reduce antihypertensive effect of ACEi and increase renal risk"
-
-Disease-Drug: e.g., "Beta-blocker (non-cardioselective) may worsen COPD symptoms"
-
-B. Deprescribing Considerations:
-Identify 1-2 medications that might be candidates for dose reduction or discontinuation and why:
-
-*Example: "Consider reducing diuretic dose if BP consistently <110/70 with dizziness"*
-
-Example: "Review need for PPIs after 8 weeks of treatment if no ongoing indications"
-
-C. "Brown Bag" Review Simulation:
-List 2-3 non-prescription items the patient might be taking that you need to ask about:
-
-Over-the-counter medications (e.g., NSAIDs for pain)
-
-Chinese proprietary medicines (e.g., Ginkgo biloba)
-
-Supplements (e.g., St. John's Wort, high-dose vitamin D)
-
-D. Emergency Response Planning:
-For 2 high-risk medications, specify:
-
-What constitutes an emergency
-
-Patient action plan
-
-*Example for Insulin: "If hypoglycemic (sweating, tremor, confusion): Take 15g fast-acting carbohydrate. Re-check glucose in 15 minutes. If unconscious, call 999."*
-
-PART 5: SAMPLE OUTPUT STRUCTURE WITH RATIONALE
-Complete this table for your patient scenario:
-
-Drug Name & Rationale	Dosage & Titration	Frequency & Route	Primary Indication	Secondary Effects	Nursing Considerations	HKHA Context
-[Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]
-PART 6: LOGIC OF THE DRUG PRESCRIPTIONS - SYNTHESIS EXERCISE
-After completing the medication list, write a 300-word synthesis explaining the overarching clinical logic:
-
-text
-"Analyze the prescribing strategy for this patient by addressing:
-
-1. **Hierarchy of Therapeutic Goals:**
-   - Which condition takes priority in medication selection and why?
-   - How do the medications address the most immediate vs. long-term risks?
-
-2. **Synergistic vs. Competing Effects:**
-   - Where do medications work together (e.g., RAAS inhibition benefiting both HTN and CKD)?
-   - Where might they work at cross-purposes requiring careful balance?
-
-3. **Risk-Benefit Calculus in Polypharmacy:**
-   - How does the regimen balance:
-     * Cardiovascular risk reduction vs. bleeding risk?
-     * Glycemic control vs. hypoglycemia risk?
-     * Symptom control vs. side effect burden?
-   - What is the 'number needed to treat' vs. 'number needed to harm' consideration for key drugs?
-
-4. **Patient-Centered Factors:**
-   - How does the regimen accommodate:
-     * Cognitive function and adherence capacity?
-     * Financial constraints (HKHA drug formulary considerations)?
-     * Cultural beliefs about medication?
-   - What simplifications could improve adherence (e.g., once-daily dosing, combination pills)?
-
-5. **Monitoring Strategy Logic:**
-   - What are the key parameters to track and why?
-   - How frequently should they be monitored based on:
-     * Drug half-lives and steady-state?
-     * Organ function (renal/hepatic)?
-     * Therapeutic windows (narrow vs. wide)?
-
-6. **Exit Strategies & Future Planning:**
-   - Under what conditions would medications be:
-     * Up-titrated?
-     * Down-titrated?
-     * Discontinued?
-   - What are the planned review points for deprescribing?
-
-**Conclusion:** Summarize how this medication regimen represents a personalized, evidence-based approach to managing competing comorbidities while maximizing safety, adherence, and quality of life for this specific patient in the HKHA system."
+        {PART 2: SCENARIO DEVELOPMENT (Fill in details for a realistic case)
+        Patient Profile:
+        text
+        [Patient Demographics]:
+        - Age: [65-85 years]
+        - Gender: [M/F]
+        - Living situation: [Community-dwelling/Elderly home/Carer support]
+        - Functional status: [Independent/Requires assistance with ADLs]
+        - Health literacy: [Basic/Fair/Good with visual aids]
+        [Medical History - Select 3-4 from below]:
+        Primary: Type 2 Diabetes Mellitus (diagnosed [year])
+        Secondary:
+        1. Hypertension ([duration])
+        2. Ischemic Heart Disease (s/p [MI/PCI/CABG] in [year])
+        3. Chronic Kidney Disease (Stage [II-III])
+        4. Chronic Obstructive Pulmonary Disease (GOLD Stage [II-III])
+        5. Osteoarthritis (knees/hips)
+        6. Osteoporosis (with/without previous fracture)
+        7. Atrial Fibrillation ([paroxysmal/persistent])
+        8. Heart Failure (HFrEF/HFpEF)
+        9. Depression/Anxiety
+        [Recent Clinical Parameters]
+        - HbA1c: [6.5-9.0]%
+        - BP: [130-160]/[70-90] mmHg
+        - eGFR: [30-60] mL/min/1.73m²
+        - LDL-C: [1.8-3.0] mmol/L
+        - FEV1/FVC: [60-70]% (if COPD)
+        [Current Symptoms/Concerns]:
+        - [e.g., "Increasing SOB on exertion", "Occasional dizziness on standing", "Worsening knee pain affecting mobility"]
+        Clinical Setting & Context:
+        text
+        [Recent Healthcare Events]:
+        - [e.g., "Recent hospitalization for COPD exacerbation 1 month ago", "Newly diagnosed osteoporosis on DXA scan", "Cardiology review with plan to continue dual antiplatelet therapy"]
+        PART 3: MEDICATION LIST CONSTRUCTION REQUIREMENTS
+        Table Structure with Detailed Rationale:
+        Create a 7-column table with the following headers:
+        Drug Name (Generic & Brand)
+        Include why this specific drug is chosen within class
+        Example: "Metformin (Glucophage) - First-line per HKHA DM guidelines due to efficacy, cardiovascular neutrality, and low cost"
+        Dosage, Form & Administration Timing
+        Include titration schedule if applicable
+        *Example: "Start 5mg OD, increase to 10mg OD after 2 weeks if BP >140/90"*
+        Frequency & Route
+        *Consider pharmacokinetics: "BD dosing for consistent 24-hour coverage"*
+        Primary Indication
+        Link directly to specific comorbidity
+        *Example: "Hypertension - Target BP <130/80 per 2023 HKHA HTN guidelines"*
+        Secondary Benefits/Risks
+        Identify pleiotropic effects or specific concerns
+        Example: "SGLT2 inhibitor: Also provides renal protection in CKD and reduces HF hospitalization risk"
+        Nursing Considerations & Patient Education Points
+        Monitoring: What to track and frequency
+        Adverse Effects: What to watch for and report
+        Administration Tips: Practical guidance
+        Lifestyle Integration: How to incorporate into daily routine
+        Example for Warfarin: "Monitor for bruising, bleeding gums. Consistent vitamin K intake. Use medication diary. Carry anticoagulation card."
+        HKHA-Specific Notes
+        Formulary restrictions, nurse clinic roles, refill procedures
+        Example: "Requires GOPC doctor prescription renewal every 4 months. Dose adjustment through Nurse Telephone Consultation Service available."
+        PART 4: SPECIAL SECTIONS FOR COMPREHENSIVE LEARNIN
+        A. Drug Interaction Matrix:
+        Identify and explain 3 key potential interactions in your regimen:
+        Pharmacokinetic: e.g., "PPI may reduce absorption of levothyroxine - administer 4 hours apart"
+        Pharmacodynamic: e.g., "NSAID may reduce antihypertensive effect of ACEi and increase renal risk"
+        Disease-Drug: e.g., "Beta-blocker (non-cardioselective) may worsen COPD symptoms"
+        B. Deprescribing Considerations:
+        Identify 1-2 medications that might be candidates for dose reduction or discontinuation and why:
+        *Example: "Consider reducing diuretic dose if BP consistently <110/70 with dizziness"*
+        Example: "Review need for PPIs after 8 weeks of treatment if no ongoing indications"
+        D. Emergency Response Planning:
+        For 2 high-risk medications, specify:
+        What constitutes an emergency
+        Patient action plan
+        *Example for Insulin: "If hypoglycemic (sweating, tremor, confusion): Take 15g fast-acting carbohydrate. Re-check glucose in 15 minutes. If unconscious, call 999."*
+        PART 5: SAMPLE OUTPUT STRUCTURE WITH RATIONALE
+        Complete this table for your patient scenario:
+        Drug Name & Rationale	Dosage & Titration	Frequency & Route	Primary Indication	Secondary Effects	Nursing Considerations	HKHA Context
+        [Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]	[Detailed as above]
+        PART 6: LOGIC OF THE DRUG PRESCRIPTIONS - SYNTHESIS EXERCISE
+        After completing the medication list, write a 300-word synthesis explaining the overarching clinical logic:
+        text
+        "Analyze the prescribing strategy for this patient by addressing:
+        1. **Hierarchy of Therapeutic Goals:**
+        - Which condition takes priority in medication selection and why?
+        - How do the medications address the most immediate vs. long-term risks?
+        2. **Synergistic vs. Competing Effects:**
+        - Where do medications work together (e.g., RAAS inhibition benefiting both HTN and CKD)?
+        - Where might they work at cross-purposes requiring careful balance?
+        3. **Risk-Benefit Calculus in Polypharmacy:*
+        - How does the regimen balance
+        * Cardiovascular risk reduction vs. bleeding risk?
+        * Glycemic control vs. hypoglycemia risk?
+        * Symptom control vs. side effect burden?
+        - What is the 'number needed to treat' vs. 'number needed to harm' consideration for key drugs?
+        4. **Patient-Centered Factors:**
+        - How does the regimen accommodate:
+        * Cognitive function and adherence capacity?
+        * Financial constraints (HKHA drug formulary considerations)?
+        * Cultural beliefs about medication?
+        - What simplifications could improve adherence (e.g., once-daily dosing, combination pills)?
+        5. **Monitoring Strategy Logic:**
+        - What are the key parameters to track and why?
+        - How frequently should they be monitored based on:
+        * Drug half-lives and steady-state?
+        * Organ function (renal/hepatic)?
+        * Therapeutic windows (narrow vs. wide)?
+        6. **Exit Strategies & Future Planning:**
+        - Under what conditions would medications be:
+        * Up-titrated?
+        * Down-titrated?
+        * Discontinued?
+        - What are the planned review points for deprescribing
+        **Conclusion:** Summarize how this medication regimen represents a personalized, evidence-based approach to managing competing comorbidities while maximizing safety, adherence, and quality of life for this specific patient in the HKHA system."}
 
         try {
             await streamAI(prompt, (chunk) => { res.innerHTML = marked.parse(chunk); });
