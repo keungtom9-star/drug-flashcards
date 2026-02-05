@@ -9,26 +9,26 @@
     <meta name="apple-mobile-web-app-title" content="Drug Tutor">
     <meta name="theme-color" content="#F2F2F7">
 
-    <title>AI Drug Tutor Pro</title>
+    <title>iOS Drug Tutor</title>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
-        // Dynamic Icon Generation (Professional Blue Gradient)
+        // Dynamic App Icon (Blue Gradient Style)
         (function() {
             const svgSource = `
             <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
                 <defs>
                     <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#00C6FB;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#005BEA;stop-opacity:1" />
+                        <stop offset="0%" style="stop-color:#007AFF;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#5AC8FA;stop-opacity:1" />
                     </linearGradient>
                 </defs>
-                <rect width="512" height="512" rx="110" fill="url(#grad1)"/>
-                <path d="M368 160H144C126.3 160 112 174.3 112 192V320C112 337.7 126.3 352 144 352H368C385.7 352 400 337.7 400 320V192C400 174.3 385.7 160 368 160ZM256 312C233.9 312 216 294.1 216 272C216 249.9 233.9 232 256 232C278.1 232 296 249.9 296 272C296 294.1 278.1 312 256 312ZM352 208H296V200C296 195.6 292.4 192 288 192H224C219.6 192 216 195.6 216 200V208H160C155.6 208 152 204.4 152 200V192C152 174.3 166.3 160 184 160H328C345.7 160 360 174.3 360 192V200C360 204.4 356.4 208 352 208Z" fill="white" opacity="0.9"/>
-                <path d="M190 272H322" stroke="white" stroke-width="40" stroke-linecap="round"/>
-                <path d="M256 206V338" stroke="white" stroke-width="40" stroke-linecap="round"/>
+                <rect width="512" height="512" rx="120" fill="url(#grad1)"/>
+                <path d="M256 120C180.9 120 120 180.9 120 256s60.9 136 136 136 136-60.9 136-136-60.9-136-136-136zm0 248c-61.8 0-112-50.2-112-112s50.2-112 112-112 112 50.2 112 112-50.2 112-112 112z" fill="#ffffff" opacity="0.3"/>
+                <path d="M360 256H152c-8.8 0-16-7.2-16-16s7.2-16 16-16h208c8.8 0 16 7.2 16 16s-7.2 16-16 16z" fill="#ffffff"/>
+                <path d="M256 360c-8.8 0-16-7.2-16-16V152c0-8.8 7.2-16 16-16s16 7.2 16 16v192c0 8.8-7.2 16-16 16z" fill="#ffffff"/>
             </svg>`;
             
             function setLink(rel, href) {
@@ -45,379 +45,422 @@
                 const pngUrl = canvas.toDataURL('image/png');
                 setLink('apple-touch-icon', pngUrl);
                 setLink('icon', pngUrl);
+                const headerIcon = document.getElementById('header-icon-display');
+                if(headerIcon) headerIcon.src = pngUrl;
             };
         })();
     </script>
 
     <style>
         :root {
-            --ios-blue: #007AFF;
-            --ios-gray-bg: #F2F2F7;
-            --ios-card-bg: #FFFFFF;
-            --ios-text: #000000;
-            --ios-text-sec: #8E8E93;
-            --ios-border: #E5E5EA;
-            --ios-separator: #C6C6C8;
-            --ios-red: #FF3B30;
-            --ios-green: #34C759;
-            --ios-indigo: #5856D6;
+            /* iOS System Colors */
+            --primary: #007AFF;
+            --secondary-acc: #5856D6;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --warning: #FF9500;
             
-            /* Dynamic Safe Areas */
+            /* Light Mode */
+            --background: #F2F2F7;
+            --surface: #FFFFFF;
+            --surface-secondary: #FFFFFF; /* Grouped table style */
+            --text-main: #000000;
+            --text-secondary: #8E8E93;
+            --border: #C6C6C8;
+            --input-bg: #7676801F; /* iOS Search bar gray */
+            --separator: #C6C6C8;
+            
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            --modal-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            
+            --radius-card: 16px;
+            --radius-btn: 12px;
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
+            
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --ios-gray-bg: #000000;
-                --ios-card-bg: #1C1C1E;
-                --ios-text: #FFFFFF;
-                --ios-text-sec: #98989D;
-                --ios-border: #38383A;
-                --ios-separator: #38383A;
+                /* iOS Dark Mode */
+                --background: #000000;
+                --surface: #1C1C1E;
+                --surface-secondary: #2C2C2E;
+                --text-main: #FFFFFF;
+                --text-secondary: #8E8E93;
+                --border: #38383A;
+                --input-bg: #7676803D;
+                --separator: #38383A;
+                --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
             }
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-            background-color: var(--ios-gray-bg);
-            color: var(--ios-text);
+            font-family: var(--font-stack);
+            background-color: var(--background);
+            color: var(--text-main);
             margin: 0; padding: 0;
-            padding-bottom: calc(var(--safe-bottom) + 80px); /* Extra space for bottom actions */
+            padding-bottom: calc(var(--safe-bottom) + 80px); /* Space for bottom content */
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- HEADER --- */
+        /* --- iOS HEADER --- */
         .app-header {
-            position: sticky; top: 0; z-index: 99;
-            background: rgba(242, 242, 247, 0.85); /* Light translucent */
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            border-bottom: 0.5px solid var(--ios-separator);
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(var(--surface), 0.85); /* Fallback */
+            background: var(--surface);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
             padding: calc(var(--safe-top) + 10px) 16px 10px 16px;
+            border-bottom: 0.5px solid var(--separator);
             display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.3s;
         }
+        
         @media (prefers-color-scheme: dark) {
-            .app-header { background: rgba(28, 28, 30, 0.85); }
+            .app-header { background: rgba(28, 28, 30, 0.8); }
         }
 
-        .header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        h1 { 
+            margin: 0; font-size: 22px; font-weight: 700; 
+            display: flex; align-items: center; gap: 10px; 
+            letter-spacing: -0.5px;
+        }
+
+        .app-icon-img { 
+            width: 30px; height: 30px; border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15); 
+        }
 
         .icon-btn {
-            background: rgba(118, 118, 128, 0.12);
-            border: none; width: 36px; height: 36px; border-radius: 50%;
+            background: transparent; border: none; color: var(--primary);
+            font-size: 17px; cursor: pointer; padding: 8px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 18px; transition: transform 0.1s;
         }
-        .icon-btn:active { transform: scale(0.9); background: rgba(118, 118, 128, 0.24); }
+        .icon-btn:active { opacity: 0.5; }
 
         /* --- SEARCH --- */
-        .search-container { padding: 10px 16px 5px 16px; background: transparent; }
+        .search-container { 
+            padding: 12px 16px; 
+            background: transparent; 
+        }
         .search-wrapper { position: relative; width: 100%; }
         .search-bar {
-            width: 100%; padding: 10px 12px 10px 36px; border-radius: 10px; border: none;
-            background: rgba(118, 118, 128, 0.12); font-size: 17px; color: var(--ios-text);
+            width: 100%; padding: 10px 10px 10px 36px; 
+            border-radius: 10px; border: none;
+            background: var(--input-bg); 
+            font-size: 17px; color: var(--text-main);
             transition: all 0.2s;
         }
-        .search-bar::placeholder { color: var(--ios-text-sec); }
-        .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ios-text-sec); font-size: 16px; }
+        .search-bar::placeholder { color: var(--text-secondary); }
+        .search-icon { 
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%); 
+            color: var(--text-secondary); font-size: 16px; pointer-events: none; 
+        }
 
         /* --- CHIPS --- */
         .chip-scroll-row { 
-            display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; 
+            display: flex; gap: 10px; overflow-x: auto; 
+            padding: 4px 16px 16px 16px; 
             scrollbar-width: none; -webkit-overflow-scrolling: touch; 
         }
         .chip-scroll-row::-webkit-scrollbar { display: none; }
 
         .filter-chip {
-            padding: 6px 14px; border-radius: 16px; font-size: 14px; font-weight: 500;
-            white-space: nowrap; flex-shrink: 0; cursor: pointer; border: none;
-            background: var(--ios-card-bg); color: var(--ios-text); 
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            padding: 8px 14px; border-radius: 18px; 
+            font-size: 14px; font-weight: 500;
+            white-space: nowrap; flex-shrink: 0; cursor: pointer; 
+            border: 1px solid var(--separator);
+            background: var(--surface); color: var(--text-main);
             transition: all 0.2s ease;
         }
-        .filter-chip.active { background: var(--ios-text); color: var(--ios-gray-bg); font-weight: 600; }
-        .filter-chip:active { transform: scale(0.95); opacity: 0.8; }
+        .filter-chip.active { 
+            background: var(--text-main); color: var(--background); 
+            border-color: var(--text-main); 
+        }
 
         /* --- RESULTS --- */
-        .results-grid { padding: 0 16px; display: flex; flex-direction: column; gap: 16px; }
+        .results-grid { padding: 0 16px 20px 16px; display: flex; flex-direction: column; gap: 16px; }
 
         .result-card {
-            background: var(--ios-card-bg); padding: 16px; border-radius: 14px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03); 
-            transition: transform 0.1s; position: relative; overflow: hidden;
+            background: var(--surface); 
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow); 
+            position: relative; overflow: hidden;
+            transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         .result-card:active { transform: scale(0.98); }
+
+        /* Card Layout */
+        .result-main { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
         
-        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-        
-        .drug-name-main { font-size: 19px; font-weight: 700; color: var(--ios-text); line-height: 1.2; }
-        .drug-class-badge { 
-            font-size: 11px; font-weight: 600; text-transform: uppercase; 
-            color: var(--ios-blue); background: rgba(0, 122, 255, 0.1);
-            padding: 3px 8px; border-radius: 6px; margin-top: 4px; display: inline-block;
+        .drug-info { flex: 1; padding-right: 12px; }
+        .drug-name { 
+            font-size: 17px; font-weight: 600; color: var(--text-main); 
+            margin-bottom: 4px; line-height: 1.2; 
         }
+        .drug-class { font-size: 14px; color: var(--text-secondary); font-weight: 400; }
 
-        .system-tag {
-            font-size: 12px; color: var(--ios-text-sec); margin-top: 4px; display: flex; align-items: center; gap: 4px;
+        /* TTS Button on Card */
+        .tts-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--input-bg); border: none;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--primary); font-size: 18px; flex-shrink: 0;
+            transition: all 0.2s;
         }
+        .tts-btn.speaking { background: var(--primary); color: white; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); } }
 
-        .chevron { 
-            color: var(--ios-separator); font-size: 20px; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
-            margin-left: 10px;
-        }
-        .result-card.expanded .chevron { transform: rotate(90deg); color: var(--ios-blue); }
-
+        /* Expand Logic */
         .result-detail { 
-            display: none; margin-top: 16px; padding-top: 16px; 
-            border-top: 0.5px solid var(--ios-border); 
+            height: 0; overflow: hidden; opacity: 0;
+            border-top: 0.5px solid transparent;
+            transition: all 0.35s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        .result-card.expanded .result-detail { display: block; animation: fadeSlide 0.25s ease-out; }
-
-        @keyframes fadeSlide { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Structured Data Display */
-        .info-grid { display: grid; gap: 12px; }
-        .info-item { display: flex; flex-direction: column; gap: 3px; }
-        .info-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ios-text-sec); font-weight: 600; }
-        .info-val { font-size: 15px; color: var(--ios-text); line-height: 1.5; }
-
-        /* Tools */
-        .tools-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 4px 0; margin-top: 16px; -webkit-overflow-scrolling: touch; }
-        .tool-btn {
-            padding: 8px 14px; border-radius: 18px; border: none; font-size: 13px; font-weight: 600;
-            white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+        .result-card.expanded .result-detail { 
+            height: auto; opacity: 1; padding: 16px; 
+            border-top-color: var(--separator);
         }
-        .t-blue { background: rgba(0, 122, 255, 0.1); color: var(--ios-blue); }
-        .t-indigo { background: rgba(88, 86, 214, 0.1); color: var(--ios-indigo); }
-        .t-green { background: rgba(52, 199, 89, 0.1); color: var(--ios-green); }
-        .t-orange { background: rgba(255, 149, 0, 0.1); color: #FF9500; }
-        .t-gray { background: var(--ios-gray-bg); color: var(--ios-text); }
-
-        /* --- SHEET MODALS (iOS Style) --- */
-        .sheet-overlay {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4); z-index: 1000; backdrop-filter: blur(2px);
-            align-items: flex-end;
-        }
-        .sheet-modal {
-            background: var(--ios-card-bg); width: 100%; max-width: 600px; margin: 0 auto;
-            border-radius: 20px 20px 0 0; padding: 0; box-sizing: border-box;
-            max-height: 90vh; display: flex; flex-direction: column;
-            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-        }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        .sheet-handle-area { width: 100%; padding: 12px; display: flex; justify-content: center; }
-        .sheet-handle { width: 40px; height: 5px; background: var(--ios-separator); border-radius: 10px; opacity: 0.5; }
-
-        .sheet-content { padding: 0 20px 30px 20px; overflow-y: auto; }
-        .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .sheet-title { font-size: 20px; font-weight: 700; margin: 0; }
         
-        .close-txt { font-size: 16px; color: var(--ios-blue); font-weight: 600; background: none; border: none; padding: 0; }
+        .detail-row { margin-bottom: 12px; }
+        .d-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
+        .d-content { font-size: 15px; color: var(--text-main); line-height: 1.5; }
 
-        /* Forms inside Sheets */
-        .form-label { font-size: 13px; font-weight: 600; color: var(--ios-text-sec); margin-bottom: 6px; display: block; text-transform: uppercase; }
-        .form-input {
-            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--ios-border);
-            background: var(--ios-gray-bg); font-size: 16px; color: var(--ios-text); margin-bottom: 16px;
-            font-family: inherit; resize: none;
+        /* --- TOOLS & BUTTONS --- */
+        .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 0 0; margin-top: 10px; }
+        .btn-tool {
+            font-size: 13px; padding: 8px 14px; border-radius: 14px; border: none; font-weight: 600;
+            flex-shrink: 0; cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
-        .form-input:focus { border-color: var(--ios-blue); background: var(--ios-card-bg); }
+        /* iOS Pastel Colors */
+        .tool-isbar { background: #FFD60A20; color: #FFD60A; } /* Yellow */
+        .tool-cheat { background: #64D2FF20; color: #0091FF; } /* Blue */
+        .tool-mix { background: #BF5AF220; color: #BF5AF2; } /* Purple */
+        .tool-explain { background: #32D74B20; color: #32D74B; } /* Green */
+        .tool-edit { background: #FF9F0A20; color: #FF9F0A; } /* Orange */
 
-        .big-btn {
-            width: 100%; padding: 16px; border-radius: 14px; border: none;
-            background: var(--ios-blue); color: white; font-size: 17px; font-weight: 600;
+        @media (prefers-color-scheme: dark) {
+            .tool-isbar { color: #FFD60A; }
+            .tool-cheat { color: #64D2FF; }
+        }
+
+        .btn-action {
+            width: 100%; background: var(--primary); color: white;
+            padding: 14px; border-radius: 12px; border: none; 
+            font-size: 16px; font-weight: 600; margin-top: 16px;
             display: flex; justify-content: center; align-items: center; gap: 8px;
-            margin-top: 10px; transition: opacity 0.2s;
         }
-        .big-btn:active { opacity: 0.7; }
-        .big-btn.secondary { background: var(--ios-gray-bg); color: var(--ios-text); }
+        .btn-action:active { opacity: 0.8; }
+        .btn-secondary { background: var(--input-bg); color: var(--primary); }
 
-        /* AI Output Area */
-        .ai-box {
-            background: var(--ios-gray-bg); border-radius: 12px; padding: 16px; margin-top: 16px;
-            font-size: 15px; line-height: 1.6; color: var(--ios-text); display: none;
+        /* --- OVERLAYS (iOS Bottom Sheets) --- */
+        .overlay-backdrop {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 1000; 
+            backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+            align-items: flex-end;
+            opacity: 0; transition: opacity 0.3s;
         }
-        .ai-box table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
-        .ai-box th { text-align: left; border-bottom: 1px solid var(--ios-separator); color: var(--ios-text-sec); padding: 5px; }
-        .ai-box td { padding: 6px 5px; border-bottom: 1px solid var(--ios-border); }
+        .overlay-backdrop.show { opacity: 1; }
+        
+        .sheet-modal {
+            background: var(--surface-secondary); 
+            width: 100%; max-width: 600px; margin: 0 auto;
+            border-radius: 20px 20px 0 0; 
+            padding: 20px; box-sizing: border-box;
+            max-height: 90vh; overflow-y: auto;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; flex-direction: column;
+            box-shadow: var(--modal-shadow);
+        }
+        .overlay-backdrop.show .sheet-modal { transform: translateY(0); }
 
+        .sheet-handle {
+            width: 40px; height: 5px; background: var(--separator); 
+            border-radius: 3px; margin: 0 auto 20px auto; opacity: 0.5;
+        }
+
+        .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .sheet-title { font-size: 20px; font-weight: 700; }
+        .sheet-close { color: var(--primary); font-weight: 600; background: none; border: none; font-size: 16px; }
+
+        /* Inputs in Sheets */
+        .ios-input-group { background: var(--surface); border-radius: 12px; padding: 0 16px; margin-bottom: 20px; }
+        .ios-input-row { 
+            padding: 14px 0; display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 0.5px solid var(--separator);
+        }
+        .ios-input-row:last-child { border-bottom: none; }
+        
+        .ios-text-input {
+            width: 100%; padding: 12px; border-radius: 8px; border: none;
+            background: var(--input-bg); font-size: 16px; color: var(--text-main);
+        }
+        .ios-textarea {
+            width: 100%; padding: 12px; border-radius: 8px; border: none;
+            background: var(--input-bg); font-size: 16px; color: var(--text-main);
+            min-height: 100px; font-family: inherit; resize: none;
+        }
+
+        /* AI Output Box */
+        .ai-output-box {
+            margin-top: 16px; padding: 16px; border-radius: 12px; font-size: 15px;
+            background: var(--surface); color: var(--text-main); display: none; line-height: 1.6;
+        }
+        .ai-output-box p { margin: 8px 0; }
+        .ai-output-box table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+        .ai-output-box th { text-align:left; color:var(--text-secondary); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--separator); padding:4px; }
+        .ai-output-box td { border-bottom:1px solid var(--separator); padding:8px 4px; }
+
+        /* Spinner */
         .spinner {
             width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;
+            border-top-color: white; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Skeleton */
-        .sk-card { height: 90px; background: var(--ios-card-bg); border-radius: 14px; margin-bottom: 16px; position: relative; overflow: hidden; }
-        .sk-shimmer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(128,128,128,0.1), transparent);
-            animation: shimmer 1.5s infinite;
-        }
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-
+        .skeleton { height: 80px; background: var(--surface); border-radius: 16px; margin-bottom: 16px; opacity: 0.5; animation: pulse-opacity 1.5s infinite; }
+        @keyframes pulse-opacity { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
 <div class="app-header">
-    <div style="display:flex; align-items:center; gap:8px;">
-        <div style="width:30px; height:30px; background:linear-gradient(135deg, #00C6FB, #005BEA); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px;">💊</div>
-        <div class="header-title">Drug Tutor</div>
-    </div>
-    <div style="display:flex; gap:12px;">
-        <button onclick="toggleGen()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:18px; color:var(--ios-blue); font-weight:600; font-size:13px; background:rgba(0,122,255,0.1);">
-            🦠 Disease → Rx
+    <h1>
+        <img id="header-icon-display" src="" alt="" class="app-icon-img">
+        Drug Tutor
+    </h1>
+    <div style="display:flex; gap:15px;">
+        <button onclick="toggleDisease()" class="icon-btn" style="color:var(--primary); font-weight:600; font-size:15px;">
+            🦠 Disease
         </button>
-        <button onclick="toggleVS()" class="icon-btn" style="color:var(--ios-indigo);">🆚</button>
-        <button onclick="toggleSettings()" class="icon-btn" style="color:var(--ios-text-sec);">⚙️</button>
+        <button onclick="toggleVS()" class="icon-btn" style="font-size:20px;">🆚</button>
+        <button onclick="toggleSettings()" class="icon-btn" style="font-size:20px;">⚙️</button>
     </div>
 </div>
 
 <div class="search-container">
     <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" class="search-bar" placeholder="Search drugs, classes..." oninput="handleSearch()" onfocus="handleSearch()">
+        <input type="text" id="search-input" class="search-bar" placeholder="Search drug..." oninput="handleSearch()">
     </div>
 </div>
 
 <div id="system-chips" class="chip-scroll-row"></div>
 
-<div id="loading-skeleton" style="padding:16px;">
-    <div class="sk-card"><div class="sk-shimmer"></div></div>
-    <div class="sk-card"><div class="sk-shimmer"></div></div>
+<div id="loading-skeleton" style="padding: 0 16px; display:none;">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
 </div>
 
 <div id="search-results" class="results-grid">
-    <div id="empty-state" style="text-align:center; padding:60px 20px; color:var(--ios-text-sec); display:none;">
-        <div style="font-size:40px; margin-bottom:10px; opacity:0.3;">🩺</div>
-        <div>Start typing or select a system<br>to browse the formulary.</div>
+    <div style="text-align:center; color:var(--text-secondary); margin-top:60px;" id="empty-state-msg">
+        <div style="font-size:4rem; opacity:0.1; margin-bottom:10px;">🩺</div>
+        <div>Type to search or select a system</div>
     </div>
 </div>
 
-<div id="settings-overlay" class="sheet-overlay" onclick="if(event.target===this) toggleSettings()">
+<div id="settings-overlay" class="overlay-backdrop" onclick="if(event.target===this) toggleSettings()">
     <div class="sheet-modal">
-        <div class="sheet-handle-area"><div class="sheet-handle"></div></div>
-        <div class="sheet-content">
-            <div class="sheet-header">
-                <div class="sheet-title">Settings</div>
-                <button class="close-txt" onclick="saveSettings()">Done</button>
-            </div>
-
-            <span class="form-label">AI Persona</span>
-            <div onclick="toggleLanguage()" style="background:var(--ios-gray-bg); padding:14px; border-radius:12px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-                <span>Speaking Style</span>
-                <span id="lang-display" style="color:var(--ios-blue); font-weight:600;">LIHKG Mode</span>
-            </div>
-
-            <span class="form-label">AI Provider</span>
-            <select id="provider-select" onchange="updateSettingsUI()" class="form-input" style="appearance:none;">
-                <option value="yinli">Yinli (GPT-5.1)</option>
-                <option value="deepseek">DeepSeek (Standard)</option>
-            </select>
-
-            <div id="settings-dynamic-fields"></div>
-            
-            <button onclick="fetchSheetData()" class="big-btn secondary">🔄 Reload Database</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div class="sheet-title">Settings</div>
+            <button class="sheet-close" onclick="toggleSettings()">Done</button>
         </div>
+        <div class="ios-input-group">
+            <div class="ios-input-row" onclick="toggleLanguage()">
+                <span>AI Persona</span>
+                <span id="lang-display" style="color:var(--primary);">LIHKG (Cantonese)</span>
+            </div>
+            <div class="ios-input-row">
+                <span>AI Provider</span>
+                <select id="provider-select" onchange="updateSettingsUI()" style="border:none; bg:transparent; color:var(--primary); font-size:16px; text-align:right;">
+                    <option value="yinli">Yinli (GPT-5.1)</option>
+                    <option value="deepseek">DeepSeek (V3)</option>
+                </select>
+            </div>
+        </div>
+        <div id="settings-dynamic-fields" class="ios-input-group"></div>
+        <button onclick="fetchSheetData()" class="btn-action btn-secondary">🔄 Reload Database</button>
     </div>
 </div>
 
-<div id="vs-overlay" class="sheet-overlay" onclick="if(event.target===this) toggleVS()">
-    <div class="sheet-modal">
-        <div class="sheet-handle-area"><div class="sheet-handle"></div></div>
-        <div class="sheet-content">
-            <div class="sheet-header">
-                <div class="sheet-title">Compare Drugs</div>
-                <button class="close-txt" onclick="toggleVS()">Close</button>
-            </div>
-            
-            <div style="display:flex; gap:10px; align-items:center;">
-                <div style="flex:1;">
-                    <span class="form-label">Drug A</span>
-                    <input type="text" id="vs-input-a" class="form-input" placeholder="e.g. Panadol" style="margin-bottom:0;">
-                </div>
-                <div style="font-weight:800; color:var(--ios-text-sec); font-size:12px;">VS</div>
-                <div style="flex:1;">
-                    <span class="form-label">Drug B</span>
-                    <input type="text" id="vs-input-b" class="form-input" placeholder="e.g. Brufen" style="margin-bottom:0;">
-                </div>
-            </div>
-
-            <button id="btn-compare" class="big-btn" onclick="triggerCompare()">⚔️ Compare</button>
-            <div id="vs-result-area" class="ai-box"></div>
+<div id="vs-overlay" class="overlay-backdrop" onclick="if(event.target===this) toggleVS()">
+    <div class="sheet-modal" style="height:85vh;">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div class="sheet-title">Compare Drugs</div>
+            <button class="sheet-close" onclick="toggleVS()">Close</button>
         </div>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <input type="text" id="vs-input-a" class="ios-text-input" placeholder="Drug A">
+            <input type="text" id="vs-input-b" class="ios-text-input" placeholder="Drug B">
+        </div>
+        <button id="btn-compare" class="btn-action" onclick="triggerCompare()">⚔️ Compare</button>
+        <div id="vs-result-area" class="ai-output-box" style="flex:1; overflow-y:auto;"></div>
     </div>
 </div>
 
-<div id="gen-overlay" class="sheet-overlay" onclick="if(event.target===this) toggleGen()">
-    <div class="sheet-modal">
-        <div class="sheet-handle-area"><div class="sheet-handle"></div></div>
-        <div class="sheet-content">
-            <div class="sheet-header">
-                <div class="sheet-title">Protocol & Rx Guide</div>
-                <button class="close-txt" onclick="toggleGen()">Close</button>
-            </div>
-            
-            <p style="color:var(--ios-text-sec); font-size:14px; margin-top:0;">
-                Enter a disease or condition. AI will suggest standard HA formulary drugs and precautions.
-            </p>
-
-            <span class="form-label">Disease / Condition</span>
-            <input type="text" id="gen-input" class="form-input" placeholder="e.g. CAP Pneumonia, Atrial Fibrillation...">
-
-            <button id="btn-gen" class="big-btn" onclick="triggerGen()">
-                ✨ Get Treatment Protocol
-            </button>
-
-            <div id="gen-result-area" class="ai-box"></div>
+<div id="gen-overlay" class="overlay-backdrop" onclick="if(event.target===this) toggleDisease()">
+    <div class="sheet-modal" style="height:90vh;">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div class="sheet-title">Disease Protocol</div>
+            <button class="sheet-close" onclick="toggleDisease()">Close</button>
         </div>
+        <p style="color:var(--text-secondary); font-size:14px; margin-top:0;">Enter a condition to see HA standard drugs.</p>
+        <textarea id="gen-input" class="ios-textarea" placeholder="e.g. Heart Failure, COPD, CAP (Pneumonia)..."></textarea>
+        
+        <button id="btn-gen" class="btn-action" onclick="triggerDisease()">✨ Show Related Drugs</button>
+        <div id="gen-result-area" class="ai-output-box" style="flex:1; overflow-y:auto; white-space: pre-wrap;"></div>
     </div>
 </div>
 
-<div id="edit-overlay" class="sheet-overlay" onclick="if(event.target===this) toggleEditOverlay()">
+<div id="edit-overlay" class="overlay-backdrop" onclick="if(event.target===this) toggleEditOverlay()">
     <div class="sheet-modal">
-        <div class="sheet-handle-area"><div class="sheet-handle"></div></div>
-        <div class="sheet-content">
-            <div class="sheet-header">
-                <div class="sheet-title">Edit Entry</div>
-                <button class="close-txt" onclick="toggleEditOverlay()">Cancel</button>
-            </div>
-            <p id="edit-drug-name-disp" style="font-weight:700; font-size:18px; margin-bottom:10px;"></p>
-            <textarea id="edit-input" class="form-input" style="height:120px;" placeholder="Tell AI what to fix (e.g., 'Add nausea to side effects')."></textarea>
-            <button id="btn-edit-submit" class="big-btn" onclick="submitAIEdit()">✨ Auto-Update</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div class="sheet-title">AI Edit</div>
+            <button class="sheet-close" onclick="toggleEditOverlay()">Cancel</button>
         </div>
+        <div style="margin-bottom:15px; font-weight:600;" id="edit-drug-name-disp"></div>
+        <textarea id="edit-input" class="ios-textarea" placeholder="Instructions: e.g. Add 'Nausea' to side effects..."></textarea>
+        <button id="btn-edit-submit" class="btn-action" onclick="submitAIEdit()">Update</button>
     </div>
 </div>
 
 <script>
-    // --- CONFIG ---
+    // --- CONFIGURATION ---
     const DB_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
     const UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
 
     // --- STATE ---
     let drugs = [];
     let aiLanguage = 'lihkg';
+    let currentSpeakerId = null; // Track which drug is speaking
+    
+    // API Keys
     let provider = 'yinli';
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
-    let currentEditDrug = null;
+    let yinliModel = "gpt-5.1";
 
-    // --- SYSTEMS ---
+    let currentEditDrug = null;
+    let pendingDrugSave = null;
+
+    // --- SYSTEM FILTERS ---
     const systems = [
+        {id: "All", name: "All"},
         {id: "GI", name: "🍽️ Gastro"}, {id: "CVS", name: "🫀 Cardio"},
         {id: "Resp", name: "🫁 Resp"}, {id: "CNS", name: "🧠 CNS"},
         {id: "Inf", name: "🦠 Infect"}, {id: "Endo", name: "🦋 Endo"},
-        {id: "Pain", name: "💊 Pain"}, {id: "Emerg", name: "🚨 Emerg"}
+        {id: "Pain", name: "💊 Pain"}
     ];
 
-    // --- INIT ---
     function init() {
         if(localStorage.getItem('ai_provider')) provider = localStorage.getItem('ai_provider');
         if(localStorage.getItem('ds_key')) keys.deepseek = localStorage.getItem('ds_key');
@@ -427,25 +470,153 @@
         renderSystemChips();
         fetchSheetData(true);
         
-        // Restore search
+        // Restore previous search
         const lastSearch = localStorage.getItem('last_search_term');
         if(lastSearch) {
             document.getElementById('search-input').value = lastSearch;
+            handleSearch();
         }
     }
 
-    // --- DATA FETCHING ---
+    // --- TTS FUNCTION (READ) ---
+    function toggleSpeak(btnId, data) {
+        const btn = document.getElementById(btnId);
+        
+        // Stop if currently speaking this specific drug
+        if (currentSpeakerId === btnId && window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            resetSpeakerUI();
+            return;
+        }
+
+        // Stop any other speech
+        window.speechSynthesis.cancel();
+        resetSpeakerUI();
+
+        // Start Speaking
+        currentSpeakerId = btnId;
+        btn.classList.add('speaking');
+        btn.innerHTML = '⏹'; // Stop Icon
+
+        // Construct Text based on Language Setting
+        let text = "";
+        if (aiLanguage === 'lihkg') {
+            text = `Drug Name: ${data.name}. Class: ${data.class}. Uses: ${data.indication}. Side Effects: ${data.SideEffects}. Nursing: ${data.nursing}`;
+        } else {
+            text = `Drug Name: ${data.name}. Class: ${data.class}. Indication: ${data.indication}. Side Effects: ${data.SideEffects}. Nursing Considerations: ${data.nursing}`;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Attempt to find a high quality voice (iOS "Enhanced")
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.name.includes("Enhanced") || v.name.includes("Premium")) || voices.find(v => v.lang.startsWith("en"));
+        if(preferredVoice) utterance.voice = preferredVoice;
+        
+        utterance.rate = 0.95;
+        
+        utterance.onend = () => { resetSpeakerUI(); };
+        utterance.onerror = () => { resetSpeakerUI(); };
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function resetSpeakerUI() {
+        if(currentSpeakerId) {
+            const btn = document.getElementById(currentSpeakerId);
+            if(btn) {
+                btn.classList.remove('speaking');
+                btn.innerHTML = '🔊';
+            }
+            currentSpeakerId = null;
+        }
+    }
+
+    // --- SEARCH & RENDER ---
+    function handleSearch() {
+        const q = document.getElementById('search-input').value.toLowerCase().trim();
+        const container = document.getElementById('search-results');
+        const emptyState = document.getElementById('empty-state-msg');
+        
+        localStorage.setItem('last_search_term', q);
+
+        if(!q) {
+            container.innerHTML = ''; container.appendChild(emptyState);
+            emptyState.style.display = 'block';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        container.innerHTML = '';
+
+        const matches = drugs.filter(d => (d.name+d.class+d.indication+d.system).toLowerCase().includes(q));
+        matches.sort((a,b) => (a.name.length - b.name.length)); // Shortest match first
+
+        if (matches.length > 0) {
+            matches.slice(0, 50).forEach((d, idx) => renderResult(d, idx, container));
+        } else {
+            container.innerHTML = `
+                <div style="text-align:center; padding:30px;">
+                    <div style="color:var(--text-secondary); margin-bottom:15px;">No local match.</div>
+                    <button class="btn-action" style="width:auto; margin:0 auto;" onclick="triggerAISearchAndGenerate('${q}')">
+                        ✨ Ask AI Pharmacist
+                    </button>
+                </div>`;
+        }
+    }
+
+    function renderResult(d, idx, container) {
+        const div = document.createElement('div');
+        div.className = 'result-card';
+        const uniqueId = `drug-${Math.random().toString(36).substr(2, 9)}`;
+        const aiId = `ai-${uniqueId}`;
+        const speakBtnId = `spk-${uniqueId}`;
+
+        // Safe strings for onclick
+        const drugStr = JSON.stringify(d).replace(/"/g, '&quot;');
+        const safeData = JSON.stringify({name: d.name, class: d.class, indication: d.indication, SideEffects: d.SideEffects, nursing: d.nursing}).replace(/"/g, '&quot;');
+
+        div.innerHTML = `
+            <div class="result-main">
+                <div class="drug-info" onclick="toggleCard('${uniqueId}')">
+                    <div class="drug-name">${d.name}</div>
+                    <div class="drug-class">${d.class}</div>
+                </div>
+                <button id="${speakBtnId}" class="tts-btn" onclick="toggleSpeak('${speakBtnId}', ${safeData})">🔊</button>
+            </div>
+            <div id="${uniqueId}" class="result-detail">
+                <div class="detail-row"><span class="d-label">Indication</span><span class="d-content">${d.indication || "N/A"}</span></div>
+                <div class="detail-row"><span class="d-label">Side Effects</span><span class="d-content">${d.SideEffects || "N/A"}</span></div>
+                <div class="detail-row"><span class="d-label">Nursing</span><span class="d-content">${d.nursing || "N/A"}</span></div>
+                
+                <div class="tool-row">
+                    <button class="btn-tool tool-edit" onclick="triggerEditPrompt(${drugStr})">✏️ Edit</button>
+                    <button class="btn-tool tool-isbar" onclick="handleTool('isbar', ${drugStr}, '${aiId}', this)">🚑 ISBAR</button>
+                    <button class="btn-tool tool-explain" onclick="handleTool('explain', ${drugStr}, '${aiId}', this)">🎓 Explain</button>
+                    <button class="btn-tool tool-cheat" onclick="handleTool('cheat', ${drugStr}, '${aiId}', this)">📋 Ward Sheet</button>
+                    <button class="btn-tool tool-mix" onclick="handleTool('mix', ${drugStr}, '${aiId}', this)">🧪 Mix</button>
+                </div>
+                <div id="${aiId}" class="ai-output-box"></div>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function toggleCard(id) {
+        const card = document.getElementById(id).parentElement;
+        card.classList.toggle('expanded');
+    }
+
+    // --- DATA HANDLING ---
     function fetchSheetData(silent = false) {
         const loading = document.getElementById('loading-skeleton');
         const results = document.getElementById('search-results');
         
-        // Load Cache
-        const localData = localStorage.getItem('drug_db_cache');
-        if (localData) {
-            drugs = JSON.parse(localData);
-            loading.style.display = 'none';
-            if(document.getElementById('search-input').value) handleSearch();
-        }
+        if(!silent) { results.style.display = 'none'; loading.style.display = 'block'; }
+        
+        // Load Local
+        const local = localStorage.getItem('drug_db_cache');
+        if(local) { drugs = JSON.parse(local); if(!silent) loading.style.display = 'none'; results.style.display = 'flex'; }
 
         // Fetch Fresh
         fetch(DB_URL).then(r=>r.text()).then(csv=>{
@@ -453,258 +624,156 @@
                 if(res.data.length){ 
                     drugs = res.data;
                     localStorage.setItem('drug_db_cache', JSON.stringify(drugs));
-                    loading.style.display = 'none';
-                    if(!localData && !silent) handleSearch();
+                    if(!silent) { loading.style.display = 'none'; results.style.display = 'flex'; }
                 }
             }});
-        }).catch(e => { if(!localData && !silent) alert("Offline Mode"); });
+        });
     }
 
-    // --- RENDERING ---
     function renderSystemChips() {
         const c = document.getElementById('system-chips');
-        c.innerHTML = `<button class="filter-chip active" onclick="filterBySystem('All', this)">All</button>`;
-        systems.forEach(s => { c.innerHTML += `<button class="filter-chip" onclick="filterBySystem('${s.name.split(' ')[1]}', this)">${s.name}</button>`; });
+        c.innerHTML = systems.map(s => 
+            `<button class="filter-chip ${s.id === 'All' ? 'active' : ''}" onclick="filterSys('${s.id}', this)">${s.name}</button>`
+        ).join('');
     }
 
-    function filterBySystem(term, btn) {
+    function filterSys(sys, btn) {
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById('search-input').value = '';
-        
         const container = document.getElementById('search-results');
-        container.innerHTML = '';
+        const emptyState = document.getElementById('empty-state-msg');
         
-        const subset = (term === 'All') ? drugs : drugs.filter(d => (d.system || "").includes(term) || (d.class || "").includes(term));
-        if(subset.length === 0) document.getElementById('empty-state').style.display = 'block';
-        else subset.slice(0, 50).forEach(d => renderCard(d, container));
+        container.innerHTML = '';
+        if(sys === 'All') {
+            emptyState.style.display = 'block';
+            return;
+        }
+        emptyState.style.display = 'none';
+        
+        const sysName = sys === 'Inf' ? 'Infections' : sys; // Simple map
+        const matches = drugs.filter(d => (d.system || "").includes(sysName) || (sys === 'All'));
+        
+        if(matches.length > 0) matches.forEach((d, i) => renderResult(d, i, container));
+        else container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-secondary);">No drugs found in this category.</div>`;
     }
 
-    function handleSearch() {
-        const q = document.getElementById('search-input').value.toLowerCase().trim();
-        const container = document.getElementById('search-results');
-        container.innerHTML = '';
-        
-        if(!q) { document.getElementById('empty-state').style.display = 'block'; return; }
-        document.getElementById('empty-state').style.display = 'none';
-
-        const matches = drugs.filter(d => (d.name+d.class+d.indication).toLowerCase().includes(q));
-        
-        if (matches.length > 0) {
-            matches.forEach(d => renderCard(d, container));
+    // --- AI TOOLS & HA DISEASE LOGIC ---
+    
+    // Toggle Modals with Backdrop
+    function toggleOverlay(id) {
+        const el = document.getElementById(id);
+        const isOpen = el.classList.contains('show');
+        if(isOpen) {
+            el.classList.remove('show');
+            setTimeout(() => { el.style.display = 'none'; }, 300);
         } else {
-            container.innerHTML = `
-                <div style="text-align:center; padding:30px;">
-                    <div style="color:var(--ios-text-sec);">Not found locally.</div>
-                    <button class="big-btn" onclick="triggerAISearchAndGenerate('${q}')" style="margin-top:15px;">
-                        ✨ Ask AI Pharmacist
-                    </button>
-                </div>`;
+            el.style.display = 'flex';
+            // Slight delay to allow display flex to apply before opacity transition
+            setTimeout(() => { el.classList.add('show'); }, 10);
         }
     }
+    
+    function toggleDisease() { toggleOverlay('gen-overlay'); }
+    function toggleVS() { toggleOverlay('vs-overlay'); }
+    function toggleSettings() { toggleOverlay('settings-overlay'); }
+    function toggleEditOverlay() { toggleOverlay('edit-overlay'); }
 
-    // --- MAIN CARD RENDER FUNCTION ---
-    function renderCard(d, container) {
-        const div = document.createElement('div');
-        div.className = 'result-card';
-        const uniqueId = `ai-${Math.random().toString(36).substr(2, 9)}`;
-        const drugStr = JSON.stringify(d).replace(/"/g, '&quot;');
-        
-        let alertHtml = '';
-        if(d.hold_param) alertHtml = `<div style="background:rgba(255,59,48,0.1); color:var(--ios-red); padding:10px; border-radius:8px; font-weight:700; font-size:13px; margin-bottom:12px;">⛔️ HOLD IF: ${d.hold_param}</div>`;
-
-        div.innerHTML = `
-            <div class="card-top">
-                <div style="flex:1;">
-                    <div class="drug-name-main">${d.name}</div>
-                    <span class="drug-class-badge">${d.class}</span>
-                    <div class="system-tag">${d.system || ''}</div>
-                </div>
-                <div style="display:flex; align-items:center;">
-                    <button onclick="event.stopPropagation(); speakText('${d.name}. ${d.indication}')" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--ios-blue);">🔊</button>
-                    <div class="chevron">›</div>
-                </div>
-            </div>
-            
-            <div class="result-detail">
-                ${alertHtml}
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Indication</span>
-                        <span class="info-val">${d.indication}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Nursing Considerations</span>
-                        <span class="info-val">${d.nursing}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Side Effects</span>
-                        <span class="info-val" style="color:var(--ios-text-sec);">${d.SideEffects}</span>
-                    </div>
-                </div>
-
-                <div class="tools-scroll">
-                    <button class="tool-btn t-blue" onclick="event.stopPropagation(); handleTool('isbar', ${drugStr}, '${uniqueId}')">🚑 ISBAR</button>
-                    <button class="tool-btn t-indigo" onclick="event.stopPropagation(); handleTool('explain', ${drugStr}, '${uniqueId}')">🎓 Explain</button>
-                    <button class="tool-btn t-green" onclick="event.stopPropagation(); handleTool('cheat', ${drugStr}, '${uniqueId}')">📋 CheatSheet</button>
-                    <button class="tool-btn t-orange" onclick="event.stopPropagation(); triggerEditPrompt(${drugStr})">✏️ Edit</button>
-                </div>
-                <div id="${uniqueId}" class="ai-box"></div>
-            </div>
-        `;
-        div.onclick = (e) => { 
-            if(!e.target.closest('button') && !e.target.closest('input')) div.classList.toggle('expanded'); 
-        };
-        container.appendChild(div);
-    }
-
-    // --- AI TOOLS LOGIC ---
-    function handleTool(action, drugObj, id) {
-        const out = document.getElementById(id);
-        out.style.display = 'block';
-        out.innerHTML = 'Thinking...';
-        
-        const hkPersona = "You are a seasoned Hong Kong HA Nursing Senior (Old Seafood). Speak in LIHKG style (Cantonese/English Mix). Be strict about patient safety.";
-        let prompt = "";
-        
-        if (action === 'isbar') prompt = `System: ${hkPersona}. Write a nursing ISBAR handover for ${drugObj.name} assuming a patient emergency (e.g. Desat).`;
-        if (action === 'explain') prompt = `System: ${hkPersona}. Explain ${drugObj.name} to a Year 1 student using a funny analogy.`;
-        if (action === 'cheat') prompt = `System: ${hkPersona}. Create a Markdown 'Ward Survival Guide' for ${drugObj.name}. Sections: STOP Checks, Monitoring, Red Flags.`;
-
-        streamAI(prompt, (txt) => { out.innerHTML = marked.parse(txt); });
-    }
-
-    // --- DISEASE -> RX LOGIC (UPDATED HA SCRIPT) ---
-    function toggleGen() { 
-        const el = document.getElementById('gen-overlay');
-        el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
-    }
-
-    async function triggerGen() {
-        const input = document.getElementById('gen-input').value.trim();
-        const res = document.getElementById('gen-result-area');
+    // DISEASE PROTOCOL GENERATOR
+    async function triggerDisease() {
+        const disease = document.getElementById('gen-input').value.trim();
         const btn = document.getElementById('btn-gen');
+        const res = document.getElementById('gen-result-area');
         
-        if(!input) return;
+        if(!disease) return;
         
-        btn.innerHTML = '<div class="spinner"></div> Processing...';
-        res.style.display = 'block';
-        res.innerHTML = "Consulting HA Guidelines...";
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Consulting Protocol...';
+        res.style.display = 'block'; res.innerHTML = 'Reading HA Guidelines...';
         
-        // REFRAMED PROMPT
         const prompt = `Act as a Hong Kong Hospital Authority (HA) Pharmacist.
-        The user asks about the condition: "${input}".
+        The user asks about the condition: "${disease}".
         
-        Task: Provide a "Treatment Protocol" table.
-        1. Suggest the standard HA formulary drugs for this condition.
-        2. List standard dosages.
-        3. Add specific "Nurse Alerts" (LIHKG Style - cantonese/english mix).
+        Task: List the standard medications used for this condition in HA hospitals.
+        Format:
+        1. **Class Name**
+           * Drug Name (Route/Dose common range) - *One liner nursing check*
         
-        Format: Markdown Table.
-        | Drug | Route/Dose | Nursing Alert (HK Style) |
-        |---|---|---|
+        Style: Use the "Old Seafood" persona (Mix of Professional English terms and Cantonese slang/reminders like "Check BP ar!", "Careful Hypo").
+        Be concise. Focus on what a student nurse needs to prepare.`;
         
-        After the table, give one "Old Seafood" tip about managing this patient type.`;
-
-        await streamAI(prompt, (txt) => { res.innerHTML = marked.parse(txt); });
-        btn.innerHTML = '✨ Get Treatment Protocol';
+        try {
+            const text = await getAIResponse(prompt);
+            res.innerHTML = marked.parse(text);
+            btn.innerHTML = '✨ Show Related Drugs';
+        } catch(e) {
+            res.innerHTML = "Error: " + e.message;
+        } finally {
+            btn.disabled = false;
+        }
     }
 
-    // --- GENERIC AI API ---
-    async function streamAI(prompt, onChunk) {
-        let url = "https://api.deepseek.com/chat/completions";
-        let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
-        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: true };
+    // GENERIC AI TOOL HANDLER
+    async function handleTool(type, drug, outId, btn) {
+        const out = document.getElementById(outId);
+        const originalText = btn.innerText;
         
-        if(provider === 'yinli') { 
-            url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = "gpt-5.1"; 
-        }
+        btn.innerHTML = '<span class="spinner"></span>';
+        out.style.display = 'block'; out.innerHTML = 'Loading...';
+        
+        let prompt = "";
+        const persona = "You are a HK Nursing Mentor (Old Seafood style). Speak 'Kongish' (English/Cantonese mix).";
+        
+        if (type === 'isbar') prompt = `${persona} Write a realistic ISBAR handover for a patient needing ${drug.name}. Situation: deterioration. Keep it brief.`;
+        if (type === 'explain') prompt = `${persona} Explain ${drug.name} mechanism simply using an analogy. Mention the #1 killer side effect.`;
+        if (type === 'cheat') prompt = `${persona} Create a bullet-point 'Survival Sheet' for ${drug.name}: 1. STOP if... 2. Monitor... 3. Red Flags.`;
+        if (type === 'mix') prompt = `${persona} How to dilute/administer ${drug.name} (IV/PO)? Compatibility issues?`;
 
         try {
-            const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let fullText = "";
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                const chunk = decoder.decode(value, {stream: true});
-                const lines = chunk.split('\n');
-                for (const line of lines) {
-                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-                        try {
-                            const json = JSON.parse(line.substring(6));
-                            fullText += json.choices[0]?.delta?.content || "";
-                            onChunk(fullText);
-                        } catch (e) {}
-                    }
-                }
-            }
-        } catch(e) { onChunk("Error: " + e.message); }
+            const text = await getAIResponse(prompt);
+            out.innerHTML = marked.parse(text);
+        } catch(e) {
+            out.innerHTML = "Error.";
+        } finally {
+            btn.innerHTML = originalText;
+        }
     }
 
-    // --- VS & EDIT UTILS ---
-    function toggleVS() { const el = document.getElementById('vs-overlay'); el.style.display = (el.style.display==='flex')?'none':'flex'; }
-    function toggleEditOverlay() { const el = document.getElementById('edit-overlay'); el.style.display = (el.style.display==='flex')?'none':'flex'; }
-    function toggleSettings() { const el = document.getElementById('settings-overlay'); el.style.display = (el.style.display==='flex')?'none':'flex'; }
-    
-    function triggerEditPrompt(d) { currentEditDrug = d; document.getElementById('edit-drug-name-disp').innerText = d.name; toggleEditOverlay(); }
-    
-    async function submitAIEdit() {
-        const inst = document.getElementById('edit-input').value;
-        const btn = document.getElementById('btn-edit-submit');
-        btn.innerText = "Updating...";
+    // AI API CALL
+    async function getAIResponse(prompt) {
+        let url = "https://api.deepseek.com/chat/completions";
+        let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
+        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
         
-        const prompt = `Edit this JSON: ${JSON.stringify(currentEditDrug)}. Instructions: ${inst}. Return ONLY valid JSON.`;
-        
-        // Simulating non-streaming response for Edit (simplified)
-        await streamAI(prompt, (txt) => {
-             // Logic to parse JSON and save would go here (omitted for brevity in UI demo)
-             if(txt.includes('}')) { alert("Edit generated (See console for JSON)"); console.log(txt); toggleEditOverlay(); }
-        });
-        btn.innerText = "✨ Auto-Update";
+        if(provider === 'yinli') { 
+            url = yinliUrl; 
+            headers["Authorization"] = `Bearer ${keys.yinli}`; 
+            body.model = yinliModel; 
+        }
+
+        const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+        const json = await res.json();
+        return json.choices[0].message.content;
     }
 
-    async function triggerCompare() {
-        const a = document.getElementById('vs-input-a').value;
-        const b = document.getElementById('vs-input-b').value;
-        const res = document.getElementById('vs-result-area');
-        if(!a || !b) return;
-        
-        res.style.display='block'; res.innerHTML = "Comparing...";
-        const prompt = `Compare ${a} vs ${b} for a nurse. Markdown Table format. Focus on Clinical Differences.`;
-        await streamAI(prompt, (txt) => { res.innerHTML = marked.parse(txt); });
-    }
-
-    function toggleLanguage() {
-        const el = document.getElementById('lang-display');
-        aiLanguage = (aiLanguage === 'lihkg') ? 'english' : 'lihkg';
-        el.innerText = (aiLanguage === 'lihkg') ? "LIHKG Mode" : "English Mode";
-    }
-    
-    function saveSettings() {
-        const p = document.getElementById('provider-select').value;
-        localStorage.setItem('ai_provider', p);
-        toggleSettings();
-        location.reload(); 
-    }
-
+    // SETTINGS UTILS
     function updateSettingsUI() {
         const p = document.getElementById('provider-select').value;
-        const c = document.getElementById('settings-dynamic-fields');
-        c.innerHTML = (p === 'yinli') 
-            ? `<span class="form-label">Yinli Key</span><input type="password" id="yinli-key" class="form-input" value="${keys.yinli}" onchange="localStorage.setItem('yl_key', this.value)">`
-            : `<span class="form-label">DeepSeek Key</span><input type="password" id="deepseek-key" class="form-input" value="${keys.deepseek}" onchange="localStorage.setItem('ds_key', this.value)">`;
+        const div = document.getElementById('settings-dynamic-fields');
+        div.innerHTML = '';
+        
+        if(p === 'yinli') {
+            div.innerHTML = `<div class="ios-input-row"><span>API Key</span><input type="password" onchange="keys.yinli=this.value; localStorage.setItem('yl_key', this.value)" value="${keys.yinli}" class="ios-text-input" style="text-align:right"></div>`;
+        } else {
+            div.innerHTML = `<div class="ios-input-row"><span>API Key</span><input type="password" onchange="keys.deepseek=this.value; localStorage.setItem('ds_key', this.value)" value="${keys.deepseek}" class="ios-text-input" style="text-align:right"></div>`;
+        }
+        provider = p;
+        localStorage.setItem('ai_provider', p);
+    }
+    
+    function toggleLanguage() {
+        aiLanguage = aiLanguage === 'lihkg' ? 'english' : 'lihkg';
+        document.getElementById('lang-display').innerText = aiLanguage === 'lihkg' ? 'LIHKG (Cantonese)' : 'English';
     }
 
-    function speakText(txt) {
-        const u = new SpeechSynthesisUtterance(txt);
-        u.lang = 'en-GB';
-        window.speechSynthesis.speak(u);
-    }
-
-    // Run
     init();
 </script>
 </body>
