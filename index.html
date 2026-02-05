@@ -163,9 +163,10 @@
         .result-card:active { transform: scale(0.98); }
 
         .result-header { display: flex; justify-content: space-between; align-items: center; }
-        .drug-name { font-size: 19px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+        /* Adjusted drug-name for layout */
+        .drug-name { font-size: 19px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; line-height: 1.2; }
         .drug-class { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
-        .chevron { color: var(--text-secondary); opacity: 0.5; font-size: 24px; font-weight: 300; transition: transform 0.3s; }
+        .chevron { color: var(--text-secondary); opacity: 0.5; font-size: 24px; font-weight: 300; transition: transform 0.3s; margin-left: 10px; }
         .result-card.expanded .chevron { transform: rotate(90deg); color: var(--primary); opacity: 1; }
 
         .result-detail { display: none; margin-top: 20px; border-top: 0.5px solid var(--border); padding-top: 16px; }
@@ -595,15 +596,6 @@
         }
         if (bestVoice) u.voice = bestVoice;
         window.speechSynthesis.speak(u);
-
-        const buttons = document.querySelectorAll('.btn-action');
-        let btn = null;
-        buttons.forEach(b => { if(b.innerHTML.includes('Read Aloud')) btn = b; });
-        if(btn) {
-            const originalText = "🔊 Read Aloud";
-            btn.innerHTML = "🗣️ Speaking...";
-            setTimeout(() => { btn.innerHTML = originalText; }, text.length * 80); 
-        }
     }
     
     function speakDetails(d) {
@@ -690,11 +682,17 @@
         let holdHtml = '';
         if (d.hold_param) { holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`; }
 
+        // --- UPDATED LAYOUT WITH SPEAKER ICON ---
         div.innerHTML = `
             ${isNew ? '<div style="background:var(--secondary); color:white; font-size:10px; padding:4px 8px; border-radius:10px; display:inline-block; margin-bottom:8px; font-weight:700;">✅ Saved</div>' : ''}
             <div class="result-header">
-                <div>
-                    <div class="drug-name">${d.name}</div>
+                <div style="flex:1; padding-right:10px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="drug-name">${d.name}</div>
+                        <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" style="background:transparent; border:none; font-size:1.2rem; cursor:pointer; padding:0; display:flex; align-items:center; color:var(--primary);">
+                            🔊
+                        </button>
+                    </div>
                     <div class="drug-class">${d.class}</div>
                 </div>
                 <div class="chevron">›</div>
@@ -713,9 +711,6 @@
                     <button class="btn-tool tool-mix" onclick="event.stopPropagation(); handleToolClick('mix', ${drugStr}, '${aiId}', this)">🧪 Recon</button>
                     <button class="btn-tool tool-google" onclick="event.stopPropagation(); handleToolClick('google', ${drugStr}, '${aiId}', this)">G</button>
                 </div>
-                <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-action">
-                    🔊 Read Aloud
-                </button>
                 <div id="${aiId}" class="ai-output-box"></div>
             </div>
         `;
