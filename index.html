@@ -63,11 +63,11 @@
             /* Light Mode */
             --background: #F2F2F7;
             --surface: #FFFFFF;
-            --surface-secondary: #FFFFFF; /* Grouped table style */
+            --surface-secondary: #FFFFFF;
             --text-main: #000000;
             --text-secondary: #8E8E93;
             --border: #C6C6C8;
-            --input-bg: #7676801F; /* iOS Search bar gray */
+            --input-bg: #7676801F;
             --separator: #C6C6C8;
             
             --shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -103,21 +103,19 @@
             background-color: var(--background);
             color: var(--text-main);
             margin: 0; padding: 0;
-            padding-bottom: calc(var(--safe-bottom) + 80px); /* Space for bottom content */
+            padding-bottom: calc(var(--safe-bottom) + 80px);
             -webkit-font-smoothing: antialiased;
         }
 
         /* --- iOS HEADER --- */
         .app-header {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(var(--surface), 0.85); /* Fallback */
-            background: var(--surface);
+            background: rgba(var(--surface), 0.85);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             padding: calc(var(--safe-top) + 10px) 16px 10px 16px;
             border-bottom: 0.5px solid var(--separator);
             display: flex; justify-content: space-between; align-items: center;
-            transition: background 0.3s;
         }
         
         @media (prefers-color-scheme: dark) {
@@ -143,10 +141,7 @@
         .icon-btn:active { opacity: 0.5; }
 
         /* --- SEARCH --- */
-        .search-container { 
-            padding: 12px 16px; 
-            background: transparent; 
-        }
+        .search-container { padding: 12px 16px; background: transparent; }
         .search-wrapper { position: relative; width: 100%; }
         .search-bar {
             width: 100%; padding: 10px 10px 10px 36px; 
@@ -194,7 +189,6 @@
         }
         .result-card:active { transform: scale(0.98); }
 
-        /* Card Layout */
         .result-main { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
         
         .drug-info { flex: 1; padding-right: 12px; }
@@ -204,7 +198,7 @@
         }
         .drug-class { font-size: 14px; color: var(--text-secondary); font-weight: 400; }
 
-        /* TTS Button on Card */
+        /* TTS Button */
         .tts-btn {
             width: 36px; height: 36px; border-radius: 50%;
             background: var(--input-bg); border: none;
@@ -215,7 +209,7 @@
         .tts-btn.speaking { background: var(--primary); color: white; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); } }
 
-        /* Expand Logic */
+        /* Details */
         .result-detail { 
             height: 0; overflow: hidden; opacity: 0;
             border-top: 0.5px solid transparent;
@@ -230,19 +224,18 @@
         .d-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
         .d-content { font-size: 15px; color: var(--text-main); line-height: 1.5; }
 
-        /* --- TOOLS & BUTTONS --- */
+        /* Tools */
         .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 0 0; margin-top: 10px; }
         .btn-tool {
             font-size: 13px; padding: 8px 14px; border-radius: 14px; border: none; font-weight: 600;
             flex-shrink: 0; cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
-        /* iOS Pastel Colors */
-        .tool-isbar { background: #FFD60A20; color: #FFD60A; } /* Yellow */
-        .tool-cheat { background: #64D2FF20; color: #0091FF; } /* Blue */
-        .tool-mix { background: #BF5AF220; color: #BF5AF2; } /* Purple */
-        .tool-explain { background: #32D74B20; color: #32D74B; } /* Green */
-        .tool-edit { background: #FF9F0A20; color: #FF9F0A; } /* Orange */
-
+        .tool-isbar { background: #FFD60A20; color: #FFD60A; } 
+        .tool-cheat { background: #64D2FF20; color: #0091FF; } 
+        .tool-mix { background: #BF5AF220; color: #BF5AF2; } 
+        .tool-explain { background: #32D74B20; color: #32D74B; } 
+        .tool-edit { background: #FF9F0A20; color: #FF9F0A; } 
+        
         @media (prefers-color-scheme: dark) {
             .tool-isbar { color: #FFD60A; }
             .tool-cheat { color: #64D2FF; }
@@ -254,10 +247,10 @@
             font-size: 16px; font-weight: 600; margin-top: 16px;
             display: flex; justify-content: center; align-items: center; gap: 8px;
         }
-        .btn-action:active { opacity: 0.8; }
+        .btn-action:disabled { opacity: 0.6; }
         .btn-secondary { background: var(--input-bg); color: var(--primary); }
 
-        /* --- OVERLAYS (iOS Bottom Sheets) --- */
+        /* --- OVERLAYS --- */
         .overlay-backdrop {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.4); z-index: 1000; 
@@ -279,51 +272,28 @@
         }
         .overlay-backdrop.show .sheet-modal { transform: translateY(0); }
 
-        .sheet-handle {
-            width: 40px; height: 5px; background: var(--separator); 
-            border-radius: 3px; margin: 0 auto 20px auto; opacity: 0.5;
-        }
-
+        .sheet-handle { width: 40px; height: 5px; background: var(--separator); border-radius: 3px; margin: 0 auto 20px auto; opacity: 0.5; }
         .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .sheet-title { font-size: 20px; font-weight: 700; }
         .sheet-close { color: var(--primary); font-weight: 600; background: none; border: none; font-size: 16px; }
 
-        /* Inputs in Sheets */
+        /* Inputs */
         .ios-input-group { background: var(--surface); border-radius: 12px; padding: 0 16px; margin-bottom: 20px; }
-        .ios-input-row { 
-            padding: 14px 0; display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 0.5px solid var(--separator);
-        }
+        .ios-input-row { padding: 14px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--separator); }
         .ios-input-row:last-child { border-bottom: none; }
-        
-        .ios-text-input {
-            width: 100%; padding: 12px; border-radius: 8px; border: none;
-            background: var(--input-bg); font-size: 16px; color: var(--text-main);
-        }
-        .ios-textarea {
-            width: 100%; padding: 12px; border-radius: 8px; border: none;
-            background: var(--input-bg); font-size: 16px; color: var(--text-main);
-            min-height: 100px; font-family: inherit; resize: none;
-        }
+        .ios-text-input { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--input-bg); font-size: 16px; color: var(--text-main); }
+        .ios-textarea { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--input-bg); font-size: 16px; color: var(--text-main); min-height: 100px; font-family: inherit; resize: none; }
 
-        /* AI Output Box */
-        .ai-output-box {
-            margin-top: 16px; padding: 16px; border-radius: 12px; font-size: 15px;
-            background: var(--surface); color: var(--text-main); display: none; line-height: 1.6;
-        }
+        /* AI Box */
+        .ai-output-box { margin-top: 16px; padding: 16px; border-radius: 12px; font-size: 15px; background: var(--surface); color: var(--text-main); display: none; line-height: 1.6; border: 1px solid var(--border); }
         .ai-output-box p { margin: 8px 0; }
         .ai-output-box table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
         .ai-output-box th { text-align:left; color:var(--text-secondary); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--separator); padding:4px; }
         .ai-output-box td { border-bottom:1px solid var(--separator); padding:8px 4px; }
 
-        /* Spinner */
-        .spinner {
-            width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;
-        }
+        .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Skeleton */
+        
         .skeleton { height: 80px; background: var(--surface); border-radius: 16px; margin-bottom: 16px; opacity: 0.5; animation: pulse-opacity 1.5s infinite; }
         @keyframes pulse-opacity { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }
     </style>
@@ -378,7 +348,7 @@
             </div>
             <div class="ios-input-row">
                 <span>AI Provider</span>
-                <select id="provider-select" onchange="updateSettingsUI()" style="border:none; bg:transparent; color:var(--primary); font-size:16px; text-align:right;">
+                <select id="provider-select" onchange="updateSettingsUI()" style="border:none; background:transparent; color:var(--primary); font-size:16px; text-align:right;">
                     <option value="yinli">Yinli (GPT-5.1)</option>
                     <option value="deepseek">DeepSeek (V3)</option>
                 </select>
@@ -441,24 +411,18 @@
     // --- STATE ---
     let drugs = [];
     let aiLanguage = 'lihkg';
-    let currentSpeakerId = null; // Track which drug is speaking
-    
-    // API Keys
+    let currentSpeakerId = null; 
     let provider = 'yinli';
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
     let yinliModel = "gpt-5.1";
-
     let currentEditDrug = null;
     let pendingDrugSave = null;
 
-    // --- SYSTEM FILTERS ---
     const systems = [
-        {id: "All", name: "All"},
-        {id: "GI", name: "🍽️ Gastro"}, {id: "CVS", name: "🫀 Cardio"},
-        {id: "Resp", name: "🫁 Resp"}, {id: "CNS", name: "🧠 CNS"},
-        {id: "Inf", name: "🦠 Infect"}, {id: "Endo", name: "🦋 Endo"},
-        {id: "Pain", name: "💊 Pain"}
+        {id: "All", name: "All"}, {id: "GI", name: "🍽️ Gastro"}, {id: "CVS", name: "🫀 Cardio"},
+        {id: "Resp", name: "🫁 Resp"}, {id: "CNS", name: "🧠 CNS"}, {id: "Inf", name: "🦠 Infect"},
+        {id: "Endo", name: "🦋 Endo"}, {id: "Pain", name: "💊 Pain"}
     ];
 
     function init() {
@@ -470,7 +434,6 @@
         renderSystemChips();
         fetchSheetData(true);
         
-        // Restore previous search
         const lastSearch = localStorage.getItem('last_search_term');
         if(lastSearch) {
             document.getElementById('search-input').value = lastSearch;
@@ -478,66 +441,167 @@
         }
     }
 
-    // --- TTS FUNCTION (READ) ---
+    // --- 1. AI SEARCH & SAVE ---
+    async function triggerAISearchAndGenerate(query) {
+        const container = document.getElementById('search-results');
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px;">
+                <div class="spinner" style="border-color:var(--text-secondary); border-top-color:var(--primary);"></div>
+                <div style="margin-top:15px; color:var(--text-secondary);">Consulting AI Database...</div>
+            </div>`;
+
+        const prompt = `You are a strict pharmacology database helper.
+        Task: Output a JSON object for the drug "${query}".
+        
+        Strict JSON Format (No markdown, just raw JSON):
+        {
+            "name": "${query} (Official & Brand Name)",
+            "class": "Pharmacological Class",
+            "indication": "Short indication summary",
+            "system": "Choose ONE: Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, Malignant disease, Nutrition and blood, Musculoskeletal, Eye, Ear, Skin, Anaesthesia",
+            "SideEffects": "Common side effects",
+            "nursing": "Critical nursing monitoring points"
+        }`;
+
+        try {
+            let jsonString = await getAIResponse(prompt);
+            jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            const drugData = JSON.parse(jsonString);
+            pendingDrugSave = drugData;
+            
+            container.innerHTML = `
+                <div class="result-card" style="padding:20px; border: 2px solid var(--primary);">
+                    <div style="color:var(--primary); font-weight:700; font-size:12px; margin-bottom:10px;">✨ AI GENERATED PREVIEW</div>
+                    <div style="font-size:22px; font-weight:700; margin-bottom:5px;">${drugData.name}</div>
+                    <div style="color:var(--text-secondary); margin-bottom:20px;">${drugData.class}</div>
+                    <div style="font-size:15px; line-height:1.5;">
+                        <p><strong>System:</strong> ${drugData.system}</p>
+                        <p><strong>Indication:</strong> ${drugData.indication}</p>
+                        <p><strong>Side Effects:</strong> ${drugData.SideEffects}</p>
+                        <p><strong>Nursing:</strong> ${drugData.nursing}</p>
+                    </div>
+                    <button class="btn-action" onclick="confirmSaveDrug()">💾 Save to Database</button>
+                    <button class="btn-action" style="background:transparent; color:var(--text-secondary); margin-top:5px;" onclick="handleSearch()">Cancel</button>
+                </div>`;
+        } catch (e) {
+            container.innerHTML = `<div style="padding:20px; text-align:center; color:var(--danger);">Error generating drug: ${e.message}</div>`;
+        }
+    }
+
+    // --- 2. AI EDIT ---
+    function triggerEditPrompt(drugObj) {
+        currentEditDrug = drugObj;
+        document.getElementById('edit-drug-name-disp').innerText = "Editing: " + drugObj.name;
+        document.getElementById('edit-input').value = '';
+        toggleEditOverlay();
+    }
+
+    async function submitAIEdit() {
+        if (!currentEditDrug) return;
+        const instructions = document.getElementById('edit-input').value.trim();
+        const btn = document.getElementById('btn-edit-submit');
+        if (!instructions) return;
+
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Updating...';
+
+        const prompt = `You are editing a JSON database entry.
+        Current JSON: ${JSON.stringify(currentEditDrug)}
+        User Change Request: "${instructions}"
+        Task: Return the FULLY updated JSON object. Keep strict keys: name, class, indication, system, SideEffects, nursing.
+        Output ONLY JSON.`;
+
+        try {
+            let jsonString = await getAIResponse(prompt);
+            jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            const firstBrace = jsonString.indexOf('{');
+            const lastBrace = jsonString.lastIndexOf('}');
+            if(firstBrace !== -1 && lastBrace !== -1) jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+
+            const newDrugData = JSON.parse(jsonString);
+            pendingDrugSave = newDrugData;
+            
+            toggleEditOverlay();
+            
+            const container = document.getElementById('search-results');
+            container.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = 'result-card';
+            div.style.border = "2px solid var(--warning)";
+            div.style.padding = "20px";
+            div.innerHTML = `
+                <div style="color:var(--warning); font-weight:700; font-size:12px; margin-bottom:10px;">✏️ EDITED PREVIEW</div>
+                <div style="font-size:20px; font-weight:700;">${newDrugData.name}</div>
+                <div style="color:var(--text-secondary); margin-bottom:15px;">${newDrugData.class}</div>
+                <div style="font-size:14px; opacity:0.8; margin-bottom:15px;">${newDrugData.indication}</div>
+                <button class="btn-action" onclick="confirmSaveDrug()">💾 Confirm Changes</button>
+                <button class="btn-action" style="background:transparent; color:var(--text-secondary);" onclick="handleSearch()">Cancel</button>
+            `;
+            container.appendChild(div);
+        } catch (e) { alert("Edit Failed: " + e.message); } 
+        finally { btn.disabled = false; btn.innerHTML = 'Update'; }
+    }
+
+    function confirmSaveDrug() {
+        if(!pendingDrugSave) return;
+        const existingIdx = drugs.findIndex(d => d.name === pendingDrugSave.name);
+        if (existingIdx > -1) drugs[existingIdx] = pendingDrugSave;
+        else drugs.push(pendingDrugSave);
+        
+        localStorage.setItem('drug_db_cache', JSON.stringify(drugs));
+        
+        const btn = document.querySelector('.btn-action');
+        if(btn) { btn.innerHTML = "☁️ Uploading..."; btn.disabled = true; }
+        
+        fetch(UPLOAD_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(pendingDrugSave) });
+        setTimeout(() => {
+            alert("✅ Saved!");
+            document.getElementById('search-input').value = pendingDrugSave.name;
+            pendingDrugSave = null;
+            handleSearch();
+        }, 800);
+    }
+
+    // --- TTS ---
     function toggleSpeak(btnId, data) {
         const btn = document.getElementById(btnId);
-        
-        // Stop if currently speaking this specific drug
         if (currentSpeakerId === btnId && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
             resetSpeakerUI();
             return;
         }
-
-        // Stop any other speech
         window.speechSynthesis.cancel();
         resetSpeakerUI();
 
-        // Start Speaking
         currentSpeakerId = btnId;
         btn.classList.add('speaking');
-        btn.innerHTML = '⏹'; // Stop Icon
+        btn.innerHTML = '⏹';
 
-        // Construct Text based on Language Setting
-        let text = "";
-        if (aiLanguage === 'lihkg') {
-            text = `Drug Name: ${data.name}. Class: ${data.class}. Uses: ${data.indication}. Side Effects: ${data.SideEffects}. Nursing: ${data.nursing}`;
-        } else {
-            text = `Drug Name: ${data.name}. Class: ${data.class}. Indication: ${data.indication}. Side Effects: ${data.SideEffects}. Nursing Considerations: ${data.nursing}`;
-        }
+        let text = aiLanguage === 'lihkg' 
+            ? `Drug Name: ${data.name}. Class: ${data.class}. Uses: ${data.indication}. Side Effects: ${data.SideEffects}. Nursing: ${data.nursing}`
+            : `Drug Name: ${data.name}. Class: ${data.class}. Indication: ${data.indication}. Side Effects: ${data.SideEffects}. Nursing Considerations: ${data.nursing}`;
 
         const utterance = new SpeechSynthesisUtterance(text);
-        
-        // Attempt to find a high quality voice (iOS "Enhanced")
         const voices = window.speechSynthesis.getVoices();
         const preferredVoice = voices.find(v => v.name.includes("Enhanced") || v.name.includes("Premium")) || voices.find(v => v.lang.startsWith("en"));
         if(preferredVoice) utterance.voice = preferredVoice;
-        
         utterance.rate = 0.95;
-        
         utterance.onend = () => { resetSpeakerUI(); };
-        utterance.onerror = () => { resetSpeakerUI(); };
-
         window.speechSynthesis.speak(utterance);
     }
 
     function resetSpeakerUI() {
         if(currentSpeakerId) {
             const btn = document.getElementById(currentSpeakerId);
-            if(btn) {
-                btn.classList.remove('speaking');
-                btn.innerHTML = '🔊';
-            }
+            if(btn) { btn.classList.remove('speaking'); btn.innerHTML = '🔊'; }
             currentSpeakerId = null;
         }
     }
 
-    // --- SEARCH & RENDER ---
+    // --- SEARCH ---
     function handleSearch() {
         const q = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
         const emptyState = document.getElementById('empty-state-msg');
-        
         localStorage.setItem('last_search_term', q);
 
         if(!q) {
@@ -550,7 +614,7 @@
         container.innerHTML = '';
 
         const matches = drugs.filter(d => (d.name+d.class+d.indication+d.system).toLowerCase().includes(q));
-        matches.sort((a,b) => (a.name.length - b.name.length)); // Shortest match first
+        matches.sort((a,b) => (a.name.length - b.name.length));
 
         if (matches.length > 0) {
             matches.slice(0, 50).forEach((d, idx) => renderResult(d, idx, container));
@@ -571,8 +635,6 @@
         const uniqueId = `drug-${Math.random().toString(36).substr(2, 9)}`;
         const aiId = `ai-${uniqueId}`;
         const speakBtnId = `spk-${uniqueId}`;
-
-        // Safe strings for onclick
         const drugStr = JSON.stringify(d).replace(/"/g, '&quot;');
         const safeData = JSON.stringify({name: d.name, class: d.class, indication: d.indication, SideEffects: d.SideEffects, nursing: d.nursing}).replace(/"/g, '&quot;');
 
@@ -588,7 +650,6 @@
                 <div class="detail-row"><span class="d-label">Indication</span><span class="d-content">${d.indication || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Side Effects</span><span class="d-content">${d.SideEffects || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Nursing</span><span class="d-content">${d.nursing || "N/A"}</span></div>
-                
                 <div class="tool-row">
                     <button class="btn-tool tool-edit" onclick="triggerEditPrompt(${drugStr})">✏️ Edit</button>
                     <button class="btn-tool tool-isbar" onclick="handleTool('isbar', ${drugStr}, '${aiId}', this)">🚑 ISBAR</button>
@@ -597,28 +658,21 @@
                     <button class="btn-tool tool-mix" onclick="handleTool('mix', ${drugStr}, '${aiId}', this)">🧪 Mix</button>
                 </div>
                 <div id="${aiId}" class="ai-output-box"></div>
-            </div>
-        `;
+            </div>`;
         container.appendChild(div);
     }
 
-    function toggleCard(id) {
-        const card = document.getElementById(id).parentElement;
-        card.classList.toggle('expanded');
-    }
+    function toggleCard(id) { document.getElementById(id).parentElement.classList.toggle('expanded'); }
 
-    // --- DATA HANDLING ---
+    // --- DATA ---
     function fetchSheetData(silent = false) {
         const loading = document.getElementById('loading-skeleton');
         const results = document.getElementById('search-results');
-        
         if(!silent) { results.style.display = 'none'; loading.style.display = 'block'; }
         
-        // Load Local
         const local = localStorage.getItem('drug_db_cache');
         if(local) { drugs = JSON.parse(local); if(!silent) loading.style.display = 'none'; results.style.display = 'flex'; }
 
-        // Fetch Fresh
         fetch(DB_URL).then(r=>r.text()).then(csv=>{
             Papa.parse(csv, {header:true, skipEmptyLines:true, complete:res=>{
                 if(res.data.length){ 
@@ -632,9 +686,7 @@
 
     function renderSystemChips() {
         const c = document.getElementById('system-chips');
-        c.innerHTML = systems.map(s => 
-            `<button class="filter-chip ${s.id === 'All' ? 'active' : ''}" onclick="filterSys('${s.id}', this)">${s.name}</button>`
-        ).join('');
+        c.innerHTML = systems.map(s => `<button class="filter-chip ${s.id === 'All' ? 'active' : ''}" onclick="filterSys('${s.id}', this)">${s.name}</button>`).join('');
     }
 
     function filterSys(sys, btn) {
@@ -644,33 +696,21 @@
         const emptyState = document.getElementById('empty-state-msg');
         
         container.innerHTML = '';
-        if(sys === 'All') {
-            emptyState.style.display = 'block';
-            return;
-        }
+        if(sys === 'All') { emptyState.style.display = 'block'; return; }
         emptyState.style.display = 'none';
         
-        const sysName = sys === 'Inf' ? 'Infections' : sys; // Simple map
+        const sysName = sys === 'Inf' ? 'Infections' : sys;
         const matches = drugs.filter(d => (d.system || "").includes(sysName) || (sys === 'All'));
-        
         if(matches.length > 0) matches.forEach((d, i) => renderResult(d, i, container));
         else container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-secondary);">No drugs found in this category.</div>`;
     }
 
-    // --- AI TOOLS & HA DISEASE LOGIC ---
-    
-    // Toggle Modals with Backdrop
+    // --- AI TOOLS ---
     function toggleOverlay(id) {
         const el = document.getElementById(id);
         const isOpen = el.classList.contains('show');
-        if(isOpen) {
-            el.classList.remove('show');
-            setTimeout(() => { el.style.display = 'none'; }, 300);
-        } else {
-            el.style.display = 'flex';
-            // Slight delay to allow display flex to apply before opacity transition
-            setTimeout(() => { el.classList.add('show'); }, 10);
-        }
+        if(isOpen) { el.classList.remove('show'); setTimeout(() => { el.style.display = 'none'; }, 300); } 
+        else { el.style.display = 'flex'; setTimeout(() => { el.classList.add('show'); }, 10); }
     }
     
     function toggleDisease() { toggleOverlay('gen-overlay'); }
@@ -678,12 +718,10 @@
     function toggleSettings() { toggleOverlay('settings-overlay'); }
     function toggleEditOverlay() { toggleOverlay('edit-overlay'); }
 
-    // DISEASE PROTOCOL GENERATOR
     async function triggerDisease() {
         const disease = document.getElementById('gen-input').value.trim();
         const btn = document.getElementById('btn-gen');
         const res = document.getElementById('gen-result-area');
-        
         if(!disease) return;
         
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Consulting Protocol...';
@@ -691,12 +729,10 @@
         
         const prompt = `Act as a Hong Kong Hospital Authority (HA) Pharmacist.
         The user asks about the condition: "${disease}".
-        
         Task: List the standard medications used for this condition in HA hospitals.
         Format:
         1. **Class Name**
            * Drug Name (Route/Dose common range) - *One liner nursing check*
-        
         Style: Use the "Old Seafood" persona (Mix of Professional English terms and Cantonese slang/reminders like "Check BP ar!", "Careful Hypo").
         Be concise. Focus on what a student nurse needs to prepare.`;
         
@@ -704,25 +740,41 @@
             const text = await getAIResponse(prompt);
             res.innerHTML = marked.parse(text);
             btn.innerHTML = '✨ Show Related Drugs';
-        } catch(e) {
-            res.innerHTML = "Error: " + e.message;
-        } finally {
-            btn.disabled = false;
-        }
+        } catch(e) { res.innerHTML = "Error: " + e.message; } finally { btn.disabled = false; }
+    }
+    
+    async function triggerCompare() {
+        const a = document.getElementById('vs-input-a').value.trim();
+        const b = document.getElementById('vs-input-b').value.trim();
+        const btn = document.getElementById('btn-compare');
+        const res = document.getElementById('vs-result-area');
+        if (!a || !b) return;
+
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Comparing...';
+        res.style.display = 'block'; res.innerHTML = 'Analyzing...';
+
+        const prompt = `Compare "${a}" vs "${b}" for a nursing student.
+        Format as a Markdown Table.
+        Columns: Feature, ${a}, ${b}.
+        Rows: Class, Indication, Mechanism, Side Effects, Nursing.
+        Summary: One sentence winner description.`;
+
+        try {
+            const text = await getAIResponse(prompt);
+            res.innerHTML = marked.parse(text);
+            btn.innerHTML = "✅ Done";
+        } catch(e) { res.innerHTML = "Error: " + e.message; } finally { btn.disabled = false; }
     }
 
-    // GENERIC AI TOOL HANDLER
     async function handleTool(type, drug, outId, btn) {
         const out = document.getElementById(outId);
         const originalText = btn.innerText;
-        
         btn.innerHTML = '<span class="spinner"></span>';
-        out.style.display = 'block'; out.innerHTML = 'Loading...';
+        out.style.display = 'block'; out.innerHTML = 'Thinking...';
         
         let prompt = "";
         const persona = "You are a HK Nursing Mentor (Old Seafood style). Speak 'Kongish' (English/Cantonese mix).";
-        
-        if (type === 'isbar') prompt = `${persona} Write a realistic ISBAR handover for a patient needing ${drug.name}. Situation: deterioration. Keep it brief.`;
+        if (type === 'isbar') prompt = `${persona} Write a realistic ISBAR handover for ${drug.name}. Situation: deterioration. Keep it brief.`;
         if (type === 'explain') prompt = `${persona} Explain ${drug.name} mechanism simply using an analogy. Mention the #1 killer side effect.`;
         if (type === 'cheat') prompt = `${persona} Create a bullet-point 'Survival Sheet' for ${drug.name}: 1. STOP if... 2. Monitor... 3. Red Flags.`;
         if (type === 'mix') prompt = `${persona} How to dilute/administer ${drug.name} (IV/PO)? Compatibility issues?`;
@@ -730,41 +782,26 @@
         try {
             const text = await getAIResponse(prompt);
             out.innerHTML = marked.parse(text);
-        } catch(e) {
-            out.innerHTML = "Error.";
-        } finally {
-            btn.innerHTML = originalText;
-        }
+        } catch(e) { out.innerHTML = "Error."; } finally { btn.innerHTML = originalText; }
     }
 
-    // AI API CALL
     async function getAIResponse(prompt) {
         let url = "https://api.deepseek.com/chat/completions";
         let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
         let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
-        
-        if(provider === 'yinli') { 
-            url = yinliUrl; 
-            headers["Authorization"] = `Bearer ${keys.yinli}`; 
-            body.model = yinliModel; 
-        }
+        if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = yinliModel; }
 
         const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
         const json = await res.json();
         return json.choices[0].message.content;
     }
 
-    // SETTINGS UTILS
     function updateSettingsUI() {
         const p = document.getElementById('provider-select').value;
         const div = document.getElementById('settings-dynamic-fields');
         div.innerHTML = '';
-        
-        if(p === 'yinli') {
-            div.innerHTML = `<div class="ios-input-row"><span>API Key</span><input type="password" onchange="keys.yinli=this.value; localStorage.setItem('yl_key', this.value)" value="${keys.yinli}" class="ios-text-input" style="text-align:right"></div>`;
-        } else {
-            div.innerHTML = `<div class="ios-input-row"><span>API Key</span><input type="password" onchange="keys.deepseek=this.value; localStorage.setItem('ds_key', this.value)" value="${keys.deepseek}" class="ios-text-input" style="text-align:right"></div>`;
-        }
+        if(p === 'yinli') div.innerHTML = `<div class="ios-input-row"><span>API Key</span><input type="password" onchange="keys.yinli=this.value; localStorage.setItem('yl_key', this.value)" value="${keys.yinli}" class="ios-text-input" style="text-align:right"></div>`;
+        else div.innerHTML = `<div class="ios-input-row"><span>API Key</span><input type="password" onchange="keys.deepseek=this.value; localStorage.setItem('ds_key', this.value)" value="${keys.deepseek}" class="ios-text-input" style="text-align:right"></div>`;
         provider = p;
         localStorage.setItem('ai_provider', p);
     }
