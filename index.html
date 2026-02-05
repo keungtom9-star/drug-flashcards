@@ -347,8 +347,8 @@
         <h3 class="section-label">AI Configuration</h3>
         <div class="settings-group" style="padding:10px;">
             <select id="provider-select" onchange="updateSettingsUI()" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:16px;">
+                <option value="yinli">Yinli (GPT-5.1)</option>
                 <option value="deepseek">DeepSeek (Official)</option>
-                <option value="yinli">Yinli (Gemini/Any)</option>
             </select>
             <div id="settings-dynamic-fields"></div>
         </div>
@@ -397,11 +397,11 @@
         
         <div class="vs-input-group">
             <span class="vs-label">Patient Condition / Co-morbidities</span>
-            <textarea id="gen-input" class="vs-input" style="height:100px; resize:none;" placeholder="e.g. Patient with HTN, T2DM, Gout, and recent UTI. Needs discharge meds."></textarea>
+            <textarea id="gen-input" class="vs-input" style="height:100px; resize:none;" placeholder="e.g. 70M, HTN, Gout. Admitted for Pneumonia. Discharging now."></textarea>
         </div>
 
         <button id="btn-gen" class="btn-action" style="margin-top:0; margin-bottom:15px; background:var(--primary); color:white;" onclick="triggerGen()">
-            ✨ Generate Medication List
+            ✨ Generate HA Medication List
         </button>
 
         <div id="gen-result-area" class="ai-output-box" style="flex:1; overflow-y:auto; display:none; background:var(--input-bg); white-space: pre-wrap;"></div>
@@ -454,10 +454,10 @@
     let pendingSelectAction = null; 
     
     // --- KEYS (Default) ---
-    let provider = 'deepseek';
+    let provider = 'yinli'; // Default to Yinli as per request
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
-    let yinliModel = "gemini-2.5-flash"; 
+    let yinliModel = "gpt-5.1"; // Updated to user's requested model
     
     // --- UTILS ---
     let pendingDrugSave = null;
@@ -512,9 +512,6 @@
         const lastSearch = localStorage.getItem('last_search_term');
         if(lastSearch) {
             document.getElementById('search-input').value = lastSearch;
-            // Clear it so it doesn't annoy user on fresh open? 
-            // Better to keep it for this exact "Back" scenario.
-            // We rely on fetchSheetData to trigger the actual rendering once data is loaded.
         }
     }
 
@@ -895,7 +892,7 @@
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Comparing...';
         res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">AI is analyzing difference...</span>';
 
-        const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style)." : "Use English.";
+        const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style). Use terms like 'Ching', 'Key野', 'Old Seafood'." : "Use English.";
         const prompt = `Compare "${a}" vs "${b}" for a nursing student.
         Format as a Markdown Table.
         Columns: Feature, ${a}, ${b}.
@@ -936,11 +933,18 @@
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating...';
         res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">Creating HA Prescription...</span>';
 
-        const prompt = `Act as a clinical pharmacist or nurse. Generate a medication list for a patient with: ${input}.
-        Format the output exactly in the Hospital Authority (HA) outpatient prescription style.
-        Use Markdown Table format.
-        Include columns: Drug Name, Dosage, Frequency, Indication, Nursing Considerations.
-        Keep it concise and realistic for Hong Kong public hospitals.
+        // UPDATED HA SCRIPT PROMPT
+        const prompt = `Act as a Hospital Authority (HK) Doctor/Pharmacist. 
+        Generate a "CMS Medication Order List" (Medication Administration Record style) for a patient with: ${input}.
+        
+        Strict Format (Markdown Table):
+        | Drug | Dosage | Freq | Route | Duration | Remark/Indication |
+        |---|---|---|---|---|---|
+        
+        Rules:
+        1. Use STANDARD HA abbreviations (e.g., PO, Q4H, TDS, PRN).
+        2. Include realistic dosages.
+        3. Add a "Nurse Note" below the table in HK Cantonese (LIHKG style) reminding the student what to watch out for.
         `;
 
         try {
@@ -964,22 +968,59 @@
         out.style.display = 'block'; out.innerHTML = '<span style="color:var(--text-secondary);">AI is thinking...</span>';
         
         let prompt = "";
-        const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style, casual/slang)." : "Use plain English suitable for a student.";
         
-        if (type === 'isbar') prompt = `Write a nursing handover for ${name} using ISBAR format. Invent a realistic scenario. Concise. ${langInstruction}`;
-        else if (type === 'mix') prompt = `Reconstitution and administration guide for ${name} (IV/IM). Diluent, Rate, Stability. ${langInstruction}`;
-        else if (type === 'explain') prompt = `Explain the drug ${name} to a nursing student using a simple analogy. Focus on Mechanism of Action and ONE key danger. Keep it short and fun. ${langInstruction}`;
+        // --- PROMPT ENGINEERING FOR LIHKG ---
+        const hkPersona = "You are a seasoned Hong Kong Nursing Senior (Old Seafood/老屎忽). Speak in LIHKG style (Cantonese/English Mix, 'Kongish'). Be direct, slightly cynical about HA culture, but medically strict. Use slang like 'Ching', 'Siu4', 'Any肥', 'Jeng', 'BP', 'O2'.";
+
+        if (type === 'isbar') {
+             prompt = `System: ${hkPersona}
+             Task: Write a nursing handover (ISBAR) for ${name}. Invent a realistic HK ward scenario (e.g., patient desaturated, BP drop).
+             Format:
+             **I**: Identify (Who u are, Ward, Pt Name)
+             **S**: Situation (The emergency)
+             **B**: Background (Brief hx)
+             **A**: Assessment (Vitals)
+             **R**: Recommendation (Give ${name} now?)
+             Keep it succinct.`;
+        }
+        else if (type === 'mix') {
+            prompt = `System: ${hkPersona}
+            Task: Explain how to mix/give ${name} (IV/IM).
+            Include:
+            1. Diluent (NS/D5?)
+            2. Rate (Stat/Bolus/Infusion?)
+            3. Incompatibilities (Don't mix with...)
+            4. Stability.
+            Keep it practical.`;
+        }
+        else if (type === 'explain') {
+            prompt = `System: ${hkPersona}
+            Task: Explain ${name} to a Year 1 student. Use a funny/memorable analogy. 
+            Explain mechanism simply. 
+            Mention one "Killer Side Effect" that will make the Ward Manager scream at you if you miss it.`;
+        }
         else if (type === 'cheat') {
+            // --- UPDATED CHEATSHEET PROMPT ---
             if (aiLanguage === 'lihkg') {
-                prompt = `Create a "Ward Survival Cheatsheet" for ${name}. 
-                Format as a table/list with two columns: 
-                1. English Medical Term (e.g., "Hypokalemia")
-                2. Cantonese Explanation/Patient Phrase (e.g., "低鉀，記得食蕉").
-                Include:
-                - 🛑 Critical Checks (Before giving)
-                - 📉 Monitoring (Vitals/Labs)
-                - 🗣️ Patient Teaching (One key phrase)
-                Keep it concise for quick ward reference.`;
+                prompt = `System: ${hkPersona}
+                Task: Create a "Ward Survival Cheatsheet" (保命紙) for ${name}.
+                
+                Format (Markdown):
+                ### 💊 ${name} Survival Guide
+                
+                **1. 🛑 咪L派錯 (CRITICAL HOLDS)**
+                * (When to NOT give. e.g., BP<90, HR<60)
+                
+                **2. 👁️ 金睛火眼 (MONITOR)**
+                * (What to stare at on the monitor? BP? RR? K+?)
+                
+                **3. 🗣️ 氹阿伯 (PATIENT TEACHING)**
+                * (One simple Cantonese phrase to tell the patient. e.g., "食完會好眼瞓")
+                
+                **4. ⚠️ 伏位 (RED FLAGS)**
+                * (Common interactions or mistakes students make in HA)
+                
+                Keep it short. Bullet points only.`;
             } else {
                 prompt = `Create a "Ward Survival Cheatsheet" for ${name}. Bullet points only.
                 Sections:
