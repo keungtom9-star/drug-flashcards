@@ -281,7 +281,7 @@
         Drug Tutor
     </h1>
     <div style="display:flex; gap:10px;">
-        <button onclick="toggleGen()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">📝 HA Script</button>
+        <button onclick="toggleGen()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">🦠 Disease</button>
         <button onclick="toggleVS()" class="icon-btn" style="width:auto; padding:0 12px; border-radius:16px; font-weight:700; font-size:13px; color:var(--primary); background:rgba(0,122,255,0.1);">🆚 VS</button>
         <button onclick="toggleSettings()" class="icon-btn">⚙️</button>
     </div>
@@ -392,17 +392,17 @@
 <div id="gen-overlay" onclick="if(event.target===this) toggleGen()">
     <div class="gen-sheet" style="height:90vh;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="margin:0; font-size:22px;">📝 HA Script Generator</h2>
+            <h2 style="margin:0; font-size:22px;">🦠 Disease & Drug Tutor</h2>
             <button onclick="toggleGen()" style="background:var(--input-bg); color:var(--text-main); border:none; padding:8px 16px; border-radius:20px; font-weight:600;">Close</button>
         </div>
         
         <div class="vs-input-group">
-            <span class="vs-label">Patient Condition / Co-morbidities</span>
-            <textarea id="gen-input" class="vs-input" style="height:100px; resize:none;" placeholder="e.g. 70M, HTN, Gout. Admitted for Pneumonia. Discharging now."></textarea>
+            <span class="vs-label">Disease / Condition</span>
+            <textarea id="gen-input" class="vs-input" style="height:100px; resize:none;" placeholder="e.g. Heart Failure, COPD, Diabetes Type 2..."></textarea>
         </div>
 
         <button id="btn-gen" class="btn-action" style="margin-top:0; margin-bottom:15px; background:var(--primary); color:white;" onclick="triggerGen()">
-            ✨ Generate HA Medication List
+            ✨ Explain Treatment
         </button>
 
         <div id="gen-result-area" class="ai-output-box" style="flex:1; overflow-y:auto; display:none; background:var(--input-bg); white-space: pre-wrap;"></div>
@@ -912,7 +912,7 @@
         }
     }
 
-    // --- GENERATOR LOGIC (HA SCRIPT) ---
+    // --- GENERATOR LOGIC (UPDATED: DISEASE & DRUG) ---
     function toggleGen() {
         const p = document.getElementById('gen-overlay');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
@@ -923,23 +923,30 @@
         const btn = document.getElementById('btn-gen');
         const res = document.getElementById('gen-result-area');
 
-        if (!input) { alert("Please enter patient details!"); return; }
+        if (!input) { alert("Please enter a disease!"); return; }
 
-        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating...';
-        res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">Creating HA Prescription...</span>';
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Thinking...';
+        res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">Analyzing pathophysiology & drugs...</span>';
 
-        // UPDATED HA SCRIPT PROMPT
-        const prompt = `Act as a Hospital Authority (HK) Doctor/Pharmacist. 
-        Generate a "CMS Medication Order List" (Medication Administration Record style) for a patient with: ${input}.
+        const langInst = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese/English mix (Nursing student style)." : "Use English.";
         
-        Strict Format (Markdown Table):
-        | Drug | Dosage | Freq | Route | Duration | Remark/Indication |
-        |---|---|---|---|---|---|
+        // NEW PROMPT FOR DISEASE & DRUG TUTOR
+        const prompt = `Act as a Nursing Pharmacology Tutor. The user wants to learn about the management of: "${input}".
+        ${langInst}
         
-        Rules:
-        1. Use STANDARD HA abbreviations (e.g., PO, Q4H, TDS, PRN).
-        2. Include realistic dosages.
-        3. Add a "Nurse Note" below the table in HK Cantonese (LIHKG style) reminding the student what to watch out for.
+        Format using Markdown:
+        
+        ### 1. 🦠 Disease Overview (Pathophysiology)
+        * Briefly explain what is happening in the body in simple terms.
+        
+        ### 2. 💊 Pharmacological Management
+        List the primary Drug Classes used to treat this. For each class:
+        * **Class Name**: (e.g. ACE Inhibitors)
+        * **Mechanism**: Explain *HOW* it fixes the problem above (e.g. "Blocks enzyme to lower BP").
+        * **Common Drugs**: (e.g. Ramipril, Lisinopril)
+        
+        ### 3. 🛡️ Nursing Focus
+        * What is the #1 priority to monitor for these patients?
         `;
 
         try {
