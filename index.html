@@ -451,7 +451,7 @@
     
     // Edit & Select States
     let currentEditDrug = null;
-    let pendingSelectAction = null; // { action: 'isbar', contextId: '...', btn: ... }
+    let pendingSelectAction = null; 
     
     // --- KEYS (Default) ---
     let provider = 'deepseek';
@@ -507,6 +507,15 @@
         const provSelect = document.getElementById('provider-select');
         if(provSelect) provSelect.value = provider;
         updateSettingsUI();
+        
+        // --- RESTORE LAST SEARCH (FIX FOR GOOGLE BACK NAV) ---
+        const lastSearch = localStorage.getItem('last_search_term');
+        if(lastSearch) {
+            document.getElementById('search-input').value = lastSearch;
+            // Clear it so it doesn't annoy user on fresh open? 
+            // Better to keep it for this exact "Back" scenario.
+            // We rely on fetchSheetData to trigger the actual rendering once data is loaded.
+        }
     }
 
     // --- HELPER: SAFE EMPTY STATE ---
@@ -530,6 +539,7 @@
     // --- HELPER: RESET TO HOME ---
     function resetToHome() {
         document.getElementById('search-input').value = '';
+        localStorage.removeItem('last_search_term'); // Clear saved state
         const allBtn = document.querySelector('.filter-chip');
         if(allBtn) filterBySystem('All', allBtn);
     }
@@ -683,8 +693,6 @@
         let holdHtml = '';
         if (d.hold_param) { holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`; }
 
-        // REMOVED: 2min Push and Drip Calc
-
         div.innerHTML = `
             ${isNew ? '<div style="background:var(--secondary); color:white; font-size:10px; padding:4px 8px; border-radius:10px; display:inline-block; margin-bottom:8px; font-weight:700;">✅ Saved</div>' : ''}
             <div class="result-header">
@@ -761,8 +769,15 @@
 
     function executeToolAction(action, selectedName, drugObj, aiId, btnElement) {
         if (action === 'google') {
-            const googleLink = `https://www.google.com/search?q=${encodeURIComponent(selectedName + ' 中文 香港s')}`;
-            window.open(googleLink, '_blank');
+            // 1. Save current search term to localStorage
+            const currentSearch = document.getElementById('search-input').value;
+            localStorage.setItem('last_search_term', currentSearch);
+            
+            // 2. Construct proper HTTPS URL
+            const googleLink = `https://www.google.com/search?q=${encodeURIComponent(selectedName + ' 中文 香港')}`;
+            
+            // 3. Navigate current window (Removes "X" button issue, allows swipe back)
+            window.location.href = googleLink;
         } else {
             triggerAIContext(drugObj, action, aiId, btnElement, selectedName);
         }
@@ -1115,6 +1130,9 @@
             if(!searchVal) {
                 const allBtn = document.querySelector('.filter-chip');
                 if(allBtn && !document.querySelector('.filter-chip.active')) filterBySystem('All', allBtn);
+            } else {
+                // If there IS a search val (restored from back nav), run search
+                handleSearch();
             }
         } else {
             if(!silent) { results.style.display = 'none'; loading.style.display = 'flex'; }
@@ -1131,8 +1149,15 @@
                         results.style.display = 'flex'; 
                         if(!silent) alert(`✅ Loaded ${drugs.length} drugs`); 
                         renderSystemChips();
-                        const allBtn = document.querySelector('.filter-chip');
-                        if(allBtn) filterBySystem('All', allBtn);
+                        
+                        // Check for restored search again
+                        const searchVal = document.getElementById('search-input').value;
+                        if(searchVal) {
+                            handleSearch();
+                        } else {
+                            const allBtn = document.querySelector('.filter-chip');
+                            if(allBtn) filterBySystem('All', allBtn);
+                        }
                     }
                 }
             }});
