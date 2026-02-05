@@ -183,18 +183,6 @@
             display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
         }
         
-        .timer-btn {
-            background: var(--primary); color: white; border: none; border-radius: 30px;
-            padding: 8px 16px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;
-            cursor: pointer; transition: all 0.2s;
-        }
-        .timer-btn.running { background: #FF9500; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% {opacity: 1;} 50% {opacity: 0.7;} 100% {opacity: 1;} }
-
-        .calc-panel { background: var(--input-bg); padding: 16px; border-radius: 12px; margin-top: 16px; display: none; }
-        .calc-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .calc-input { flex: 1; padding: 10px; border-radius: 8px; border: none; background: var(--surface); text-align: center; font-size: 16px; color:var(--text-main); }
-
         /* --- TOOLS & BUTTONS --- */
         .tool-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; margin-top: 20px; }
         .btn-tool {
@@ -206,6 +194,7 @@
         .tool-mix { background: rgba(175, 82, 222, 0.15); color: #AF52DE; }
         .tool-explain { background: rgba(52, 199, 89, 0.15); color: #34C759; } 
         .tool-google { background: var(--input-bg); color: var(--text-main); text-decoration: none; }
+        .tool-edit { background: rgba(255, 149, 0, 0.15); color: #FF9500; }
 
         /* Dark Mode Tool Overrides */
         @media (prefers-color-scheme: light) {
@@ -213,6 +202,7 @@
             .tool-cheat { background: #DFF6FF; color: #0070A3; }
             .tool-mix { background: #F6E5FF; color: #8200AD; }
             .tool-explain { background: #E2F9E6; color: #007D2C; }
+            .tool-edit { background: #FFF3D6; color: #C47200; }
         }
 
         .btn-action {
@@ -223,16 +213,16 @@
         .btn-action:active { background: var(--border); opacity: 0.8; }
 
         /* --- SETTINGS SHEET --- */
-        #settings-overlay, #vs-overlay, #gen-overlay {
+        #settings-overlay, #vs-overlay, #gen-overlay, #edit-overlay, #select-overlay {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(4px); align-items: flex-end;
         }
-        .settings-sheet, .vs-sheet, .gen-sheet {
+        .settings-sheet, .vs-sheet, .gen-sheet, .edit-sheet, .select-sheet {
             background: var(--surface); width: 100%; max-width: 600px; margin: 0 auto;
             border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box;
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 85vh; overflow-y: auto;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
             display:flex; flex-direction:column;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
@@ -267,6 +257,15 @@
         .vs-suggestion-item { padding:10px; border-bottom:1px solid var(--border); font-size:14px; cursor:pointer; }
         .vs-suggestion-item:last-child { border-bottom:none; }
         .vs-suggestion-item:active { background:var(--input-bg); }
+
+        /* Select Modal Styles */
+        .select-btn {
+            width: 100%; padding: 16px; background: var(--surface-secondary); 
+            border: 1px solid var(--border); border-radius: 14px; 
+            font-size: 18px; font-weight: 600; margin-bottom: 10px;
+            color: var(--primary); text-align: left;
+        }
+        .select-btn:active { background: var(--border); }
         
         table { width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
         th, td { border:1px solid var(--border); padding:8px; text-align:left; vertical-align:top; }
@@ -409,6 +408,35 @@
     </div>
 </div>
 
+<div id="edit-overlay" onclick="if(event.target===this) toggleEditOverlay()">
+    <div class="edit-sheet" style="height:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; font-size:22px;">✏️ Edit Drug</h2>
+            <button onclick="toggleEditOverlay()" style="background:var(--input-bg); color:var(--text-main); border:none; padding:8px 16px; border-radius:20px; font-weight:600;">Close</button>
+        </div>
+        <p style="color:var(--text-secondary); margin-top:0;">Tell AI what to change about <strong><span id="edit-drug-name-disp"></span></strong>.</p>
+        
+        <div class="vs-input-group">
+            <textarea id="edit-input" class="vs-input" style="height:100px; resize:none;" placeholder="e.g. Add 'Vomiting' to side effects, change Class to 'Opioid'"></textarea>
+        </div>
+
+        <button id="btn-edit-submit" class="btn-action" style="margin-top:0; margin-bottom:15px; background:var(--primary); color:white;" onclick="submitAIEdit()">
+            ✨ Update
+        </button>
+    </div>
+</div>
+
+<div id="select-overlay" onclick="if(event.target===this) closeSelect()">
+    <div class="select-sheet" style="height:auto;">
+        <div style="margin-bottom:20px;">
+            <h2 style="margin:0; font-size:20px;">Select Medication</h2>
+            <p style="color:var(--text-secondary); margin:5px 0 0 0;">Which drug do you want to use?</p>
+        </div>
+        <div id="select-options-container"></div>
+        <button onclick="closeSelect()" class="btn-action" style="margin-top:10px; background:var(--input-bg); color:var(--text-main);">Cancel</button>
+    </div>
+</div>
+
 <script>
     // --- CONFIGURATION ---
     const DB_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
@@ -420,6 +448,10 @@
     let aiLanguage = 'lihkg';
     let availableVoices = [];
     let selectedVoiceURI = '';
+    
+    // Edit & Select States
+    let currentEditDrug = null;
+    let pendingSelectAction = null; // { action: 'isbar', contextId: '...', btn: ... }
     
     // --- KEYS (Default) ---
     let provider = 'deepseek';
@@ -644,30 +676,14 @@
         if(isNew) div.style.border = "2px solid var(--secondary)";
         const uniqueId = Math.random().toString(36).substr(2, 9);
         const aiId = `ai-${uniqueId}`;
-        const googleLink = `https://www.google.com/search?q=${encodeURIComponent(d.name + ' nursing considerations')}`;
+        
+        // Serialize drug object for passing to onclick
+        const drugStr = JSON.stringify(d).replace(/"/g, '&quot;');
         
         let holdHtml = '';
         if (d.hold_param) { holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`; }
 
-        let adminTools = '';
-        if ((d.system && d.system.includes('Cardio')) || (d.admin_type && d.admin_type.includes('IV'))) {
-            adminTools = `
-                <div style="display:flex; gap:10px; margin-bottom:16px; border-bottom:0.5px solid var(--border); padding-bottom:16px;">
-                    <button class="timer-btn" onclick="event.stopPropagation(); startPushTimer(this, 120)">⏱ 2 Min Push</button>
-                    <button class="timer-btn" style="background:var(--text-secondary);" onclick="event.stopPropagation(); toggleCalc('calc-${uniqueId}')">🧮 Drip Calc</button>
-                </div>
-                <div id="calc-${uniqueId}" class="calc-panel">
-                    <div style="font-size:12px; font-weight:700; margin-bottom:8px; color:var(--text-secondary);">IV DRIP CALCULATOR</div>
-                    <div class="calc-row">
-                        <input type="number" id="vol-${uniqueId}" class="calc-input" placeholder="Vol (ml)">
-                        <input type="number" id="time-${uniqueId}" class="calc-input" placeholder="Min">
-                        <input type="number" id="drop-${uniqueId}" class="calc-input" placeholder="Gtt (20)">
-                    </div>
-                    <button class="btn-action" style="padding:8px;" onclick="event.stopPropagation(); calculateIV('${uniqueId}')">Calculate</button>
-                    <div id="res-${uniqueId}" style="text-align:center; font-size:24px; font-weight:800; color:var(--primary); margin-top:10px;">--</div>
-                </div>
-            `;
-        }
+        // REMOVED: 2min Push and Drip Calc
 
         div.innerHTML = `
             ${isNew ? '<div style="background:var(--secondary); color:white; font-size:10px; padding:4px 8px; border-radius:10px; display:inline-block; margin-bottom:8px; font-weight:700;">✅ Saved</div>' : ''}
@@ -680,17 +696,17 @@
             </div>
             <div class="result-detail">
                 ${holdHtml}
-                ${adminTools}
                 <div class="detail-row"><span class="d-label">System</span><span class="d-content">${d.system || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Indication</span><span class="d-content">${d.indication || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Side Effects</span><span class="d-content">${d.SideEffects || "N/A"}</span></div>
                 <div class="detail-row"><span class="d-label">Nursing</span><span class="d-content">${d.nursing || "N/A"}</span></div>
                 <div class="tool-row">
-                    <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); triggerAIContext(null, 'isbar', '${aiId}', this, '${d.name}')">🚑 ISBAR</button>
-                    <button class="btn-tool tool-explain" onclick="event.stopPropagation(); triggerAIContext(null, 'explain', '${aiId}', this, '${d.name}')">🎓 Explain</button>
-                    <button class="btn-tool tool-cheat" onclick="event.stopPropagation(); triggerAIContext(null, 'cheat', '${aiId}', this, '${d.name}')">📋 Ward Sheet</button>
-                    <button class="btn-tool tool-mix" onclick="event.stopPropagation(); triggerAIContext(null, 'mix', '${aiId}', this, '${d.name}')">🧪 Recon</button>
-                    <a href="${googleLink}" target="_blank" class="btn-tool tool-google" onclick="event.stopPropagation();">G</a>
+                    <button class="btn-tool tool-edit" onclick="event.stopPropagation(); triggerEditPrompt(${drugStr})">✨ AI Edit</button>
+                    <button class="btn-tool tool-isbar" onclick="event.stopPropagation(); handleToolClick('isbar', ${drugStr}, '${aiId}', this)">🚑 ISBAR</button>
+                    <button class="btn-tool tool-explain" onclick="event.stopPropagation(); handleToolClick('explain', ${drugStr}, '${aiId}', this)">🎓 Explain</button>
+                    <button class="btn-tool tool-cheat" onclick="event.stopPropagation(); handleToolClick('cheat', ${drugStr}, '${aiId}', this)">📋 Ward Sheet</button>
+                    <button class="btn-tool tool-mix" onclick="event.stopPropagation(); handleToolClick('mix', ${drugStr}, '${aiId}', this)">🧪 Recon</button>
+                    <button class="btn-tool tool-google" onclick="event.stopPropagation(); handleToolClick('google', ${drugStr}, '${aiId}', this)">G</button>
                 </div>
                 <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" class="btn-action">
                     🔊 Read Aloud
@@ -704,39 +720,121 @@
         container.appendChild(div);
     }
 
-    // --- TOOL LOGIC ---
-    function toggleCalc(id) {
-        const p = document.getElementById(id);
-        p.style.display = p.style.display === 'block' ? 'none' : 'block';
+    // --- MULTI-DRUG SELECTOR LOGIC ---
+    function handleToolClick(action, drugObj, aiId, btnElement) {
+        // Check for semicolon in name
+        if (drugObj.name.includes(';')) {
+            const names = drugObj.name.split(';').map(n => n.trim()).filter(n => n);
+            showSelectModal(names, action, drugObj, aiId, btnElement);
+        } else {
+            // Single drug, proceed normally
+            executeToolAction(action, drugObj.name, drugObj, aiId, btnElement);
+        }
     }
 
-    function calculateIV(id) {
-        const vol = parseFloat(document.getElementById(`vol-${id}`).value) || 0;
-        const time = parseFloat(document.getElementById(`time-${id}`).value) || 1;
-        const drop = parseFloat(document.getElementById(`drop-${id}`).value) || 20; 
-        const result = Math.round((vol * drop) / time);
-        document.getElementById(`res-${id}`).innerText = `${result} gtt/min`;
+    function showSelectModal(names, action, drugObj, aiId, btnElement) {
+        const overlay = document.getElementById('select-overlay');
+        const container = document.getElementById('select-options-container');
+        container.innerHTML = '';
+        
+        // Save pending context
+        pendingSelectAction = { action, drugObj, aiId, btnElement };
+        
+        names.forEach(name => {
+            const btn = document.createElement('button');
+            btn.className = 'select-btn';
+            btn.innerText = name;
+            btn.onclick = () => {
+                closeSelect();
+                executeToolAction(action, name, drugObj, aiId, btnElement);
+            };
+            container.appendChild(btn);
+        });
+        
+        overlay.style.display = 'flex';
     }
 
-    function startPushTimer(btn, durationSeconds) {
-        if(btn.classList.contains('running')) return; 
-        const originalText = btn.innerHTML;
-        let left = durationSeconds;
-        btn.classList.add('running');
-        btn.innerHTML = `⏳ ${left}s`;
-        const interval = setInterval(() => {
-            left--;
-            if (left <= 0) {
-                clearInterval(interval);
-                btn.classList.remove('running');
-                btn.style.background = "#34C759"; 
-                btn.innerHTML = "✅ Done";
-                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                setTimeout(() => { btn.style.background = ""; btn.innerHTML = originalText; }, 3000);
-            } else {
-                btn.innerHTML = `⏳ ${left}s`;
+    function closeSelect() {
+        document.getElementById('select-overlay').style.display = 'none';
+        pendingSelectAction = null;
+    }
+
+    function executeToolAction(action, selectedName, drugObj, aiId, btnElement) {
+        if (action === 'google') {
+            const googleLink = `https://www.google.com/search?q=${encodeURIComponent(selectedName + ' nursing considerations')}`;
+            window.open(googleLink, '_blank');
+        } else {
+            triggerAIContext(drugObj, action, aiId, btnElement, selectedName);
+        }
+    }
+
+    // --- EDIT LOGIC ---
+    function toggleEditOverlay() {
+        const p = document.getElementById('edit-overlay');
+        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function triggerEditPrompt(drugObj) {
+        currentEditDrug = drugObj;
+        document.getElementById('edit-drug-name-disp').innerText = drugObj.name;
+        document.getElementById('edit-input').value = '';
+        toggleEditOverlay();
+    }
+
+    async function submitAIEdit() {
+        if (!currentEditDrug) return;
+        const instructions = document.getElementById('edit-input').value.trim();
+        const btn = document.getElementById('btn-edit-submit');
+        
+        if (!instructions) { alert("Please enter instructions."); return; }
+        
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Updating...';
+        
+        const prompt = `You are editing a JSON database entry for a drug.
+        Current JSON: ${JSON.stringify(currentEditDrug)}
+        User Instructions: ${instructions}
+        
+        Task: Return the fully updated JSON object strictly. 
+        Ensure keys match exactly: name, class, indication, system, SideEffects, nursing, hold_param.
+        Do not output markdown blocks. Just the JSON string.`;
+        
+        try {
+            let jsonString = await getFullAIResponse(prompt);
+            jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            const firstBrace = jsonString.indexOf('{');
+            const lastBrace = jsonString.lastIndexOf('}');
+            if(firstBrace !== -1 && lastBrace !== -1) {
+                jsonString = jsonString.substring(firstBrace, lastBrace + 1);
             }
-        }, 1000);
+            
+            const newDrugData = JSON.parse(jsonString);
+            pendingDrugSave = newDrugData;
+            
+            toggleEditOverlay();
+            
+            // Show preview for saving
+            const container = document.getElementById('search-results');
+            container.innerHTML = `
+                <div style="background:var(--surface); border:2px solid var(--primary); padding:24px; border-radius:16px;">
+                    <div style="font-weight:700; color:var(--primary); margin-bottom:10px; text-transform:uppercase; font-size:12px;">✨ AI Edited Preview</div>
+                    <div style="font-size:1.6rem; font-weight:800; margin-bottom:4px; color:var(--text-main);">${newDrugData.name}</div>
+                    <div style="color:var(--text-secondary); margin-bottom:20px;">${newDrugData.class}</div>
+                    <div style="font-size:1rem; line-height:1.6; color:var(--text-main);">
+                        <p><strong>Indication:</strong> ${newDrugData.indication}</p>
+                        <p><strong>Side Effects:</strong> ${newDrugData.SideEffects}</p>
+                        <p><strong>Nursing:</strong> ${newDrugData.nursing}</p>
+                    </div>
+                    <button class="btn-action" style="background:var(--primary); color:white;" onclick="confirmSaveDrug()">💾 Save Changes</button>
+                    <button class="btn-action" style="background:transparent; color:var(--text-secondary); margin-top:0;" onclick="resetToHome()">Cancel</button>
+                </div>
+            `;
+            
+        } catch(e) {
+            alert("Error updating: " + e.message);
+        } finally {
+            btn.innerHTML = "✨ Update";
+            btn.disabled = false;
+        }
     }
 
     // --- VS (COMPARE) LOGIC ---
@@ -884,7 +982,6 @@
         finally { btn.disabled = false; setTimeout(() => btn.innerHTML = originalText, 3000); }
     }
 
-    // FIXED: Added buffer to handle stream chunking correctly
     async function streamAI(prompt, onChunk) {
         let url = "https://api.deepseek.com/chat/completions";
         let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
@@ -900,18 +997,14 @@
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
-        let buffer = ""; // Add buffer for split chunks
+        let buffer = "";
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             
-            // Decode and add to buffer
             buffer += decoder.decode(value, {stream: true});
-            
-            // Process complete lines
             const lines = buffer.split('\n');
-            // Keep the last partial line in buffer
             buffer = lines.pop(); 
 
             for (const line of lines) {
@@ -921,9 +1014,7 @@
                         const content = json.choices[0]?.delta?.content || "";
                         fullText += content;
                         onChunk(fullText);
-                    } catch (e) {
-                        // Ignore parse errors from partial json lines
-                    }
+                    } catch (e) { }
                 }
             }
         }
@@ -951,9 +1042,7 @@
 
         try {
             let jsonString = await getFullAIResponse(prompt);
-            // FIXED: More robust JSON cleaning
             jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
-            // Attempt to find the first { and last } if extra text exists
             const firstBrace = jsonString.indexOf('{');
             const lastBrace = jsonString.lastIndexOf('}');
             if(firstBrace !== -1 && lastBrace !== -1) {
@@ -1037,7 +1126,6 @@
                 if(res.data.length){ 
                     drugs = res.data;
                     localStorage.setItem('drug_db_cache', JSON.stringify(drugs));
-                    // Only update UI if we didn't have local data, or if we want to refresh
                     if (!localData) {
                         loading.style.display = 'none'; 
                         results.style.display = 'flex'; 
@@ -1085,7 +1173,6 @@
     
     function clickHistory(term) { document.getElementById('search-input').value = term; handleSearch(); }
     
-    // FIXED: Added specific Settings Saving Logic
     function saveSettings() {
         const dsInput = document.getElementById('deepseek-key');
         const ylInput = document.getElementById('yinli-key');
@@ -1097,7 +1184,6 @@
         localStorage.setItem('ai_provider', provider);
         
         toggleSettings();
-        // Optional: Alert or visual feedback could be added here
     }
 
     function toggleSettings() { const p = document.getElementById('settings-overlay'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; }
