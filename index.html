@@ -911,7 +911,7 @@
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Comparing...';
         res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">AI is analyzing difference...</span>';
 
-        const langInstruction = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese (LIHKG style). Use terms like 'Ching', 'Key野', 'Old Seafood'." : "Use English.";
+        const langInstruction = aiLanguage === 'lihkg' ? "Response MUST be in Traditional Chinese (Cantonese) mixed with English medical terminology. Style: Hong Kong LIHKG forum style (slang allowed)." : "Response MUST be in Standard Professional English.";
         const prompt = `Compare "${a}" vs "${b}" for a nursing student.
         Format as a Markdown Table.
         Columns: Feature, ${a}, ${b}.
@@ -959,7 +959,7 @@
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Thinking...';
         res.style.display = 'block'; res.innerHTML = '<span style="color:var(--text-secondary);">Analyzing pathophysiology & drugs...</span>';
 
-        const langInst = aiLanguage === 'lihkg' ? "Use Hong Kong Cantonese/English mix (Nursing student style)." : "Use English.";
+        const langInst = aiLanguage === 'lihkg' ? "Use Traditional Chinese (Cantonese) for explanations, but keep medical terms in English. Style: Casual Hong Kong nursing student." : "Response MUST be in Standard Professional English.";
         
         // NEW PROMPT FOR DISEASE & DRUG TUTOR
         const prompt = `Act as a Nursing Pharmacology Tutor. The user wants to learn about the management of: "${input}".
@@ -1010,11 +1010,14 @@
         let prompt = "";
         
         // --- PROMPT ENGINEERING FOR LIHKG ---
-        const hkPersona = "You are a seasoned Hong Kong Nursing Senior (Old Seafood/老屎忽). Speak in LIHKG style (Cantonese/English Mix, 'Kongish'). Be direct, slightly cynical about HA culture, but medically strict. Use slang like 'Ching', 'Siu4', 'Any肥', 'Jeng', 'BP', 'O2'.";
+        const hkPersona = "You are a Hong Kong Nursing Senior. Output MUST be in Traditional Chinese (Cantonese) mixed with English medical terms (Kongish). Be direct, slightly cynical about HA culture, but medically strict. Use slang like 'Ching', 'Siu4', 'Any肥', 'Jeng', 'BP', 'O2'.";
+        const enPersona = "You are a professional Nursing Tutor. Output MUST be in Standard Professional English.";
+
+        const currentPersona = aiLanguage === 'lihkg' ? hkPersona : enPersona;
 
         if (type === 'isbar') {
-             prompt = `System: ${hkPersona}
-             Task: Write a nursing handover (ISBAR) for ${name}. Invent a realistic HK ward scenario (e.g., patient desaturated, BP drop).
+             prompt = `System: ${currentPersona}
+             Task: Write a nursing handover (ISBAR) for ${name}. Invent a realistic ward scenario (e.g., patient desaturated, BP drop).
              Format:
              **I**: Identify (Who u are, Ward, Pt Name)
              **S**: Situation (The emergency)
@@ -1024,7 +1027,7 @@
              Keep it succinct.`;
         }
         else if (type === 'mix') {
-            prompt = `System: ${hkPersona}
+            prompt = `System: ${currentPersona}
             Task: Explain how to mix/give ${name} (IV/IM).
             Include:
             1. Diluent (NS/D5?)
@@ -1034,7 +1037,7 @@
             Keep it practical.`;
         }
         else if (type === 'explain') {
-            prompt = `System: ${hkPersona}
+            prompt = `System: ${currentPersona}
             Task: Explain ${name} to a Year 1 student. Use a funny/memorable analogy. 
             Explain mechanism simply. 
             Mention one "Killer Side Effect" that will make the Ward Manager scream at you if you miss it.`;
@@ -1062,7 +1065,8 @@
                 
                 Keep it short. Bullet points only.`;
             } else {
-                prompt = `Create a "Ward Survival Cheatsheet" for ${name}. Bullet points only.
+                prompt = `System: ${enPersona}
+                Task: Create a "Ward Survival Cheatsheet" for ${name}. Bullet points only.
                 Sections:
                 1. 🛑 STOP Checks (Hold if...)
                 2. 📉 Monitoring (What to watch)
