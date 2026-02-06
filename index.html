@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-title" content="Drug Tutor">
     <meta name="theme-color" content="#F2F2F7">
 
-    <title>AI Drug Tutor</title>
+    <title>AI Drug Tutor (R1 Edition)</title>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -63,6 +63,9 @@
             --radius: 18px;
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --thought-bg: #f0f4f8;
+            --thought-border: #d1d9e6;
+            --thought-text: #4a5568;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -76,6 +79,9 @@
                 --border: rgba(255,255,255,0.15);
                 --input-bg: #1C1C1E;
                 --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                --thought-bg: #2d3748;
+                --thought-border: #4a5568;
+                --thought-text: #a0aec0;
             }
         }
 
@@ -239,6 +245,20 @@
         .ai-output-box p { margin: 8px 0; }
         .ai-output-box strong { color: var(--primary); }
 
+        /* THINKING BLOCK STYLES */
+        .thought-process {
+            font-size: 13px; color: var(--thought-text); background: var(--thought-bg);
+            border: 1px solid var(--thought-border); border-radius: 8px;
+            padding: 10px; margin-bottom: 12px; font-style: italic;
+        }
+        .thought-toggle {
+            font-size: 12px; font-weight: 700; color: var(--text-secondary);
+            cursor: pointer; display: flex; align-items: center; gap: 5px; margin-bottom: 5px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        details.thought-details > summary { list-style: none; outline: none; }
+        details.thought-details > summary::-webkit-details-marker { display: none; }
+
         .spinner {
             width: 18px; height: 18px; border: 2px solid rgba(128,128,128,0.3);
             border-top-color: var(--primary); border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;
@@ -348,8 +368,9 @@
         <h3 class="section-label">AI Configuration</h3>
         <div class="settings-group" style="padding:10px;">
             <select id="provider-select" onchange="updateSettingsUI()" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-main); font-size:16px;">
-                <option value="yinli">Yinli (GPT-5.1)</option>
-                <option value="deepseek">DeepSeek (Official)</option>
+                <option value="deepseek">DeepSeek (V3 - Standard)</option>
+                <option value="deepseek-r1">DeepSeek Reasoner (R1 - Smart)</option>
+                <option value="yinli">Yinli (Custom Proxy)</option>
             </select>
             <div id="settings-dynamic-fields"></div>
         </div>
@@ -455,10 +476,10 @@
     let pendingSelectAction = null; 
     
     // --- KEYS (Default) ---
-    let provider = 'yinli'; // Default to Yinli as per request
+    let provider = 'deepseek-r1'; // Default to DeepSeek R1
     let keys = { deepseek: "sk-92db3cf721454bd7b351ca6ef40eaaf7", yinli: "" };
     let yinliUrl = "https://yinli.one/v1/chat/completions";
-    let yinliModel = "gpt-5.1"; // Updated to user's requested model
+    let yinliModel = "gpt-5.1"; 
     
     // --- UTILS ---
     let pendingDrugSave = null;
@@ -808,6 +829,9 @@
         try {
             let jsonString = await getFullAIResponse(prompt);
             jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            // Clean DeepSeek Thought Process if present in non-streamed edit
+            jsonString = jsonString.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
             const firstBrace = jsonString.indexOf('{');
             const lastBrace = jsonString.lastIndexOf('}');
             if(firstBrace !== -1 && lastBrace !== -1) {
@@ -902,7 +926,14 @@
         ${langInstruction}`;
 
         try {
-            await streamAI(prompt, (chunk) => { res.innerHTML = marked.parse(chunk); });
+            await streamAI(prompt, (chunk, thoughts) => { 
+                let html = "";
+                if(thoughts) {
+                    html += `<details class="thought-details"><summary class="thought-toggle">💭 AI Thought Process</summary><div class="thought-process">${marked.parse(thoughts)}</div></details>`;
+                }
+                html += marked.parse(chunk);
+                res.innerHTML = html;
+            });
             btn.innerHTML = "✅ Done";
         } catch(e) {
             res.innerHTML = "Error: " + e.message;
@@ -950,7 +981,14 @@
         `;
 
         try {
-            await streamAI(prompt, (chunk) => { res.innerHTML = marked.parse(chunk); });
+            await streamAI(prompt, (chunk, thoughts) => { 
+                let html = "";
+                if(thoughts) {
+                    html += `<details class="thought-details"><summary class="thought-toggle">💭 AI Thought Process</summary><div class="thought-process">${marked.parse(thoughts)}</div></details>`;
+                }
+                html += marked.parse(chunk);
+                res.innerHTML = html;
+            });
             btn.innerHTML = "✅ Done";
         } catch(e) {
             res.innerHTML = "Error: " + e.message;
@@ -1034,7 +1072,14 @@
         }
 
         try {
-            await streamAI(prompt, (chunk) => { out.innerHTML = marked.parse(chunk); });
+            await streamAI(prompt, (chunk, thoughts) => { 
+                let html = "";
+                if(thoughts) {
+                    html += `<details class="thought-details"><summary class="thought-toggle">💭 AI Thought Process</summary><div class="thought-process">${marked.parse(thoughts)}</div></details>`;
+                }
+                html += marked.parse(chunk);
+                out.innerHTML = html;
+            });
             btn.innerHTML = "✅";
         } catch (e) { out.innerHTML = `Error: ${e.message}`; btn.innerHTML = "❌"; } 
         finally { btn.disabled = false; setTimeout(() => btn.innerHTML = originalText, 3000); }
@@ -1043,7 +1088,11 @@
     async function streamAI(prompt, onChunk) {
         let url = "https://api.deepseek.com/chat/completions";
         let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
-        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: true };
+        
+        // Use R1 if selected, otherwise V3
+        let modelToUse = (provider === 'deepseek-r1') ? "deepseek-reasoner" : "deepseek-chat"; 
+        
+        let body = { model: modelToUse, messages: [{role:"user", content: prompt}], stream: true };
         
         if(provider === 'yinli') { 
             url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = yinliModel; 
@@ -1054,7 +1103,9 @@
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        
         let fullText = "";
+        let fullThinking = "";
         let buffer = "";
 
         while (true) {
@@ -1069,9 +1120,22 @@
                 if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                     try {
                         const json = JSON.parse(line.substring(6));
+                        
+                        // Handle DeepSeek Reasoner content
                         const content = json.choices[0]?.delta?.content || "";
-                        fullText += content;
-                        onChunk(fullText);
+                        const reasoning = json.choices[0]?.delta?.reasoning_content || ""; // Standard R1 output field
+                        
+                        if(reasoning) {
+                            fullThinking += reasoning;
+                        }
+                        
+                        if(content) {
+                            fullText += content;
+                        }
+                        
+                        // Pass both main content and reasoning to callback
+                        onChunk(fullText, fullThinking);
+                        
                     } catch (e) { }
                 }
             }
@@ -1101,6 +1165,9 @@
         try {
             let jsonString = await getFullAIResponse(prompt);
             jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            // Clean thought tags for JSON parsing
+            jsonString = jsonString.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+            
             const firstBrace = jsonString.indexOf('{');
             const lastBrace = jsonString.lastIndexOf('}');
             if(firstBrace !== -1 && lastBrace !== -1) {
@@ -1134,7 +1201,9 @@
     async function getFullAIResponse(prompt) {
         let url = "https://api.deepseek.com/chat/completions";
         let headers = { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepseek}` };
-        let body = { model: "deepseek-chat", messages: [{role:"user", content: prompt}], stream: false };
+        let modelToUse = (provider === 'deepseek-r1') ? "deepseek-reasoner" : "deepseek-chat";
+        
+        let body = { model: modelToUse, messages: [{role:"user", content: prompt}], stream: false };
         if(provider === 'yinli') { url = yinliUrl; headers["Authorization"] = `Bearer ${keys.yinli}`; body.model = yinliModel; }
         const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
         const json = await response.json();
@@ -1266,7 +1335,7 @@
         container.innerHTML = '';
         if (prov === 'yinli') {
             container.innerHTML = `<div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">Yinli API Key</div><input type="password" id="yinli-key" class="settings-input" value="${keys.yinli}" placeholder="sk-...">`;
-        } else if (prov === 'deepseek') {
+        } else if (prov.startsWith('deepseek')) {
             container.innerHTML = `<div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:10px;">DeepSeek API Key</div><input type="password" id="deepseek-key" class="settings-input" value="${keys.deepseek}" placeholder="sk-...">`;
         }
     }
