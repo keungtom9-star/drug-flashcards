@@ -9,13 +9,13 @@
     <meta name="apple-mobile-web-app-title" content="Drug Tutor">
     <meta name="theme-color" content="#F2F2F7">
 
-    <title>AI Drug Tutor (R1 Edition)</title>
+    <title>AI Drug Tutor</title>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
-        // Dynamic Icon Generation (BLUE ICON)
+        // Dynamic App Icon (Blue Square)
         (function() {
             const svgSource = `
             <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
@@ -48,7 +48,7 @@
 
     <style>
         :root {
-            /* Light Mode Defaults - BLUE THEME */
+            /* Light Mode Defaults */
             --primary: #007AFF;
             --secondary: #34C759;
             --danger: #FF3B30;
@@ -66,6 +66,10 @@
             --thought-bg: #f0f4f8;
             --thought-border: #d1d9e6;
             --thought-text: #4a5568;
+            
+            /* Icon Specifics */
+            --icon-stroke: #1C1C1E; /* Dark grey stroke for light mode */
+            --icon-fill: #F8B4BE; /* The pink fill */
         }
 
         @media (prefers-color-scheme: dark) {
@@ -82,6 +86,10 @@
                 --thought-bg: #2d3748;
                 --thought-border: #4a5568;
                 --thought-text: #a0aec0;
+                
+                /* Icon Dark Mode */
+                --icon-stroke: #FFFFFF; /* White stroke for dark mode */
+                --icon-fill: #FF2D55; /* Slightly brighter pink for dark mode */
             }
         }
 
@@ -168,11 +176,10 @@
         }
         .result-card:active { transform: scale(0.98); }
 
-        .result-header { display: flex; justify-content: space-between; align-items: center; }
-        /* Adjusted drug-name for layout */
+        .result-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .drug-name { font-size: 19px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; line-height: 1.2; }
         .drug-class { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
-        .chevron { color: var(--text-secondary); opacity: 0.5; font-size: 24px; font-weight: 300; transition: transform 0.3s; margin-left: 10px; }
+        .chevron { color: var(--text-secondary); opacity: 0.5; font-size: 24px; font-weight: 300; transition: transform 0.3s; margin-left: 10px; margin-top: 5px; }
         .result-card.expanded .chevron { transform: rotate(90deg); color: var(--primary); opacity: 1; }
 
         .result-detail { display: none; margin-top: 20px; border-top: 0.5px solid var(--border); padding-top: 16px; }
@@ -223,6 +230,7 @@
         #settings-overlay, #vs-overlay, #gen-overlay, #edit-overlay, #select-overlay {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(4px); align-items: flex-end;
+            overscroll-behavior: contain;
         }
         .settings-sheet, .vs-sheet, .gen-sheet, .edit-sheet, .select-sheet {
             background: var(--surface); width: 100%; max-width: 600px; margin: 0 auto;
@@ -291,6 +299,14 @@
         table { width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
         th, td { border:1px solid var(--border); padding:8px; text-align:left; vertical-align:top; }
         th { background:var(--input-bg); font-weight:700; }
+        
+        /* SPEAKER ICON CLASS */
+        .speaker-btn {
+            background: transparent; border: none; padding: 4px; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; margin-left: 2px;
+        }
+        .speaker-btn:active { background: var(--border); }
     </style>
 </head>
 <body>
@@ -310,7 +326,7 @@
 <div class="search-container">
     <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" class="search-bar" placeholder="Search drug..." oninput="handleSearch()" onfocus="handleSearch()" onclick="handleSearch()">
+        <input type="text" id="search-input" class="search-bar" placeholder="Search drug..." autocomplete="off" oninput="handleSearch()" onfocus="handleSearch()" onclick="handleSearch()">
     </div>
 </div>
 
@@ -619,14 +635,19 @@
         window.speechSynthesis.speak(u);
     }
     
-    function speakDetails(d) {
-        let txt = "";
-        if (aiLanguage === 'lihkg') {
-            txt = `藥名: ${d.name}。 類別: ${d.class}。 用途: ${d.indication}。 副作用: ${d.SideEffects}。 護理: ${d.nursing}`;
-        } else {
-            txt = `Drug Name: ${d.name}. Class: ${d.class}. Indication: ${d.indication}. Side Effects: ${d.SideEffects}. Nursing: ${d.nursing}`;
-        }
-        speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
+    // Helper to safely trigger speech from DOM button
+    function triggerSpeak(encodedJSON) {
+        event.stopPropagation();
+        try {
+            const d = JSON.parse(decodeURIComponent(encodedJSON));
+            let txt = "";
+            if (aiLanguage === 'lihkg') {
+                txt = `藥名: ${d.name}。 類別: ${d.class}。 用途: ${d.indication}。 副作用: ${d.SideEffects}。 護理: ${d.nursing}`;
+            } else {
+                txt = `Drug Name: ${d.name}. Class: ${d.class}. Indication: ${d.indication}. Side Effects: ${d.SideEffects}. Nursing: ${d.nursing}`;
+            }
+            speakText(txt, aiLanguage === 'lihkg' ? 'zh-HK' : 'en');
+        } catch(e) { console.error("Speak error", e); }
     }
 
     // --- SEARCH LOGIC ---
@@ -697,21 +718,34 @@
         const uniqueId = Math.random().toString(36).substr(2, 9);
         const aiId = `ai-${uniqueId}`;
         
-        // Serialize drug object for passing to onclick
+        // Safe serialization for tools
         const drugStr = JSON.stringify(d).replace(/"/g, '&quot;');
+        
+        // Safe serialization for Speaker (URI Encoded to avoid quote bugs)
+        const safeSpeakerData = encodeURIComponent(JSON.stringify({
+            name: d.name.replace(/'/g, ""),
+            class: d.class,
+            system: d.system,
+            indication: d.indication.replace(/\n/g, ""),
+            SideEffects: d.SideEffects.replace(/\n/g, ""),
+            nursing: d.nursing.replace(/\n/g, "")
+        }));
         
         let holdHtml = '';
         if (d.hold_param) { holdHtml = `<div class="alert-box"><span>⛔️</span><span>HOLD IF: ${d.hold_param}</span></div>`; }
 
-        // --- UPDATED LAYOUT WITH SPEAKER ICON ---
+        // --- UPDATED LAYOUT WITH CUSTOM SPEAKER SVG ---
         div.innerHTML = `
             ${isNew ? '<div style="background:var(--secondary); color:white; font-size:10px; padding:4px 8px; border-radius:10px; display:inline-block; margin-bottom:8px; font-weight:700;">✅ Saved</div>' : ''}
             <div class="result-header">
                 <div style="flex:1; padding-right:10px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
                         <div class="drug-name">${d.name}</div>
-                        <button onclick="event.stopPropagation(); speakDetails({name:'${d.name.replace(/'/g, "")}', class:'${d.class}', system:'${d.system}', indication:'${d.indication.replace(/\n/g, "")}', SideEffects:'${d.SideEffects.replace(/\n/g, "")}', nursing:'${d.nursing.replace(/\n/g, "")}'})" style="background:transparent; border:none; font-size:1.2rem; cursor:pointer; padding:0; display:flex; align-items:center; color:var(--primary);">
-                            🔊
+                        <button class="speaker-btn" onclick="triggerSpeak('${safeSpeakerData}')">
+                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15.5 5.5L10.5 9H6.5V15H10.5L15.5 18.5V5.5Z" fill="var(--icon-fill)" stroke="var(--icon-stroke)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M19.5 8C20.5 9.5 20.5 11.5 20.5 12" stroke="var(--icon-stroke)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </button>
                     </div>
                     <div class="drug-class">${d.class}</div>
