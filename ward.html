@@ -24,6 +24,7 @@
 
             --ecg-grid: #fff0f0;
             --ecg-line: #ffcccc;
+            --header-height: 108px;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -40,13 +41,14 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+        html, body { height: 100dvh; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-bottom: 80px;
+            overflow: hidden;
         }
 
         /* --- Header & Tabs --- */
@@ -86,9 +88,12 @@
         /* --- Layout --- */
         .container {
             display: none; /* Hidden by default */
-            padding: 16px;
+            padding: 12px 16px 14px;
             max-width: 1000px; margin: 0 auto;
-            grid-template-columns: 1fr; gap: 16px;
+            grid-template-columns: 1fr; gap: 12px;
+            height: calc(100dvh - var(--header-height));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .container.active { display: grid; }
         
@@ -174,6 +179,79 @@
             .t-im { background: rgba(255, 149, 0, 0.2); color: #fcd34d; }
         }
 
+
+        /* --- Intake Flow (embedded app) --- */
+        .intake-header {
+            background: var(--bg-color);
+            border-radius: 14px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .intake-title { font-size: 1rem; font-weight: 700; }
+        .intake-cutoff { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--text-sec); }
+        .intake-cutoff input {
+            border: none; background: white; color: var(--blue);
+            border-radius: 8px; padding: 4px 8px; font-weight: 700;
+        }
+        .intake-grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+        .intake-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+        .intake-btn {
+            border:none; border-radius:10px; padding:10px 0;
+            font-weight:700; background:#eef2ff; color:#1d4ed8; cursor:pointer;
+        }
+        .intake-btn:active { opacity:0.8; }
+        .intake-chip-wrap { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
+        .intake-chip {
+            border:none; background:var(--bg-color); color:var(--text-main);
+            border-radius:999px; padding:7px 12px; white-space:nowrap; cursor:pointer;
+        }
+        .intake-chip.active { background:var(--blue); color:white; }
+        .intake-chip.ideal { border:1px solid #f59e0b; background:#fffbeb; color:#b45309; }
+        .intake-chip.ideal.active { background:#f59e0b; color:white; }
+        .intake-result { display:flex; justify-content:space-between; background:var(--bg-color); border-radius:10px; padding:8px 10px; margin-top:8px; font-size:0.8rem; }
+        .intake-total-bar {
+            position: sticky; bottom: 8px; z-index: 20;
+            background: rgba(30,30,30,0.88); color:white; border-radius:14px;
+            padding:10px 14px; display:flex; justify-content:space-between; align-items:center;
+            margin-top: 8px;
+        }
+
+
+        @media (max-width: 767px) {
+            :root { --header-height: 104px; }
+            .top-bar { padding: 8px 12px; }
+            .tabs { padding: 0 4px 6px 4px; }
+            .tab-btn { padding: 7px 10px; font-size: 0.8rem; }
+            .card { border-radius: 14px; padding: 12px; }
+
+            #intake.container.active {
+                overflow: hidden;
+                padding: 8px 10px 10px;
+                gap: 8px;
+            }
+            #intake .card.full-width {
+                height: calc(100dvh - var(--header-height) - 18px);
+                display: grid;
+                grid-template-rows: auto auto auto auto auto auto;
+                gap: 8px;
+                overflow: hidden;
+                padding: 10px;
+            }
+            #intake-iv-list {
+                overflow-y: auto;
+                min-height: 90px;
+                max-height: 30dvh;
+                padding-right: 2px;
+            }
+            .intake-header { margin-bottom: 0; }
+            .intake-grid-3, .intake-grid-4 { gap: 6px; }
+            .intake-btn { padding: 8px 0; font-size: 0.85rem; }
+            .intake-total-bar { margin-top: 0; padding: 8px 10px; border-radius: 12px; }
+        }
+
         /* --- Utils --- */
         .calc-box { text-align: center; padding: 10px; background: var(--bg-color); border-radius: 8px; margin-bottom: 8px; }
         .cannula-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -196,10 +274,11 @@
             <div style="width:50px"></div>
         </div>
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('labs')">Labs</button>
-            <button class="tab-btn" onclick="switchTab('ecg')">ECG</button>
-            <button class="tab-btn" onclick="switchTab('tools')">Tools</button>
-            <button class="tab-btn" onclick="switchTab('meds')">Meds</button>
+            <button class="tab-btn active" data-tab="labs" onclick="switchTab('labs')">Labs</button>
+            <button class="tab-btn" data-tab="ecg" onclick="switchTab('ecg')">ECG</button>
+            <button class="tab-btn" data-tab="tools" onclick="switchTab('tools')">Tools</button>
+            <button class="tab-btn" data-tab="meds" onclick="switchTab('meds')">Meds</button>
+            <button class="tab-btn" data-tab="intake" onclick="switchTab('intake')">Intake</button>
         </div>
     </div>
 
@@ -325,7 +404,7 @@
             <div class="rhythm-card r-warn">
                 <div class="r-title">STEMI</div>
                 <div class="r-details">
-                    ST Elevation >1mm in 2 contiguous leads ("Fireman Hat").
+                    ST Elevation &gt;1mm in 2 contiguous leads ("Fireman Hat").
                     <br><strong>EMERGENCY.</strong>
                 </div>
             </div>
@@ -335,7 +414,7 @@
             <div class="card-header">🛑 Heart Blocks</div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">1st Degree</div>
-                <div class="r-details">PR >0.20s (Constant). Regular. Benign.</div>
+                <div class="r-details">PR &gt;0.20s (Constant). Regular. Benign.</div>
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">2nd Degree Type I (Wenckebach)</div>
@@ -371,7 +450,7 @@
             </div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">NSR / Brady / Tachy</div>
-                <div class="r-details">Normal (60-100) / Slow (<60) / Fast (>100)</div>
+                <div class="r-details">Normal (60-100) / Slow (&lt;60) / Fast (&gt;100)</div>
             </div>
         </div>
 
@@ -430,7 +509,7 @@
                     <ul style="padding-left:15px; margin:5px 0; font-size:0.8rem; color:var(--text-sec);">
                         <li><strong>A</strong>irway (Midline?)</li>
                         <li><strong>B</strong>reathing (Clear?)</li>
-                        <li><strong>C</strong>ardiac (Size <50%?)</li>
+                        <li><strong>C</strong>ardiac (Size &lt;50%?)</li>
                         <li><strong>D</strong>iaphragm (Angles?)</li>
                     </ul>
                 </div>
@@ -446,7 +525,7 @@
             </div>
             <hr style="border:0; border-top:1px solid var(--border); margin:10px 0;">
             <div style="font-size:0.85rem;">
-                <strong>LVEF:</strong> Normal ≥ 55% &nbsp;|&nbsp; Mild 45-54% &nbsp;|&nbsp; Mod 30-44% &nbsp;|&nbsp; Sev <30%
+                <strong>LVEF:</strong> Normal ≥ 55% &nbsp;|&nbsp; Mild 45-54% &nbsp;|&nbsp; Mod 30-44% &nbsp;|&nbsp; Sev &lt;30%
             </div>
         </div>
 
@@ -1117,25 +1196,246 @@
         </div>
     </div>
 
+    <!-- ================= INTAKE TAB ================= -->
+    <div id="intake" class="container">
+        <div class="card full-width">
+            <div class="intake-header">
+                <div class="intake-title">Intake Flow</div>
+                <div class="intake-cutoff">Cutoff <input type="time" id="intake-cutoff" value="08:00" onchange="intakeUpdateGlobalCutoff()"></div>
+            </div>
+
+            <div class="card" style="margin:0 0 10px 0; box-shadow:none; border:1px solid var(--border);">
+                <div style="font-size:0.8rem; color:var(--text-sec); margin-bottom:6px;">Oral Intake</div>
+                <div style="font-size:2rem; font-weight:800; color:var(--orange); text-align:center;" id="intake-oral-display">0</div>
+                <div class="intake-grid-3" style="margin-top:8px;">
+                    <button class="intake-btn" onclick="intakeAddOral(50)">+50</button>
+                    <button class="intake-btn" onclick="intakeAddOral(100)">+100</button>
+                    <button class="intake-btn" onclick="intakeAddOral(200)">+200</button>
+                </div>
+                <button class="section-action" style="width:100%; margin-top:8px;" onclick="intakeCustomOral()">Custom Oral</button>
+            </div>
+
+            <div class="card" style="margin:0 0 10px 0; box-shadow:none; border:1px solid var(--border);">
+                <div style="font-size:0.8rem; color:var(--text-sec); margin-bottom:6px;">Direct / Bolus</div>
+                <div style="font-size:2rem; font-weight:800; color:var(--purple); text-align:center;" id="intake-bolus-display">0</div>
+                <div class="intake-grid-4" style="margin-top:8px;">
+                    <button class="intake-btn" onclick="intakeAddBolus(50)">50</button>
+                    <button class="intake-btn" onclick="intakeAddBolus(100)">100</button>
+                    <button class="intake-btn" onclick="intakeAddBolus(250)">250</button>
+                    <button class="intake-btn" onclick="intakeAddBolus(500)">500</button>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div class="card-header" style="border:none; padding:0; margin:0;">💧 IV Bags</div>
+                <button class="section-action" onclick="intakeAddBag()">+ Add Bag</button>
+            </div>
+            <div id="intake-iv-list"></div>
+
+            <div style="display:flex; gap:8px; margin-top:10px;">
+                <button class="intake-btn" style="flex:1; background:#fee2e2; color:#b91c1c;" onclick="intakeResetAll()">Reset All</button>
+                <button class="intake-btn" style="flex:1; background:#e5e7eb; color:#374151;" onclick="intakeResetOral()">Reset Oral</button>
+                <button class="intake-btn" style="flex:1; background:#ede9fe; color:#6d28d9;" onclick="intakeResetBolus()">Reset Bolus</button>
+            </div>
+
+            <div class="intake-total-bar">
+                <div>
+                    <div style="font-size:0.65rem; color:#9ca3af; text-transform:uppercase;">Total Intake</div>
+                    <div style="font-size:0.75rem; color:#d1d5db;" id="intake-breakdown">IV: 0 • Oral: 0</div>
+                </div>
+                <div style="font-size:1.6rem; font-weight:800;" id="intake-grand-total">0</div>
+            </div>
+        </div>
+    </div>
+
 <script>
     // Tab Switching Logic
     function switchTab(tabId) {
-        // Hide all tabs
         document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        
-        // Show selected
         document.getElementById(tabId).classList.add('active');
-        
-        // Update button state
-        const btns = document.querySelectorAll('.tab-btn');
-        if(tabId === 'labs') btns[0].classList.add('active');
-        if(tabId === 'ecg') btns[1].classList.add('active');
-        if(tabId === 'tools') btns[2].classList.add('active');
-        if(tabId === 'meds') btns[3].classList.add('active');
-        
+        const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if(activeBtn) activeBtn.classList.add('active');
+
+        if (tabId === 'intake') intakeInit();
         window.scrollTo(0,0);
     }
+
+    // Intake Flow Logic (embedded)
+    let intakeBagId = 0;
+    let intakeOralTotal = 0;
+    let intakeBolusTotal = 0;
+    let intakeInitialized = false;
+
+    function intakeInit() {
+        if (intakeInitialized) return;
+        intakeAddBag();
+        intakeRunCalc();
+        intakeInitialized = true;
+    }
+
+    function intakeAddOral(n) { intakeOralTotal += n; intakeRunCalc(); intakeVibrate(); }
+    function intakeResetOral() { if (intakeOralTotal > 0 && confirm('Reset Oral?')) { intakeOralTotal = 0; intakeRunCalc(); intakeVibrate(); } }
+    function intakeCustomOral() {
+        const v = prompt('Enter Oral mL:');
+        if (v && !isNaN(parseFloat(v))) intakeAddOral(parseFloat(v));
+    }
+
+    function intakeAddBolus(n) { intakeBolusTotal += n; document.getElementById('intake-bolus-display').textContent = intakeBolusTotal; intakeRunCalc(); intakeVibrate(); }
+    function intakeResetBolus() { if (intakeBolusTotal > 0 && confirm('Reset Bolus?')) { intakeBolusTotal = 0; document.getElementById('intake-bolus-display').textContent = '0'; intakeRunCalc(); intakeVibrate(); } }
+
+    function intakeAddBag() {
+        intakeBagId++;
+        const now = new Date();
+        const defaultTime = `${now.getHours().toString().padStart(2,'0')}:00`;
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.style.margin = '0 0 8px 0';
+        div.style.boxShadow = 'none';
+        div.style.border = '1px solid var(--border)';
+        div.id = 'intake-bag-' + intakeBagId;
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:700; color:var(--blue);">Bag #${intakeBagId}</div>
+                ${intakeBagId > 1 ? `<button class="section-action" onclick="intakeRemoveBag('${'intake-bag-'+intakeBagId}')" style="color:var(--red)">Remove</button>` : ''}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:0.8rem; color:var(--text-sec)">Start Time</span>
+                <input type="time" class="intake-start" value="${defaultTime}" onchange="intakeRunCalc()" style="border:none; background:var(--bg-color); border-radius:8px; padding:4px 8px; color:var(--blue); font-weight:700;">
+            </div>
+            <div class="intake-chip-wrap intake-time-chips" style="margin-bottom:8px;"></div>
+            <div style="font-size:0.75rem; color:var(--text-sec); margin-bottom:4px;">Volume (mL)</div>
+            <div class="intake-chip-wrap" style="margin-bottom:8px;">
+                <input type="hidden" class="intake-vol">
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-vol', 100)">100</button>
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-vol', 250)">250</button>
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-vol', 500)">500</button>
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-vol', 1000)">1L</button>
+                <button class="intake-chip" onclick="intakeAskCustom(this, 'intake-vol')">Custom</button>
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-sec); margin-bottom:4px;">Duration (Hrs)</div>
+            <div class="intake-chip-wrap" style="margin-bottom:8px;">
+                <input type="hidden" class="intake-dur">
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-dur', 1)">1h</button>
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-dur', 4)">4h</button>
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-dur', 6)">6h</button>
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-dur', 8)">8h</button>
+                <button class="intake-chip" onclick="intakeSetChip(this, 'intake-dur', 12)">12h</button>
+                <button class="intake-chip" onclick="intakeAskCustom(this, 'intake-dur')">Custom</button>
+            </div>
+            <div class="intake-result">
+                <div>Infused <strong class="intake-infused">0 mL</strong></div>
+                <div>Remaining <strong class="intake-remain">0 mL</strong></div>
+            </div>`;
+        document.getElementById('intake-iv-list').appendChild(div);
+        intakeGenerateTimeChips(div.querySelector('.intake-time-chips'));
+        intakeVibrate();
+    }
+
+    function intakeRemoveBag(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+        intakeRunCalc();
+    }
+
+    function intakeResetAll() {
+        if (confirm('Start Fresh? Resets everything to zero.')) {
+            intakeOralTotal = 0; intakeBolusTotal = 0;
+            document.getElementById('intake-bolus-display').textContent = '0';
+            document.getElementById('intake-iv-list').innerHTML = '';
+            intakeBagId = 0; intakeAddBag(); intakeRunCalc(); intakeVibrate();
+        }
+    }
+
+    function intakeUpdateGlobalCutoff() {
+        document.querySelectorAll('.intake-time-chips').forEach(c => intakeGenerateTimeChips(c));
+        intakeRunCalc();
+    }
+
+    function intakeGenerateTimeChips(container) {
+        const cutoff = document.getElementById('intake-cutoff').value;
+        const card = container.closest('.card');
+        const dur = parseFloat(card.querySelector('.intake-dur').value);
+        container.innerHTML = '';
+        if (!cutoff) return;
+        const [cH, cM] = cutoff.split(':').map(Number);
+        let idealH = null;
+        if (!isNaN(dur)) { idealH = cH - dur; while (idealH < 0) idealH += 24; }
+
+        for (let i = 12; i >= 0; i--) {
+            let h = cH - i; if (h < 0) h += 24;
+            let timeStr = `${h.toString().padStart(2,'0')}:${cM.toString().padStart(2,'0')}`;
+            const btn = document.createElement('button');
+            btn.className = 'intake-chip';
+            btn.textContent = timeStr;
+            if (idealH !== null && Math.floor(h) === Math.floor(idealH)) btn.classList.add('ideal');
+            btn.onclick = () => {
+                card.querySelector('.intake-start').value = timeStr;
+                container.querySelectorAll('.intake-chip').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                intakeRunCalc(); intakeVibrate();
+            };
+            container.appendChild(btn);
+        }
+        setTimeout(() => container.scrollLeft = container.scrollWidth, 10);
+    }
+
+    function intakeSetChip(btn, cls, val) {
+        const card = btn.closest('.card');
+        card.querySelector('.' + cls).value = val;
+        btn.parentElement.querySelectorAll('.intake-chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        if (cls === 'intake-dur') intakeGenerateTimeChips(card.querySelector('.intake-time-chips'));
+        intakeRunCalc(); intakeVibrate();
+    }
+
+    function intakeAskCustom(btn, cls) {
+        const v = prompt('Value:');
+        if (v && !isNaN(parseFloat(v))) {
+            btn.textContent = v;
+            intakeSetChip(btn, cls, parseFloat(v));
+        }
+    }
+
+    function intakeRunCalc() {
+        const cutoff = document.getElementById('intake-cutoff').valueAsDate;
+        let ivCalc = 0;
+        document.querySelectorAll('#intake-iv-list .card').forEach(c => {
+            const start = c.querySelector('.intake-start').valueAsDate;
+            const vol = parseFloat(c.querySelector('.intake-vol').value);
+            const dur = parseFloat(c.querySelector('.intake-dur').value);
+            const infEl = c.querySelector('.intake-infused');
+            const remEl = c.querySelector('.intake-remain');
+
+            if (start && cutoff && vol && dur) {
+                const rate = vol / dur;
+                let diff = cutoff - start;
+                if (diff < 0) diff += 86400000;
+                let elapsed = diff / 3600000;
+                let infused = rate * elapsed;
+                if (infused > vol) infused = vol;
+                if (elapsed <= 0) infused = 0;
+                ivCalc += infused;
+                const remain = vol - infused;
+                infEl.textContent = Math.round(infused) + ' mL';
+                remEl.textContent = Math.round(remain) + ' mL';
+            } else {
+                infEl.textContent = '0 mL';
+                remEl.textContent = '0 mL';
+            }
+        });
+        intakeUpdateUI(ivCalc);
+    }
+
+    function intakeUpdateUI(ivCalc) {
+        const totalIV = ivCalc + intakeBolusTotal;
+        const grand = totalIV + intakeOralTotal;
+        document.getElementById('intake-oral-display').textContent = intakeOralTotal;
+        document.getElementById('intake-breakdown').textContent = `IV: ${Math.round(totalIV)} • Oral: ${intakeOralTotal}`;
+        document.getElementById('intake-grand-total').textContent = Math.round(grand);
+    }
+
+    function intakeVibrate() { if (navigator.vibrate) navigator.vibrate(5); }
 
     // Drug Filter Logic
     function filterMeds() {
