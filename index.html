@@ -429,7 +429,10 @@
 
                     <div id="fc-selector-container" class="drug-selector-wrapper" style="display:none;">
                         <span class="drug-select-label">Multiple Drugs Detected:</span>
-                        <select id="fc-drug-selector" class="drug-select" onchange="updateFlashcardLinks(this.value)"></select>
+                        <button onclick="event.stopPropagation(); openFcDrugPicker()" class="action-btn" style="margin:6px 0 0 0; font-size:0.88rem;">
+                            🧩 Select Drug Component
+                        </button>
+                        <div id="fc-selected-drug-label" style="font-size:0.82rem; color:var(--ios-gray); margin-top:6px;"></div>
                     </div>
 
                     <div class="external-links-grid">
@@ -485,6 +488,16 @@
         </div>
     </div>
 
+</div>
+
+<div id="fc-drug-picker" class="modal-overlay" onclick="if(event.target===this) closeFcDrugPicker()">
+    <div class="modal-card" style="height:auto; max-height:70vh; border-radius:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0;">Select Drug Component</h3>
+            <button onclick="closeFcDrugPicker()" style="background:none; border:none; color:var(--ios-blue); font-weight:600;">Close</button>
+        </div>
+        <div id="fc-picker-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
 </div>
 
 <div id="settings-panel" class="modal-overlay" onclick="if(event.target===this) toggleSettings()">
@@ -777,26 +790,47 @@
 
         const generics = parseDrugGenerics(drug.name);
         const selectorContainer = document.getElementById('fc-selector-container');
-        const selector = document.getElementById('fc-drug-selector');
-        
-        selector.innerHTML = '';
+        const pickerList = document.getElementById('fc-picker-list');
+
+        pickerList.innerHTML = '';
         if(generics.length > 1) {
             selectorContainer.style.display = 'block';
             generics.forEach(gen => {
-                const opt = document.createElement('option');
-                opt.value = gen; opt.innerText = gen; selector.appendChild(opt);
+                const btn = document.createElement('button');
+                btn.className = 'action-btn';
+                btn.style.margin = '0';
+                btn.style.justifyContent = 'flex-start';
+                btn.innerText = gen;
+                btn.onclick = () => chooseFcDrug(gen);
+                pickerList.appendChild(btn);
             });
             fcSelectedDrug = generics[0];
+            document.getElementById('fc-selected-drug-label').innerText = `Selected: ${fcSelectedDrug}`;
         } else {
             selectorContainer.style.display = 'none';
             fcSelectedDrug = generics[0];
         }
-        
+
+        closeFcDrugPicker();
         updateFlashcardLinks(fcSelectedDrug);
+    }
+
+    function openFcDrugPicker() {
+        document.getElementById('fc-drug-picker').style.display = 'flex';
+    }
+
+    function closeFcDrugPicker() {
+        document.getElementById('fc-drug-picker').style.display = 'none';
+    }
+
+    function chooseFcDrug(genericName) {
+        updateFlashcardLinks(genericName);
+        closeFcDrugPicker();
     }
 
     function updateFlashcardLinks(genericName) {
         fcSelectedDrug = genericName;
+        document.getElementById('fc-selected-drug-label').innerText = `Selected: ${fcSelectedDrug}`;
         const googleQuery = encodeURIComponent(`${genericName} drug nursing`);
         document.getElementById('fc-google-link').href = `https://www.google.com/search?q=${googleQuery}`;
     }
