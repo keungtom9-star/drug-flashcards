@@ -857,7 +857,7 @@
         fcSelectedDrug = genericName;
         const labelEl = document.getElementById('fc-selected-drug-label');
         if (labelEl) labelEl.innerText = `Selected: ${fcSelectedDrug}`;
-        const googleQuery = encodeURIComponent(`${genericName} drug nursing`);
+        const googleQuery = encodeURIComponent(`${genericName} 中文 香港`);
         document.getElementById('fc-google-link').href = `https://www.google.com/search?q=${googleQuery}`;
     }
 
@@ -874,7 +874,7 @@
 
     function runFcAction(action) {
         if (action === 'google') {
-            const googleQuery = encodeURIComponent(`${fcSelectedDrug} drug nursing`);
+            const googleQuery = encodeURIComponent(`${fcSelectedDrug} 中文 香港`);
             window.open(`https://www.google.com/search?q=${googleQuery}`, '_blank');
         } else if (action === 'drugs') {
             openDrugsCom({name: fcSelectedDrug});
@@ -1001,7 +1001,7 @@
             }
 
             let initialGeneric = generics[0];
-            let googleLink = `https://www.google.com/search?q=${encodeURIComponent(initialGeneric + " drug nursing")}`;
+            let googleLink = `https://www.google.com/search?q=${encodeURIComponent(initialGeneric + " 中文 香港")}`;
 
             card.innerHTML = `
                 <div class="result-header">
@@ -1046,7 +1046,7 @@
         const newVal = selectElem.value;
         card.dataset.currentGeneric = newVal;
         const googleBtn = card.querySelector('.dynamic-google');
-        googleBtn.href = `https://www.google.com/search?q=${encodeURIComponent(newVal + " drug nursing")}`;
+        googleBtn.href = `https://www.google.com/search?q=${encodeURIComponent(newVal + " 中文 香港")}`;
     };
 
     window.triggerSearchDrugsCom = function(btn) {
