@@ -24,6 +24,7 @@
 
             --ecg-grid: #fff0f0;
             --ecg-line: #ffcccc;
+            --header-height: 108px;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -40,13 +41,14 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+        html, body { height: 100dvh; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-bottom: 80px;
+            overflow: hidden;
         }
 
         /* --- Header & Tabs --- */
@@ -86,9 +88,12 @@
         /* --- Layout --- */
         .container {
             display: none; /* Hidden by default */
-            padding: 16px;
+            padding: 12px 16px 14px;
             max-width: 1000px; margin: 0 auto;
-            grid-template-columns: 1fr; gap: 16px;
+            grid-template-columns: 1fr; gap: 12px;
+            height: calc(100dvh - var(--header-height));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .container.active { display: grid; }
         
@@ -212,6 +217,39 @@
             background: rgba(30,30,30,0.88); color:white; border-radius:14px;
             padding:10px 14px; display:flex; justify-content:space-between; align-items:center;
             margin-top: 8px;
+        }
+
+
+        @media (max-width: 767px) {
+            :root { --header-height: 104px; }
+            .top-bar { padding: 8px 12px; }
+            .tabs { padding: 0 4px 6px 4px; }
+            .tab-btn { padding: 7px 10px; font-size: 0.8rem; }
+            .card { border-radius: 14px; padding: 12px; }
+
+            #intake.container.active {
+                overflow: hidden;
+                padding: 8px 10px 10px;
+                gap: 8px;
+            }
+            #intake .card.full-width {
+                height: calc(100dvh - var(--header-height) - 18px);
+                display: grid;
+                grid-template-rows: auto auto auto auto auto auto;
+                gap: 8px;
+                overflow: hidden;
+                padding: 10px;
+            }
+            #intake-iv-list {
+                overflow-y: auto;
+                min-height: 90px;
+                max-height: 30dvh;
+                padding-right: 2px;
+            }
+            .intake-header { margin-bottom: 0; }
+            .intake-grid-3, .intake-grid-4 { gap: 6px; }
+            .intake-btn { padding: 8px 0; font-size: 0.85rem; }
+            .intake-total-bar { margin-top: 0; padding: 8px 10px; border-radius: 12px; }
         }
 
         /* --- Utils --- */
@@ -366,7 +404,7 @@
             <div class="rhythm-card r-warn">
                 <div class="r-title">STEMI</div>
                 <div class="r-details">
-                    ST Elevation >1mm in 2 contiguous leads ("Fireman Hat").
+                    ST Elevation &gt;1mm in 2 contiguous leads ("Fireman Hat").
                     <br><strong>EMERGENCY.</strong>
                 </div>
             </div>
@@ -376,7 +414,7 @@
             <div class="card-header">🛑 Heart Blocks</div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">1st Degree</div>
-                <div class="r-details">PR >0.20s (Constant). Regular. Benign.</div>
+                <div class="r-details">PR &gt;0.20s (Constant). Regular. Benign.</div>
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">2nd Degree Type I (Wenckebach)</div>
@@ -471,7 +509,7 @@
                     <ul style="padding-left:15px; margin:5px 0; font-size:0.8rem; color:var(--text-sec);">
                         <li><strong>A</strong>irway (Midline?)</li>
                         <li><strong>B</strong>reathing (Clear?)</li>
-                        <li><strong>C</strong>ardiac (Size <50%?)</li>
+                        <li><strong>C</strong>ardiac (Size &lt;50%?)</li>
                         <li><strong>D</strong>iaphragm (Angles?)</li>
                     </ul>
                 </div>
@@ -487,7 +525,7 @@
             </div>
             <hr style="border:0; border-top:1px solid var(--border); margin:10px 0;">
             <div style="font-size:0.85rem;">
-                <strong>LVEF:</strong> Normal ≥ 55% &nbsp;|&nbsp; Mild 45-54% &nbsp;|&nbsp; Mod 30-44% &nbsp;|&nbsp; Sev <30%
+                <strong>LVEF:</strong> Normal ≥ 55% &nbsp;|&nbsp; Mild 45-54% &nbsp;|&nbsp; Mod 30-44% &nbsp;|&nbsp; Sev &lt;30%
             </div>
         </div>
 
