@@ -147,21 +147,46 @@
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;
         }
         .daily-card {
-            background: white; border-radius: 16px; padding: 15px;
+            background: linear-gradient(145deg, #ffffff, #f7fbff); border-radius: 16px; padding: 15px;
             box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
             justify-content: space-between; min-height: 100px; cursor: pointer;
-            transition: transform 0.2s; border: 1px solid rgba(0,0,0,0.03);
+            transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(0,0,0,0.05);
             /* Ensure text stays within card */
             word-break: break-word; overflow-wrap: break-word; hyphens: auto;
         }
+        .daily-card:hover { box-shadow: 0 8px 25px rgba(0, 122, 255, 0.18); }
         .daily-card:active { transform: scale(0.96); }
-        .daily-label { font-size: 0.7rem; color: var(--ios-orange); font-weight: 700; text-transform: uppercase; }
+        .daily-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .daily-icon-pill {
+            width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.9);
+            display:flex; align-items:center; justify-content:center; font-size: 0.95rem;
+        }
+        .daily-label {
+            font-size: 0.68rem; color: #fff; font-weight: 800; text-transform: uppercase;
+            letter-spacing: .6px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 999px;
+        }
         .daily-name { 
             font-size: 1.1rem; font-weight: 700; color: var(--text-primary); 
             line-height: 1.2; margin-top: 5px; margin-bottom: 10px;
             word-break: break-word;
         }
-        .daily-sub { font-size: 0.8rem; color: var(--ios-gray); margin-top: auto; }
+        .daily-sub { font-size: 0.8rem; color: #1f2937; margin-top: auto; opacity: .85; }
+
+        .anki-controls {
+            display: none;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            padding: 0 10px;
+        }
+        .anki-btn {
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            padding: 10px 6px;
+            cursor: pointer;
+        }
 
         /* System Scroll */
         .system-scroll-container {
@@ -269,6 +294,15 @@
         .result-class { 
             font-size: 0.85rem; color: var(--ios-gray); text-align: right; 
             max-width: 40%; word-break: break-word;
+        }
+        .name-with-speak { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+        .speak-icon-btn {
+            border:none; background:#eef2ff; color:var(--ios-blue); width:30px; height:30px;
+            border-radius:50%; font-size:0.95rem; cursor:pointer; flex-shrink:0;
+        }
+        .quiz-mini-explainer {
+            display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
+            background:#eff6ff; color:#1e3a8a; font-size:0.82rem; line-height:1.45;
         }
 
         .ai-output {
@@ -404,19 +438,19 @@
 
                     <div id="fc-selector-container" class="drug-selector-wrapper" style="display:none;">
                         <span class="drug-select-label">Multiple Drugs Detected:</span>
-                        <select id="fc-drug-selector" class="drug-select" onchange="updateFlashcardLinks(this.value)"></select>
+                        <div id="fc-selected-drug-label" style="font-size:0.82rem; color:var(--ios-gray); margin-top:6px;"></div>
                     </div>
 
                     <div class="external-links-grid">
-                        <a id="fc-google-link" href="#" target="_blank" onclick="event.stopPropagation();" class="action-btn" style="margin:0; text-decoration:none; font-size:0.85rem;">
+                        <a id="fc-google-link" href="#" target="_blank" onclick="event.stopPropagation(); triggerFcAction('google')" class="action-btn" style="margin:0; text-decoration:none; font-size:0.85rem;">
                             🌐 Google
                         </a>
-                        <button id="fc-drugs-btn" onclick="event.stopPropagation(); triggerDrugsCom()" class="action-btn" style="margin:0; font-size:0.85rem; color:#0051ff;">
+                        <button id="fc-drugs-btn" onclick="event.stopPropagation(); triggerFcAction('drugs')" class="action-btn" style="margin:0; font-size:0.85rem; color:#0051ff;">
                             💊 Drugs.com
                         </button>
                     </div>
 
-                    <button onclick="event.stopPropagation(); getIntegratedCaseStudy(flashcardList[fcCurrentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="action-btn btn-primary" id="btn-case" style="margin-top:15px;">
+                    <button onclick="event.stopPropagation(); triggerFcAction('case')" class="action-btn btn-primary" id="btn-case" style="margin-top:15px;">
                         ✨ AI: Generate Case Study
                     </button>
                     
@@ -431,6 +465,12 @@
             <span id="counter" style="font-weight:700; color:var(--ios-gray);">1 / 10</span>
             <button onclick="nextCard()" class="action-btn" style="width:auto;">Next →</button>
         </div>
+        <div id="anki-controls" class="anki-controls">
+            <button class="anki-btn" style="background:#ef4444;" onclick="rateCurrentCard('again')">Again</button>
+            <button class="anki-btn" style="background:#f59e0b;" onclick="rateCurrentCard('hard')">Hard</button>
+            <button class="anki-btn" style="background:#3b82f6;" onclick="rateCurrentCard('good')">Good</button>
+            <button class="anki-btn" style="background:#10b981;" onclick="rateCurrentCard('easy')">Easy</button>
+        </div>
     </div>
 
     <div id="quiz-section" style="display:none;">
@@ -443,6 +483,7 @@
             <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
             
             <div id="quiz-feedback" style="display:none; margin-top:15px; padding:12px; border-radius:12px; text-align:center;"></div>
+            <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
 
             <button onclick="triggerQuizExplain()" id="btn-quiz-explain" class="action-btn" style="display:none; margin-top:15px;">🤖 Explain</button>
             <div id="ai-container" style="display:none;">
@@ -454,6 +495,16 @@
         </div>
     </div>
 
+</div>
+
+<div id="fc-drug-picker" class="modal-overlay" onclick="if(event.target===this) closeFcDrugPicker()">
+    <div class="modal-card" style="height:auto; max-height:70vh; border-radius:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0;">Select Drug Component</h3>
+            <button onclick="closeFcDrugPicker()" style="background:none; border:none; color:var(--ios-blue); font-weight:600;">Close</button>
+        </div>
+        <div id="fc-picker-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
 </div>
 
 <div id="settings-panel" class="modal-overlay" onclick="if(event.target===this) toggleSettings()">
@@ -487,6 +538,26 @@
             </div>
         </div>
 
+        <div style="margin-top:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">STUDY MODE</label>
+            <select id="flashcard-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
+                <option value="anki">Flashcard: Anki Spaced Repetition</option>
+                <option value="classic">Flashcard: Classic Next/Prev</option>
+            </select>
+            <select id="daily-pick-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
+                <option value="anki">Daily Picks: Anki Due Cards</option>
+                <option value="random">Daily Picks: Random Mix</option>
+            </select>
+        </div>
+
+        <div style="margin-top:12px; font-size:0.82rem; color:#4b5563; background:#eef6ff; border:1px solid #dbeafe; border-radius:12px; padding:12px; line-height:1.45;">
+            <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">How to apply</div>
+            <div>1) Choose <strong>Anki</strong> for Flashcard mode.</div>
+            <div>2) Choose Daily Picks as <strong>Anki Due Cards</strong> (or Random).</div>
+            <div>3) Tap <strong>Save Configuration</strong>.</div>
+            <div>4) In Cards mode, use <strong>Again / Hard / Good / Easy</strong> to schedule the next review.</div>
+        </div>
+
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Configuration</button>
     </div>
 </div>
@@ -518,6 +589,9 @@
     let quizCurrentIndex = 0;
     let currentQuizData = null;
     let fcSelectedDrug = ""; 
+    let flashcardMode = localStorage.getItem('flashcard_mode') || 'anki';
+    let dailyPickMode = localStorage.getItem('daily_pick_mode') || 'anki';
+    let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
@@ -567,6 +641,8 @@
         document.getElementById('provider-select').value = currentProvider;
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
+        document.getElementById('flashcard-mode').value = flashcardMode;
+        document.getElementById('daily-pick-mode').value = dailyPickMode;
 
         initSystemDropdown();
         applyFilter(); 
@@ -586,6 +662,12 @@
     // --- DAILY RECOMMENDATIONS (8 ITEMS) ---
     function generateDailyPicks() {
         if(!activeSourceList || activeSourceList.length === 0) return;
+
+        if (dailyPickMode === 'anki') {
+            const picks = getDueCards(activeSourceList).slice(0, 8);
+            renderDailyPicks(picks.length ? picks : activeSourceList.slice(0, 8));
+            return;
+        }
         
         const today = new Date().toDateString(); 
         const seed = today.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -611,21 +693,36 @@
     }
 
     function refreshDailyPicks() {
-        // Shuffle and pick 8
-        let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
-        renderDailyPicks(shuffled.slice(0, 8));
+        if (dailyPickMode === 'anki') {
+            const due = getDueCards(activeSourceList).slice(0, 8);
+            renderDailyPicks(due.length ? due : activeSourceList.slice(0, 8));
+        } else {
+            let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
+            renderDailyPicks(shuffled.slice(0, 8));
+        }
     }
 
     function renderDailyPicks(picks) {
         const container = document.getElementById('daily-container');
         container.innerHTML = '';
+        const gradients = [
+            'linear-gradient(140deg, #bfdbfe 0%, #93c5fd 50%, #dbeafe 100%)',
+            'linear-gradient(140deg, #fde68a 0%, #fca5a5 55%, #fecaca 100%)',
+            'linear-gradient(140deg, #bbf7d0 0%, #86efac 55%, #dcfce7 100%)',
+            'linear-gradient(140deg, #ddd6fe 0%, #c4b5fd 50%, #ede9fe 100%)'
+        ];
         
-        picks.forEach(drug => {
+        picks.forEach((drug, idx) => {
             const div = document.createElement('div');
             div.className = 'daily-card';
+            div.style.background = gradients[idx % gradients.length];
+            const icon = getSystemIcon(drug.system || getSystemForDrug(drug));
             div.innerHTML = `
                 <div>
-                    <div class="daily-label">Daily Pick</div>
+                    <div class="daily-header">
+                        <div class="daily-label">${dailyPickMode === 'anki' ? 'Due Today' : 'Daily Pick'}</div>
+                        <div class="daily-icon-pill">${icon}</div>
+                    </div>
                     <div class="daily-name">${drug.name.split('(')[0]}</div>
                 </div>
                 <div class="daily-sub">${drug.class}</div>
@@ -663,6 +760,11 @@
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
             document.getElementById('filter-bar').style.display = 'flex';
+            const source = filteredList.length ? filteredList : activeSourceList;
+            hydrateAnkiForList(source);
+            flashcardList = getDueCards(source);
+            fcCurrentIndex = 0;
+            document.getElementById('anki-controls').style.display = 'grid';
             renderCard();
         } else if (mode === 'quiz') {
             document.getElementById('quiz-section').style.display = 'block';
@@ -673,7 +775,21 @@
 
     // --- FLASHCARD LOGIC ---
     function renderCard() {
-        if(flashcardList.length === 0) return;
+        if(flashcardList.length === 0) {
+            document.getElementById('fc-name').innerText = 'No cards due 📚';
+            document.getElementById('fc-class').innerText = 'Great job. You have no due cards right now.';
+            document.getElementById('fc-system').innerText = 'Anki review queue is empty.';
+            document.getElementById('fc-indication').innerText = 'Come back later or study from Search mode.';
+            document.getElementById('fc-side-effects').innerText = '-';
+            document.getElementById('fc-nursing').innerText = '-';
+            document.getElementById('counter').innerText = '0 / 0';
+            document.getElementById('fc-selector-container').style.display = 'none';
+            document.getElementById('btn-case').disabled = true;
+            document.getElementById('btn-case').innerHTML = '✨ AI: Generate Case Study';
+            document.getElementById('fc-ai-case').style.display = 'none';
+            document.getElementById('btn-read-case').style.display = 'none';
+            return;
+        }
         const drug = flashcardList[fcCurrentIndex];
         
         document.getElementById('fc-name').innerText = drug.name;
@@ -693,32 +809,78 @@
 
         const generics = parseDrugGenerics(drug.name);
         const selectorContainer = document.getElementById('fc-selector-container');
-        const selector = document.getElementById('fc-drug-selector');
-        
-        selector.innerHTML = '';
+        const pickerList = document.getElementById('fc-picker-list');
+
+        pickerList.innerHTML = '';
         if(generics.length > 1) {
             selectorContainer.style.display = 'block';
             generics.forEach(gen => {
-                const opt = document.createElement('option');
-                opt.value = gen; opt.innerText = gen; selector.appendChild(opt);
+                const btn = document.createElement('button');
+                btn.className = 'action-btn';
+                btn.style.margin = '0';
+                btn.style.justifyContent = 'flex-start';
+                btn.innerText = gen;
+                btn.onclick = () => chooseFcDrug(gen);
+                pickerList.appendChild(btn);
             });
             fcSelectedDrug = generics[0];
+            document.getElementById('fc-selected-drug-label').innerText = `Auto-selected: ${fcSelectedDrug}. Tap Google/Drugs/Case to choose another.`;
         } else {
             selectorContainer.style.display = 'none';
             fcSelectedDrug = generics[0];
         }
-        
+
+        closeFcDrugPicker();
         updateFlashcardLinks(fcSelectedDrug);
+    }
+
+    function openFcDrugPicker() {
+        document.getElementById('fc-drug-picker').style.display = 'flex';
+    }
+
+    function closeFcDrugPicker() {
+        document.getElementById('fc-drug-picker').style.display = 'none';
+    }
+
+    function chooseFcDrug(genericName) {
+        updateFlashcardLinks(genericName);
+        closeFcDrugPicker();
+        if (window.__fcPendingAction) {
+            const action = window.__fcPendingAction;
+            window.__fcPendingAction = null;
+            runFcAction(action);
+        }
     }
 
     function updateFlashcardLinks(genericName) {
         fcSelectedDrug = genericName;
+        const labelEl = document.getElementById('fc-selected-drug-label');
+        if (labelEl) labelEl.innerText = `Selected: ${fcSelectedDrug}`;
         const googleQuery = encodeURIComponent(`${genericName} drug nursing`);
         document.getElementById('fc-google-link').href = `https://www.google.com/search?q=${googleQuery}`;
     }
-    
-    function triggerDrugsCom() {
-        openDrugsCom({name: fcSelectedDrug});
+
+    function triggerFcAction(action) {
+        const drug = flashcardList[fcCurrentIndex];
+        const generics = parseDrugGenerics(drug.name);
+        if (generics.length > 1) {
+            openFcDrugPicker();
+            window.__fcPendingAction = action;
+            return;
+        }
+        runFcAction(action);
+    }
+
+    function runFcAction(action) {
+        if (action === 'google') {
+            const googleQuery = encodeURIComponent(`${fcSelectedDrug} drug nursing`);
+            window.open(`https://www.google.com/search?q=${googleQuery}`, '_blank');
+        } else if (action === 'drugs') {
+            openDrugsCom({name: fcSelectedDrug});
+        } else if (action === 'case') {
+            const d = {...flashcardList[fcCurrentIndex], name: fcSelectedDrug};
+            getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
+        }
     }
 
     function flipCard(e) {
@@ -728,11 +890,61 @@
 
     function nextCard() {
         if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
-        else { reshuffle(); renderCard(); } 
+        else {
+            flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
+            fcCurrentIndex = 0;
+            renderCard();
+        }
     }
 
     function prevCard() {
         if(fcCurrentIndex > 0) { fcCurrentIndex--; renderCard(); }
+    }
+
+    function hydrateAnkiForList(list) {
+        list.forEach(drug => {
+            if (!ankiStats[drug.name]) {
+                ankiStats[drug.name] = { ease: 2.3, interval: 0, reps: 0, lapses: 0, due: Date.now() };
+            }
+        });
+    }
+
+    function getDueCards(list) {
+        hydrateAnkiForList(list);
+        const now = Date.now();
+        const due = list.filter(d => (ankiStats[d.name]?.due || 0) <= now);
+        due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
+        return due;
+    }
+
+    function rateCurrentCard(rating) {
+        if (flashcardList.length === 0) return;
+        const drug = flashcardList[fcCurrentIndex];
+        hydrateAnkiForList([drug]);
+        const stat = ankiStats[drug.name];
+
+        const qualityMap = { again: 1, hard: 3, good: 4, easy: 5 };
+        const q = qualityMap[rating] || 4;
+
+        if (q < 3) {
+            stat.reps = 0;
+            stat.lapses = (stat.lapses || 0) + 1;
+            stat.interval = 1;
+        } else {
+            stat.reps = (stat.reps || 0) + 1;
+            if (stat.reps === 1) stat.interval = 1;
+            else if (stat.reps === 2) stat.interval = 3;
+            else {
+                const mult = rating === 'hard' ? 1.2 : (rating === 'easy' ? (stat.ease + 0.15) : stat.ease);
+                stat.interval = Math.max(1, Math.round(stat.interval * mult));
+            }
+        }
+
+        stat.ease = Math.max(1.3, (stat.ease || 2.3) + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+        stat.due = Date.now() + (stat.interval * 24 * 60 * 60 * 1000);
+
+        localStorage.setItem('drug_tutor_anki', JSON.stringify(ankiStats));
+        nextCard();
     }
 
     // --- SEARCH LOGIC ---
@@ -792,7 +1004,10 @@
 
             card.innerHTML = `
                 <div class="result-header">
-                    <span class="result-name">${drug.name}</span>
+                    <div class="name-with-speak">
+                        <span class="result-name">${drug.name}</span>
+                        <button class="speak-icon-btn" onclick="event.stopPropagation(); triggerSearchSpeak(this)" title="Speak">🔊</button>
+                    </div>
                     <span class="result-class">${drug.class}</span>
                 </div>
                 ${selectorHTML}
@@ -806,8 +1021,7 @@
                     <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto;">
                          <a href="${googleLink}" target="_blank" class="chip dynamic-google" onclick="event.stopPropagation()">🌐 Google</a>
                          <span class="chip" onclick="event.stopPropagation(); triggerSearchDrugsCom(this)">💊 Drugs.com</span>
-                         <span class="chip" onclick="event.stopPropagation(); triggerSearchSpeak(this)">🔊 Speak</span>
-                         <span class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">🤖 Explain</span>
+                                                  <span class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">🤖 Explain</span>
                     </div>
                     <div id="${explainId}" class="ai-output"></div>
                 </div>
@@ -841,7 +1055,8 @@
     
     window.triggerSearchSpeak = function(btn) {
         const card = btn.closest('.result-card');
-        speakText(card.dataset.currentGeneric);
+        const name = card?.dataset?.currentGeneric || '';
+        if(name) speakText(name);
     };
     
     window.triggerSearchExplain = function(btn, outputId) {
@@ -984,6 +1199,8 @@
         flashcardList.sort(() => Math.random() - 0.5);
         quizList = [...filteredList];
         fcCurrentIndex = 0;
+        hydrateAnkiForList(filteredList);
+        flashcardList = getDueCards(filteredList);
         renderCard();
     }
     
@@ -1022,6 +1239,7 @@
         container.innerHTML = ''; document.getElementById('quiz-feedback').style.display = 'none';
         document.getElementById('next-quiz-btn').style.display = 'none';
         document.getElementById('btn-quiz-explain').style.display = 'none';
+        document.getElementById('quiz-mini-explainer').style.display = 'none';
         document.getElementById('ai-container').style.display = 'none';
 
         if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
@@ -1065,6 +1283,9 @@
              feedback.innerHTML = `❌ <strong>Incorrect.</strong> The answer is ${correct.name}.`; feedback.style.background = "#fee2e2"; feedback.style.color = "#991b1b";
              btns.forEach(b => { if(b.innerText === correct.name) { b.style.background = '#dcfce7'; b.style.color = '#166534'; } });
          }
+         const mini = document.getElementById('quiz-mini-explainer');
+         mini.style.display = 'block';
+         mini.innerHTML = `<strong>Answer explainer:</strong> ${correct.name} is linked to <strong>${correct.indication}</strong> and class <strong>${correct.class}</strong>. ${selected===correct ? 'You matched the key clue correctly.' : `Your pick (${selected.name}) does not best match this clue.`}`;
          
          localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
          document.getElementById('next-quiz-btn').style.display = 'block';
@@ -1169,9 +1390,14 @@
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
+        localStorage.setItem('flashcard_mode', document.getElementById('flashcard-mode').value);
+        localStorage.setItem('daily_pick_mode', document.getElementById('daily-pick-mode').value);
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
+        flashcardMode = document.getElementById('flashcard-mode').value;
+        dailyPickMode = document.getElementById('daily-pick-mode').value;
+        generateDailyPicks();
         toggleSettings();
         alert("Settings Saved!");
     }
