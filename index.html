@@ -763,13 +763,11 @@
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
             document.getElementById('filter-bar').style.display = 'flex';
-            hydrateAnkiForList(filteredList.length ? filteredList : activeSourceList);
-            if (flashcardMode === 'anki') {
-                flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
-                if (flashcardList.length === 0) flashcardList = [...(filteredList.length ? filteredList : activeSourceList)].slice(0, 20);
-                fcCurrentIndex = 0;
-            }
-            document.getElementById('anki-controls').style.display = flashcardMode === 'anki' ? 'grid' : 'none';
+            const source = filteredList.length ? filteredList : activeSourceList;
+            hydrateAnkiForList(source);
+            flashcardList = getDueCards(source);
+            fcCurrentIndex = 0;
+            document.getElementById('anki-controls').style.display = 'grid';
             renderCard();
         } else if (mode === 'quiz') {
             document.getElementById('quiz-section').style.display = 'block';
@@ -780,7 +778,21 @@
 
     // --- FLASHCARD LOGIC ---
     function renderCard() {
-        if(flashcardList.length === 0) return;
+        if(flashcardList.length === 0) {
+            document.getElementById('fc-name').innerText = 'No cards due 📚';
+            document.getElementById('fc-class').innerText = 'Great job. You have no due cards right now.';
+            document.getElementById('fc-system').innerText = 'Anki review queue is empty.';
+            document.getElementById('fc-indication').innerText = 'Come back later or study from Search mode.';
+            document.getElementById('fc-side-effects').innerText = '-';
+            document.getElementById('fc-nursing').innerText = '-';
+            document.getElementById('counter').innerText = '0 / 0';
+            document.getElementById('fc-selector-container').style.display = 'none';
+            document.getElementById('btn-case').disabled = true;
+            document.getElementById('btn-case').innerHTML = '✨ AI: Generate Case Study';
+            document.getElementById('fc-ai-case').style.display = 'none';
+            document.getElementById('btn-read-case').style.display = 'none';
+            return;
+        }
         const drug = flashcardList[fcCurrentIndex];
         
         document.getElementById('fc-name').innerText = drug.name;
@@ -815,7 +827,7 @@
                 pickerList.appendChild(btn);
             });
             fcSelectedDrug = generics[0];
-            document.getElementById('fc-selected-drug-label').innerText = `Auto-selected: ${fcSelectedDrug}. Tap Google/Drugs/Explain/Case to choose another.`;
+            document.getElementById('fc-selected-drug-label').innerText = `Auto-selected: ${fcSelectedDrug}. Tap Google/Drugs/Case to choose another.`;
         } else {
             selectorContainer.style.display = 'none';
             fcSelectedDrug = generics[0];
@@ -868,13 +880,6 @@
             window.open(`https://www.google.com/search?q=${googleQuery}`, '_blank');
         } else if (action === 'drugs') {
             openDrugsCom({name: fcSelectedDrug});
-        } else if (action === 'explain') {
-            const box = document.getElementById('fc-ai-case');
-            box.style.display = 'block';
-            box.innerHTML = 'Thinking...';
-            const prompt = `Explain the drug ${fcSelectedDrug} for a nursing student simply in English. Focus on mechanism, indication and key monitoring. Markdown format.`;
-            streamAIResponse([{role: 'user', content: prompt}], (text) => box.innerHTML = marked.parse(text));
-            document.getElementById('btn-read-case').style.display = 'block';
         } else if (action === 'case') {
             const d = {...flashcardList[fcCurrentIndex], name: fcSelectedDrug};
             getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
@@ -889,12 +894,8 @@
     function nextCard() {
         if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
         else {
-            if (flashcardMode === 'anki') {
-                flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
-                fcCurrentIndex = 0;
-            } else {
-                reshuffle();
-            }
+            flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
+            fcCurrentIndex = 0;
             renderCard();
         }
     }
@@ -1201,11 +1202,8 @@
         flashcardList.sort(() => Math.random() - 0.5);
         quizList = [...filteredList];
         fcCurrentIndex = 0;
-        if (flashcardMode === 'anki') {
-            hydrateAnkiForList(filteredList);
-            flashcardList = getDueCards(filteredList);
-            if (flashcardList.length === 0) flashcardList = [...filteredList].slice(0, 20);
-        }
+        hydrateAnkiForList(filteredList);
+        flashcardList = getDueCards(filteredList);
         renderCard();
     }
     
