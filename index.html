@@ -147,21 +147,46 @@
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;
         }
         .daily-card {
-            background: white; border-radius: 16px; padding: 15px;
+            background: linear-gradient(145deg, #ffffff, #f7fbff); border-radius: 16px; padding: 15px;
             box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
             justify-content: space-between; min-height: 100px; cursor: pointer;
-            transition: transform 0.2s; border: 1px solid rgba(0,0,0,0.03);
+            transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(0,0,0,0.05);
             /* Ensure text stays within card */
             word-break: break-word; overflow-wrap: break-word; hyphens: auto;
         }
+        .daily-card:hover { box-shadow: 0 8px 25px rgba(0, 122, 255, 0.18); }
         .daily-card:active { transform: scale(0.96); }
-        .daily-label { font-size: 0.7rem; color: var(--ios-orange); font-weight: 700; text-transform: uppercase; }
+        .daily-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .daily-icon-pill {
+            width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.9);
+            display:flex; align-items:center; justify-content:center; font-size: 0.95rem;
+        }
+        .daily-label {
+            font-size: 0.68rem; color: #fff; font-weight: 800; text-transform: uppercase;
+            letter-spacing: .6px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 999px;
+        }
         .daily-name { 
             font-size: 1.1rem; font-weight: 700; color: var(--text-primary); 
             line-height: 1.2; margin-top: 5px; margin-bottom: 10px;
             word-break: break-word;
         }
-        .daily-sub { font-size: 0.8rem; color: var(--ios-gray); margin-top: auto; }
+        .daily-sub { font-size: 0.8rem; color: #1f2937; margin-top: auto; opacity: .85; }
+
+        .anki-controls {
+            display: none;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            padding: 0 10px;
+        }
+        .anki-btn {
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            padding: 10px 6px;
+            cursor: pointer;
+        }
 
         /* System Scroll */
         .system-scroll-container {
@@ -431,6 +456,12 @@
             <span id="counter" style="font-weight:700; color:var(--ios-gray);">1 / 10</span>
             <button onclick="nextCard()" class="action-btn" style="width:auto;">Next →</button>
         </div>
+        <div id="anki-controls" class="anki-controls">
+            <button class="anki-btn" style="background:#ef4444;" onclick="rateCurrentCard('again')">Again</button>
+            <button class="anki-btn" style="background:#f59e0b;" onclick="rateCurrentCard('hard')">Hard</button>
+            <button class="anki-btn" style="background:#3b82f6;" onclick="rateCurrentCard('good')">Good</button>
+            <button class="anki-btn" style="background:#10b981;" onclick="rateCurrentCard('easy')">Easy</button>
+        </div>
     </div>
 
     <div id="quiz-section" style="display:none;">
@@ -487,6 +518,26 @@
             </div>
         </div>
 
+        <div style="margin-top:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">STUDY MODE</label>
+            <select id="flashcard-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
+                <option value="anki">Flashcard: Anki Spaced Repetition</option>
+                <option value="classic">Flashcard: Classic Next/Prev</option>
+            </select>
+            <select id="daily-pick-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
+                <option value="anki">Daily Picks: Anki Due Cards</option>
+                <option value="random">Daily Picks: Random Mix</option>
+            </select>
+        </div>
+
+        <div style="margin-top:12px; font-size:0.82rem; color:#4b5563; background:#eef6ff; border:1px solid #dbeafe; border-radius:12px; padding:12px; line-height:1.45;">
+            <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">How to apply</div>
+            <div>1) Choose <strong>Anki</strong> for Flashcard mode.</div>
+            <div>2) Choose Daily Picks as <strong>Anki Due Cards</strong> (or Random).</div>
+            <div>3) Tap <strong>Save Configuration</strong>.</div>
+            <div>4) In Cards mode, use <strong>Again / Hard / Good / Easy</strong> to schedule the next review.</div>
+        </div>
+
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Configuration</button>
     </div>
 </div>
@@ -518,6 +569,9 @@
     let quizCurrentIndex = 0;
     let currentQuizData = null;
     let fcSelectedDrug = ""; 
+    let flashcardMode = localStorage.getItem('flashcard_mode') || 'anki';
+    let dailyPickMode = localStorage.getItem('daily_pick_mode') || 'anki';
+    let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
@@ -567,6 +621,8 @@
         document.getElementById('provider-select').value = currentProvider;
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
+        document.getElementById('flashcard-mode').value = flashcardMode;
+        document.getElementById('daily-pick-mode').value = dailyPickMode;
 
         initSystemDropdown();
         applyFilter(); 
@@ -586,6 +642,12 @@
     // --- DAILY RECOMMENDATIONS (8 ITEMS) ---
     function generateDailyPicks() {
         if(!activeSourceList || activeSourceList.length === 0) return;
+
+        if (dailyPickMode === 'anki') {
+            const picks = getDueCards(activeSourceList).slice(0, 8);
+            renderDailyPicks(picks.length ? picks : activeSourceList.slice(0, 8));
+            return;
+        }
         
         const today = new Date().toDateString(); 
         const seed = today.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -611,21 +673,36 @@
     }
 
     function refreshDailyPicks() {
-        // Shuffle and pick 8
-        let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
-        renderDailyPicks(shuffled.slice(0, 8));
+        if (dailyPickMode === 'anki') {
+            const due = getDueCards(activeSourceList).slice(0, 8);
+            renderDailyPicks(due.length ? due : activeSourceList.slice(0, 8));
+        } else {
+            let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
+            renderDailyPicks(shuffled.slice(0, 8));
+        }
     }
 
     function renderDailyPicks(picks) {
         const container = document.getElementById('daily-container');
         container.innerHTML = '';
+        const gradients = [
+            'linear-gradient(140deg, #bfdbfe 0%, #93c5fd 50%, #dbeafe 100%)',
+            'linear-gradient(140deg, #fde68a 0%, #fca5a5 55%, #fecaca 100%)',
+            'linear-gradient(140deg, #bbf7d0 0%, #86efac 55%, #dcfce7 100%)',
+            'linear-gradient(140deg, #ddd6fe 0%, #c4b5fd 50%, #ede9fe 100%)'
+        ];
         
-        picks.forEach(drug => {
+        picks.forEach((drug, idx) => {
             const div = document.createElement('div');
             div.className = 'daily-card';
+            div.style.background = gradients[idx % gradients.length];
+            const icon = getSystemIcon(drug.system || getSystemForDrug(drug));
             div.innerHTML = `
                 <div>
-                    <div class="daily-label">Daily Pick</div>
+                    <div class="daily-header">
+                        <div class="daily-label">${dailyPickMode === 'anki' ? 'Due Today' : 'Daily Pick'}</div>
+                        <div class="daily-icon-pill">${icon}</div>
+                    </div>
                     <div class="daily-name">${drug.name.split('(')[0]}</div>
                 </div>
                 <div class="daily-sub">${drug.class}</div>
@@ -663,6 +740,13 @@
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
             document.getElementById('filter-bar').style.display = 'flex';
+            hydrateAnkiForList(filteredList.length ? filteredList : activeSourceList);
+            if (flashcardMode === 'anki') {
+                flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
+                if (flashcardList.length === 0) flashcardList = [...(filteredList.length ? filteredList : activeSourceList)].slice(0, 20);
+                fcCurrentIndex = 0;
+            }
+            document.getElementById('anki-controls').style.display = flashcardMode === 'anki' ? 'grid' : 'none';
             renderCard();
         } else if (mode === 'quiz') {
             document.getElementById('quiz-section').style.display = 'block';
@@ -728,11 +812,65 @@
 
     function nextCard() {
         if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
-        else { reshuffle(); renderCard(); } 
+        else {
+            if (flashcardMode === 'anki') {
+                flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
+                fcCurrentIndex = 0;
+            } else {
+                reshuffle();
+            }
+            renderCard();
+        }
     }
 
     function prevCard() {
         if(fcCurrentIndex > 0) { fcCurrentIndex--; renderCard(); }
+    }
+
+    function hydrateAnkiForList(list) {
+        list.forEach(drug => {
+            if (!ankiStats[drug.name]) {
+                ankiStats[drug.name] = { ease: 2.3, interval: 0, reps: 0, lapses: 0, due: Date.now() };
+            }
+        });
+    }
+
+    function getDueCards(list) {
+        hydrateAnkiForList(list);
+        const now = Date.now();
+        const due = list.filter(d => (ankiStats[d.name]?.due || 0) <= now);
+        due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
+        return due;
+    }
+
+    function rateCurrentCard(rating) {
+        if (flashcardList.length === 0) return;
+        const drug = flashcardList[fcCurrentIndex];
+        hydrateAnkiForList([drug]);
+        const stat = ankiStats[drug.name];
+
+        const qualityMap = { again: 1, hard: 3, good: 4, easy: 5 };
+        const q = qualityMap[rating] || 4;
+
+        if (q < 3) {
+            stat.reps = 0;
+            stat.lapses = (stat.lapses || 0) + 1;
+            stat.interval = 1;
+        } else {
+            stat.reps = (stat.reps || 0) + 1;
+            if (stat.reps === 1) stat.interval = 1;
+            else if (stat.reps === 2) stat.interval = 3;
+            else {
+                const mult = rating === 'hard' ? 1.2 : (rating === 'easy' ? (stat.ease + 0.15) : stat.ease);
+                stat.interval = Math.max(1, Math.round(stat.interval * mult));
+            }
+        }
+
+        stat.ease = Math.max(1.3, (stat.ease || 2.3) + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+        stat.due = Date.now() + (stat.interval * 24 * 60 * 60 * 1000);
+
+        localStorage.setItem('drug_tutor_anki', JSON.stringify(ankiStats));
+        nextCard();
     }
 
     // --- SEARCH LOGIC ---
@@ -984,6 +1122,11 @@
         flashcardList.sort(() => Math.random() - 0.5);
         quizList = [...filteredList];
         fcCurrentIndex = 0;
+        if (flashcardMode === 'anki') {
+            hydrateAnkiForList(filteredList);
+            flashcardList = getDueCards(filteredList);
+            if (flashcardList.length === 0) flashcardList = [...filteredList].slice(0, 20);
+        }
         renderCard();
     }
     
@@ -1169,9 +1312,14 @@
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
+        localStorage.setItem('flashcard_mode', document.getElementById('flashcard-mode').value);
+        localStorage.setItem('daily_pick_mode', document.getElementById('daily-pick-mode').value);
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
+        flashcardMode = document.getElementById('flashcard-mode').value;
+        dailyPickMode = document.getElementById('daily-pick-mode').value;
+        generateDailyPicks();
         toggleSettings();
         alert("Settings Saved!");
     }
