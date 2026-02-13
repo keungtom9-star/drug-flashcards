@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Ward Cheatsheet Pro</title>
+    
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-main: #000000;
+            --text-sec: #6e6e73;
+            --border: #E5E5EA;
+            
+            --blue: #007AFF;
+            --green: #34C759;
+            --red: #FF3B30;
+            --orange: #FF9500;
+            --purple: #AF52DE;
+            --teal: #30B0C7;
+            --indigo: #5856D6;
+            --pink: #FF2D55;
+
+            --ecg-grid: #fff0f0;
+            --ecg-line: #ffcccc;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: #1C1C1E;
+                --text-main: #FFFFFF;
+                --text-sec: #8E8E93;
+                --border: #38383A;
+                --ecg-grid: #2a1a1a;
+                --ecg-line: #502020;
+            }
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px;
+        }
+
+        /* --- Header & Tabs --- */
+        .sticky-header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(var(--card-bg), 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding-top: max(10px, env(safe-area-inset-top));
+            background-color: var(--card-bg);
+        }
+
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 16px;
+        }
+        .app-title { font-size: 1.1rem; font-weight: 700; }
+        .back-btn {
+            background: none; border: none; color: var(--blue); font-size: 1rem;
+            cursor: pointer; padding: 5px; display: flex; align-items: center; gap:4px;
+        }
+
+        .tabs {
+            display: flex; justify-content: space-around;
+            padding: 0 5px 8px 5px;
+        }
+        .tab-btn {
+            background: none; border: none; font-size: 0.85rem; font-weight: 600;
+            color: var(--text-sec); padding: 8px 12px; border-radius: 20px;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--text-main); color: var(--bg-color);
+        }
+
+        /* --- Layout --- */
+        .container {
+            display: none; /* Hidden by default */
+            padding: 16px;
+            max-width: 1000px; margin: 0 auto;
+            grid-template-columns: 1fr; gap: 16px;
+        }
+        .container.active { display: grid; }
+        
+        @media (min-width: 768px) {
+            .container.active { grid-template-columns: 1fr 1fr; }
+            .full-width { grid-column: span 2; }
+        }
+
+        /* --- Cards --- */
+        .card {
+            background: var(--card-bg); border-radius: 16px; padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .card-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+            font-size: 0.8rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
+            color: var(--text-sec); border-bottom: 1px solid var(--border); padding-bottom: 8px;
+        }
+        
+        /* --- Tables --- */
+        .val-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .val-table td { padding: 8px 0; border-bottom: 1px solid var(--border); }
+        .val-table tr:last-child td { border-bottom: none; }
+        .val-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .unit { font-size: 0.7rem; color: var(--text-sec); font-weight: 400; margin-left: 2px; }
+
+        /* --- ECG Specific Styles --- */
+        .ecg-grid-box {
+            background-image: 
+                linear-gradient(var(--ecg-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--ecg-line) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: var(--ecg-grid);
+            border: 1px solid var(--red);
+            border-radius: 8px; padding: 10px; margin-bottom: 10px;
+            font-family: monospace; font-size: 0.8rem; color: var(--red);
+        }
+
+        .rhythm-card {
+            border-left: 4px solid #ccc; padding: 10px; margin-bottom: 8px;
+            background: rgba(128,128,128,0.05); border-radius: 0 8px 8px 0;
+        }
+        .r-lethal { border-left-color: var(--red); background: rgba(255, 59, 48, 0.1); }
+        .r-warn { border-left-color: var(--orange); background: rgba(255, 149, 0, 0.1); }
+        .r-safe { border-left-color: var(--green); }
+        
+        .r-title { font-weight: 800; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center;}
+        .r-details { font-size: 0.75rem; margin-top: 4px; line-height: 1.4; color: var(--text-main); opacity: 0.9; }
+        .r-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
+
+        .lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; }
+        .lead-item { background: var(--bg-color); padding: 8px; border-radius: 6px; }
+
+        /* --- Drug List Styles --- */
+        .search-box {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: var(--bg-color); color: var(--text-main);
+            font-size: 1rem; margin-bottom: 12px; outline: none;
+        }
+        .drug-row { border-bottom: 1px solid var(--border); padding: 12px 0; display: block; }
+        .d-header { display:flex; flex-direction:column; margin-bottom:6px; }
+        .d-name { font-weight: 700; color: var(--blue); font-size: 1rem; }
+        .d-trade { font-size: 0.75rem; color: var(--text-sec); font-weight:400; }
+        
+        .d-info-grid { display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.85rem; margin-top: 4px; }
+        .d-block { display:flex; gap: 8px; align-items: baseline; }
+        .d-label { 
+            font-weight: 700; font-size: 0.7rem; text-transform: uppercase; 
+            min-width: 40px; color: var(--text-sec);
+        }
+        .d-content { flex:1; line-height: 1.3; }
+        
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; display: inline-block; margin-right: 4px; vertical-align: middle;}
+        .t-push { background: #E0E7FF; color: var(--blue); }
+        .t-inf { background: #DCFCE7; color: var(--green); }
+        .t-pump { background: #fee2e2; color: var(--red); }
+        .t-im { background: #FEF3C7; color: #D97706; }
+        
+        @media (prefers-color-scheme: dark) {
+            .t-push { background: rgba(0, 122, 255, 0.2); color: #60a5fa; }
+            .t-inf { background: rgba(52, 199, 89, 0.2); color: #86efac; }
+            .t-pump { background: rgba(255, 59, 48, 0.2); color: #fca5a5; }
+            .t-im { background: rgba(255, 149, 0, 0.2); color: #fcd34d; }
+        }
+
+        /* --- Utils --- */
+        .calc-box { text-align: center; padding: 10px; background: var(--bg-color); border-radius: 8px; margin-bottom: 8px; }
+        .cannula-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .c-item { padding: 8px; border-radius: 8px; color: white; text-align: center; }
+        .c-size { font-weight: bold; font-size: 0.85rem; display: block; }
+        .c-use { font-size: 0.7rem; opacity: 0.95; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sticky Header -->
+    <div class="sticky-header">
+        <div class="top-bar">
+            <button class="back-btn" onclick="window.location.href='index.html'">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                Back
+            </button>
+            <div class="app-title">Ward Cheatsheet</div>
+            <div style="width:50px"></div>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('labs')">Labs</button>
+            <button class="tab-btn" onclick="switchTab('ecg')">ECG</button>
+            <button class="tab-btn" onclick="switchTab('tools')">Tools</button>
+            <button class="tab-btn" onclick="switchTab('meds')">Meds</button>
+        </div>
+    </div>
+
+    <!-- ================= LABS TAB ================= -->
+    <div id="labs" class="container active">
+        
+        <div class="card">
+            <div class="card-header"><span style="color:var(--red)">🩸</span> Haematology</div>
+            <table class="val-table">
+                <tr><td>Hb (Male)</td><td class="val-val">13.0 - 18.0 <span class="unit">g/dL</span></td></tr>
+                <tr><td>Hb (Female)</td><td class="val-val">11.5 - 16.5 <span class="unit">g/dL</span></td></tr>
+                <tr><td>WBC</td><td class="val-val">4.0 - 11.0 <span class="unit">x10⁹</span></td></tr>
+                <tr><td>Platelets</td><td class="val-val">150 - 450 <span class="unit">x10⁹</span></td></tr>
+                <tr><td>INR</td><td class="val-val">0.8 - 1.2</td></tr>
+                <tr><td>APTT</td><td class="val-val">24 - 36 <span class="unit">sec</span></td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span style="color:var(--blue)">🧪</span> Renal & Lytes</div>
+            <table class="val-table">
+                <tr><td>Sodium (Na)</td><td class="val-val">135 - 145 <span class="unit">mmol/L</span></td></tr>
+                <tr><td>Potassium (K)</td><td class="val-val">3.5 - 5.0 <span class="unit">mmol/L</span></td></tr>
+                <tr><td>Urea</td><td class="val-val">2.5 - 7.8 <span class="unit">mmol/L</span></td></tr>
+                <tr><td>Creatinine</td><td class="val-val">45 - 120 <span class="unit">µmol/L</span></td></tr>
+                <tr><td>Calcium</td><td class="val-val">8.5 - 10.5 <span class="unit">mg/dL</span></td></tr>
+                <tr><td>Magnesium</td><td class="val-val">0.7 - 1.0 <span class="unit">mmol/L</span></td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span style="color:var(--orange)">🧬</span> Liver Function</div>
+            <table class="val-table">
+                <tr><td>ALT</td><td class="val-val">&lt; 50 <span class="unit">U/L</span></td></tr>
+                <tr><td>AST</td><td class="val-val">&lt; 50 <span class="unit">U/L</span></td></tr>
+                <tr><td>ALP</td><td class="val-val">30 - 120 <span class="unit">U/L</span></td></tr>
+                <tr><td>Bilirubin (T)</td><td class="val-val">&lt; 20 <span class="unit">µmol/L</span></td></tr>
+                <tr><td>Albumin</td><td class="val-val">35 - 50 <span class="unit">g/L</span></td></tr>
+                <tr><td>Protein</td><td class="val-val">60 - 80 <span class="unit">g/L</span></td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span style="color:var(--purple)">🔬</span> Endo / Inflam</div>
+            <table class="val-table">
+                <tr><td>TSH</td><td class="val-val">0.4 - 4.0 <span class="unit">mIU/L</span></td></tr>
+                <tr><td>fT4</td><td class="val-val">9.0 - 19.0 <span class="unit">pmol/L</span></td></tr>
+                <tr><td>HbA1c</td><td class="val-val">&lt; 6.5 <span class="unit">%</span></td></tr>
+                <tr><td>CRP</td><td class="val-val">&lt; 5.0 <span class="unit">mg/L</span></td></tr>
+                <tr><td>ESR</td><td class="val-val">&lt; 20 <span class="unit">mm/hr</span></td></tr>
+                <tr><td>Chol (T)</td><td class="val-val">&lt; 5.2 <span class="unit">mmol/L</span></td></tr>
+            </table>
+        </div>
+        
+        <div class="card full-width">
+            <div class="card-header"><span style="color:var(--red)">🫀</span> Cardiac Markers</div>
+            <table class="val-table">
+                <tr><td>Trop I</td><td class="val-val">&lt; 0.04 <span class="unit">ng/mL</span></td></tr>
+                <tr><td>Trop T</td><td class="val-val">&lt; 0.014 <span class="unit">ng/mL</span></td></tr>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- ================= ECG TAB ================= -->
+    <div id="ecg" class="container">
+        
+        <div class="card full-width">
+            <div class="card-header">📐 The Basics</div>
+            <div class="ecg-grid-box">
+                <div>Small Box = 0.04s</div>
+                <div>Big Box (5 sm) = 0.20s</div>
+                <div>5 Big Boxes = 1.0s</div>
+                <hr style="border:0; border-top:1px dashed var(--red); margin:5px 0;">
+                <div><strong>Rate Calc:</strong> 300 ÷ #Large Boxes (R-R)</div>
+            </div>
+            <table class="val-table">
+                <tr><td>PR Interval</td><td class="val-val">0.12 - 0.20s <span class="unit">(3-5 small sq)</span></td></tr>
+                <tr><td>QRS Complex</td><td class="val-val">&lt; 0.12s <span class="unit">(3 small sq)</span></td></tr>
+                <tr><td>QTc (Norm)</td><td class="val-val">&lt; 440ms</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">⚡ Lead Placement (Precordial)</div>
+            <div class="lead-grid">
+                <div class="lead-item"><strong>V1:</strong> 4th ICS, Right Sternal</div>
+                <div class="lead-item"><strong>V2:</strong> 4th ICS, Left Sternal</div>
+                <div class="lead-item"><strong>V3:</strong> Between V2 & V4</div>
+                <div class="lead-item"><strong>V4:</strong> 5th ICS, Mid-Clavicular</div>
+                <div class="lead-item"><strong>V5:</strong> 5th ICS, Ant Axillary</div>
+                <div class="lead-item"><strong>V6:</strong> 5th ICS, Mid Axillary</div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <div class="card-header">🚨 Lethal / Critical Rhythms</div>
+            
+            <div class="rhythm-card r-lethal">
+                <div class="r-title">Ventricular Fibrillation (V-Fib) <span class="r-tag" style="background:var(--red); color:white;">SHOCK</span></div>
+                <div class="r-details">
+                    Chaotic, irregular deflections. No identifiable P, QRS, or T. Rate unmeasurable.
+                    <br><strong>NO PULSE.</strong> Start CPR.
+                </div>
+            </div>
+
+            <div class="rhythm-card r-lethal">
+                <div class="r-title">Ventricular Tachycardia (V-Tach) <span class="r-tag" style="background:var(--red); color:white;">CRIT</span></div>
+                <div class="r-details">
+                    Regular, Wide QRS (>0.12s). No P waves. Rate 100-250.
+                    <br><strong>Check Pulse.</strong> If no pulse: Shock.
+                </div>
+            </div>
+
+            <div class="rhythm-card r-lethal">
+                <div class="r-title">Torsade de Pointes</div>
+                <div class="r-details">
+                    Twisting QRS polarity. Rate 200-250. Associated with low Magnesium.
+                    <br><strong>NO PULSE.</strong>
+                </div>
+            </div>
+
+            <div class="rhythm-card r-warn">
+                <div class="r-title">STEMI</div>
+                <div class="r-details">
+                    ST Elevation >1mm in 2 contiguous leads ("Fireman Hat").
+                    <br><strong>EMERGENCY.</strong>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card full-width">
+            <div class="card-header">🛑 Heart Blocks</div>
+            <div class="rhythm-card r-safe">
+                <div class="r-title">1st Degree</div>
+                <div class="r-details">PR >0.20s (Constant). Regular. Benign.</div>
+            </div>
+            <div class="rhythm-card r-warn">
+                <div class="r-title">2nd Degree Type I (Wenckebach)</div>
+                <div class="r-details">PR gets longer, longer, longer... then drops QRS.</div>
+            </div>
+            <div class="rhythm-card r-warn">
+                <div class="r-title">2nd Degree Type II</div>
+                <div class="r-details">PR constant, but random QRS drops. Danger.</div>
+            </div>
+            <div class="rhythm-card r-lethal">
+                <div class="r-title">3rd Degree (Complete)</div>
+                <div class="r-details">P's and QRS distinct and independent. Slow rate. Pacemaker needed.</div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <div class="card-header">💓 Common Arrhythmias</div>
+            <div class="rhythm-card r-warn">
+                <div class="r-title">SVT <span class="r-tag" style="background:var(--orange); color:white;">FAST</span></div>
+                <div class="r-details">Regular, Narrow QRS. P hidden. Rate 150-250.</div>
+            </div>
+            <div class="rhythm-card r-safe">
+                <div class="r-title">A-Fib</div>
+                <div class="r-details">Irregularly Irregular. No P waves (Erratic baseline).</div>
+            </div>
+            <div class="rhythm-card r-safe">
+                <div class="r-title">A-Flutter</div>
+                <div class="r-details">Sawtooth F-waves. Regular or Irregular.</div>
+            </div>
+            <div class="rhythm-card r-safe">
+                <div class="r-title">PVC</div>
+                <div class="r-details">Premature, Wide, Bizarre QRS beat.</div>
+            </div>
+            <div class="rhythm-card r-safe">
+                <div class="r-title">NSR / Brady / Tachy</div>
+                <div class="r-details">Normal (60-100) / Slow (<60) / Fast (>100)</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= TOOLS TAB ================= -->
+    <div id="tools" class="container">
+        
+        <div class="card">
+            <div class="card-header"><span style="color:var(--teal)">💧</span> Drip Rate Calc</div>
+            <div class="calc-box">
+                <div style="font-size:0.75rem; color:var(--text-sec); margin-bottom:5px;">Formula</div>
+                <span style="font-family:monospace; font-weight:bold;">(Vol × DropFactor) ÷ Time(min)</span>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <div style="flex:1; background:var(--bg-color); padding:8px; border-radius:8px; text-align:center;">
+                    <span style="font-size:0.7rem;">Macro</span><br><strong>20 gtt</strong>
+                </div>
+                <div style="flex:1; background:var(--bg-color); padding:8px; border-radius:8px; text-align:center;">
+                    <span style="font-size:0.7rem;">Blood</span><br><strong>15 gtt</strong>
+                </div>
+            </div>
+            <table class="val-table">
+                <tr style="background:var(--bg-color);"><th style="text-align:left; padding:5px;">Freq</th><th style="text-align:right; padding:5px;">Rate (Macro)</th></tr>
+                <tr><td>Q1H (500ml)</td><td class="val-val">1s / 3 drops</td></tr>
+                <tr><td>Q2H (250ml)</td><td class="val-val">2s / 3 drops</td></tr>
+                <tr><td>Q4H (125ml)</td><td class="val-val">3s / 2 drops</td></tr>
+                <tr><td>Q6H (83ml)</td><td class="val-val">2s / 1 drop</td></tr>
+                <tr><td>Q8H (62ml)</td><td class="val-val">3s / 1 drop</td></tr>
+                <tr><td>Q12H (41ml)</td><td class="val-val">4s / 1 drop</td></tr>
+            </table>
+            
+             <div class="formula-box" style="margin-top:10px; padding:10px; background:var(--bg-color); border-radius:8px;">
+                <div class="formula-title" style="font-weight:700; font-size:0.8rem;">⚖️ Maint. (>20kg)</div>
+                <div class="formula-text" style="font-family:monospace;">Weight (kg) + 40 = mL/hr</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span style="color:var(--indigo)">💉</span> Cannula Guide</div>
+            <div class="cannula-list">
+                <div class="c-item" style="background:#FFA500;"><span class="c-size">14G Orange</span><span class="c-use">Trauma</span></div>
+                <div class="c-item" style="background:#808080;"><span class="c-size">16G Grey</span><span class="c-use">Major Surg</span></div>
+                <div class="c-item" style="background:#228B22;"><span class="c-size">18G Green</span><span class="c-use">Blood/CT</span></div>
+                <div class="c-item" style="background:#FF69B4;"><span class="c-size">20G Pink</span><span class="c-use">Standard</span></div>
+                <div class="c-item" style="background:#0000FF;"><span class="c-size">22G Blue</span><span class="c-use">Small Vein</span></div>
+                <div class="c-item" style="background:#FACC15; color:#333;"><span class="c-size">24G Yellow</span><span class="c-use">Paeds</span></div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <div class="card-header"><span style="color:var(--text-main)">🩻</span> Radiology / Echo</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div>
+                    <strong>CXR (ABCDE)</strong>
+                    <ul style="padding-left:15px; margin:5px 0; font-size:0.8rem; color:var(--text-sec);">
+                        <li><strong>A</strong>irway (Midline?)</li>
+                        <li><strong>B</strong>reathing (Clear?)</li>
+                        <li><strong>C</strong>ardiac (Size <50%?)</li>
+                        <li><strong>D</strong>iaphragm (Angles?)</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>CT Contrast</strong>
+                    <ul style="padding-left:15px; margin:5px 0; font-size:0.8rem; color:var(--text-sec);">
+                        <li>eGFR Check</li>
+                        <li>Allergy?</li>
+                        <li>Fast 4h?</li>
+                        <li>18G/20G Cannula</li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border:0; border-top:1px solid var(--border); margin:10px 0;">
+            <div style="font-size:0.85rem;">
+                <strong>LVEF:</strong> Normal ≥ 55% &nbsp;|&nbsp; Mild 45-54% &nbsp;|&nbsp; Mod 30-44% &nbsp;|&nbsp; Sev <30%
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <div class="card-header"><span style="color:var(--pink)">🔭</span> Endoscopy Prep</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div>
+                    <strong>OGD (Gastroscopy)</strong>
+                    <ul style="padding-left:15px; margin:5px 0; font-size:0.8rem; color:var(--text-sec);">
+                        <li><strong>NPO:</strong> 6h Food / 2h Clear fluids.</li>
+                        <li><strong>Consent:</strong> Signed?</li>
+                        <li><strong>Dentures:</strong> Remove prior.</li>
+                        <li><strong>Meds:</strong> Stop Anticoags?</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Colonoscopy</strong>
+                    <ul style="padding-left:15px; margin:5px 0; font-size:0.8rem; color:var(--text-sec);">
+                        <li><strong>Diet:</strong> Low Residue (3d) &rarr; Clear liq (1d).</li>
+                        <li><strong>Prep:</strong> Bowel open clear?</li>
+                        <li><strong>Iron:</strong> Stop 5-7 days prior.</li>
+                        <li><strong>NPO:</strong> 6h Food / 2h Clear fluids.</li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border:0; border-top:1px solid var(--border); margin:10px 0;">
+            <div style="font-size:0.85rem; color:var(--red); font-weight:600; text-align:center;">
+                ⚠️ Check specific Anticoagulation bridging plan.
+            </div>
+        </div>
+<div class="card full-width">
+            <div class="card-header"><span style="color:var(--purple)">📋</span> Procedure Trolley Setup</div>
+            
+            <!-- 1. Abdominal Tapping -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    1. Abdominal Tapping (Ascites)
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Upper:</strong> S6 Diagnostic Set, Sterile Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Lower:</strong> Betadine, 70% Alcohol.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Items:</strong> 10ml syringe, 16G Angiocath, 3-way stopcock.</li>
+                        <li><strong>Collect:</strong> 3x Specimen bottles, EDTA bottle, Drainage bag, IV set.</li>
+                        <li><strong>Dressing:</strong> Opsite/Tegaderm, Tensoplast.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 2. Acute PD -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    2. Acute PD Insertion
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Upper:</strong> S17 Suture Set, Gown, Towel, Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Meds:</strong> Lignocaine (LA), Chlorhexidine (Alcohol), Hand rub.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Key Items:</strong> Acute PD Catheter, 23G Needle, 10ml Syringe.</li>
+                        <li><strong>Suture:</strong> 2-0 Suture.</li>
+                        <li><strong>Other:</strong> Elastoplast, Zinc Oxide tape.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 3. Bone Marrow -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    3. Bone Marrow Biopsy
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Upper:</strong> S1 Biopsy Set, Gloves, 10ml/20ml Syringes.</div>
+                    <div style="margin-bottom:4px;"><strong>Key Item:</strong> <span style="color:var(--red)">Jamshidi Needle</span>, No. 11 Blade.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Meds:</strong> Lignocaine, Betadine, Alcohol.</li>
+                        <li><strong>Bottles:</strong> EDTA (x3), Cytogenetic (x1), Formalin (x2).</li>
+                        <li><strong>Transport:</strong> Special transportation box.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 4. Chest Drain -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    4. Chest Drain Insertion
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Upper:</strong> Chest Drain System + Catheter, S17 Suture Set, Clamps.</div>
+                    <div style="margin-bottom:4px;"><strong>Meds:</strong> 2% Lignocaine, Betadine, Alcohol, Sterile Water.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Accessory:</strong> 10ml Syringe, 23G Needle, No. 11 Blade.</li>
+                        <li><strong>Secure:</strong> Suture, Tensoplast, Zinc Oxide tape.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 5. Foley Catheter -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    5. Foley Catheter
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Upper:</strong> S4 Cath Set, Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Item:</strong> Foley Catheter, Urine Bag + Hanger.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Procedure:</strong> KY Jelly, 10ml Water (Inflation), 0.05% Chlorhexidine.</li>
+                        <li><strong>Secure:</strong> Tegaderm, Paper bag.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 6. LP -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    6. Lumbar Puncture (LP)
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Upper:</strong> S10 LP Set, Gloves, Manometer.</div>
+                    <div style="margin-bottom:4px;"><strong>Key Item:</strong> Spinal Needles.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Meds:</strong> Lignocaine, Betadine, Alcohol.</li>
+                        <li><strong>Collect:</strong> CSF Bottles (x3-4), Transport Box.</li>
+                        <li><strong>Dressing:</strong> Opsite, Elastoplast.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 7. Pigtail -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    7. Pigtail Insertion
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Upper:</strong> S17 Suture Set, Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Kit:</strong> Pigtail (Fr7/8), Trocar needle, Guidewire, Dilator, Connect tube.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Meds:</strong> Lignocaine, Betadine, Alcohol.</li>
+                        <li><strong>Tools:</strong> Syringes (2.5/10/20ml), No. 11 Blade, 3-0 Suture.</li>
+                        <li><strong>Collect:</strong> Specimen bottles, Drainage bag.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 8. Skin Biopsy -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    8. Skin Biopsy
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Instruments:</strong> S17 Suture Set, <span style="color:var(--red)">Punch (4mm)</span>, No. 11/15 Blade.</div>
+                    <div style="margin-bottom:4px;"><strong>Meds:</strong> Lignocaine 2% (Plain or w/ Adrenaline).</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Sutures:</strong> 3-0, 4-0, or 5-0 Dermalon.</li>
+                        <li><strong>Docs:</strong> Consent form, ACP Form.</li>
+                        <li style="color:var(--red); font-weight:bold;">Specimen: Fresh to ACP (No Formalin/Saline/Gauze).</li>
+                    </ul>
+                </div>
+            </details>
+            
+            <!-- 9. Knee Tap -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    9. Knee Tap (Arthrocentesis)
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Set:</strong> S6 Tapping Set or S17, Sterile Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Meds:</strong> Lignocaine, Betadine, Alcohol, Steroid (if injecting).</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Items:</strong> 10ml/20ml Syringes, 18G/21G/23G Needles.</li>
+                        <li><strong>Collect:</strong> Sterile bottles (C&S), EDTA (Cell count), Plain (Crystal).</li>
+                        <li><strong>Finish:</strong> Elastoplast / Pressure Bandage.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 10. Chest Drain Removal -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    10. Chest Drain Removal
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Set:</strong> S17 Suture Set (w/ Stitch Cutter), Sterile Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Prep:</strong> Betadine/Alcohol, Incontinence pad.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Dressing:</strong> <span style="color:var(--red)">Vaseline Gauze (Jelonet)</span> or Air-tight Tegaderm.</li>
+                        <li><strong>Technique:</strong> Valsalva (Hold breath) during pull.</li>
+                        <li><strong>Disposal:</strong> Clinical waste bag, Cable ties.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 11. Pigtail Removal -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    11. Pigtail Removal
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Set:</strong> S17 Suture Set or Dressing Set, Sterile Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Items:</strong> Stitch Cutter, Gauze.</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Meds:</strong> Betadine/Alcohol.</li>
+                        <li><strong>Note:</strong> Ensure pigtail is <span style="font-weight:bold">unlocked</span> (uncoil) before pulling.</li>
+                        <li><strong>Dressing:</strong> Tegaderm / Opsite.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 12. CVC Removal -->
+            <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    12. CVC Removal
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Set:</strong> Dressing Set, Sterile Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Items:</strong> Stitch Cutter, Sterile Scissors (if Tip Culture needed).</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Position:</strong> Supine or Trendelenburg (Prevent Air Embolus).</li>
+                        <li><strong>Action:</strong> Apply pressure 5-10 mins.</li>
+                        <li><strong>Collect:</strong> Specimen bottle if Tip Culture required.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- 13. Shift Drain -->
+            <details style="margin-bottom:5px;">
+                <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
+                    13. Shift / Shorten Drain
+                    <span style="color:var(--blue)">+</span>
+                </summary>
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--text-main);">
+                    <div style="margin-bottom:4px;"><strong>Set:</strong> Dressing Set, Sterile Gloves.</div>
+                    <div style="margin-bottom:4px;"><strong>Key Item:</strong> <span style="font-weight:bold">Sterile Safety Pin</span> (for corrugated drain).</div>
+                    <ul style="padding-left:15px; margin:5px 0; color:var(--text-sec);">
+                        <li><strong>Items:</strong> Stitch Cutter (if stay suture needs removal), Scissors.</li>
+                        <li><strong>Dressing:</strong> Gauze, Abd Pad (if heavy exudate).</li>
+                    </ul>
+                </div>
+            </details>
+
+        </div>
+    </div>
+
+    <!-- ================= MEDS TAB ================= -->
+    <div id="meds" class="container">
+        <div class="card full-width" style="min-height: 80vh;">
+            <div class="card-header">💊 Injectables Guide</div>
+            <input type="search" id="medSearch" class="search-box" placeholder="Search drug..." onkeyup="filterMeds()">
+            
+            <div style="font-size:0.7rem; color:var(--text-sec); margin-bottom:10px; text-align:center;">
+                <span class="tag t-push">PUSH</span> IV Direct &nbsp; 
+                <span class="tag t-inf">INF</span> IV Drip &nbsp; 
+                <span class="tag t-pump">PUMP</span> Machine &nbsp;
+                <span class="tag t-im">IM</span>
+            </div>
+
+            <div id="medList">
+                <!-- Data from original file starts here -->
+                
+                <div class="drug-row">
+                    <div class="d-header">
+                        <span class="d-name">Aciclovir</span>
+                        <span class="d-trade">Zovirax (250mg)</span>
+                    </div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 10ml WFI/NS. Dilute: 50-100ml NS. Rate: 60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Amikacin</span><span class="d-trade">500mg/2ml</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 100-200ml NS/D5. Rate: 30-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Ampicillin</span><span class="d-trade">500mg</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 5ml WFI (3-5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: ≥50ml NS. Rate: 30-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Unasyn</span><span class="d-trade">Amp+Sulb (750mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 1.6ml WFI/NS (≥3m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 50-100ml NS/D5. Rate: 15-30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Augmentin</span><span class="d-trade">Amox+Clav (1.2G)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 20ml WFI (3-4m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 20ml. Dilute: 100ml NS. Rate: 30-40m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Azithromycin</span><span class="d-trade">500mg</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 4.8ml WFI. Dilute: 250ml(1hr) or 500ml(3hr).</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Cefazolin</span><span class="d-trade">1GM</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 5ml WFI (3-5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 5ml. Dilute: 50-100ml. Rate: 30-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Maxipime</span><span class="d-trade">Cefepime (1GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 50-100ml NS/D5. Rate: 30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Sulperazon</span><span class="d-trade">Cefop+Sulb (1GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 3.4ml WFI/NS/D5 (3m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 20ml NS/D5. Rate: 15-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Claforan</span><span class="d-trade">Cefotaxime (1GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 4ml WFI (3-5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> 2GM in 40ml NS/D5. Rate: 20m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Fortum</span><span class="d-trade">Ceftazidime (1GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 10ml WFI/NS/D5 (3-5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 50ml NS/D5. Rate: 30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Rocephin</span><span class="d-trade">Ceftriaxone (1GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 10ml WFI (2-4m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 50-100ml NS/D5. Rate: 30m. <span style="color:var(--red)">⚠️ No Ca.</span></div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Zinacef</span><span class="d-trade">Cefuroxime (750mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 6ml WFI (3-5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 6ml. Dilute: 25ml. Rate: 30-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Ciproxin</span><span class="d-trade">Ciprofloxacin</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Ready. 200mg(30m), 400mg(60m).</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Klacid</span><span class="d-trade">Clarithromycin (500mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 10ml WFI. Dilute: 250ml NS/D5. Rate: 60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Cloxacillin</span><span class="d-trade">500mg</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 4.8ml WFI (2-4m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 125-250ml NS/D5. Rate: 30-40m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Colomycin</span><span class="d-trade">Colistimethate (1MU)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 50ml NS. Rate: 30-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Invanz</span><span class="d-trade">Ertapenem (1GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 10ml WFI/NS. Dilute: 50ml NS. Rate: 30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Diflucan</span><span class="d-trade">Fluconazole (100mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Ready. Rate: 200mg/hr Max.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Fomicyt</span><span class="d-trade">Fosfomycin (4GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 20ml WFI/D5. Dilute: 200ml NS/D5. Rate: 30-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Gentamicin</span><span class="d-trade">80mg/2ml</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> Ready (2-3m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 50-200ml. Rate: 30-120m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Tienam</span><span class="d-trade">Imipenem (500mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 100ml NS/D5. Rate: 20-60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Cravit</span><span class="d-trade">Levofloxacin (500mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Ready. Rate: ≥60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Zyvox</span><span class="d-trade">Linezolid (600mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Ready. Rate: 30-120m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Meronem</span><span class="d-trade">Meropenem (1GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 20ml WFI (5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 50-100ml. Rate: 15-30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Flagyl</span><span class="d-trade">Metronidazole (500mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Ready. Rate: 20m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Minocycline</span><span class="d-trade">100mg</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> 500-1000ml NS/D5. Rate: 30m-2hr.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Avelox</span><span class="d-trade">Moxifloxacin (400mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Ready. Rate: 60m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Piperacillin</span><span class="d-trade">4GM</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 20ml WFI/NS/D5 (3-5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 20ml. Dilute: 50-100ml. Rate: 20-30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Tazocin</span><span class="d-trade">Pip+Tazo (4.5GM)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 20ml WFI (3-5m)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 20ml. Dilute: ≥50ml NS. Rate: 20-30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Streptomycin</span><span class="d-trade">1GM</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">IM</div><div class="d-content"><span class="tag t-im">IM ONLY</span> Recon with 3ml WFI.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Vancomycin</span><span class="d-trade">500mg / 1g</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> Recon: 10ml WFI.<br>500mg: ≥100ml | 1g: 250ml.<br>Rate: ≥60m. Max 10mg/min.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Vfend</span><span class="d-trade">Voriconazole (200mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Recon: 19ml WFI. Dilute NS/D5. Rate: 3mg/kg/hr.</div></div>
+                    </div>
+                </div>
+
+                <!-- Non-Abx -->
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Hydrocortisone</span><span class="d-trade">Solu-Cortef (100mg)</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 2ml WFI (Rapid)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute: 100ml+. Rate: 20-30m.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Pantoloc</span><span class="d-trade">Pantoprazole</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 10ml NS</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> 100ml NS infusion.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Transamine</span><span class="d-trade">Tranexamic</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> Undiluted</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Vit K1</span><span class="d-trade">Phytomenadione</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> Undiluted</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Tramadol</span><span class="d-trade"></span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> Undiluted</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Nexium</span><span class="d-trade">Esomeprazole</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> 100ml NS infusion.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Dopamine</span><span class="d-trade">200mg</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> 100ml NS infusion.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Amiodarone</span><span class="d-trade">Cordarone</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span><br>Load: 150mg/100ml D5<br>Maint: 600mg/500ml D5</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Labetalol</span><span class="d-trade">Trandate</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> D5 Infusion (Check conc).</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">DI Drip</span><span class="d-trade">Dex + Insulin</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> 50ml D50 + 10u Actrapid (Rx).</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Insulin Pump</span><span class="d-trade">Sliding Scale</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> 50u Actrapid + 50ml NS (1u/ml) (Rx).</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">DKI Drip</span><span class="d-trade">Dex-Ins-K</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> 500ml Dex + Potassium (pre-packed) + 10-20u Actrapid</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Soda Bicarb</span><span class="d-trade">Sodium Bicarb</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content">-</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> Prepared solution (100ml/250ml).</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Ca Gluconate</span><span class="d-trade">10%</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> 10ml Slow (Dr)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute 50-100ml NS/D5.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Dilantin</span><span class="d-trade">Phenytoin</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> Slow inject</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-inf">INF</span> Dilute 100ml NS. Filter Req.</div></div>
+                    </div>
+                </div>
+
+                <div class="drug-row">
+                    <div class="d-header"><span class="d-name">Lasix</span><span class="d-trade">Furosemide</span></div>
+                    <div class="d-info-grid">
+                        <div class="d-block"><div class="d-label">Push</div><div class="d-content"><span class="tag t-push">PUSH</span> Undiluted (Slow)</div></div>
+                        <div class="d-block"><div class="d-label">Inf</div><div class="d-content"><span class="tag t-pump">PUMP</span> Max rate 4mg/min.</div></div>
+                    </div>
+                </div>
+
+            </div>
+            <div style="text-align:center; padding:20px; color:var(--text-sec); font-size:0.7rem;">
+                Always verify with Pharmacist/Guidelines.
+            </div>
+        </div>
+    </div>
+
+<script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+        // Hide all tabs
+        document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        // Show selected
+        document.getElementById(tabId).classList.add('active');
+        
+        // Update button state
+        const btns = document.querySelectorAll('.tab-btn');
+        if(tabId === 'labs') btns[0].classList.add('active');
+        if(tabId === 'ecg') btns[1].classList.add('active');
+        if(tabId === 'tools') btns[2].classList.add('active');
+        if(tabId === 'meds') btns[3].classList.add('active');
+        
+        window.scrollTo(0,0);
+    }
+
+    // Drug Filter Logic
+    function filterMeds() {
+        const input = document.getElementById("medSearch");
+        const filter = input.value.toUpperCase();
+        const list = document.getElementById("medList");
+        const items = list.getElementsByClassName("drug-row");
+
+        for (let i = 0; i < items.length; i++) {
+            const nameDiv = items[i].getElementsByClassName("d-name")[0];
+            const tradeDiv = items[i].getElementsByClassName("d-trade")[0];
+            const nameTxt = nameDiv ? (nameDiv.textContent || nameDiv.innerText) : "";
+            const tradeTxt = tradeDiv ? (tradeDiv.textContent || tradeDiv.innerText) : "";
+            
+            if (nameTxt.toUpperCase().indexOf(filter) > -1 || tradeTxt.toUpperCase().indexOf(filter) > -1) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
