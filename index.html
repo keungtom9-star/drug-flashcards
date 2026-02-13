@@ -295,6 +295,15 @@
             font-size: 0.85rem; color: var(--ios-gray); text-align: right; 
             max-width: 40%; word-break: break-word;
         }
+        .name-with-speak { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+        .speak-icon-btn {
+            border:none; background:#eef2ff; color:var(--ios-blue); width:30px; height:30px;
+            border-radius:50%; font-size:0.95rem; cursor:pointer; flex-shrink:0;
+        }
+        .quiz-mini-explainer {
+            display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
+            background:#eff6ff; color:#1e3a8a; font-size:0.82rem; line-height:1.45;
+        }
 
         .ai-output {
             background: #F0F9FF; border-left: 4px solid var(--ios-blue);
@@ -429,22 +438,22 @@
 
                     <div id="fc-selector-container" class="drug-selector-wrapper" style="display:none;">
                         <span class="drug-select-label">Multiple Drugs Detected:</span>
-                        <button onclick="event.stopPropagation(); openFcDrugPicker()" class="action-btn" style="margin:6px 0 0 0; font-size:0.88rem;">
-                            🧩 Select Drug Component
-                        </button>
                         <div id="fc-selected-drug-label" style="font-size:0.82rem; color:var(--ios-gray); margin-top:6px;"></div>
                     </div>
 
                     <div class="external-links-grid">
-                        <a id="fc-google-link" href="#" target="_blank" onclick="event.stopPropagation();" class="action-btn" style="margin:0; text-decoration:none; font-size:0.85rem;">
+                        <a id="fc-google-link" href="#" target="_blank" onclick="event.stopPropagation(); triggerFcAction('google')" class="action-btn" style="margin:0; text-decoration:none; font-size:0.85rem;">
                             🌐 Google
                         </a>
-                        <button id="fc-drugs-btn" onclick="event.stopPropagation(); triggerDrugsCom()" class="action-btn" style="margin:0; font-size:0.85rem; color:#0051ff;">
+                        <button id="fc-drugs-btn" onclick="event.stopPropagation(); triggerFcAction('drugs')" class="action-btn" style="margin:0; font-size:0.85rem; color:#0051ff;">
                             💊 Drugs.com
+                        </button>
+                        <button onclick="event.stopPropagation(); triggerFcAction('explain')" class="action-btn" style="margin:0; font-size:0.85rem; color:#4f46e5; background:#eef2ff;">
+                            🤖 Explain
                         </button>
                     </div>
 
-                    <button onclick="event.stopPropagation(); getIntegratedCaseStudy(flashcardList[fcCurrentIndex], 'fc-ai-case', 'btn-case', 'btn-read-case')" class="action-btn btn-primary" id="btn-case" style="margin-top:15px;">
+                    <button onclick="event.stopPropagation(); triggerFcAction('case')" class="action-btn btn-primary" id="btn-case" style="margin-top:15px;">
                         ✨ AI: Generate Case Study
                     </button>
                     
@@ -477,6 +486,7 @@
             <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
             
             <div id="quiz-feedback" style="display:none; margin-top:15px; padding:12px; border-radius:12px; text-align:center;"></div>
+            <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
 
             <button onclick="triggerQuizExplain()" id="btn-quiz-explain" class="action-btn" style="display:none; margin-top:15px;">🤖 Explain</button>
             <div id="ai-container" style="display:none;">
@@ -805,7 +815,7 @@
                 pickerList.appendChild(btn);
             });
             fcSelectedDrug = generics[0];
-            document.getElementById('fc-selected-drug-label').innerText = `Selected: ${fcSelectedDrug}`;
+            document.getElementById('fc-selected-drug-label').innerText = `Auto-selected: ${fcSelectedDrug}. Tap Google/Drugs/Explain/Case to choose another.`;
         } else {
             selectorContainer.style.display = 'none';
             fcSelectedDrug = generics[0];
@@ -826,17 +836,49 @@
     function chooseFcDrug(genericName) {
         updateFlashcardLinks(genericName);
         closeFcDrugPicker();
+        if (window.__fcPendingAction) {
+            const action = window.__fcPendingAction;
+            window.__fcPendingAction = null;
+            runFcAction(action);
+        }
     }
 
     function updateFlashcardLinks(genericName) {
         fcSelectedDrug = genericName;
-        document.getElementById('fc-selected-drug-label').innerText = `Selected: ${fcSelectedDrug}`;
+        const labelEl = document.getElementById('fc-selected-drug-label');
+        if (labelEl) labelEl.innerText = `Selected: ${fcSelectedDrug}`;
         const googleQuery = encodeURIComponent(`${genericName} drug nursing`);
         document.getElementById('fc-google-link').href = `https://www.google.com/search?q=${googleQuery}`;
     }
-    
-    function triggerDrugsCom() {
-        openDrugsCom({name: fcSelectedDrug});
+
+    function triggerFcAction(action) {
+        const drug = flashcardList[fcCurrentIndex];
+        const generics = parseDrugGenerics(drug.name);
+        if (generics.length > 1) {
+            openFcDrugPicker();
+            window.__fcPendingAction = action;
+            return;
+        }
+        runFcAction(action);
+    }
+
+    function runFcAction(action) {
+        if (action === 'google') {
+            const googleQuery = encodeURIComponent(`${fcSelectedDrug} drug nursing`);
+            window.open(`https://www.google.com/search?q=${googleQuery}`, '_blank');
+        } else if (action === 'drugs') {
+            openDrugsCom({name: fcSelectedDrug});
+        } else if (action === 'explain') {
+            const box = document.getElementById('fc-ai-case');
+            box.style.display = 'block';
+            box.innerHTML = 'Thinking...';
+            const prompt = `Explain the drug ${fcSelectedDrug} for a nursing student simply in English. Focus on mechanism, indication and key monitoring. Markdown format.`;
+            streamAIResponse([{role: 'user', content: prompt}], (text) => box.innerHTML = marked.parse(text));
+            document.getElementById('btn-read-case').style.display = 'block';
+        } else if (action === 'case') {
+            const d = {...flashcardList[fcCurrentIndex], name: fcSelectedDrug};
+            getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
+        }
     }
 
     function flipCard(e) {
@@ -964,7 +1006,10 @@
 
             card.innerHTML = `
                 <div class="result-header">
-                    <span class="result-name">${drug.name}</span>
+                    <div class="name-with-speak">
+                        <span class="result-name">${drug.name}</span>
+                        <button class="speak-icon-btn" onclick="event.stopPropagation(); triggerSearchSpeak(this)" title="Speak">🔊</button>
+                    </div>
                     <span class="result-class">${drug.class}</span>
                 </div>
                 ${selectorHTML}
@@ -978,8 +1023,7 @@
                     <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto;">
                          <a href="${googleLink}" target="_blank" class="chip dynamic-google" onclick="event.stopPropagation()">🌐 Google</a>
                          <span class="chip" onclick="event.stopPropagation(); triggerSearchDrugsCom(this)">💊 Drugs.com</span>
-                         <span class="chip" onclick="event.stopPropagation(); triggerSearchSpeak(this)">🔊 Speak</span>
-                         <span class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">🤖 Explain</span>
+                                                  <span class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">🤖 Explain</span>
                     </div>
                     <div id="${explainId}" class="ai-output"></div>
                 </div>
@@ -1013,7 +1057,8 @@
     
     window.triggerSearchSpeak = function(btn) {
         const card = btn.closest('.result-card');
-        speakText(card.dataset.currentGeneric);
+        const name = card?.dataset?.currentGeneric || '';
+        if(name) speakText(name);
     };
     
     window.triggerSearchExplain = function(btn, outputId) {
@@ -1199,6 +1244,7 @@
         container.innerHTML = ''; document.getElementById('quiz-feedback').style.display = 'none';
         document.getElementById('next-quiz-btn').style.display = 'none';
         document.getElementById('btn-quiz-explain').style.display = 'none';
+        document.getElementById('quiz-mini-explainer').style.display = 'none';
         document.getElementById('ai-container').style.display = 'none';
 
         if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
@@ -1242,6 +1288,9 @@
              feedback.innerHTML = `❌ <strong>Incorrect.</strong> The answer is ${correct.name}.`; feedback.style.background = "#fee2e2"; feedback.style.color = "#991b1b";
              btns.forEach(b => { if(b.innerText === correct.name) { b.style.background = '#dcfce7'; b.style.color = '#166534'; } });
          }
+         const mini = document.getElementById('quiz-mini-explainer');
+         mini.style.display = 'block';
+         mini.innerHTML = `<strong>Answer explainer:</strong> ${correct.name} is linked to <strong>${correct.indication}</strong> and class <strong>${correct.class}</strong>. ${selected===correct ? 'You matched the key clue correctly.' : `Your pick (${selected.name}) does not best match this clue.`}`;
          
          localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
          document.getElementById('next-quiz-btn').style.display = 'block';
