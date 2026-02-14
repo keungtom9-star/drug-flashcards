@@ -188,6 +188,100 @@
             cursor: pointer;
         }
 
+        .anki-meta {
+            margin-top: 10px;
+            font-size: 0.78rem;
+            color: var(--ios-gray);
+            text-align: center;
+        }
+
+        .quiz-stats-row {
+            margin: 12px 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .quiz-stat-pill {
+            background: #F2F2F7;
+            border-radius: 10px;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--ios-gray);
+        }
+
+        .quiz-stat-pill strong {
+            display: block;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-top: 2px;
+        }
+
+
+        .mobile-tab-label { display: none; }
+
+        .app-smooth {
+            contain: content;
+            will-change: transform;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 10px 14px 8px; }
+            h1 { font-size: 1.35rem; }
+            .subtitle { font-size: 0.74rem; }
+            .settings-btn-top { right: 14px; top: 12px; width: 34px; height: 34px; }
+
+            .glass-nav {
+                position: fixed;
+                top: auto;
+                bottom: calc(8px + env(safe-area-inset-bottom));
+                left: 10px;
+                right: 10px;
+                width: auto;
+                max-width: none;
+                margin-bottom: 0;
+                z-index: 500;
+                border-radius: 18px;
+                padding: 7px;
+                box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+            }
+
+            .nav-btn {
+                height: 42px;
+                font-size: 0.82rem;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #app-container { width: 94%; padding-bottom: 130px; }
+            #filter-bar { width: 94% !important; }
+
+            .flashcard-wrapper {
+                height: 66dvh;
+                min-height: 460px;
+                max-height: 680px;
+            }
+
+            .drug-title { font-size: 1.8rem; }
+            .detail-content { font-size: 0.97rem; }
+            .action-btn { min-height: 44px; }
+            .result-card { padding: 13px; }
+            .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
         /* System Scroll */
         .system-scroll-container {
             display: flex; overflow-x: auto; gap: 8px; padding-bottom: 5px;
@@ -364,7 +458,7 @@
 
 <div id="app-container">
     
-    <div id="search-section">
+    <div id="search-section" class="app-smooth">
         <div class="section-header">
             <span>📅 Daily Study Picks (8)</span>
             <span style="font-size:0.7rem; font-weight:400; color:var(--ios-blue);" onclick="refreshDailyPicks()">Refresh</span>
@@ -399,7 +493,7 @@
         </div>
     </div>
 
-    <div id="flashcard-section" style="display:none;">
+    <div id="flashcard-section" class="app-smooth" style="display:none;">
         <div class="flashcard-wrapper" id="flashcard" onclick="flipCard(event)">
             <div class="flashcard-inner">
                 
@@ -466,21 +560,28 @@
             <span id="counter" style="font-weight:700; color:var(--ios-gray);">1 / 10</span>
             <button onclick="nextCard()" class="action-btn" style="width:auto;">Next →</button>
         </div>
+        <button id="show-answer-btn" onclick="showAnswer()" class="action-btn btn-primary" style="margin-top:12px;">Show Answer</button>
         <div id="anki-controls" class="anki-controls">
             <button class="anki-btn" style="background:#ef4444;" onclick="rateCurrentCard('again')">Again</button>
             <button class="anki-btn" style="background:#f59e0b;" onclick="rateCurrentCard('hard')">Hard</button>
             <button class="anki-btn" style="background:#3b82f6;" onclick="rateCurrentCard('good')">Good</button>
             <button class="anki-btn" style="background:#10b981;" onclick="rateCurrentCard('easy')">Easy</button>
         </div>
+        <div id="anki-meta" class="anki-meta"></div>
     </div>
 
-    <div id="quiz-section" style="display:none;">
+    <div id="quiz-section" class="app-smooth" style="display:none;">
         <div class="ios-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
                 <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
             <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Question loading...</p>
+            <div class="quiz-stats-row">
+                <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
+                <div class="quiz-stat-pill">Streak<strong id="quiz-streak">0</strong></div>
+                <div class="quiz-stat-pill">Answered<strong id="quiz-answered">0</strong></div>
+            </div>
             <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
             
             <div id="quiz-feedback" style="display:none; margin-top:15px; padding:12px; border-radius:12px; text-align:center;"></div>
@@ -589,6 +690,10 @@
     let fcCurrentIndex = 0;
     let quizCurrentIndex = 0;
     let currentQuizData = null;
+    let currentQuizQuestion = null;
+    let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
+    let searchDebounceTimer = null;
+    const SEARCH_DEBOUNCE_MS = 120;
     let fcSelectedDrug = ""; 
     let flashcardMode = localStorage.getItem('flashcard_mode') || 'anki';
     let dailyPickMode = localStorage.getItem('daily_pick_mode') || 'anki';
@@ -621,14 +726,21 @@
         "Musculoskeletal": "🦴", "Eye": "👁️", "Ear": "👂", "Skin": "🧴", "Immunological": "🛡️", "Anaesthesia": "💉"
     };
 
+    function normalizeDrugData(drug) {
+        drug.system = getSystemForDrug(drug);
+        drug.side_effects = drug.side_effects || drug.SideEffects || drug.sideEffects || "Refer to nursing guide";
+        drug.__searchBlob = `${drug.name || ''} ${(drug.class || '')} ${(drug.system || '')} ${(drug.indication || '')} ${(drug.side_effects || '')}`.toLowerCase();
+        return drug;
+    }
+
+    function prepareDrugListForFastSearch(list) {
+        return list.map(normalizeDrugData);
+    }
+
     // --- INITIALIZATION ---
     window.onload = function() {
         if(typeof commonDrugs !== 'undefined') {
-            activeSourceList = [...commonDrugs];
-            activeSourceList.forEach(d => {
-                d.system = getSystemForDrug(d);
-                d.side_effects = d.SideEffects || d.sideEffects || "Refer to nursing guide";
-            });
+            activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
             flashcardList = [...activeSourceList];
         }
         
@@ -665,8 +777,8 @@
         if(!activeSourceList || activeSourceList.length === 0) return;
 
         if (dailyPickMode === 'anki') {
-            const picks = getDueCards(activeSourceList).slice(0, 8);
-            renderDailyPicks(picks.length ? picks : activeSourceList.slice(0, 8));
+            const picks = getTodayStudyQueue(activeSourceList).slice(0, 8);
+            renderDailyPicks(picks);
             return;
         }
         
@@ -695,8 +807,8 @@
 
     function refreshDailyPicks() {
         if (dailyPickMode === 'anki') {
-            const due = getDueCards(activeSourceList).slice(0, 8);
-            renderDailyPicks(due.length ? due : activeSourceList.slice(0, 8));
+            const due = getTodayStudyQueue(activeSourceList).slice(0, 8);
+            renderDailyPicks(due);
         } else {
             let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
             renderDailyPicks(shuffled.slice(0, 8));
@@ -706,6 +818,15 @@
     function renderDailyPicks(picks) {
         const container = document.getElementById('daily-container');
         container.innerHTML = '';
+        if (!picks.length) {
+            container.innerHTML = `
+                <div class="daily-card" style="grid-column: 1 / -1; justify-content:center; align-items:center; text-align:center;">
+                    <div class="daily-name" style="font-size:1rem; margin:0;">✅ No cards due today</div>
+                    <div class="daily-sub" style="margin-top:6px;">You have finished today’s study queue.</div>
+                </div>
+            `;
+            return;
+        }
         const gradients = [
             'linear-gradient(140deg, #bfdbfe 0%, #93c5fd 50%, #dbeafe 100%)',
             'linear-gradient(140deg, #fde68a 0%, #fca5a5 55%, #fecaca 100%)',
@@ -730,7 +851,7 @@
             `;
             div.onclick = () => {
                 document.getElementById('search-input').value = drug.name;
-                handleSearch();
+                runSearch();
             };
             container.appendChild(div);
         });
@@ -763,9 +884,8 @@
             document.getElementById('filter-bar').style.display = 'flex';
             const source = filteredList.length ? filteredList : activeSourceList;
             hydrateAnkiForList(source);
-            flashcardList = getDueCards(source);
+            flashcardList = getTodayStudyQueue(source);
             fcCurrentIndex = 0;
-            document.getElementById('anki-controls').style.display = 'grid';
             renderCard();
         } else if (mode === 'quiz') {
             document.getElementById('quiz-section').style.display = 'block';
@@ -775,6 +895,24 @@
     }
 
     // --- FLASHCARD LOGIC ---
+    function formatRelativeDue(dueTs) {
+        const delta = dueTs - Date.now();
+        const hours = Math.round(delta / (1000 * 60 * 60));
+        if (Math.abs(hours) < 24) return hours <= 0 ? 'due now' : `due in ${hours}h`;
+        const days = Math.round(hours / 24);
+        return days <= 0 ? 'due now' : `due in ${days}d`;
+    }
+
+    function updateAnkiMeta(drug) {
+        const metaEl = document.getElementById('anki-meta');
+        if (!drug) {
+            metaEl.innerText = 'No cards due right now. Great work.';
+            return;
+        }
+        const stat = ankiStats[drug.name] || { ease: 2.3, reps: 0, lapses: 0, due: Date.now() };
+        metaEl.innerText = `Ease ${Number(stat.ease || 2.3).toFixed(2)} • Reps ${stat.reps || 0} • Lapses ${stat.lapses || 0} • ${formatRelativeDue(stat.due || Date.now())}`;
+    }
+
     function renderCard() {
         if(flashcardList.length === 0) {
             document.getElementById('fc-name').innerText = 'No cards due 📚';
@@ -789,6 +927,9 @@
             document.getElementById('btn-case').innerHTML = '✨ AI: Generate Case Study';
             document.getElementById('fc-ai-case').style.display = 'none';
             document.getElementById('btn-read-case').style.display = 'none';
+            document.getElementById('show-answer-btn').style.display = 'none';
+            document.getElementById('anki-controls').style.display = 'none';
+            updateAnkiMeta(null);
             return;
         }
         const drug = flashcardList[fcCurrentIndex];
@@ -804,9 +945,12 @@
         document.getElementById('fc-ai-case').style.display = 'none';
         document.getElementById('btn-read-case').style.display = 'none';
         document.getElementById('flashcard').classList.remove('flipped');
-        
+        document.getElementById('show-answer-btn').style.display = 'flex';
+        document.getElementById('anki-controls').style.display = 'none';
+
         document.getElementById('btn-case').innerHTML = '✨ AI: Generate Case Study';
         document.getElementById('btn-case').disabled = false;
+        updateAnkiMeta(drug);
 
         const generics = parseDrugGenerics(drug.name);
         const selectorContainer = document.getElementById('fc-selector-container');
@@ -884,15 +1028,25 @@
         }
     }
 
+    function showAnswer() {
+        document.getElementById('flashcard').classList.add('flipped');
+        document.getElementById('show-answer-btn').style.display = 'none';
+        document.getElementById('anki-controls').style.display = 'grid';
+    }
+
     function flipCard(e) {
         if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'SELECT') return;
-        document.getElementById('flashcard').classList.toggle('flipped');
+        const card = document.getElementById('flashcard');
+        card.classList.toggle('flipped');
+        const showingBack = card.classList.contains('flipped');
+        document.getElementById('show-answer-btn').style.display = showingBack ? 'none' : 'flex';
+        document.getElementById('anki-controls').style.display = showingBack ? 'grid' : 'none';
     }
 
     function nextCard() {
         if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
         else {
-            flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
+            flashcardList = getTodayStudyQueue(filteredList.length ? filteredList : activeSourceList);
             fcCurrentIndex = 0;
             renderCard();
         }
@@ -910,12 +1064,36 @@
         });
     }
 
+    function getTodayBoundaries() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const end = start + (24 * 60 * 60 * 1000) - 1;
+        return { start, end };
+    }
+
     function getDueCards(list) {
         hydrateAnkiForList(list);
         const now = Date.now();
         const due = list.filter(d => (ankiStats[d.name]?.due || 0) <= now);
         due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
         return due;
+    }
+
+    function getTodayStudyQueue(list) {
+        hydrateAnkiForList(list);
+        const { start, end } = getTodayBoundaries();
+        const queued = list.filter(d => {
+            const s = ankiStats[d.name] || {};
+            const due = s.due || 0;
+            const reviewed = s.lastReviewed || 0;
+            return (due >= start && due <= end) || (reviewed >= start && reviewed <= end);
+        });
+        queued.sort((a, b) => {
+            const aDue = ankiStats[a.name]?.due || 0;
+            const bDue = ankiStats[b.name]?.due || 0;
+            return aDue - bDue;
+        });
+        return queued;
     }
 
     function rateCurrentCard(rating) {
@@ -942,7 +1120,13 @@
         }
 
         stat.ease = Math.max(1.3, (stat.ease || 2.3) + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
-        stat.due = Date.now() + (stat.interval * 24 * 60 * 60 * 1000);
+        const minute = 60 * 1000;
+        const day = 24 * 60 * 60 * 1000;
+        if (rating === 'again') stat.due = Date.now() + 10 * minute;
+        else if (rating === 'hard') stat.due = Date.now() + Math.max(1, Math.round(stat.interval * 0.6)) * day;
+        else if (rating === 'easy') stat.due = Date.now() + Math.max(2, Math.round(stat.interval * 1.3)) * day;
+        else stat.due = Date.now() + (stat.interval * day);
+        stat.lastReviewed = Date.now();
 
         localStorage.setItem('drug_tutor_anki', JSON.stringify(ankiStats));
         nextCard();
@@ -950,18 +1134,18 @@
 
     // --- SEARCH LOGIC ---
     function handleSearch() {
-        const query = document.getElementById('search-input').value.toLowerCase();
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => runSearch(), SEARCH_DEBOUNCE_MS);
+    }
+
+    function runSearch() {
+        const query = document.getElementById('search-input').value.toLowerCase().trim();
         const container = document.getElementById('search-results');
         container.innerHTML = '';
 
         if(query.length < 2) return;
 
-        const results = activeSourceList.filter(d => 
-            d.name.toLowerCase().includes(query) || 
-            d.class.toLowerCase().includes(query) ||
-            (d.system && d.system.toLowerCase().includes(query)) ||
-            (d.side_effects && d.side_effects.toLowerCase().includes(query))
-        ).slice(0, 20); 
+        const results = activeSourceList.filter(d => (d.__searchBlob || '').includes(query)).slice(0, 20);
         
         if(results.length === 0) {
             container.innerHTML = `
@@ -1072,7 +1256,7 @@
 
     function quickSearch(term) {
         document.getElementById('search-input').value = term;
-        handleSearch();
+        runSearch();
     }
 
     // --- AI & DATA FUNCTIONS ---
@@ -1130,7 +1314,7 @@
         .then(() => { 
             statusEl.innerText = "✅ Saved successfully!"; statusEl.style.color = "var(--ios-green)"; 
             saveBtn.innerText = "💾 Saved"; 
-            activeSourceList.push(drugData); 
+            activeSourceList.push(normalizeDrugData(drugData)); 
         })
         .catch(err => { 
             statusEl.innerText = "❌ Error saving."; statusEl.style.color = "var(--ios-red)"; saveBtn.disabled = false; 
@@ -1201,7 +1385,7 @@
         quizList = [...filteredList];
         fcCurrentIndex = 0;
         hydrateAnkiForList(filteredList);
-        flashcardList = getDueCards(filteredList);
+        flashcardList = getTodayStudyQueue(filteredList);
         renderCard();
     }
     
@@ -1214,7 +1398,7 @@
             chip.style.background = '#E0E7FF'; chip.style.color = '#4338ca';
             const shortName = systemShortNames[sys] || sys;
             chip.innerText = `${getSystemIcon(sys)} ${shortName}`;
-            chip.onclick = () => { document.getElementById('search-input').value = sys; handleSearch(); };
+            chip.onclick = () => { document.getElementById('search-input').value = sys; runSearch(); };
             container.appendChild(chip);
         });
     }
@@ -1228,70 +1412,157 @@
         searchHistory.forEach(term => {
             const chip = document.createElement('div');
             chip.className = 'chip'; chip.innerText = term;
-            chip.onclick = () => { document.getElementById('search-input').value = term; handleSearch(); };
+            chip.onclick = () => { document.getElementById('search-input').value = term; runSearch(); };
             container.appendChild(chip);
         });
     }
 
     // --- QUIZ LOGIC ---
+    function updateQuizSessionUI() {
+        const answered = quizSession.answered || 0;
+        const pct = answered ? Math.round((quizSession.correct / answered) * 100) : 0;
+        document.getElementById('quiz-score').innerText = `${pct}%`;
+        document.getElementById('quiz-streak').innerText = `${quizSession.streak}`;
+        document.getElementById('quiz-answered').innerText = `${answered}`;
+    }
+
+    function getWeakDrugPool(list) {
+        if (!list.length) return [];
+        const scored = list.map(drug => {
+            const s = quizStats[drug.name];
+            if (!s || !s.attempts) return { drug, weakness: 1.2 };
+            const accuracy = s.correct / s.attempts;
+            return { drug, weakness: Math.max(0.05, 1 - accuracy) + Math.min(0.5, s.attempts * 0.03) };
+        });
+        scored.sort((a, b) => b.weakness - a.weakness);
+        return scored.slice(0, Math.min(12, scored.length)).map(x => x.drug);
+    }
+
+    function buildQuizQuestion(correctDrug) {
+        const templates = [
+            {
+                type: 'indication_to_drug',
+                prompt: `A patient presentation best fits this indication: "${correctDrug.indication}". Which drug is most appropriate?`,
+                answerLabel: d => d.name,
+            },
+            {
+                type: 'class_to_drug',
+                prompt: `Which drug belongs to this class: "${correctDrug.class}"?`,
+                answerLabel: d => d.name,
+            },
+            {
+                type: 'drug_to_class',
+                prompt: `${correctDrug.name} belongs to which drug class?`,
+                answerLabel: d => d.class,
+            },
+            {
+                type: 'drug_to_indication',
+                prompt: `What is the key indication for ${correctDrug.name}?`,
+                answerLabel: d => d.indication,
+            }
+        ];
+
+        const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
+        return {
+            type: selectedTemplate.type,
+            prompt: selectedTemplate.prompt,
+            answerLabel: selectedTemplate.answerLabel,
+            correctDrug
+        };
+    }
+
     function generateQuizQuestion() {
         const container = document.getElementById('quiz-options');
         const qEl = document.getElementById('quiz-question');
-        container.innerHTML = ''; document.getElementById('quiz-feedback').style.display = 'none';
+        container.innerHTML = '';
+        document.getElementById('quiz-feedback').style.display = 'none';
         document.getElementById('next-quiz-btn').style.display = 'none';
         document.getElementById('btn-quiz-explain').style.display = 'none';
         document.getElementById('quiz-mini-explainer').style.display = 'none';
         document.getElementById('ai-container').style.display = 'none';
+        updateQuizSessionUI();
 
         if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
 
-        const correctDrug = quizList[Math.floor(Math.random() * quizList.length)];
-        const qType = Math.random() > 0.5 ? 'indication' : 'class';
-        
-        qEl.innerText = qType === 'indication' 
-            ? `Which drug is indicated for: "${correctDrug.indication}"?`
-            : `Which drug belongs to the class: "${correctDrug.class}"?`;
+        const weakPool = getWeakDrugPool(quizList);
+        const pickFromWeak = weakPool.length > 0 && Math.random() < 0.7;
+        const sourcePool = pickFromWeak ? weakPool : quizList;
+        const correctDrug = sourcePool[Math.floor(Math.random() * sourcePool.length)];
+        const q = buildQuizQuestion(correctDrug);
+        currentQuizQuestion = q;
 
-        let options = [correctDrug];
-        while(options.length < 4) {
-            let r = quizList[Math.floor(Math.random() * quizList.length)];
-            if(!options.includes(r)) options.push(r);
+        qEl.innerText = q.prompt;
+
+        const optionDrugs = [correctDrug];
+        while (optionDrugs.length < Math.min(4, quizList.length)) {
+            const r = quizList[Math.floor(Math.random() * quizList.length)];
+            if (!optionDrugs.includes(r)) optionDrugs.push(r);
         }
-        options.sort(() => Math.random() - 0.5);
 
-        options.forEach(opt => {
+        const optionTexts = [];
+        optionDrugs.forEach(d => {
+            const txt = q.answerLabel(d);
+            if (!optionTexts.includes(txt)) optionTexts.push(txt);
+        });
+
+        while (optionTexts.length < Math.min(4, quizList.length)) {
+            const r = quizList[Math.floor(Math.random() * quizList.length)];
+            const txt = q.answerLabel(r);
+            if (!optionTexts.includes(txt)) optionTexts.push(txt);
+        }
+
+        optionTexts.sort(() => Math.random() - 0.5);
+
+        optionTexts.forEach(optText => {
             const btn = document.createElement('button');
-            btn.className = 'action-btn'; btn.style.textAlign = 'left'; btn.style.justifyContent = 'flex-start'; btn.style.background = '#F2F2F7';
-            btn.innerText = opt.name;
-            btn.onclick = () => checkAnswer(btn, opt, correctDrug, qEl.innerText);
+            btn.className = 'action-btn';
+            btn.style.textAlign = 'left';
+            btn.style.justifyContent = 'flex-start';
+            btn.style.background = '#F2F2F7';
+            btn.innerText = optText;
+            btn.onclick = () => checkAnswer(btn, optText, q);
             container.appendChild(btn);
         });
     }
 
-    function checkAnswer(btn, selected, correct, questionText) {
-         const btns = document.querySelectorAll('#quiz-options button'); btns.forEach(b => b.onclick = null);
-         const feedback = document.getElementById('quiz-feedback'); feedback.style.display = 'block';
-         
-         if(!quizStats[correct.name]) quizStats[correct.name] = { correct: 0, attempts: 0 };
-         quizStats[correct.name].attempts++;
+    function checkAnswer(btn, selectedText, q) {
+         const btns = document.querySelectorAll('#quiz-options button');
+         btns.forEach(b => b.onclick = null);
+         const feedback = document.getElementById('quiz-feedback');
+         feedback.style.display = 'block';
 
-         if(selected === correct) {
+         const correct = q.answerLabel(q.correctDrug);
+         const isCorrect = selectedText === correct;
+
+         if(!quizStats[q.correctDrug.name]) quizStats[q.correctDrug.name] = { correct: 0, attempts: 0 };
+         quizStats[q.correctDrug.name].attempts++;
+         quizSession.answered++;
+
+         if(isCorrect) {
              btn.style.background = '#dcfce7'; btn.style.color = '#166534';
-             feedback.innerHTML = "✅ <strong>Correct!</strong>"; feedback.style.background = "#dcfce7"; feedback.style.color = "#166534";
-             quizStats[correct.name].correct++;
+             feedback.innerHTML = "✅ <strong>Correct!</strong>";
+             feedback.style.background = "#dcfce7"; feedback.style.color = "#166534";
+             quizStats[q.correctDrug.name].correct++;
+             quizSession.correct++;
+             quizSession.streak++;
+             quizSession.bestStreak = Math.max(quizSession.bestStreak, quizSession.streak);
          } else {
              btn.style.background = '#fee2e2'; btn.style.color = '#991b1b';
-             feedback.innerHTML = `❌ <strong>Incorrect.</strong> The answer is ${correct.name}.`; feedback.style.background = "#fee2e2"; feedback.style.color = "#991b1b";
-             btns.forEach(b => { if(b.innerText === correct.name) { b.style.background = '#dcfce7'; b.style.color = '#166534'; } });
+             feedback.innerHTML = `❌ <strong>Incorrect.</strong> Correct answer: ${correct}.`;
+             feedback.style.background = "#fee2e2"; feedback.style.color = "#991b1b";
+             quizSession.streak = 0;
+             btns.forEach(b => { if(b.innerText === correct) { b.style.background = '#dcfce7'; b.style.color = '#166534'; } });
          }
+
          const mini = document.getElementById('quiz-mini-explainer');
          mini.style.display = 'block';
-         mini.innerHTML = `<strong>Answer explainer:</strong> ${correct.name} is linked to <strong>${correct.indication}</strong> and class <strong>${correct.class}</strong>. ${selected===correct ? 'You matched the key clue correctly.' : `Your pick (${selected.name}) does not best match this clue.`}`;
-         
+         mini.innerHTML = `<strong>Clinical link:</strong> ${q.correctDrug.name} • Class: <strong>${q.correctDrug.class}</strong> • Indication: <strong>${q.correctDrug.indication}</strong>.`;
+
+         updateQuizSessionUI();
          localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
          document.getElementById('next-quiz-btn').style.display = 'block';
          document.getElementById('btn-quiz-explain').style.display = 'block';
-         currentQuizData = { q: questionText, u: selected.name, c: correct, correctAnswerText: correct.name };
+         currentQuizData = { q: q.prompt, u: selectedText, c: q.correctDrug, correctAnswerText: correct };
     }
 
     function nextQuestion() { generateQuizQuestion(); }
@@ -1420,18 +1691,13 @@
         fetch(fetchUrl).then(r => r.text()).then(csv => {
             Papa.parse(csv, { header: true, skipEmptyLines: true, complete: function(results) {
                  if (results.data.length > 0) {
-                     extendedDrugs = results.data;
-                     // Ensure data integrity
-                     extendedDrugs.forEach(d => {
-                         d.side_effects = d.side_effects || d.sideEffects || "Refer to nursing guide";
-                     });
+                     extendedDrugs = prepareDrugListForFastSearch(results.data);
 
                      status.innerText = `✅ Loaded ${extendedDrugs.length} drugs`;
                      document.getElementById('set-btn').innerText = "📚 Set: Online CSV";
                      
                      if(autoSwitch) {
-                         activeSourceList = extendedDrugs;
-                         activeSourceList.forEach(d => d.system = getSystemForDrug(d));
+                         activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
                          applyFilter();
                          generateDailyPicks();
                      }
@@ -1440,8 +1706,7 @@
         }).catch(e => {
             status.innerText = "❌ Load Failed. Using Local.";
             if(autoSwitch) {
-                activeSourceList = commonDrugs;
-                activeSourceList.forEach(d => d.system = getSystemForDrug(d));
+                activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
                 applyFilter();
                 generateDailyPicks();
             }
@@ -1449,9 +1714,14 @@
     }
 
     function toggleDrugSet() {
-        if(activeSourceList === extendedDrugs) { activeSourceList = commonDrugs; document.getElementById('set-btn').innerText = "📚 Set: Common"; } 
-        else if(extendedDrugs.length > 0) { activeSourceList = extendedDrugs; document.getElementById('set-btn').innerText = "📚 Set: Online CSV"; }
-        activeSourceList.forEach(d => d.system = getSystemForDrug(d));
+        const usingOnline = document.getElementById('set-btn').innerText.includes('Online CSV');
+        if(usingOnline) {
+            activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
+            document.getElementById('set-btn').innerText = "📚 Set: Common";
+        } else if(extendedDrugs.length > 0) {
+            activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
+            document.getElementById('set-btn').innerText = "📚 Set: Online CSV";
+        }
         applyFilter();
         generateDailyPicks();
     }
