@@ -777,8 +777,8 @@
         if(!activeSourceList || activeSourceList.length === 0) return;
 
         if (dailyPickMode === 'anki') {
-            const picks = getDueCards(activeSourceList).slice(0, 8);
-            renderDailyPicks(picks.length ? picks : activeSourceList.slice(0, 8));
+            const picks = getTodayStudyQueue(activeSourceList).slice(0, 8);
+            renderDailyPicks(picks);
             return;
         }
         
@@ -807,8 +807,8 @@
 
     function refreshDailyPicks() {
         if (dailyPickMode === 'anki') {
-            const due = getDueCards(activeSourceList).slice(0, 8);
-            renderDailyPicks(due.length ? due : activeSourceList.slice(0, 8));
+            const due = getTodayStudyQueue(activeSourceList).slice(0, 8);
+            renderDailyPicks(due);
         } else {
             let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
             renderDailyPicks(shuffled.slice(0, 8));
@@ -818,6 +818,15 @@
     function renderDailyPicks(picks) {
         const container = document.getElementById('daily-container');
         container.innerHTML = '';
+        if (!picks.length) {
+            container.innerHTML = `
+                <div class="daily-card" style="grid-column: 1 / -1; justify-content:center; align-items:center; text-align:center;">
+                    <div class="daily-name" style="font-size:1rem; margin:0;">✅ No cards due today</div>
+                    <div class="daily-sub" style="margin-top:6px;">You have finished today’s study queue.</div>
+                </div>
+            `;
+            return;
+        }
         const gradients = [
             'linear-gradient(140deg, #bfdbfe 0%, #93c5fd 50%, #dbeafe 100%)',
             'linear-gradient(140deg, #fde68a 0%, #fca5a5 55%, #fecaca 100%)',
@@ -875,7 +884,7 @@
             document.getElementById('filter-bar').style.display = 'flex';
             const source = filteredList.length ? filteredList : activeSourceList;
             hydrateAnkiForList(source);
-            flashcardList = getDueCards(source);
+            flashcardList = getTodayStudyQueue(source);
             fcCurrentIndex = 0;
             renderCard();
         } else if (mode === 'quiz') {
@@ -1037,7 +1046,7 @@
     function nextCard() {
         if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
         else {
-            flashcardList = getDueCards(filteredList.length ? filteredList : activeSourceList);
+            flashcardList = getTodayStudyQueue(filteredList.length ? filteredList : activeSourceList);
             fcCurrentIndex = 0;
             renderCard();
         }
@@ -1055,12 +1064,36 @@
         });
     }
 
+    function getTodayBoundaries() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const end = start + (24 * 60 * 60 * 1000) - 1;
+        return { start, end };
+    }
+
     function getDueCards(list) {
         hydrateAnkiForList(list);
         const now = Date.now();
         const due = list.filter(d => (ankiStats[d.name]?.due || 0) <= now);
         due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
         return due;
+    }
+
+    function getTodayStudyQueue(list) {
+        hydrateAnkiForList(list);
+        const { start, end } = getTodayBoundaries();
+        const queued = list.filter(d => {
+            const s = ankiStats[d.name] || {};
+            const due = s.due || 0;
+            const reviewed = s.lastReviewed || 0;
+            return (due >= start && due <= end) || (reviewed >= start && reviewed <= end);
+        });
+        queued.sort((a, b) => {
+            const aDue = ankiStats[a.name]?.due || 0;
+            const bDue = ankiStats[b.name]?.due || 0;
+            return aDue - bDue;
+        });
+        return queued;
     }
 
     function rateCurrentCard(rating) {
@@ -1093,6 +1126,7 @@
         else if (rating === 'hard') stat.due = Date.now() + Math.max(1, Math.round(stat.interval * 0.6)) * day;
         else if (rating === 'easy') stat.due = Date.now() + Math.max(2, Math.round(stat.interval * 1.3)) * day;
         else stat.due = Date.now() + (stat.interval * day);
+        stat.lastReviewed = Date.now();
 
         localStorage.setItem('drug_tutor_anki', JSON.stringify(ankiStats));
         nextCard();
@@ -1351,7 +1385,7 @@
         quizList = [...filteredList];
         fcCurrentIndex = 0;
         hydrateAnkiForList(filteredList);
-        flashcardList = getDueCards(filteredList);
+        flashcardList = getTodayStudyQueue(filteredList);
         renderCard();
     }
     
