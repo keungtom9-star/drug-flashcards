@@ -46,6 +46,22 @@ const DrugCard: React.FC<DrugCardProps> = ({ drug, settings, isNew }) => {
         speakText(text, settings.voiceURI, settings.aiLanguage);
     };
 
+
+    const openGoogleDeepLink = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const q = encodeURIComponent(`${drug.name} nursing considerations`);
+        const appLink = `google://search?q=${q}`;
+        const webLink = `https://www.google.com/search?igu=1&q=${q}`;
+
+        const now = Date.now();
+        window.location.href = appLink;
+        setTimeout(() => {
+            if (Date.now() - now < 1600) {
+                window.open(webLink, '_blank', 'noopener');
+            }
+        }, 700);
+    };
+
     const triggerAI = async (e: React.MouseEvent, type: 'isbar' | 'explain' | 'cheat' | 'mix') => {
         e.stopPropagation();
         setLoadingAI(true);
@@ -148,7 +164,7 @@ Tone: Funny, cynical, use emojis, typical HK forum style.`;
                         <button onClick={(e) => triggerAI(e, 'explain')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-green-50 text-green-600">🎓 Explain</button>
                         <button onClick={(e) => triggerAI(e, 'cheat')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-blue-50 text-blue-500">📋 Ward Sheet</button>
                         <button onClick={(e) => triggerAI(e, 'mix')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-purple-50 text-purple-600">🧪 Recon</button>
-                        <a href={`https://www.google.com/search?q=${encodeURIComponent(drug.name + ' nursing considerations')}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-200 text-black">G</a>
+                        <button onClick={openGoogleDeepLink} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-200 text-black">G</button>
                     </div>
 
                     <button 

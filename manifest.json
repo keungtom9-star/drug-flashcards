@@ -1,20 +1,22 @@
 {
-  "name": "Drug Tutor AI",
+  "name": "Drug Tutor Local",
   "short_name": "DrugTutor",
-  "start_url": "./index.html",
+  "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#F3F4F6",
-  "theme_color": "#4F46E5",
+  "background_color": "#F2F2F7",
+  "theme_color": "#007AFF",
   "icons": [
     {
-      "src": "app-icon.png",
+      "src": "apple-touch-icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "app-icon.png",
+      "src": "apple-touch-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "scope": "/",
+  "id": "/index.html"
 }
