@@ -1261,7 +1261,7 @@
         btn.innerText = "⏳";
         box.style.display = 'block';
         withSearchDrugSelection(btn, 'Choose drug for Explain', (pickedName) => {
-            const prompt = `Explain the drug ${pickedName} for a nursing student simply in English. Focus on mechanism of action and key monitoring. Markdown format.`;
+            const prompt = `Explain ${pickedName} for a nursing student in English. Use Markdown with short bullet points for quick phone glance. Sections: 1) MOA 2) Key use 3) Top monitoring 4) 1 safety warning. Keep each bullet under 12 words.`;
             streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
         });
         btn.innerText = "✅";
@@ -1282,13 +1282,14 @@
                 <div style="margin-top:10px; font-weight:600;">Searching Database...</div>
             </div>`;
 
-        const prompt = `You are a nursing tutor. The user is searching for "${query}". 
-        Provide a clinical summary in strict JSON format.
+        const prompt = `You are a nursing tutor. The user is searching for "${query}".
+        Return strict JSON only.
         Keys: "name", "class", "system", "indication", "nursing", "side_effects".
         Rules:
-        1. "system" MUST be one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
-        2. "nursing" and "side_effects" should be short summary strings.
-        3. No markdown formatting. Just raw JSON.`;
+        1. Keep all values concise and easy to scan on phone.
+        2. "system" MUST be one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
+        3. "nursing" and "side_effects" must be point-form bullets in a single short string.
+        4. No markdown. JSON only.`;
 
         try {
             let fullText = "";
@@ -1575,6 +1576,7 @@ Rules:
 - exactly 4 options
 - answer must exactly match one option
 - keep question concise and mobile-friendly
+- keep options short and easy to scan
 - use only this drug list context:
 ${JSON.stringify(sample)}`;
 
@@ -1779,7 +1781,7 @@ ${JSON.stringify(sample)}`;
         btn.innerHTML = '⏳ Generating...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = 'Thinking...';
         
         // Strict English Prompt
-        const prompt = `Create a short clinical case study for a nursing student about the drug ${drug.name}. Include a patient scenario, vital signs, and how this drug interacts with them. End with a critical thinking question. English only.`;
+        const prompt = `Create a nursing case study for ${drug.name} in English. Use Markdown and point form for quick glance. Include: patient snapshot, key vitals, why this drug is used, 3 nursing checks, and 1 critical-thinking question. Keep bullets short.`;
         
         await streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
         btn.innerHTML = '✨ Regenerate Case'; btn.disabled = false; document.getElementById(readBtnId).style.display = 'block';
