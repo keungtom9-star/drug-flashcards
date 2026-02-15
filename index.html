@@ -35,7 +35,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMac系統 SystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--ios-bg);
             color: var(--text-primary);
             margin: 0;
@@ -757,7 +757,7 @@
     };
 
     function normalizeDrugData(drug) {
-        drug.system = get系統 SystemForDrug(drug);
+        drug.system = getSystemForDrug(drug);
         drug.side_effects = drug.side_effects || drug.SideEffects || drug.sideEffects || "Refer to nursing guide";
         drug.__searchBlob = `${drug.name || ''} ${(drug.class || '')} ${(drug.system || '')} ${(drug.indication || '')} ${(drug.side_effects || '')}`.toLowerCase();
         return drug;
@@ -788,10 +788,10 @@
         document.getElementById('daily-pick-mode').value = dailyPickMode;
         document.getElementById('quiz-engine').value = quizEngine;
 
-        init系統 SystemDropdown();
+        initSystemDropdown();
         applyFilter(); 
         renderHistory();
-        renderAll系統 Systems(); 
+        renderAllSystems(); 
         updateProviderDisplay();
         
         // Daily Recommendations
@@ -869,7 +869,7 @@
             const div = document.createElement('div');
             div.className = 'daily-card';
             div.style.background = gradients[idx % gradients.length];
-            const icon = get系統 SystemIcon(drug.system || get系統 SystemForDrug(drug));
+            const icon = getSystemIcon(drug.system || getSystemForDrug(drug));
             div.innerHTML = `
                 <div>
                     <div class="daily-header">
@@ -966,7 +966,7 @@
         
         document.getElementById('fc-name').innerText = drug.name;
         document.getElementById('fc-class').innerText = drug.class;
-        document.getElementById('fc-system').innerText = drug.system || get系統 SystemForDrug(drug);
+        document.getElementById('fc-system').innerText = drug.system || getSystemForDrug(drug);
         document.getElementById('fc-indication').innerText = drug.indication;
         document.getElementById('fc-side-effects').innerText = drug.side_effects || drug.sideEffects || "Not listed";
         
@@ -1360,7 +1360,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
     }
 
     // --- HELPER FUNCTIONS ---
-    function get系統 SystemForDrug(drug) {
+    function getSystemForDrug(drug) {
         if (drug.system && systemCategories.includes(drug.system)) return drug.system;
         const txt = (drug.class + " " + drug.indication + " " + drug.name).toLowerCase();
         if (txt.includes("antacid") || txt.includes("ulcer")) return "Gastro-intestinal system";
@@ -1371,12 +1371,12 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         return "Other"; 
     }
     
-    function get系統 SystemIcon(sys) {
+    function getSystemIcon(sys) {
         for(let k in systemIcons) { if(sys.includes(k) || k.includes(sys.split(' ')[0])) return systemIcons[k]; }
         return "💊";
     }
 
-    function init系統 SystemDropdown() {
+    function initSystemDropdown() {
         const select = document.getElementById('system-filter');
         while (select.options.length > 1) { select.remove(1); }
         systemCategories.forEach(sys => {
@@ -1390,7 +1390,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         const masteryCategory = document.getElementById('mastery-filter').value;
         
         filteredList = activeSourceList.filter(drug => {
-            const sys = drug.system || get系統 SystemForDrug(drug);
+            const sys = drug.system || getSystemForDrug(drug);
             const sysMatch = (sysCategory === "All" || sys === sysCategory);
             let masteryMatch = true;
             if (masteryCategory !== "All") {
@@ -1421,7 +1421,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         renderCard();
     }
     
-    function renderAll系統 Systems() {
+    function renderAllSystems() {
         const container = document.getElementById('recommend-container');
         container.innerHTML = '';
         systemCategories.forEach(sys => {
@@ -1429,7 +1429,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
             chip.className = 'chip';
             chip.style.background = '#E0E7FF'; chip.style.color = '#4338ca';
             const shortName = systemShortNames[sys] || sys;
-            chip.innerText = `${get系統 SystemIcon(sys)} ${shortName}`;
+            chip.innerText = `${getSystemIcon(sys)} ${shortName}`;
             chip.onclick = () => { document.getElementById('search-input').value = sys; runSearch(); };
             container.appendChild(chip);
         });
