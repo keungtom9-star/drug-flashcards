@@ -1,131 +1,99 @@
 /**
  * prompts.js
- * Centralized storage for all AI System Prompts.
- * Functions return formatted prompt strings based on input data and language settings.
+ * 以香港繁體中文為主，保留英文醫學術語。
  */
 
-function resolveLanguageInstruction(language, englishText, chineseText) {
-  return (language === 'lihkg' || language === 'cantonese') ? chineseText : englishText;
+function resolveLanguageInstruction(language) {
+  return (language === 'english')
+    ? 'Traditional Chinese (Hong Kong), keep English medical terms; if needed add brief English in brackets.'
+    : 'Traditional Chinese (Hong Kong), keep English medical terms.';
 }
 
-// 1. Ward Cheatsheet Prompt (Search Result Action)
 function getWardCheatsheetPrompt(drugName, language) {
-  const langInstruction = resolveLanguageInstruction(
-    language,
-    'English',
-    'Traditional Chinese (Hong Kong nursing style, clear and practical)'
-  );
+  const langInstruction = resolveLanguageInstruction(language);
 
-  return `Act as a senior clinical pharmacist. Create a ward-ready cheatsheet for ${drugName}.
+  return `你是資深臨床藥劑師。請為 ${drugName} 製作「Ward Cheatsheet」。
 
-Audience:
-- Nursing students / new graduates in a busy ward.
+對象：病房護理學生 / 新入職護士。
 
-Output rules:
-- Use Markdown.
-- Use short bullet points only.
-- Keep each bullet under 12 words.
-- Focus on safety and what to do at bedside.
-- Use plain mobile wording for quick glance reading.
+輸出要求（手機一眼睇）：
+- 用 Markdown。
+- 全部用點列（bullet points）。
+- 每點盡量短（建議 12 字內）。
+- 內容以繁中（香港）為主，保留英文醫學術語。
 
-Use exactly these sections:
+請嚴格用以下標題：
 1. 💊 Administration
-   - Route, dilution/reconstitution, infusion/push rate.
 2. ⚠️ Never-Miss Safety
-   - Top dangerous error(s), contraindications, red flags.
-3. 🩺 What to Monitor
-   - Before dose, during dose, after dose (vitals/labs/symptoms).
-4. ⏱️ Timing Snapshot
-   - Onset, peak, duration, reassessment timing.
+3. 🩺 Monitoring (Before / During / After)
+4. ⏱️ Onset / Peak / Duration
 5. 🚨 Escalate If
-   - Clear trigger points for notifying doctor/rapid response.
 
 Language: ${langInstruction}.`;
 }
 
-// 2. Global Database Search Prompt (JSON Generator)
 function getAISearchPrompt(query) {
-  return `You are a nursing tutor. The user is searching for the drug "${query}".
-Provide a clinical summary in strict JSON format with no extra text. Keep values short for quick mobile scanning.
+  return `你是護理導師。使用者搜尋藥物「${query}」。
 
-Use these exact keys: "name", "class", "system", "indication", "SideEffects", "nursing".
+請只回傳 strict JSON（不可有其他文字）。
 
-IMPORTANT FORMATTING RULES:
-1. For the "nursing" field, use one string with short bullet points separated by new lines (\\n).
-2. For the "system" field, choose exactly one from this list:
-   [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
+Key 必須是："name", "class", "system", "indication", "SideEffects", "nursing"。
 
-Example JSON format:
-{
-  "name": "Drug generic Name (brandname in hk)",
-  "class": "Class Name",
-  "system": "Cardiovascular system",
-  "indication": "Brief indication",
-  "SideEffects": "Common side effects",
-  "nursing": "- Monitor BP before dose.\\n- Watch for dizziness."
-}`;
+規則：
+1. 內容以繁中（香港）為主，保留英文醫學術語。
+2. 全部 value 要短，適合手機快速閱讀。
+3. "nursing" 必須是單一字串，內含短點列，以 \n 分隔。
+4. "system" 只可用以下其中一項：
+[Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].`;
 }
 
-// 3. Patient Case Study Prompt (Flashcards)
 function getCaseStudyPrompt(drug, language) {
-  const langInstruction = resolveLanguageInstruction(
-    language,
-    'English',
-    'Traditional Chinese (HK clinical context)'
-  );
+  const langInstruction = resolveLanguageInstruction(language);
 
-  return `Create a short, realistic clinical case study for nursing students about ${drug.name} (${drug.indication}).
+  return `請建立 ${drug.name}（${drug.indication}）護理臨床個案。
 
-Include:
-1. Patient scenario (age, complaint, key background).
-2. Medication order (dose/route/frequency).
-3. Pre-administration checks.
-4. Post-administration observations.
-5. One critical thinking question.
+要求：
+- 以繁中（香港）為主，保留英文醫學術語。
+- 用 Markdown 點列，短句，方便手機閱讀。
 
-Format: Markdown using short headings + bullet points for glance reading.
+請包含：
+1. Patient snapshot
+2. Medication order
+3. Pre-administration checks
+4. Post-administration observations
+5. Critical-thinking question
+
 Language: ${langInstruction}.`;
 }
 
-// 4. Quiz Explanation Prompt (AI Tutor)
 function getQuizExplainPrompt(quizData, language) {
-  const langInstruction = resolveLanguageInstruction(
-    language,
-    'English',
-    'Traditional Chinese (friendly senior mentor tone)'
-  );
+  const langInstruction = resolveLanguageInstruction(language);
 
-  return `The user answered a drug quiz question.
+  return `使用者完成藥理題目。
 
-Question: "${quizData.q}"
-User answer: "${quizData.u}"
-Correct answer: "${quizData.correctAnswerText}"
-Drug focus: ${quizData.c.name}
+題目："${quizData.q}"
+作答："${quizData.u}"
+正確答案："${quizData.correctAnswerText}"
+藥物重點：${quizData.c.name}
 
-Task:
-1. State clearly: correct or incorrect.
-2. Explain why the correct answer is correct (max 2 short bullets).
-3. If incorrect, explain why the chosen answer is less suitable.
-4. Give one memory tip.
-5. End with one-line bedside takeaway (max 10 words).
-
-Style rules:
-- Use Markdown.
-- Keep concise and easy to read on a phone.
-- Use short bullets and short sentences.
+請用點列回答：
+1. 先講對錯。
+2. 為何正確答案正確（最多 2 點）。
+3. 若答錯，講錯因（最多 1-2 點）。
+4. 提供一個記憶法（memory tip）。
+5. 最後一句 bedside takeaway（短句）。
 
 Language: ${langInstruction}.`;
 }
 
 function getISBARPrompt(drug, language) {
-  const langInstruction = resolveLanguageInstruction(
-    language,
-    'English',
-    'Traditional Chinese (HK nursing handover style)'
-  );
+  const langInstruction = resolveLanguageInstruction(language);
+  return `請為使用 ${drug.name} 的病人撰寫 ISBAR 交班。
 
-  return `Write an ISBAR handover to a doctor for a patient needing ${drug.name}.
-Structure: Identity, Situation, Background, Assessment, Recommendation.
-Use concise, clinically relevant point-form bullets for quick handover reading.
+要求：
+- 以繁中（香港）為主，保留英文醫學術語。
+- 點列短句，方便當值時快速閱讀。
+- 結構：Identity, Situation, Background, Assessment, Recommendation。
+
 Language: ${langInstruction}.`;
 }
