@@ -46,6 +46,22 @@ const DrugCard: React.FC<DrugCardProps> = ({ drug, settings, isNew }) => {
         speakText(text, settings.voiceURI, settings.aiLanguage);
     };
 
+
+    const openGoogleDeepLink = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const q = encodeURIComponent(`${drug.name} nursing considerations`);
+        const appLink = `google://search?q=${q}`;
+        const webLink = `https://www.google.com/search?igu=1&q=${q}`;
+
+        const now = Date.now();
+        window.location.href = appLink;
+        setTimeout(() => {
+            if (Date.now() - now < 1600) {
+                window.open(webLink, '_blank', 'noopener');
+            }
+        }, 700);
+    };
+
     const triggerAI = async (e: React.MouseEvent, type: 'isbar' | 'explain' | 'cheat' | 'mix') => {
         e.stopPropagation();
         setLoadingAI(true);
@@ -54,11 +70,11 @@ const DrugCard: React.FC<DrugCardProps> = ({ drug, settings, isNew }) => {
         let prompt = "";
         const langInstruction = settings.aiLanguage === 'lihkg' 
             ? "Use Hong Kong Cantonese (LIHKG style, casual/slang)." 
-            : "Use plain English suitable for a student.";
+            : "主要用繁體中文（香港），保留英文醫學術語，適合護理學生。";
 
-        if (type === 'isbar') prompt = `Write a nursing handover for ${drug.name} using ISBAR format. Invent a realistic scenario. Concise. ${langInstruction}`;
-        else if (type === 'mix') prompt = `Reconstitution and administration guide for ${drug.name} (IV/IM). Diluent, Rate, Stability. ${langInstruction}`;
-        else if (type === 'explain') prompt = `Explain the drug ${drug.name} to a nursing student using a simple analogy. Focus on Mechanism of Action and ONE key danger. Keep it short and fun. ${langInstruction}`;
+        if (type === 'isbar') prompt = `請以 ISBAR 撰寫 ${drug.name} 相關護理交班。內容用繁體中文（香港），保留英文醫學術語，重點精簡。${langInstruction}`;
+        else if (type === 'mix') prompt = `請提供 ${drug.name} 的 Reconstitution 與 Administration 指引（IV/IM）：Diluent、Rate、Stability。用繁中（香港）+ 英文醫學術語。${langInstruction}`;
+        else if (type === 'explain') prompt = `請向護理學生解釋 ${drug.name}，用簡單比喻。重點：Mechanism of Action、Key Indication、一個高風險警示。用短點列。${langInstruction}`;
         else if (type === 'cheat') {
             if (settings.aiLanguage === 'lihkg') {
                 prompt = `You are a cynical "Old Seafood" (老屎忽) nurse on LIHKG teaching a fresh grad (FG) about ${drug.name}.
@@ -69,7 +85,7 @@ Structure:
 4. **Patient Scolding**: How to warn a stubborn patient (废老) in colloquial Cantonese.
 Tone: Funny, cynical, use emojis, typical HK forum style.`;
             } else {
-                prompt = `Create a "Ward Survival Cheatsheet" for ${drug.name}. Bullet points: 🛑 STOP Checks, 📉 Monitoring, ⚡️ Red Flags. Ultra-concise.`;
+                prompt = `請為 ${drug.name} 製作「Ward Survival Cheatsheet」，用短點列：🛑 STOP Checks、📉 Monitoring、⚡️ Red Flags。內容精簡，手機一眼睇。`;
             }
         }
 
@@ -78,7 +94,7 @@ Tone: Funny, cynical, use emojis, typical HK forum style.`;
                 setAiOutput(chunk);
             });
         } catch (err) {
-            setAiOutput(`Error: ${(err as Error).message}`);
+            setAiOutput(`錯誤：${(err as Error).message}`);
         } finally {
             setLoadingAI(false);
         }
@@ -145,22 +161,22 @@ Tone: Funny, cynical, use emojis, typical HK forum style.`;
 
                     <div className="flex gap-2 overflow-x-auto py-4 no-scrollbar mt-2">
                         <button onClick={(e) => triggerAI(e, 'isbar')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-yellow-50 text-yellow-600">🚑 ISBAR</button>
-                        <button onClick={(e) => triggerAI(e, 'explain')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-green-50 text-green-600">🎓 Explain</button>
-                        <button onClick={(e) => triggerAI(e, 'cheat')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-blue-50 text-blue-500">📋 Ward Sheet</button>
+                        <button onClick={(e) => triggerAI(e, 'explain')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-green-50 text-green-600">🎓 講解</button>
+                        <button onClick={(e) => triggerAI(e, 'cheat')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-blue-50 text-blue-500">📋 病房速覽</button>
                         <button onClick={(e) => triggerAI(e, 'mix')} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-purple-50 text-purple-600">🧪 Recon</button>
-                        <a href={`https://www.google.com/search?q=${encodeURIComponent(drug.name + ' nursing considerations')}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-200 text-black">G</a>
+                        <button onClick={openGoogleDeepLink} className="whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-200 text-black">G</button>
                     </div>
 
                     <button 
                         onClick={handleSpeak}
                         className="w-full bg-surface-sec text-primary font-semibold py-3.5 rounded-xl text-base flex justify-center items-center gap-2 active:bg-gray-200 transition-colors"
                     >
-                        🔊 Read Aloud
+                        🔊 朗讀內容
                     </button>
 
                     {(loadingAI || aiOutput) && (
                         <div className="mt-4 p-4 rounded-xl bg-surface-sec text-sm text-black leading-relaxed">
-                            {loadingAI && !aiOutput && <div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin"></div> Thinking...</div>}
+                            {loadingAI && !aiOutput && <div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin"></div> 思考中...</div>}
                             {aiOutput && (
                                 <div 
                                     className="prose prose-sm max-w-none"
