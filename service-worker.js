@@ -7,7 +7,6 @@ const APP_SHELL = [
   '/drugs.js',
   '/prompts.js',
   '/apple-touch-icon.png',
-  '/app-icon.png',
   '/icon.png'
 ];
 
