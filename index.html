@@ -1102,12 +1102,15 @@
     }
 
     function nextCard() {
-        if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
-        else {
-            flashcardList = getTodayStudyQueue(filteredList.length ? filteredList : activeSourceList, getAnkiDailyLimit());
-            fcCurrentIndex = 0;
+        if(fcCurrentIndex < flashcardList.length - 1) {
+            fcCurrentIndex++;
             renderCard();
+            return;
         }
+        // End of today's queue: do not auto-load another full batch.
+        flashcardList = [];
+        fcCurrentIndex = 0;
+        renderCard();
     }
 
     function prevCard() {
@@ -1131,6 +1134,15 @@
         });
         due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
         return due;
+    }
+
+    function scheduleCardForRetry(drug, stepsAhead = 2) {
+        if (!drug || !flashcardList.length) return;
+        const tail = flashcardList.slice(fcCurrentIndex + 1).filter(d => d.name !== drug.name);
+        const head = flashcardList.slice(0, fcCurrentIndex + 1);
+        const insertAt = Math.min(tail.length, Math.max(0, Math.round(stepsAhead)));
+        tail.splice(insertAt, 0, drug);
+        flashcardList = [...head, ...tail];
     }
 
     function getTodayStudyQueue(list, maxCards = getAnkiDailyLimit()) {
@@ -1197,6 +1209,11 @@
         else if (rating === 'easy') stat.due = Date.now() + Math.max(2, Math.round(stat.interval * 1.3)) * day;
         else stat.due = Date.now() + (stat.interval * day);
         stat.lastReviewed = Date.now();
+
+        // Keep "Again" cards in the same session so failed cards repeat quickly.
+        if (rating === 'again') {
+            scheduleCardForRetry(drug, 2);
+        }
 
         localStorage.setItem('drug_tutor_anki', JSON.stringify(ankiStats));
         nextCard();
