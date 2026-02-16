@@ -426,6 +426,29 @@
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
         .multi-chip {
             background:#eef2ff; color:#3730a3; border-radius:999px; padding:4px 10px; font-size:0.75rem; font-weight:600;
+            border: 1px solid transparent; transition: all 0.2s ease;
+        }
+        .multi-chip.selectable { cursor: pointer; }
+        .multi-chip.selectable:hover { transform: translateY(-1px); }
+        .multi-chip.is-active { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+
+        body { animation: appEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        .ios-card, .daily-card, .result-card { animation: cardPop 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+        .app-smooth.mode-transition { animation: sectionSlideIn 0.24s ease-out; }
+        .action-btn, .chip, .nav-btn { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .action-btn:active, .chip:active, .nav-btn:active { transform: scale(0.97); }
+
+        @keyframes appEnter {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sectionSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes cardPop {
+            from { opacity: 0; transform: translateY(8px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .ai-output {
@@ -468,7 +491,7 @@
 
 <div class="glass-nav">
     <button class="nav-btn active" id="nav-search" onclick="switchMode('search')">🧸 搜尋</button>
-    <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')">🪄 藥卡</button>
+    <button class="nav-btn" id="nav-flash" onclick="switchMode('anki')">🗂️ Anki</button>
     <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')">🧠 測驗</button>
     <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="openWardCheat()">🩺 病房</button>
 </div>
@@ -532,7 +555,7 @@
                     <h2 id="fc-name" class="drug-title">藥物名稱</h2>
                     <p style="color:var(--ios-gray); margin-top:0;">點擊翻卡查看詳情</p>
                     
-                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name)" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
+                    <button onclick="event.stopPropagation(); triggerFcAction('speak')" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
                         🗣️ 讀出藥名
                     </button>
                 </div>
@@ -663,30 +686,22 @@
 
         <div style="margin-top:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">學習模式</label>
-            <select id="flashcard-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="anki">藥卡：Anki 間隔重溫</option>
-                <option value="classic">藥卡：經典上一張/下一張</option>
-            </select>
-            <select id="daily-pick-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="anki">每日精選：Anki 到期卡片</option>
-                <option value="random">每日精選：隨機混合</option>
-            </select>
+            <div style="margin-top:8px; padding:12px; border-radius:10px; background:white; border:1px solid #e5e7eb; color:#111827; font-size:0.9rem; line-height:1.4;">
+                ✅ 已啟用 <strong>Anki 模式</strong><br>
+                • 藥卡使用 Again / Hard / Good / Easy 排程<br>
+                • 每日精選僅顯示今日到期卡片
+            </div>
             <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
                 <option value="local">測驗引擎：本機（快、離線）</option>
                 <option value="deepseek">測驗引擎：DeepSeek AI</option>
-            </select>
-            <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="local">Quiz Engine: Local (Fast Offline)</option>
-                <option value="deepseek">Quiz Engine: DeepSeek AI</option>
             </select>
         </div>
 
         <div style="margin-top:12px; font-size:0.82rem; color:#4b5563; background:#eef6ff; border:1px solid #dbeafe; border-radius:12px; padding:12px; line-height:1.45;">
             <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">使用方法</div>
-            <div>1) Flashcard 模式選 <strong>Anki</strong>。</div>
-            <div>2) 每日精選選 <strong>Anki 到期卡片</strong>（或隨機）。</div>
-            <div>3) 按 <strong>儲存設定</strong>。</div>
-            <div>4) 在藥卡模式用 <strong>Again / Hard / Good / Easy</strong> 排程下次重溫。</div>
+            <div>1) 藥卡模式固定為 <strong>Anki</strong> 間隔重溫。</div>
+            <div>2) 每日精選固定為 <strong>今日到期卡片</strong>。</div>
+            <div>3) 在 Anki 模式按 <strong>Again / Hard / Good / Easy</strong> 排程下次重溫。</div>
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">儲存設定</button>
@@ -724,8 +739,6 @@
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
     let fcSelectedDrug = ""; 
-    let flashcardMode = localStorage.getItem('flashcard_mode') || 'anki';
-    let dailyPickMode = localStorage.getItem('daily_pick_mode') || 'anki';
     let quizEngine = localStorage.getItem('quiz_engine') || 'local';
     let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
     
@@ -784,8 +797,6 @@
         document.getElementById('provider-select').value = currentProvider;
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
-        document.getElementById('flashcard-mode').value = flashcardMode;
-        document.getElementById('daily-pick-mode').value = dailyPickMode;
         document.getElementById('quiz-engine').value = quizEngine;
 
         initSystemDropdown();
@@ -806,44 +817,13 @@
     // --- DAILY RECOMMENDATIONS (8 ITEMS) ---
     function generateDailyPicks() {
         if(!activeSourceList || activeSourceList.length === 0) return;
-
-        if (dailyPickMode === 'anki') {
-            const picks = getTodayStudyQueue(activeSourceList).slice(0, 8);
-            renderDailyPicks(picks);
-            return;
-        }
-        
-        const today = new Date().toDateString(); 
-        const seed = today.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        
-        // Pseudo-random generator based on date seed
-        const random = (seed) => {
-            var x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-
-        let available = [...activeSourceList];
-        let picks = [];
-        
-        // Select 8 random drugs
-        for(let i = 0; i < 8; i++) {
-            if(available.length === 0) break;
-            const idx = Math.floor(random(seed + i) * available.length);
-            picks.push(available[idx]);
-            available.splice(idx, 1);
-        }
-
+        const picks = getTodayStudyQueue(activeSourceList).slice(0, 8);
         renderDailyPicks(picks);
     }
 
     function refreshDailyPicks() {
-        if (dailyPickMode === 'anki') {
-            const due = getTodayStudyQueue(activeSourceList).slice(0, 8);
-            renderDailyPicks(due);
-        } else {
-            let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
-            renderDailyPicks(shuffled.slice(0, 8));
-        }
+        const due = getTodayStudyQueue(activeSourceList).slice(0, 8);
+        renderDailyPicks(due);
     }
 
     function renderDailyPicks(picks) {
@@ -873,7 +853,7 @@
             div.innerHTML = `
                 <div>
                     <div class="daily-header">
-                        <div class="daily-label">${dailyPickMode === 'anki' ? 'Due Today' : 'Daily Pick'}</div>
+                        <div class="daily-label">Due Today</div>
                         <div class="daily-icon-pill">${icon}</div>
                     </div>
                     <div class="daily-name">${drug.name.split('(')[0]}</div>
@@ -905,11 +885,18 @@
         document.getElementById('search-section').style.display = 'none';
         document.getElementById('filter-bar').style.display = 'none';
 
+        const sectionToShow = mode === 'quiz'
+            ? document.getElementById('quiz-section')
+            : (mode === 'search' ? document.getElementById('search-section') : document.getElementById('flashcard-section'));
+        sectionToShow.classList.remove('mode-transition');
+        void sectionToShow.offsetWidth;
+        sectionToShow.classList.add('mode-transition');
+
         if(mode === 'search') {
             document.getElementById('search-section').style.display = 'block';
             document.getElementById('nav-search').classList.add('active');
             document.getElementById('search-input').focus();
-        } else if (mode === 'flashcard') {
+        } else if (mode === 'anki') {
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
             document.getElementById('filter-bar').style.display = 'flex';
@@ -925,7 +912,7 @@
         }
     }
 
-    // --- FLASHCARD LOGIC ---
+    // --- ANKI CARD LOGIC ---
     function formatRelativeDue(dueTs) {
         const delta = dueTs - Date.now();
         const hours = Math.round(delta / (1000 * 60 * 60));
@@ -986,14 +973,14 @@
         const chipWrap = document.getElementById('fc-multi-chip-wrap');
         if (generics.length > 1) {
             chipWrap.style.display = 'block';
-            chipWrap.innerHTML = `<div class="multi-chip-wrap">${generics.map(g => `<span class="multi-chip">💖 ${g}</span>`).join('')}</div>`;
+            chipWrap.innerHTML = `<div class="multi-chip-wrap">${generics.map(g => `<span class="multi-chip selectable ${g === fcSelectedDrug ? 'is-active' : ''}" onclick="event.stopPropagation(); selectFlashcardGeneric('${g.replace(/'/g, "\\'")}')">💖 ${g}</span>`).join('')}</div>`;
         } else {
             chipWrap.style.display = 'none';
             chipWrap.innerHTML = '';
         }
 
         closeFcDrugPicker();
-        updateFlashcardLinks(generics[0]);
+        selectFlashcardGeneric(generics.includes(fcSelectedDrug) ? fcSelectedDrug : generics[0]);
     }
 
     function openFcDrugPicker() {
@@ -1026,6 +1013,14 @@
         // Google deep link handled in triggerFcAction('google').
     }
 
+    function selectFlashcardGeneric(genericName) {
+        updateFlashcardLinks(genericName);
+        const chipWrap = document.getElementById('fc-multi-chip-wrap');
+        chipWrap.querySelectorAll('.multi-chip.selectable').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.innerText.includes(genericName));
+        });
+    }
+
     function triggerFcAction(action) {
         if (!flashcardList.length) return;
         const drug = flashcardList[fcCurrentIndex];
@@ -1049,6 +1044,8 @@
         } else if (action === 'case') {
             const d = {...flashcardList[fcCurrentIndex], name: selected};
             getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
+        } else if (action === 'speak') {
+            speakText(selected);
         }
     }
 
@@ -1801,14 +1798,10 @@ ${JSON.stringify(sample)}`;
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
-        localStorage.setItem('flashcard_mode', document.getElementById('flashcard-mode').value);
-        localStorage.setItem('daily_pick_mode', document.getElementById('daily-pick-mode').value);
         localStorage.setItem('quiz_engine', document.getElementById('quiz-engine').value);
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
-        flashcardMode = document.getElementById('flashcard-mode').value;
-        dailyPickMode = document.getElementById('daily-pick-mode').value;
         quizEngine = document.getElementById('quiz-engine').value;
         generateDailyPicks();
         toggleSettings();
