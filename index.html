@@ -1249,7 +1249,7 @@
                     <span class="result-class">${drug.class}</span>
                 </div>
                 <div style="font-size:0.9rem; margin-top:5px; color:#555;">${drug.indication}</div>
-                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class=\"multi-chip\">💖 ${g}</span>`).join('')}</div>` : ''}
+                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class=\"multi-chip selectable ${g === generics[0] ? 'is-active' : ''}\" onclick=\"event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')\">💖 ${g}</span>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
                     <div style="margin-bottom:5px;"><strong>副作用 Side Effects:</strong> <span style="color:#d32f2f;">${sideEffectsText}</span></div>
@@ -1301,10 +1301,28 @@
     };
     
     window.triggerSearchSpeak = function(btn) {
-        const card = btn.closest('.result-card');
-        const name = card?.dataset?.currentGeneric || '';
-        if(name) speakText(name);
+        withSearchDrugSelection(btn, '為朗讀選擇藥物', (name) => {
+            const card = btn.closest('.result-card');
+            if (card && name) {
+                card.dataset.currentGeneric = name;
+                refreshSearchGenericChips(card, name);
+                speakText(name);
+            }
+        });
     };
+
+    window.selectSearchGeneric = function(chipEl, genericName) {
+        const card = chipEl.closest('.result-card');
+        if (!card || !genericName) return;
+        card.dataset.currentGeneric = genericName;
+        refreshSearchGenericChips(card, genericName);
+    };
+
+    function refreshSearchGenericChips(card, genericName) {
+        card.querySelectorAll('.multi-chip.selectable').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.innerText.includes(genericName));
+        });
+    }
     
     window.triggerSearchExplain = function(btn, outputId) {
         const box = document.getElementById(outputId);
