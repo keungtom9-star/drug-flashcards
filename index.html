@@ -680,6 +680,16 @@
              <div class="import-wrapper" style="margin-top:10px;">
                 <input type="text" id="sheet-url" class="settings-input" placeholder="Google Sheet CSV 連結" style="margin-bottom:5px;" />
                 <button onclick="fetchSheetData()" class="action-btn">載入 Sheet 資料</button>
+                <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
+                    <input id="auto-sync-startup" type="checkbox" style="width:16px; height:16px;"> 開啟時自動同步 Online CSV（較慢）
+                </label>
+                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                    <button onclick="downloadLocalData()" class="action-btn" style="flex:1; min-width:180px;">⬇️ 下載本機資料(JSON)</button>
+                    <label class="action-btn" style="flex:1; min-width:180px; text-align:center; cursor:pointer;">
+                        ⬆️ 匯入本機資料(JSON)
+                        <input id="local-data-file" type="file" accept="application/json,.json" style="display:none;" onchange="importLocalData(event)">
+                    </label>
+                </div>
                 <div id="upload-status" style="font-size:0.8rem; margin-top:5px; text-align:center;"></div>
             </div>
         </div>
@@ -745,6 +755,9 @@
     let quizEngine = localStorage.getItem('quiz_engine') || 'local';
     let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
     let ankiDailyLimit = parseInt(localStorage.getItem('anki_daily_limit') || '20', 10);
+    let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') === '1';
+
+    const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
@@ -790,6 +803,14 @@
             activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
             flashcardList = [...activeSourceList];
         }
+
+        // Load locally cached data first for faster startup on iPhone.
+        const cachedData = loadLocalDrugCache();
+        if (cachedData.length > 0) {
+            activeSourceList = prepareDrugListForFastSearch(cachedData);
+            flashcardList = [...activeSourceList];
+            document.getElementById('set-btn').innerText = '📚 使用：本機快取';
+        }
         
         // Restore Data
         const savedHist = localStorage.getItem('drug_tutor_search_history');
@@ -803,6 +824,7 @@
         document.getElementById('sheet-url').value = defaultSheetUrl;
         document.getElementById('quiz-engine').value = quizEngine;
         document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
+        document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
 
         initSystemDropdown();
         applyFilter(); 
@@ -813,8 +835,13 @@
         // Daily Recommendations
         generateDailyPicks();
         
-        // AUTO-CONNECT ONLINE
-        fetchSheetData(true);
+        // Optional online sync (can be disabled for faster launch).
+        if (autoSyncOnStartup) {
+            fetchSheetData(true);
+        } else {
+            const status = document.getElementById('upload-status');
+            if (status) status.innerText = '⚡ 使用本機資料啟動（更快）';
+        }
         
         switchMode('search');
     };
@@ -1873,6 +1900,72 @@ ${JSON.stringify(sample)}`;
     }
 
     // --- UTILS ---
+    function loadLocalDrugCache() {
+        try {
+            const raw = localStorage.getItem(LOCAL_DRUG_CACHE_KEY);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed.filter(d => d && d.name);
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function saveLocalDrugCache(list) {
+        try {
+            const payload = (list || []).map(d => ({
+                name: d.name || '', class: d.class || '', indication: d.indication || '',
+                side_effects: d.side_effects || d.sideEffects || '', nursing: d.nursing || '',
+                system: d.system || ''
+            }));
+            localStorage.setItem(LOCAL_DRUG_CACHE_KEY, JSON.stringify(payload));
+        } catch (_) {}
+    }
+
+    function downloadLocalData() {
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            count: activeSourceList.length,
+            drugs: activeSourceList
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `drug-data-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 500);
+    }
+
+    function importLocalData(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        const status = document.getElementById('upload-status');
+        status.innerText = '⏳ 匯入本機資料中...';
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(reader.result || '{}');
+                const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.drugs) ? parsed.drugs : []);
+                if (!list.length) throw new Error('empty');
+                const normalized = prepareDrugListForFastSearch(list);
+                activeSourceList = normalized;
+                flashcardList = [...normalized];
+                saveLocalDrugCache(normalized);
+                applyFilter();
+                generateDailyPicks();
+                status.innerText = `✅ 已匯入 ${normalized.length} 種藥物（本機）`;
+                document.getElementById('set-btn').innerText = '📚 使用：本機快取';
+            } catch (_) {
+                status.innerText = '❌ JSON 格式無效';
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
     function toggleSettings() {
         const p = document.getElementById('settings-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
@@ -1884,11 +1977,14 @@ ${JSON.stringify(sample)}`;
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
         localStorage.setItem('quiz_engine', document.getElementById('quiz-engine').value);
         localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
+        localStorage.setItem('auto_sync_startup', document.getElementById('auto-sync-startup').checked ? '1' : '0');
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
         quizEngine = document.getElementById('quiz-engine').value;
         ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
+        autoSyncOnStartup = document.getElementById('auto-sync-startup').checked;
+        saveLocalDrugCache(activeSourceList);
         generateDailyPicks();
         toggleSettings();
         alert("設定已儲存！");
@@ -1943,6 +2039,7 @@ ${JSON.stringify(sample)}`;
                      
                      if(autoSwitch) {
                          activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
+                         saveLocalDrugCache(activeSourceList);
                          applyFilter();
                          generateDailyPicks();
                      }
@@ -1967,6 +2064,7 @@ ${JSON.stringify(sample)}`;
             activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
             document.getElementById('set-btn').innerText = "📚 使用：Online CSV";
         }
+        saveLocalDrugCache(activeSourceList);
         applyFilter();
         generateDailyPicks();
     }
