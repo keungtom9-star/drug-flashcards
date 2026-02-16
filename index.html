@@ -426,6 +426,29 @@
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
         .multi-chip {
             background:#eef2ff; color:#3730a3; border-radius:999px; padding:4px 10px; font-size:0.75rem; font-weight:600;
+            border: 1px solid transparent; transition: all 0.2s ease;
+        }
+        .multi-chip.selectable { cursor: pointer; }
+        .multi-chip.selectable:hover { transform: translateY(-1px); }
+        .multi-chip.is-active { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+
+        body { animation: appEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        .ios-card, .daily-card, .result-card { animation: cardPop 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+        .app-smooth.mode-transition { animation: sectionSlideIn 0.24s ease-out; }
+        .action-btn, .chip, .nav-btn { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .action-btn:active, .chip:active, .nav-btn:active { transform: scale(0.97); }
+
+        @keyframes appEnter {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sectionSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes cardPop {
+            from { opacity: 0; transform: translateY(8px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .ai-output {
@@ -468,7 +491,7 @@
 
 <div class="glass-nav">
     <button class="nav-btn active" id="nav-search" onclick="switchMode('search')">🧸 搜尋</button>
-    <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')">🪄 藥卡</button>
+    <button class="nav-btn" id="nav-flash" onclick="switchMode('anki')">🗂️ Anki</button>
     <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')">🧠 測驗</button>
     <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="openWardCheat()">🩺 病房</button>
 </div>
@@ -489,7 +512,7 @@
     
     <div id="search-section" class="app-smooth">
         <div class="section-header">
-            <span>📅 每日學習精選 (8)</span>
+            <span id="daily-title">📅 每日學習精選</span>
             <span style="font-size:0.7rem; font-weight:400; color:var(--ios-blue);" onclick="refreshDailyPicks()">重新整理</span>
         </div>
         <div id="daily-container" class="daily-grid">
@@ -532,7 +555,7 @@
                     <h2 id="fc-name" class="drug-title">藥物名稱</h2>
                     <p style="color:var(--ios-gray); margin-top:0;">點擊翻卡查看詳情</p>
                     
-                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name)" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
+                    <button onclick="event.stopPropagation(); triggerFcAction('speak')" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
                         🗣️ 讀出藥名
                     </button>
                 </div>
@@ -657,36 +680,41 @@
              <div class="import-wrapper" style="margin-top:10px;">
                 <input type="text" id="sheet-url" class="settings-input" placeholder="Google Sheet CSV 連結" style="margin-bottom:5px;" />
                 <button onclick="fetchSheetData()" class="action-btn">載入 Sheet 資料</button>
+                <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
+                    <input id="auto-sync-startup" type="checkbox" style="width:16px; height:16px;"> 開啟時自動同步 Online CSV（較慢）
+                </label>
+                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                    <button onclick="downloadLocalData()" class="action-btn" style="flex:1; min-width:180px;">⬇️ 下載本機資料(JSON)</button>
+                    <label class="action-btn" style="flex:1; min-width:180px; text-align:center; cursor:pointer;">
+                        ⬆️ 匯入本機資料(JSON)
+                        <input id="local-data-file" type="file" accept="application/json,.json" style="display:none;" onchange="importLocalData(event)">
+                    </label>
+                </div>
                 <div id="upload-status" style="font-size:0.8rem; margin-top:5px; text-align:center;"></div>
             </div>
         </div>
 
         <div style="margin-top:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">學習模式</label>
-            <select id="flashcard-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="anki">藥卡：Anki 間隔重溫</option>
-                <option value="classic">藥卡：經典上一張/下一張</option>
-            </select>
-            <select id="daily-pick-mode" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="anki">每日精選：Anki 到期卡片</option>
-                <option value="random">每日精選：隨機混合</option>
-            </select>
+            <div style="margin-top:8px; padding:12px; border-radius:10px; background:white; border:1px solid #e5e7eb; color:#111827; font-size:0.9rem; line-height:1.4;">
+                ✅ 已啟用 <strong>Anki 模式</strong><br>
+                • 藥卡使用 Again / Hard / Good / Easy 排程<br>
+                • 每日精選僅顯示今日到期卡片
+            </div>
+            <label style="display:block; margin-top:10px; font-size:0.8rem; color:var(--ios-gray);">每日學習上限（張）</label>
+            <input id="anki-daily-limit" type="number" min="5" max="200" step="1" class="settings-input" style="margin-top:6px; margin-bottom:0; background:white;" placeholder="例如 20">
             <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
                 <option value="local">測驗引擎：本機（快、離線）</option>
                 <option value="deepseek">測驗引擎：DeepSeek AI</option>
-            </select>
-            <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="local">Quiz Engine: Local (Fast Offline)</option>
-                <option value="deepseek">Quiz Engine: DeepSeek AI</option>
             </select>
         </div>
 
         <div style="margin-top:12px; font-size:0.82rem; color:#4b5563; background:#eef6ff; border:1px solid #dbeafe; border-radius:12px; padding:12px; line-height:1.45;">
             <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">使用方法</div>
-            <div>1) Flashcard 模式選 <strong>Anki</strong>。</div>
-            <div>2) 每日精選選 <strong>Anki 到期卡片</strong>（或隨機）。</div>
-            <div>3) 按 <strong>儲存設定</strong>。</div>
-            <div>4) 在藥卡模式用 <strong>Again / Hard / Good / Easy</strong> 排程下次重溫。</div>
+            <div>1) 藥卡模式固定為 <strong>Anki</strong> 間隔重溫。</div>
+            <div>2) 設定 <strong>每日學習上限</strong>（例如 20 張）。</div>
+            <div>3) 每日精選和 Anki 佇列會按上限顯示今日應學卡片。</div>
+            <div>4) 在 Anki 模式按 <strong>Again / Hard / Good / Easy</strong> 排程下次重溫。</div>
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">儲存設定</button>
@@ -724,10 +752,12 @@
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
     let fcSelectedDrug = ""; 
-    let flashcardMode = localStorage.getItem('flashcard_mode') || 'anki';
-    let dailyPickMode = localStorage.getItem('daily_pick_mode') || 'anki';
     let quizEngine = localStorage.getItem('quiz_engine') || 'local';
     let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
+    let ankiDailyLimit = parseInt(localStorage.getItem('anki_daily_limit') || '20', 10);
+    let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') === '1';
+
+    const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
@@ -773,6 +803,14 @@
             activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
             flashcardList = [...activeSourceList];
         }
+
+        // Load locally cached data first for faster startup on iPhone.
+        const cachedData = loadLocalDrugCache();
+        if (cachedData.length > 0) {
+            activeSourceList = prepareDrugListForFastSearch(cachedData);
+            flashcardList = [...activeSourceList];
+            document.getElementById('set-btn').innerText = '📚 使用：本機快取';
+        }
         
         // Restore Data
         const savedHist = localStorage.getItem('drug_tutor_search_history');
@@ -784,9 +822,9 @@
         document.getElementById('provider-select').value = currentProvider;
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
-        document.getElementById('flashcard-mode').value = flashcardMode;
-        document.getElementById('daily-pick-mode').value = dailyPickMode;
         document.getElementById('quiz-engine').value = quizEngine;
+        document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
+        document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
 
         initSystemDropdown();
         applyFilter(); 
@@ -797,58 +835,64 @@
         // Daily Recommendations
         generateDailyPicks();
         
-        // AUTO-CONNECT ONLINE
-        fetchSheetData(true);
+        // Optional online sync (can be disabled for faster launch).
+        if (autoSyncOnStartup) {
+            fetchSheetData(true);
+        } else {
+            const status = document.getElementById('upload-status');
+            if (status) status.innerText = '⚡ 使用本機資料啟動（更快）';
+        }
         
         switchMode('search');
     };
 
-    // --- DAILY RECOMMENDATIONS (8 ITEMS) ---
-    function generateDailyPicks() {
-        if(!activeSourceList || activeSourceList.length === 0) return;
 
-        if (dailyPickMode === 'anki') {
-            const picks = getTodayStudyQueue(activeSourceList).slice(0, 8);
-            renderDailyPicks(picks);
-            return;
-        }
-        
-        const today = new Date().toDateString(); 
-        const seed = today.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        
-        // Pseudo-random generator based on date seed
-        const random = (seed) => {
-            var x = Math.sin(seed++) * 10000;
+    function getAnkiDailyLimit() {
+        const raw = Number(ankiDailyLimit);
+        if (!Number.isFinite(raw)) return 20;
+        return Math.min(200, Math.max(5, Math.round(raw)));
+    }
+
+    function getTodaySeed() {
+        const today = new Date().toISOString().slice(0, 10);
+        return today.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    }
+
+    function deterministicShuffle(list, seedBase = 1) {
+        const arr = [...list];
+        let seed = seedBase;
+        const rand = () => {
+            const x = Math.sin(seed++) * 10000;
             return x - Math.floor(x);
         };
-
-        let available = [...activeSourceList];
-        let picks = [];
-        
-        // Select 8 random drugs
-        for(let i = 0; i < 8; i++) {
-            if(available.length === 0) break;
-            const idx = Math.floor(random(seed + i) * available.length);
-            picks.push(available[idx]);
-            available.splice(idx, 1);
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
         }
+        return arr;
+    }
 
+    function updateDailyTitle(count) {
+        const titleEl = document.getElementById('daily-title');
+        if (titleEl) titleEl.innerText = `📅 每日學習精選 (${count})`;
+    }
+
+    // --- DAILY RECOMMENDATIONS ---
+    function generateDailyPicks() {
+        if(!activeSourceList || activeSourceList.length === 0) return;
+        const picks = getTodayStudyQueue(activeSourceList, getAnkiDailyLimit());
         renderDailyPicks(picks);
     }
 
     function refreshDailyPicks() {
-        if (dailyPickMode === 'anki') {
-            const due = getTodayStudyQueue(activeSourceList).slice(0, 8);
-            renderDailyPicks(due);
-        } else {
-            let shuffled = [...activeSourceList].sort(() => 0.5 - Math.random());
-            renderDailyPicks(shuffled.slice(0, 8));
-        }
+        const due = getTodayStudyQueue(activeSourceList, getAnkiDailyLimit());
+        renderDailyPicks(due);
     }
 
     function renderDailyPicks(picks) {
         const container = document.getElementById('daily-container');
         container.innerHTML = '';
+        updateDailyTitle(picks.length);
         if (!picks.length) {
             container.innerHTML = `
                 <div class="daily-card" style="grid-column: 1 / -1; justify-content:center; align-items:center; text-align:center;">
@@ -873,7 +917,7 @@
             div.innerHTML = `
                 <div>
                     <div class="daily-header">
-                        <div class="daily-label">${dailyPickMode === 'anki' ? 'Due Today' : 'Daily Pick'}</div>
+                        <div class="daily-label">Due Today</div>
                         <div class="daily-icon-pill">${icon}</div>
                     </div>
                     <div class="daily-name">${drug.name.split('(')[0]}</div>
@@ -905,17 +949,24 @@
         document.getElementById('search-section').style.display = 'none';
         document.getElementById('filter-bar').style.display = 'none';
 
+        const sectionToShow = mode === 'quiz'
+            ? document.getElementById('quiz-section')
+            : (mode === 'search' ? document.getElementById('search-section') : document.getElementById('flashcard-section'));
+        sectionToShow.classList.remove('mode-transition');
+        void sectionToShow.offsetWidth;
+        sectionToShow.classList.add('mode-transition');
+
         if(mode === 'search') {
             document.getElementById('search-section').style.display = 'block';
             document.getElementById('nav-search').classList.add('active');
             document.getElementById('search-input').focus();
-        } else if (mode === 'flashcard') {
+        } else if (mode === 'anki') {
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
             document.getElementById('filter-bar').style.display = 'flex';
             const source = filteredList.length ? filteredList : activeSourceList;
             hydrateAnkiForList(source);
-            flashcardList = getTodayStudyQueue(source);
+            flashcardList = getTodayStudyQueue(source, getAnkiDailyLimit());
             fcCurrentIndex = 0;
             renderCard();
         } else if (mode === 'quiz') {
@@ -925,7 +976,7 @@
         }
     }
 
-    // --- FLASHCARD LOGIC ---
+    // --- ANKI CARD LOGIC ---
     function formatRelativeDue(dueTs) {
         const delta = dueTs - Date.now();
         const hours = Math.round(delta / (1000 * 60 * 60));
@@ -986,14 +1037,14 @@
         const chipWrap = document.getElementById('fc-multi-chip-wrap');
         if (generics.length > 1) {
             chipWrap.style.display = 'block';
-            chipWrap.innerHTML = `<div class="multi-chip-wrap">${generics.map(g => `<span class="multi-chip">💖 ${g}</span>`).join('')}</div>`;
+            chipWrap.innerHTML = `<div class="multi-chip-wrap">${generics.map(g => `<span class="multi-chip selectable ${g === fcSelectedDrug ? 'is-active' : ''}" onclick="event.stopPropagation(); selectFlashcardGeneric('${g.replace(/'/g, "\\'")}')">💖 ${g}</span>`).join('')}</div>`;
         } else {
             chipWrap.style.display = 'none';
             chipWrap.innerHTML = '';
         }
 
         closeFcDrugPicker();
-        updateFlashcardLinks(generics[0]);
+        selectFlashcardGeneric(generics.includes(fcSelectedDrug) ? fcSelectedDrug : generics[0]);
     }
 
     function openFcDrugPicker() {
@@ -1026,6 +1077,14 @@
         // Google deep link handled in triggerFcAction('google').
     }
 
+    function selectFlashcardGeneric(genericName) {
+        updateFlashcardLinks(genericName);
+        const chipWrap = document.getElementById('fc-multi-chip-wrap');
+        chipWrap.querySelectorAll('.multi-chip.selectable').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.innerText.includes(genericName));
+        });
+    }
+
     function triggerFcAction(action) {
         if (!flashcardList.length) return;
         const drug = flashcardList[fcCurrentIndex];
@@ -1049,6 +1108,8 @@
         } else if (action === 'case') {
             const d = {...flashcardList[fcCurrentIndex], name: selected};
             getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
+        } else if (action === 'speak') {
+            speakText(selected);
         }
     }
 
@@ -1068,12 +1129,15 @@
     }
 
     function nextCard() {
-        if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
-        else {
-            flashcardList = getTodayStudyQueue(filteredList.length ? filteredList : activeSourceList);
-            fcCurrentIndex = 0;
+        if(fcCurrentIndex < flashcardList.length - 1) {
+            fcCurrentIndex++;
             renderCard();
+            return;
         }
+        // End of today's queue: do not auto-load another full batch.
+        flashcardList = [];
+        fcCurrentIndex = 0;
+        renderCard();
     }
 
     function prevCard() {
@@ -1083,41 +1147,62 @@
     function hydrateAnkiForList(list) {
         list.forEach(drug => {
             if (!ankiStats[drug.name]) {
-                ankiStats[drug.name] = { ease: 2.3, interval: 0, reps: 0, lapses: 0, due: Date.now() };
+                ankiStats[drug.name] = { ease: 2.3, interval: 0, reps: 0, lapses: 0, due: null, lastReviewed: 0 };
             }
         });
-    }
-
-    function getTodayBoundaries() {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const end = start + (24 * 60 * 60 * 1000) - 1;
-        return { start, end };
     }
 
     function getDueCards(list) {
         hydrateAnkiForList(list);
         const now = Date.now();
-        const due = list.filter(d => (ankiStats[d.name]?.due || 0) <= now);
+        const due = list.filter(d => {
+            const stat = ankiStats[d.name] || {};
+            return (stat.reps || 0) > 0 && (stat.due || 0) <= now;
+        });
         due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
         return due;
     }
 
-    function getTodayStudyQueue(list) {
+    function scheduleCardForRetry(drug, stepsAhead = 2) {
+        if (!drug || !flashcardList.length) return;
+        const tail = flashcardList.slice(fcCurrentIndex + 1).filter(d => d.name !== drug.name);
+        const head = flashcardList.slice(0, fcCurrentIndex + 1);
+        const insertAt = Math.min(tail.length, Math.max(0, Math.round(stepsAhead)));
+        tail.splice(insertAt, 0, drug);
+        flashcardList = [...head, ...tail];
+    }
+
+    function getTodayStudyQueue(list, maxCards = getAnkiDailyLimit()) {
         hydrateAnkiForList(list);
-        const { start, end } = getTodayBoundaries();
-        const queued = list.filter(d => {
-            const s = ankiStats[d.name] || {};
-            const due = s.due || 0;
-            const reviewed = s.lastReviewed || 0;
-            return (due >= start && due <= end) || (reviewed >= start && reviewed <= end);
+        const now = Date.now();
+        const limit = Math.max(1, Math.round(maxCards));
+
+        const dueReviews = [];
+        const learningDue = [];
+        const newCards = [];
+
+        list.forEach(drug => {
+            const stat = ankiStats[drug.name] || {};
+            const reps = stat.reps || 0;
+            const due = stat.due || 0;
+            const lastReviewed = stat.lastReviewed || 0;
+
+            if (reps > 0 && due <= now) {
+                dueReviews.push(drug);
+            } else if (reps === 0 && lastReviewed > 0 && due <= now) {
+                learningDue.push(drug);
+            } else if (reps === 0 && !lastReviewed) {
+                newCards.push(drug);
+            }
         });
-        queued.sort((a, b) => {
-            const aDue = ankiStats[a.name]?.due || 0;
-            const bDue = ankiStats[b.name]?.due || 0;
-            return aDue - bDue;
-        });
-        return queued;
+
+        dueReviews.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
+        learningDue.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
+
+        const remainingSlots = Math.max(0, limit - dueReviews.length - learningDue.length);
+        const seededNew = deterministicShuffle(newCards, getTodaySeed()).slice(0, remainingSlots);
+
+        return [...dueReviews, ...learningDue, ...seededNew].slice(0, limit);
     }
 
     function rateCurrentCard(rating) {
@@ -1151,6 +1236,11 @@
         else if (rating === 'easy') stat.due = Date.now() + Math.max(2, Math.round(stat.interval * 1.3)) * day;
         else stat.due = Date.now() + (stat.interval * day);
         stat.lastReviewed = Date.now();
+
+        // Keep "Again" cards in the same session so failed cards repeat quickly.
+        if (rating === 'again') {
+            scheduleCardForRetry(drug, 2);
+        }
 
         localStorage.setItem('drug_tutor_anki', JSON.stringify(ankiStats));
         nextCard();
@@ -1203,7 +1293,7 @@
                     <span class="result-class">${drug.class}</span>
                 </div>
                 <div style="font-size:0.9rem; margin-top:5px; color:#555;">${drug.indication}</div>
-                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class=\"multi-chip\">💖 ${g}</span>`).join('')}</div>` : ''}
+                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class=\"multi-chip selectable ${g === generics[0] ? 'is-active' : ''}\" onclick=\"event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')\">💖 ${g}</span>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
                     <div style="margin-bottom:5px;"><strong>副作用 Side Effects:</strong> <span style="color:#d32f2f;">${sideEffectsText}</span></div>
@@ -1255,10 +1345,28 @@
     };
     
     window.triggerSearchSpeak = function(btn) {
-        const card = btn.closest('.result-card');
-        const name = card?.dataset?.currentGeneric || '';
-        if(name) speakText(name);
+        withSearchDrugSelection(btn, '為朗讀選擇藥物', (name) => {
+            const card = btn.closest('.result-card');
+            if (card && name) {
+                card.dataset.currentGeneric = name;
+                refreshSearchGenericChips(card, name);
+                speakText(name);
+            }
+        });
     };
+
+    window.selectSearchGeneric = function(chipEl, genericName) {
+        const card = chipEl.closest('.result-card');
+        if (!card || !genericName) return;
+        card.dataset.currentGeneric = genericName;
+        refreshSearchGenericChips(card, genericName);
+    };
+
+    function refreshSearchGenericChips(card, genericName) {
+        card.querySelectorAll('.multi-chip.selectable').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.innerText.includes(genericName));
+        });
+    }
     
     window.triggerSearchExplain = function(btn, outputId) {
         const box = document.getElementById(outputId);
@@ -1417,7 +1525,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         quizList = [...filteredList];
         fcCurrentIndex = 0;
         hydrateAnkiForList(filteredList);
-        flashcardList = getTodayStudyQueue(filteredList);
+        flashcardList = getTodayStudyQueue(filteredList, getAnkiDailyLimit());
         renderCard();
     }
     
@@ -1792,6 +1900,72 @@ ${JSON.stringify(sample)}`;
     }
 
     // --- UTILS ---
+    function loadLocalDrugCache() {
+        try {
+            const raw = localStorage.getItem(LOCAL_DRUG_CACHE_KEY);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed.filter(d => d && d.name);
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function saveLocalDrugCache(list) {
+        try {
+            const payload = (list || []).map(d => ({
+                name: d.name || '', class: d.class || '', indication: d.indication || '',
+                side_effects: d.side_effects || d.sideEffects || '', nursing: d.nursing || '',
+                system: d.system || ''
+            }));
+            localStorage.setItem(LOCAL_DRUG_CACHE_KEY, JSON.stringify(payload));
+        } catch (_) {}
+    }
+
+    function downloadLocalData() {
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            count: activeSourceList.length,
+            drugs: activeSourceList
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `drug-data-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 500);
+    }
+
+    function importLocalData(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        const status = document.getElementById('upload-status');
+        status.innerText = '⏳ 匯入本機資料中...';
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(reader.result || '{}');
+                const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.drugs) ? parsed.drugs : []);
+                if (!list.length) throw new Error('empty');
+                const normalized = prepareDrugListForFastSearch(list);
+                activeSourceList = normalized;
+                flashcardList = [...normalized];
+                saveLocalDrugCache(normalized);
+                applyFilter();
+                generateDailyPicks();
+                status.innerText = `✅ 已匯入 ${normalized.length} 種藥物（本機）`;
+                document.getElementById('set-btn').innerText = '📚 使用：本機快取';
+            } catch (_) {
+                status.innerText = '❌ JSON 格式無效';
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
     function toggleSettings() {
         const p = document.getElementById('settings-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
@@ -1801,15 +1975,16 @@ ${JSON.stringify(sample)}`;
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
-        localStorage.setItem('flashcard_mode', document.getElementById('flashcard-mode').value);
-        localStorage.setItem('daily_pick_mode', document.getElementById('daily-pick-mode').value);
         localStorage.setItem('quiz_engine', document.getElementById('quiz-engine').value);
+        localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
+        localStorage.setItem('auto_sync_startup', document.getElementById('auto-sync-startup').checked ? '1' : '0');
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
-        flashcardMode = document.getElementById('flashcard-mode').value;
-        dailyPickMode = document.getElementById('daily-pick-mode').value;
         quizEngine = document.getElementById('quiz-engine').value;
+        ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
+        autoSyncOnStartup = document.getElementById('auto-sync-startup').checked;
+        saveLocalDrugCache(activeSourceList);
         generateDailyPicks();
         toggleSettings();
         alert("設定已儲存！");
@@ -1864,6 +2039,7 @@ ${JSON.stringify(sample)}`;
                      
                      if(autoSwitch) {
                          activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
+                         saveLocalDrugCache(activeSourceList);
                          applyFilter();
                          generateDailyPicks();
                      }
@@ -1888,6 +2064,7 @@ ${JSON.stringify(sample)}`;
             activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
             document.getElementById('set-btn').innerText = "📚 使用：Online CSV";
         }
+        saveLocalDrugCache(activeSourceList);
         applyFilter();
         generateDailyPicks();
     }
