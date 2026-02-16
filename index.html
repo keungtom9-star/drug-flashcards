@@ -512,7 +512,7 @@
     
     <div id="search-section" class="app-smooth">
         <div class="section-header">
-            <span>📅 每日學習精選 (8)</span>
+            <span id="daily-title">📅 每日學習精選</span>
             <span style="font-size:0.7rem; font-weight:400; color:var(--ios-blue);" onclick="refreshDailyPicks()">重新整理</span>
         </div>
         <div id="daily-container" class="daily-grid">
@@ -691,6 +691,8 @@
                 • 藥卡使用 Again / Hard / Good / Easy 排程<br>
                 • 每日精選僅顯示今日到期卡片
             </div>
+            <label style="display:block; margin-top:10px; font-size:0.8rem; color:var(--ios-gray);">每日學習上限（張）</label>
+            <input id="anki-daily-limit" type="number" min="5" max="200" step="1" class="settings-input" style="margin-top:6px; margin-bottom:0; background:white;" placeholder="例如 20">
             <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
                 <option value="local">測驗引擎：本機（快、離線）</option>
                 <option value="deepseek">測驗引擎：DeepSeek AI</option>
@@ -700,8 +702,9 @@
         <div style="margin-top:12px; font-size:0.82rem; color:#4b5563; background:#eef6ff; border:1px solid #dbeafe; border-radius:12px; padding:12px; line-height:1.45;">
             <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">使用方法</div>
             <div>1) 藥卡模式固定為 <strong>Anki</strong> 間隔重溫。</div>
-            <div>2) 每日精選固定為 <strong>今日到期卡片</strong>。</div>
-            <div>3) 在 Anki 模式按 <strong>Again / Hard / Good / Easy</strong> 排程下次重溫。</div>
+            <div>2) 設定 <strong>每日學習上限</strong>（例如 20 張）。</div>
+            <div>3) 每日精選和 Anki 佇列會按上限顯示今日應學卡片。</div>
+            <div>4) 在 Anki 模式按 <strong>Again / Hard / Good / Easy</strong> 排程下次重溫。</div>
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">儲存設定</button>
@@ -741,6 +744,7 @@
     let fcSelectedDrug = ""; 
     let quizEngine = localStorage.getItem('quiz_engine') || 'local';
     let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
+    let ankiDailyLimit = parseInt(localStorage.getItem('anki_daily_limit') || '20', 10);
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
@@ -798,6 +802,7 @@
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
         document.getElementById('quiz-engine').value = quizEngine;
+        document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
 
         initSystemDropdown();
         applyFilter(); 
@@ -814,21 +819,53 @@
         switchMode('search');
     };
 
-    // --- DAILY RECOMMENDATIONS (8 ITEMS) ---
+
+    function getAnkiDailyLimit() {
+        const raw = Number(ankiDailyLimit);
+        if (!Number.isFinite(raw)) return 20;
+        return Math.min(200, Math.max(5, Math.round(raw)));
+    }
+
+    function getTodaySeed() {
+        const today = new Date().toISOString().slice(0, 10);
+        return today.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    }
+
+    function deterministicShuffle(list, seedBase = 1) {
+        const arr = [...list];
+        let seed = seedBase;
+        const rand = () => {
+            const x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        };
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function updateDailyTitle(count) {
+        const titleEl = document.getElementById('daily-title');
+        if (titleEl) titleEl.innerText = `📅 每日學習精選 (${count})`;
+    }
+
+    // --- DAILY RECOMMENDATIONS ---
     function generateDailyPicks() {
         if(!activeSourceList || activeSourceList.length === 0) return;
-        const picks = getTodayStudyQueue(activeSourceList).slice(0, 8);
+        const picks = getTodayStudyQueue(activeSourceList, getAnkiDailyLimit());
         renderDailyPicks(picks);
     }
 
     function refreshDailyPicks() {
-        const due = getTodayStudyQueue(activeSourceList).slice(0, 8);
+        const due = getTodayStudyQueue(activeSourceList, getAnkiDailyLimit());
         renderDailyPicks(due);
     }
 
     function renderDailyPicks(picks) {
         const container = document.getElementById('daily-container');
         container.innerHTML = '';
+        updateDailyTitle(picks.length);
         if (!picks.length) {
             container.innerHTML = `
                 <div class="daily-card" style="grid-column: 1 / -1; justify-content:center; align-items:center; text-align:center;">
@@ -902,7 +939,7 @@
             document.getElementById('filter-bar').style.display = 'flex';
             const source = filteredList.length ? filteredList : activeSourceList;
             hydrateAnkiForList(source);
-            flashcardList = getTodayStudyQueue(source);
+            flashcardList = getTodayStudyQueue(source, getAnkiDailyLimit());
             fcCurrentIndex = 0;
             renderCard();
         } else if (mode === 'quiz') {
@@ -1067,7 +1104,7 @@
     function nextCard() {
         if(fcCurrentIndex < flashcardList.length - 1) { fcCurrentIndex++; renderCard(); }
         else {
-            flashcardList = getTodayStudyQueue(filteredList.length ? filteredList : activeSourceList);
+            flashcardList = getTodayStudyQueue(filteredList.length ? filteredList : activeSourceList, getAnkiDailyLimit());
             fcCurrentIndex = 0;
             renderCard();
         }
@@ -1080,41 +1117,53 @@
     function hydrateAnkiForList(list) {
         list.forEach(drug => {
             if (!ankiStats[drug.name]) {
-                ankiStats[drug.name] = { ease: 2.3, interval: 0, reps: 0, lapses: 0, due: Date.now() };
+                ankiStats[drug.name] = { ease: 2.3, interval: 0, reps: 0, lapses: 0, due: null, lastReviewed: 0 };
             }
         });
-    }
-
-    function getTodayBoundaries() {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const end = start + (24 * 60 * 60 * 1000) - 1;
-        return { start, end };
     }
 
     function getDueCards(list) {
         hydrateAnkiForList(list);
         const now = Date.now();
-        const due = list.filter(d => (ankiStats[d.name]?.due || 0) <= now);
+        const due = list.filter(d => {
+            const stat = ankiStats[d.name] || {};
+            return (stat.reps || 0) > 0 && (stat.due || 0) <= now;
+        });
         due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
         return due;
     }
 
-    function getTodayStudyQueue(list) {
+    function getTodayStudyQueue(list, maxCards = getAnkiDailyLimit()) {
         hydrateAnkiForList(list);
-        const { start, end } = getTodayBoundaries();
-        const queued = list.filter(d => {
-            const s = ankiStats[d.name] || {};
-            const due = s.due || 0;
-            const reviewed = s.lastReviewed || 0;
-            return (due >= start && due <= end) || (reviewed >= start && reviewed <= end);
+        const now = Date.now();
+        const limit = Math.max(1, Math.round(maxCards));
+
+        const dueReviews = [];
+        const learningDue = [];
+        const newCards = [];
+
+        list.forEach(drug => {
+            const stat = ankiStats[drug.name] || {};
+            const reps = stat.reps || 0;
+            const due = stat.due || 0;
+            const lastReviewed = stat.lastReviewed || 0;
+
+            if (reps > 0 && due <= now) {
+                dueReviews.push(drug);
+            } else if (reps === 0 && lastReviewed > 0 && due <= now) {
+                learningDue.push(drug);
+            } else if (reps === 0 && !lastReviewed) {
+                newCards.push(drug);
+            }
         });
-        queued.sort((a, b) => {
-            const aDue = ankiStats[a.name]?.due || 0;
-            const bDue = ankiStats[b.name]?.due || 0;
-            return aDue - bDue;
-        });
-        return queued;
+
+        dueReviews.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
+        learningDue.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
+
+        const remainingSlots = Math.max(0, limit - dueReviews.length - learningDue.length);
+        const seededNew = deterministicShuffle(newCards, getTodaySeed()).slice(0, remainingSlots);
+
+        return [...dueReviews, ...learningDue, ...seededNew].slice(0, limit);
     }
 
     function rateCurrentCard(rating) {
@@ -1414,7 +1463,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         quizList = [...filteredList];
         fcCurrentIndex = 0;
         hydrateAnkiForList(filteredList);
-        flashcardList = getTodayStudyQueue(filteredList);
+        flashcardList = getTodayStudyQueue(filteredList, getAnkiDailyLimit());
         renderCard();
     }
     
@@ -1799,10 +1848,12 @@ ${JSON.stringify(sample)}`;
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
         localStorage.setItem('quiz_engine', document.getElementById('quiz-engine').value);
+        localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
         quizEngine = document.getElementById('quiz-engine').value;
+        ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
         generateDailyPicks();
         toggleSettings();
         alert("設定已儲存！");
