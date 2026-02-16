@@ -933,12 +933,27 @@
     }
 
     // --- HELPER: DRUG NAME PARSING ---
+    function parseDrugNamePairs(fullString) {
+        const source = String(fullString || '');
+        const chunks = source.includes(';') ? source.split(';') : [source];
+        return chunks.map((chunk) => {
+            const raw = String(chunk || '').trim();
+            const generic = raw.replace(/\(.*?\)/g, '').trim();
+            const brands = [...raw.matchAll(/\((.*?)\)/g)].map(m => (m[1] || '').trim()).filter(Boolean);
+            return { generic, brand: brands.join(' / '), raw };
+        }).filter(p => p.generic);
+    }
+
     function parseDrugGenerics(fullString) {
-        if(fullString.includes(';')) {
-            return fullString.split(';').map(s => s.replace(/\(.*?\)/g, "").trim()).filter(s => s);
-        } else {
-            return [fullString.replace(/\(.*?\)/g, "").trim()];
-        }
+        return parseDrugNamePairs(fullString).map(p => p.generic);
+    }
+
+    function buildSpeakLabel(selectedGeneric, fullName) {
+        const pairs = parseDrugNamePairs(fullName);
+        const target = pairs.find(p => p.generic.toLowerCase() === String(selectedGeneric || '').toLowerCase()) || pairs[0];
+        if (!target) return '';
+        if (!target.brand) return target.generic;
+        return `${target.generic}. Brand name ${target.brand}`;
     }
 
     // --- NAVIGATION MODES ---
@@ -1109,7 +1124,8 @@
             const d = {...flashcardList[fcCurrentIndex], name: selected};
             getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
         } else if (action === 'speak') {
-            speakText(selected);
+            const spoken = buildSpeakLabel(selected, drug.name);
+            speakText(spoken || selected);
         }
     }
 
@@ -1350,7 +1366,9 @@
             if (card && name) {
                 card.dataset.currentGeneric = name;
                 refreshSearchGenericChips(card, name);
-                speakText(name);
+                const fullName = card.querySelector('.result-name')?.innerText || name;
+                const spoken = buildSpeakLabel(name, fullName);
+                speakText(spoken || name);
             }
         });
     };
