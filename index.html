@@ -426,6 +426,29 @@
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
         .multi-chip {
             background:#eef2ff; color:#3730a3; border-radius:999px; padding:4px 10px; font-size:0.75rem; font-weight:600;
+            border: 1px solid transparent; transition: all 0.2s ease;
+        }
+        .multi-chip.selectable { cursor: pointer; }
+        .multi-chip.selectable:hover { transform: translateY(-1px); }
+        .multi-chip.is-active { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+
+        body { animation: appEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        .ios-card, .daily-card, .result-card { animation: cardPop 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+        .app-smooth.mode-transition { animation: sectionSlideIn 0.24s ease-out; }
+        .action-btn, .chip, .nav-btn { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .action-btn:active, .chip:active, .nav-btn:active { transform: scale(0.97); }
+
+        @keyframes appEnter {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sectionSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes cardPop {
+            from { opacity: 0; transform: translateY(8px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .ai-output {
@@ -532,7 +555,7 @@
                     <h2 id="fc-name" class="drug-title">藥物名稱</h2>
                     <p style="color:var(--ios-gray); margin-top:0;">點擊翻卡查看詳情</p>
                     
-                    <button onclick="event.stopPropagation(); speakText(flashcardList[fcCurrentIndex].name)" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
+                    <button onclick="event.stopPropagation(); triggerFcAction('speak')" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
                         🗣️ 讀出藥名
                     </button>
                 </div>
@@ -671,10 +694,6 @@
             <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
                 <option value="local">測驗引擎：本機（快、離線）</option>
                 <option value="deepseek">測驗引擎：DeepSeek AI</option>
-            </select>
-            <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="local">Quiz Engine: Local (Fast Offline)</option>
-                <option value="deepseek">Quiz Engine: DeepSeek AI</option>
             </select>
         </div>
 
@@ -866,6 +885,13 @@
         document.getElementById('search-section').style.display = 'none';
         document.getElementById('filter-bar').style.display = 'none';
 
+        const sectionToShow = mode === 'quiz'
+            ? document.getElementById('quiz-section')
+            : (mode === 'search' ? document.getElementById('search-section') : document.getElementById('flashcard-section'));
+        sectionToShow.classList.remove('mode-transition');
+        void sectionToShow.offsetWidth;
+        sectionToShow.classList.add('mode-transition');
+
         if(mode === 'search') {
             document.getElementById('search-section').style.display = 'block';
             document.getElementById('nav-search').classList.add('active');
@@ -947,14 +973,14 @@
         const chipWrap = document.getElementById('fc-multi-chip-wrap');
         if (generics.length > 1) {
             chipWrap.style.display = 'block';
-            chipWrap.innerHTML = `<div class="multi-chip-wrap">${generics.map(g => `<span class="multi-chip">💖 ${g}</span>`).join('')}</div>`;
+            chipWrap.innerHTML = `<div class="multi-chip-wrap">${generics.map(g => `<span class="multi-chip selectable ${g === fcSelectedDrug ? 'is-active' : ''}" onclick="event.stopPropagation(); selectFlashcardGeneric('${g.replace(/'/g, "\\'")}')">💖 ${g}</span>`).join('')}</div>`;
         } else {
             chipWrap.style.display = 'none';
             chipWrap.innerHTML = '';
         }
 
         closeFcDrugPicker();
-        updateFlashcardLinks(generics[0]);
+        selectFlashcardGeneric(generics.includes(fcSelectedDrug) ? fcSelectedDrug : generics[0]);
     }
 
     function openFcDrugPicker() {
@@ -987,6 +1013,14 @@
         // Google deep link handled in triggerFcAction('google').
     }
 
+    function selectFlashcardGeneric(genericName) {
+        updateFlashcardLinks(genericName);
+        const chipWrap = document.getElementById('fc-multi-chip-wrap');
+        chipWrap.querySelectorAll('.multi-chip.selectable').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.innerText.includes(genericName));
+        });
+    }
+
     function triggerFcAction(action) {
         if (!flashcardList.length) return;
         const drug = flashcardList[fcCurrentIndex];
@@ -1010,6 +1044,8 @@
         } else if (action === 'case') {
             const d = {...flashcardList[fcCurrentIndex], name: selected};
             getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
+        } else if (action === 'speak') {
+            speakText(selected);
         }
     }
 
