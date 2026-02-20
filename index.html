@@ -231,6 +231,21 @@
             will-change: transform;
         }
 
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(12px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes softPulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(0, 122, 255, 0.08); }
+            50% { box-shadow: 0 8px 28px rgba(0, 122, 255, 0.18); }
+        }
+
+        .daily-card { animation: fadeSlideUp 0.35s ease both; }
+        .flashcard-wrapper { animation: fadeSlideUp 0.3s ease both; }
+        .glass-nav .nav-btn.active { animation: softPulse 1.8s ease-in-out infinite; }
+
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
@@ -296,7 +311,7 @@
             .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
-        /* 系統 System Scroll */
+        /* System Scroll */
         .system-scroll-container {
             display: flex; overflow-x: auto; gap: 8px; padding-bottom: 5px;
             margin-bottom: 15px; scrollbar-width: none; flex-wrap: nowrap;
@@ -490,21 +505,21 @@
 </header>
 
 <div class="glass-nav">
-    <button class="nav-btn active" id="nav-search" onclick="switchMode('search')">🧸 搜尋</button>
+    <button class="nav-btn active" id="nav-search" onclick="switchMode('search')">🧸 Search</button>
     <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')">🗂️ Flashcard</button>
-    <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')">🧠 測驗</button>
-    <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="openWardCheat()">🩺 病房</button>
+    <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')">🧠 Quiz</button>
+    <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="openWardCheat()">🩺 Ward</button>
 </div>
 
 <div id="filter-bar" class="filter-scroller" style="display:none; width: 92%; max-width:600px;">
     <select id="system-filter" onchange="applyFilter()" class="ios-select">
-        <option value="All">全部系統</option>
+        <option value="All">All Systems</option>
     </select>
     <select id="mastery-filter" onchange="applyFilter()" class="ios-select">
-        <option value="All">全部熟練度</option>
-        <option value="Focus">⚠️ 加強</option>
-        <option value="Learning">🟡 學習中</option>
-        <option value="Mastered">✅ 已掌握</option>
+        <option value="All">All Mastery</option>
+        <option value="Focus">⚠️ Focus</option>
+        <option value="Learning">🟡 Learning</option>
+        <option value="Mastered">✅ Mastered</option>
     </select>
 </div>
 
@@ -512,8 +527,8 @@
     
     <div id="search-section" class="app-smooth">
         <div class="section-header">
-            <span id="daily-title">📅 每日學習精選</span>
-            <span style="font-size:0.7rem; font-weight:400; color:var(--ios-blue);" onclick="refreshDailyPicks()">重新整理</span>
+            <span id="daily-title">📅 Daily Study Picks</span>
+            <span style="font-size:0.7rem; font-weight:400; color:var(--ios-blue);" onclick="refreshDailyPicks()">Refresh</span>
         </div>
         <div id="daily-container" class="daily-grid">
             <div class="daily-card" style="justify-content:center; align-items:center;">
@@ -523,20 +538,20 @@
 
         <div class="search-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" class="search-bar" placeholder="搜尋藥物、藥理類別、副作用 (副作用 Side Effects)..." oninput="handleSearch()">
+            <input type="text" id="search-input" class="search-bar" placeholder="Search drugs, class, indication, side effects..." oninput="handleSearch()">
         </div>
 
         <div id="history-section" style="margin-bottom:20px; display:none;">
-            <div class="section-header">最近搜尋</div>
+            <div class="section-header">Recent Searches</div>
             <div id="history-container" style="overflow-x:auto; white-space:nowrap; padding-bottom:5px;"></div>
         </div>
         
-        <div class="section-header">按系統瀏覽</div>
+        <div class="section-header">Browse by System</div>
         <div id="recommend-container" class="system-scroll-container"></div>
 
         <div id="search-results">
             <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
-                <p>請輸入關鍵字搜尋資料庫。</p>
+                <p>Type at least 2 letters to search the database.</p>
                 <div style="display:flex; justify-content:center; gap:10px;">
                      <span class="chip" onclick="quickSearch('Cardio')">🫀 Cardio</span>
                      <span class="chip" onclick="quickSearch('Respiratory')">🫁 Resp</span>
@@ -552,34 +567,34 @@
                 
                 <div class="card-face card-front">
                     <div style="font-size: 4rem; margin-bottom: 10px;">💊</div>
-                    <div style="font-size:0.9rem; color:var(--ios-gray); text-transform:uppercase; letter-spacing:1px; font-weight:700;">學名 (Generic Name)</div>
-                    <h2 id="fc-name" class="drug-title">藥物名稱</h2>
-                    <p style="color:var(--ios-gray); margin-top:0;">點擊翻卡查看詳情</p>
+                    <div style="font-size:0.9rem; color:var(--ios-gray); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Generic Name</div>
+                    <h2 id="fc-name" class="drug-title">Drug Name</h2>
+                    <p style="color:var(--ios-gray); margin-top:0;">Tap the card to flip</p>
                     
                     <button onclick="event.stopPropagation(); triggerFcAction('speak')" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
-                        🗣️ 讀出藥名
+                        🗣️ Speak name
                     </button>
                 </div>
 
                 <div class="card-face card-back">
                     <div class="detail-row">
-                        <div class="detail-label">藥理類別 Class</div>
+                        <div class="detail-label">Class</div>
                         <div class="detail-content" id="fc-class">...</div>
                     </div>
                     <div class="detail-row">
-                        <div class="detail-label">系統 System</div>
+                        <div class="detail-label">System</div>
                         <div class="detail-content" id="fc-system">...</div>
                     </div>
                     <div class="detail-row">
-                        <div class="detail-label">適應症 Indication</div>
+                        <div class="detail-label">Indication</div>
                         <div class="detail-content" id="fc-indication">...</div>
                     </div>
                     <div class="detail-row">
-                        <div class="detail-label" style="color:var(--ios-red);">副作用 Side Effects</div>
+                        <div class="detail-label" style="color:var(--ios-red);">Side Effects</div>
                         <div class="detail-content" id="fc-side-effects">...</div>
                     </div>
                     <div class="detail-row">
-                        <div class="detail-label">護理重點 Nursing Considerations</div>
+                        <div class="detail-label">Nursing Considerations</div>
                         <div class="detail-content" id="fc-nursing" style="font-size:0.9rem; line-height:1.5;">...</div>
                     </div>
 
@@ -596,7 +611,7 @@
                     </div>
 
                     <button onclick="event.stopPropagation(); triggerFcAction('case')" class="action-btn btn-primary" id="btn-case" style="margin-top:15px;">
-                        🪄 AI 臨床個案
+                        🪄 AI Clinical Case
                     </button>
                     
                     <div id="fc-ai-case" class="ai-output" onclick="event.stopPropagation();"></div>
@@ -606,11 +621,11 @@
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:0 10px;">
-            <button onclick="prevCard()" class="action-btn" style="width:auto;">← 上一張</button>
+            <button onclick="prevCard()" class="action-btn" style="width:auto;">← Previous</button>
             <span id="counter" style="font-weight:700; color:var(--ios-gray);">1 / 10</span>
-            <button onclick="nextCard()" class="action-btn" style="width:auto;">下一張 →</button>
+            <button onclick="nextCard()" class="action-btn" style="width:auto;">Next →</button>
         </div>
-        <button id="show-answer-btn" onclick="showAnswer()" class="action-btn btn-primary" style="margin-top:12px;">顯示答案</button>
+        <button id="show-answer-btn" onclick="showAnswer()" class="action-btn btn-primary" style="margin-top:12px;">Show Answer</button>
         <div id="anki-controls" class="anki-controls">
             <button class="anki-btn" style="background:#ef4444;" onclick="rateCurrentCard('again')">Again</button>
             <button class="anki-btn" style="background:#f59e0b;" onclick="rateCurrentCard('hard')">Hard</button>
@@ -623,14 +638,14 @@
     <div id="quiz-section" class="app-smooth" style="display:none;">
         <div class="ios-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="margin-top:0; color:var(--ios-blue);">自適應測驗</h3>
-                <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 統計</button>
+                <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
+                <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
-            <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">題目載入中...</p>
+            <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Loading question...</p>
             <div class="quiz-stats-row">
-                <div class="quiz-stat-pill">分數<strong id="quiz-score">0%</strong></div>
-                <div class="quiz-stat-pill">連續答中<strong id="quiz-streak">0</strong></div>
-                <div class="quiz-stat-pill">已作答<strong id="quiz-answered">0</strong></div>
+                <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
+                <div class="quiz-stat-pill">Streak<strong id="quiz-streak">0</strong></div>
+                <div class="quiz-stat-pill">Answered<strong id="quiz-answered">0</strong></div>
             </div>
             <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
             
@@ -638,7 +653,7 @@
             <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
 
 
-            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">下一題 →</button>
+            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next →</button>
         </div>
     </div>
 
@@ -647,8 +662,8 @@
 <div id="fc-drug-picker" class="modal-overlay" onclick="if(event.target===this) closeFcDrugPicker()">
     <div class="modal-card" style="height:auto; max-height:70vh; border-radius:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="margin:0;">選擇藥物</h3>
-            <button onclick="closeFcDrugPicker()" style="background:none; border:none; color:var(--ios-blue); font-weight:600;">關閉</button>
+            <h3 style="margin:0;">Pick a Drug</h3>
+            <button onclick="closeFcDrugPicker()" style="background:none; border:none; color:var(--ios-blue); font-weight:600;">Close</button>
         </div>
         <div id="fc-picker-list" style="display:flex; flex-direction:column; gap:8px;"></div>
     </div>
@@ -657,37 +672,37 @@
 <div id="settings-panel" class="modal-overlay" onclick="if(event.target===this) toggleSettings()">
     <div class="modal-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h3 style="margin:0;">設定</h3>
-            <button onclick="toggleSettings()" style="background:none; border:none; color:var(--ios-blue); font-weight:600; font-size:1rem;">完成</button>
+            <h3 style="margin:0;">Settings</h3>
+            <button onclick="toggleSettings()" style="background:none; border:none; color:var(--ios-blue); font-weight:600; font-size:1rem;">Done</button>
         </div>
         
         <div style="margin-bottom:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
-            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">AI 模型</label>
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">AI Model</label>
             <select id="provider-select" onchange="updateProviderDisplay()" class="ios-select" style="width:100%; margin-top:5px; background:white;">
-                <option value="deepseek">DeepSeek V3（快速）</option>
-                <option value="deepseek-r1">DeepSeek R1（推理）</option>
+                <option value="deepseek">DeepSeek V3 (Fast)</option>
+                <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
             </select>
         </div>
 
         <div id="deepseek-config" class="config-section">
-            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">DEEPSEEK API 金鑰</label>
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">DeepSeek API Key</label>
             <input type="password" id="deepseek-key" class="settings-input" placeholder="sk-...">
-            <div style="font-size:0.75rem; color:var(--ios-gray);">V3 與 R1 皆可使用。</div>
+            <div style="font-size:0.75rem; color:var(--ios-gray);">Works with both V3 and R1.</div>
         </div>
         
         <div style="margin-top:20px;">
-             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">資料來源</label>
-             <button onclick="toggleDrugSet()" id="set-btn" class="action-btn">📚 使用：常用藥物</button>
+             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Data Source</label>
+             <button onclick="toggleDrugSet()" id="set-btn" class="action-btn">📚 Source: Common drugs</button>
              <div class="import-wrapper" style="margin-top:10px;">
-                <input type="text" id="sheet-url" class="settings-input" placeholder="Google Sheet CSV 連結" style="margin-bottom:5px;" />
-                <button onclick="fetchSheetData()" class="action-btn">載入 Sheet 資料</button>
+                <input type="text" id="sheet-url" class="settings-input" placeholder="Google Sheet CSV URL" style="margin-bottom:5px;" />
+                <button onclick="fetchSheetData()" class="action-btn">Load Sheet Data</button>
                 <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
-                    <input id="auto-sync-startup" type="checkbox" style="width:16px; height:16px;"> 開啟時自動同步 Online CSV（較慢）
+                    <input id="auto-sync-startup" type="checkbox" style="width:16px; height:16px;"> Auto-sync online CSV on startup (slower)
                 </label>
                 <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                    <button onclick="downloadLocalData()" class="action-btn" style="flex:1; min-width:180px;">⬇️ 下載本機資料(JSON)</button>
+                    <button onclick="downloadLocalData()" class="action-btn" style="flex:1; min-width:180px;">⬇️ Download local data (JSON)</button>
                     <label class="action-btn" style="flex:1; min-width:180px; text-align:center; cursor:pointer;">
-                        ⬆️ 匯入本機資料(JSON)
+                        ⬆️ Import local data (JSON)
                         <input id="local-data-file" type="file" accept="application/json,.json" style="display:none;" onchange="importLocalData(event)">
                     </label>
                 </div>
@@ -696,51 +711,51 @@
         </div>
 
         <div style="margin-top:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
-            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">學習模式</label>
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Study Mode</label>
             <div style="margin-top:8px; padding:12px; border-radius:10px; background:white; border:1px solid #e5e7eb; color:#111827; font-size:0.9rem; line-height:1.4;">
-                ✅ 已啟用 <strong>Flashcard（Anki 風格）模式</strong><br>
-                • 藥卡使用 Again / Hard / Good / Easy 排程<br>
-                • 每日精選僅顯示今日到期卡片
+                ✅ <strong>Flashcard (Anki-style)</strong> enabled<br>
+                • Uses Again / Hard / Good / Easy scheduling<br>
+                • Daily picks show only cards due today
             </div>
-            <label style="display:block; margin-top:10px; font-size:0.8rem; color:var(--ios-gray);">每日學習上限（張）</label>
-            <input id="anki-daily-limit" type="number" min="5" max="200" step="1" class="settings-input" style="margin-top:6px; margin-bottom:0; background:white;" placeholder="例如 20">
+            <label style="display:block; margin-top:10px; font-size:0.8rem; color:var(--ios-gray);">Daily card limit</label>
+            <input id="anki-daily-limit" type="number" min="5" max="200" step="1" class="settings-input" style="margin-top:6px; margin-bottom:0; background:white;" placeholder="e.g. 20">
             <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:8px;">
                 <div>
-                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">Due 上限</label>
+                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">Due limit</label>
                     <input id="anki-due-limit" type="number" min="1" max="200" step="1" class="settings-input" style="margin:4px 0 0; background:white;" placeholder="50">
                 </div>
                 <div>
-                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">Learn 上限</label>
+                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">Learn limit</label>
                     <input id="anki-learn-limit" type="number" min="1" max="100" step="1" class="settings-input" style="margin:4px 0 0; background:white;" placeholder="20">
                 </div>
                 <div>
-                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">New 上限</label>
+                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">New limit</label>
                     <input id="anki-new-limit" type="number" min="1" max="100" step="1" class="settings-input" style="margin:4px 0 0; background:white;" placeholder="20">
                 </div>
             </div>
             <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="local">測驗引擎：本機（快、離線）</option>
-                <option value="deepseek">測驗引擎：DeepSeek AI</option>
+                <option value="local">Quiz engine: Local (fast, offline)</option>
+                <option value="deepseek">Quiz engine: DeepSeek AI</option>
             </select>
         </div>
 
         <div style="margin-top:12px; font-size:0.82rem; color:#4b5563; background:#eef6ff; border:1px solid #dbeafe; border-radius:12px; padding:12px; line-height:1.45;">
-            <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">使用方法</div>
-            <div>1) 藥卡模式固定為 <strong>Flashcard（Anki 風格）</strong> 間隔重溫。</div>
-            <div>2) 設定 <strong>每日學習上限</strong>（例如 20 張）。</div>
-            <div>3) 可設定 <strong>Due / Learn / New</strong> 各自上限。</div>
-            <div>4) 在 Flashcard 模式按 <strong>Again / Hard / Good / Easy</strong> 排程下次重溫。</div>
+            <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">How to use</div>
+            <div>1) Flashcard mode uses Anki-style spaced repetition.</div>
+            <div>2) Set your <strong>daily card limit</strong> (e.g. 20).</div>
+            <div>3) Set separate limits for <strong>Due / Learn / New</strong>.</div>
+            <div>4) In Flashcard mode, rate cards with <strong>Again / Hard / Good / Easy</strong>.</div>
         </div>
 
-        <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">儲存設定</button>
+        <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Settings</button>
     </div>
 </div>
 
 <div id="progress-modal" class="modal-overlay" onclick="if(event.target===this) closeProgressModal()">
     <div class="modal-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:15px;">
-            <h3 style="margin:0;">📊 知識庫</h3>
-            <button onclick="closeProgressModal()" style="background:none; border:none; color:var(--ios-blue);">關閉</button>
+            <h3 style="margin:0;">📊 Knowledge Base</h3>
+            <button onclick="closeProgressModal()" style="background:none; border:none; color:var(--ios-blue);">Close</button>
         </div>
         <div id="progress-list-content" style="overflow-y:auto; flex-grow:1;"></div>
     </div>
@@ -785,14 +800,14 @@
     // Settings
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
 
-    // 系統 System Data
+    // System Data
     const systemCategories = [
         "Gastro-intestinal system", "Cardiovascular system", "Respiratory system", "Central nervous system", "Infections", "Endocrine system",
         "Obstetrics, gynaecology, and urinary-tract disorders", "Malignant disease and immunosuppression", "Nutrition and blood",
         "Musculoskeletal and joint disease", "Eye", "Ear, nose, and oropharynx", "Skin", "Immunological products and vaccines", "Anaesthesia"
     ];
     const systemShortNames = {
-        "Gastro-intestinal system": "GI 系統 System", "Cardiovascular system": "Cardio", "Respiratory system": "Respiratory",
+        "Gastro-intestinal system": "GI System", "Cardiovascular system": "Cardio", "Respiratory system": "Respiratory",
         "Central nervous system": "CNS / Neuro", "Infections": "Infections", "Endocrine system": "Endocrine",
         "Obstetrics, gynaecology, and urinary-tract disorders": "ObGyn / GU", "Malignant disease and immunosuppression": "Oncology",
         "Nutrition and blood": "Nutrition / Blood", "Musculoskeletal and joint disease": "MSK / Bone",
@@ -827,7 +842,7 @@
         if (cachedData.length > 0) {
             activeSourceList = prepareDrugListForFastSearch(cachedData);
             flashcardList = [...activeSourceList];
-            document.getElementById('set-btn').innerText = '📚 使用：本機快取';
+            document.getElementById('set-btn').innerText = '📚 Source: Local cache';
         }
         
         // Restore Data
@@ -848,21 +863,24 @@
         document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
 
         initSystemDropdown();
-        applyFilter(); 
+        applyFilter(false);
         renderHistory();
-        renderAllSystems(); 
         updateProviderDisplay();
-        
-        // Daily Recommendations
-        generateDailyPicks();
-        updateQueueStats(filteredList.length ? filteredList : activeSourceList);
+
+        const runNonCriticalInit = () => {
+            renderAllSystems();
+            generateDailyPicks();
+            updateQueueStats(filteredList.length ? filteredList : activeSourceList);
+        };
+        if (window.requestIdleCallback) window.requestIdleCallback(runNonCriticalInit, { timeout: 600 });
+        else setTimeout(runNonCriticalInit, 0);
         
         // Optional online sync (can be disabled for faster launch).
         if (autoSyncOnStartup) {
             fetchSheetData(true);
         } else {
             const status = document.getElementById('upload-status');
-            if (status) status.innerText = '⚡ 使用本機資料啟動（更快）';
+            if (status) status.innerText = '⚡ Fast startup using local data';
         }
         
         switchMode('search');
@@ -909,7 +927,7 @@
 
     function updateDailyTitle(count) {
         const titleEl = document.getElementById('daily-title');
-        if (titleEl) titleEl.innerText = `📅 每日學習精選 (${count})`;
+        if (titleEl) titleEl.innerText = `📅 Daily Study Picks (${count})`;
     }
 
     // --- DAILY RECOMMENDATIONS ---
@@ -1005,6 +1023,7 @@
         sectionToShow.classList.remove('mode-transition');
         void sectionToShow.offsetWidth;
         sectionToShow.classList.add('mode-transition');
+        sectionToShow.style.animation = 'fadeSlideUp .24s ease-out';
 
         if(mode === 'search') {
             document.getElementById('search-section').style.display = 'block';
@@ -1077,12 +1096,12 @@
             document.getElementById('fc-name').innerText = 'No cards due 📚';
             document.getElementById('fc-class').innerText = 'Great job. You have no due cards right now.';
             document.getElementById('fc-system').innerText = 'Flashcard review queue is empty.';
-            document.getElementById('fc-indication').innerText = '請稍後再試，或先用搜尋模式學習。';
+            document.getElementById('fc-indication').innerText = 'Try again later, or learn in Search mode first.';
             document.getElementById('fc-side-effects').innerText = '-';
             document.getElementById('fc-nursing').innerText = '-';
             document.getElementById('counter').innerText = '0 / 0';
             document.getElementById('btn-case').disabled = true;
-            document.getElementById('btn-case').innerHTML = '🪄 AI 臨床個案';
+            document.getElementById('btn-case').innerHTML = '🪄 AI Clinical Case';
             document.getElementById('fc-ai-case').style.display = 'none';
             document.getElementById('btn-read-case').style.display = 'none';
             document.getElementById('show-answer-btn').style.display = 'none';
@@ -1106,7 +1125,7 @@
         document.getElementById('show-answer-btn').style.display = 'flex';
         document.getElementById('anki-controls').style.display = 'none';
 
-        document.getElementById('btn-case').innerHTML = '🪄 AI 臨床個案';
+        document.getElementById('btn-case').innerHTML = '🪄 AI Clinical Case';
         document.getElementById('btn-case').disabled = false;
         updateAnkiMeta(drug);
 
@@ -1168,7 +1187,7 @@
         const generics = parseDrugGenerics(drug.name);
         const run = (pickedDrug) => runFcAction(action, pickedDrug);
         if (generics.length > 1) {
-            pickDrugFromList(generics, '為此操作選擇藥物', run);
+            pickDrugFromList(generics, 'Pick a drug for this action', run);
             return;
         }
         run(generics[0]);
@@ -1370,7 +1389,7 @@
                 <div class="result-header">
                     <div class="name-with-speak">
                         <span class="result-name">${drug.name}</span>
-                        <button class="speak-icon-btn" onclick="event.stopPropagation(); triggerSearchSpeak(this)" title="朗讀">🗣️</button>
+                        <button class="speak-icon-btn" onclick="event.stopPropagation(); triggerSearchSpeak(this)" title="Speak">🗣️</button>
                     </div>
                     <span class="result-class">${drug.class}</span>
                 </div>
@@ -1378,9 +1397,9 @@
                 ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class=\"multi-chip selectable ${g === generics[0] ? 'is-active' : ''}\" onclick=\"event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')\">💖 ${g}</span>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
-                    <div style="margin-bottom:5px;"><strong>副作用 Side Effects:</strong> <span style="color:#d32f2f;">${sideEffectsText}</span></div>
+                    <div style="margin-bottom:5px;"><strong>Side Effects:</strong> <span style="color:#d32f2f;">${sideEffectsText}</span></div>
                     <div style="margin-bottom:5px;"><strong>Nursing:</strong> ${drug.nursing}</div>
-                    <div style="margin-bottom:5px;"><strong>系統 System:</strong> ${drug.system}</div>
+                    <div style="margin-bottom:5px;"><strong>System:</strong> ${drug.system}</div>
                     
                     <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto;">
                          <span class="chip" onclick="event.stopPropagation(); triggerSearchGoogle(this)">🔎 Google</span>
@@ -1416,18 +1435,18 @@
     }
 
     window.triggerSearchGoogle = function(btn) {
-        withSearchDrugSelection(btn, '為 Google 搜尋選擇藥物', (name) => {
+        withSearchDrugSelection(btn, 'Pick a drug for Google', (name) => {
             const q = `${name} 中文 香港`;
             openGoogleDeepLink(q);
         });
     };
 
     window.triggerSearchDrugsCom = function(btn) {
-        withSearchDrugSelection(btn, '為 Drugs.com 選擇藥物', (name) => openDrugsCom({name}));
+        withSearchDrugSelection(btn, 'Pick a drug for Drugs.com', (name) => openDrugsCom({name}));
     };
     
     window.triggerSearchSpeak = function(btn) {
-        withSearchDrugSelection(btn, '為朗讀選擇藥物', (name) => {
+        withSearchDrugSelection(btn, 'Pick a drug to speak', (name) => {
             const card = btn.closest('.result-card');
             if (card && name) {
                 card.dataset.currentGeneric = name;
@@ -1456,8 +1475,8 @@
         const box = document.getElementById(outputId);
         btn.innerText = "⏳";
         box.style.display = 'block';
-        withSearchDrugSelection(btn, '為講解選擇藥物', (pickedName) => {
-            const prompt = `請用繁體中文（香港）解釋 ${pickedName}，保留英文醫學術語。用 Markdown 短點列，方便手機一眼睇。格式：1) MOA 2) Key 適應症 Indication 3) Monitoring 4) Safety Warning。每點不超過12字。`;
+        withSearchDrugSelection(btn, 'Pick a drug for explanation', (pickedName) => {
+            const prompt = `請用繁體中文（香港）解釋 ${pickedName}，保留英文醫學術語。用 Markdown 短點列，方便手機一眼睇。格式：1) MOA 2) Key Indication 3) Monitoring 4) Safety Warning。每點不超過12字。`;
             streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
         });
         btn.innerText = "✅";
@@ -1475,7 +1494,7 @@
         container.innerHTML = `
             <div style="text-align:center; padding:20px;">
                 <div class="loading-spinner"></div>
-                <div style="margin-top:10px; font-weight:600;">搜尋資料庫中...</div>
+                <div style="margin-top:10px; font-weight:600;">Searching database...</div>
             </div>`;
 
         const prompt = `你是護理導師。使用者搜尋「${query}」。請只回傳 strict JSON。
@@ -1499,16 +1518,16 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
                         <h3 style="margin:0; color:var(--ios-blue);">${drugData.name}</h3>
                         <span class="chip" style="background:var(--ios-green); color:white;">AI Found</span>
                     </div>
-                    <div class="detail-row"><div class="detail-label">藥理類別 Class</div><div class="detail-content">${drugData.class}</div></div>
-                    <div class="detail-row"><div class="detail-label">系統 System</div><div class="detail-content">${drugData.system}</div></div>
-                    <div class="detail-row"><div class="detail-label">適應症 Indication</div><div class="detail-content">${drugData.indication}</div></div>
-                    <div class="detail-row"><div class="detail-label">副作用 Side Effects</div><div class="detail-content" style="color:#d32f2f;">${drugData.side_effects}</div></div>
+                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content">${drugData.class}</div></div>
+                    <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${drugData.system}</div></div>
+                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${drugData.indication}</div></div>
+                    <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" style="color:#d32f2f;">${drugData.side_effects}</div></div>
                     <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content" style="font-size:0.9rem;">${drugData.nursing}</div></div>
                     <button id="btn-save-sheet" onclick='saveToGoogleSheet(${JSON.stringify(drugData)})' class="action-btn btn-green">💾 Save to Database</button>
                     <div id="save-status" style="text-align:center; margin-top:10px; font-size:0.85rem; font-weight:600;"></div>
                 </div>`;
         } catch (e) {
-            container.innerHTML = `<div style="color:red; margin-top:10px;">搜尋失敗，請再試。</div>`;
+            container.innerHTML = `<div style="color:red; margin-top:10px;">Search failed. Please try again.</div>`;
         }
     }
 
@@ -1516,18 +1535,18 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         const statusEl = document.getElementById('save-status');
         const saveBtn = document.getElementById('btn-save-sheet');
         
-        if(!googleScriptURL) { alert("請先在設定（⚙️）填寫 Google Script URL。"); return; }
+        if(!googleScriptURL) { alert("Please set the Google Script URL in Settings (⚙️) first."); return; }
 
         saveBtn.disabled = true; saveBtn.innerText = "⏳ Saving..."; statusEl.innerText = "Syncing with cloud...";
 
         fetch(googleScriptURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(drugData) })
         .then(() => { 
-            statusEl.innerText = "✅ 儲存成功！"; statusEl.style.color = "var(--ios-green)"; 
+            statusEl.innerText = "✅ Saved successfully!"; statusEl.style.color = "var(--ios-green)"; 
             saveBtn.innerText = "💾 Saved"; 
             activeSourceList.push(normalizeDrugData(drugData)); 
         })
         .catch(err => { 
-            statusEl.innerText = "❌ 儲存失敗。"; statusEl.style.color = "var(--ios-red)"; saveBtn.disabled = false; 
+            statusEl.innerText = "❌ Save failed."; statusEl.style.color = "var(--ios-red)"; saveBtn.disabled = false; 
         });
     }
 
@@ -1577,7 +1596,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         });
     }
     
-    function applyFilter() {
+    function applyFilter(shouldReshuffle = true) {
         const sysCategory = document.getElementById('system-filter').value;
         const masteryCategory = document.getElementById('mastery-filter').value;
         
@@ -1600,7 +1619,7 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
             document.getElementById('mastery-filter').value = "All";
             filteredList = [...activeSourceList];
         }
-        reshuffle();
+        if (shouldReshuffle) reshuffle();
     }
     
     function reshuffle() {
@@ -1667,12 +1686,12 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         const templates = [
             {
                 type: 'indication_to_drug',
-                prompt: `📌 適應症 Indication: "${correctDrug.indication}"\nWhich drug is the best match?`,
+                prompt: `📌 Indication: "${correctDrug.indication}"\nWhich drug is the best match?`,
                 answerLabel: d => d.name,
             },
             {
                 type: 'class_to_drug',
-                prompt: `🧪 藥理類別 Class check: "${correctDrug.class}"\nWhich drug belongs here?`,
+                prompt: `🧪 Class check: "${correctDrug.class}"\nWhich drug belongs here?`,
                 answerLabel: d => d.name,
             },
             {
@@ -1705,13 +1724,13 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         document.getElementById('quiz-mini-explainer').style.display = 'none';
         updateQuizSessionUI();
 
-        if (quizList.length === 0) { qEl.innerText = "沒有可用藥物。"; return; }
+        if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
 
         if (quizEngine === 'deepseek' && deepSeekKey && deepSeekKey.startsWith('sk-')) {
-            qEl.innerText = '🤖 正在生成 AI 測驗題...';
+            qEl.innerText = '🤖 Generating AI quiz question...';
             const aiBuilt = await generateAIQuizQuestion(container, qEl);
             if (aiBuilt) return;
-            qEl.innerText = '⚠️ AI 測驗暫時不可用，改用本機題庫。';
+            qEl.innerText = '⚠️ AI quiz unavailable. Falling back to local mode.';
         }
 
         generateLocalQuizQuestion(container, qEl);
@@ -1860,7 +1879,7 @@ ${JSON.stringify(sample)}`;
 
          if(isCorrect) {
              btn.style.background = '#dcfce7'; btn.style.color = '#166534';
-             feedback.innerHTML = "✅ <strong>答對！</strong>";
+             feedback.innerHTML = "✅ <strong>Correct!</strong>";
              feedback.style.background = "#dcfce7"; feedback.style.color = "#166534";
              if(q.correctDrug?.name) quizStats[q.correctDrug.name].correct++;
              quizSession.correct++;
@@ -1868,7 +1887,7 @@ ${JSON.stringify(sample)}`;
              quizSession.bestStreak = Math.max(quizSession.bestStreak, quizSession.streak);
          } else {
              btn.style.background = '#fee2e2'; btn.style.color = '#991b1b';
-             feedback.innerHTML = `❌ <strong>答錯。</strong> 正確答案：${correct}。`;
+             feedback.innerHTML = `❌ <strong>Incorrect.</strong> Correct answer: ${correct}。`;
              feedback.style.background = "#fee2e2"; feedback.style.color = "#991b1b";
              quizSession.streak = 0;
              btns.forEach(b => { if(b.innerText === correct) { b.style.background = '#dcfce7'; b.style.color = '#166534'; } });
@@ -1877,11 +1896,11 @@ ${JSON.stringify(sample)}`;
          const mini = document.getElementById('quiz-mini-explainer');
          mini.style.display = 'block';
          if (q.aiExplanation) {
-             mini.innerHTML = `<strong>AI 重點：</strong> ${q.aiExplanation}`;
+             mini.innerHTML = `<strong>AI takeaway:</strong>  ${q.aiExplanation}`;
          } else if (q.correctDrug) {
-             mini.innerHTML = `<strong>Clinical link:</strong> ${q.correctDrug.name} • 藥理類別 Class: <strong>${q.correctDrug.class}</strong> • 適應症 Indication: <strong>${q.correctDrug.indication}</strong>.`;
+             mini.innerHTML = `<strong>Clinical link:</strong> ${q.correctDrug.name} • Class: <strong>${q.correctDrug.class}</strong> • Indication: <strong>${q.correctDrug.indication}</strong>.`;
          } else {
-             mini.innerHTML = `<strong>重溫提示：</strong> Focus on class-action and indication pairing.`;
+             mini.innerHTML = `<strong>Review tip:</strong>  Focus on class-action and indication pairing.`;
          }
 
          updateQuizSessionUI();
@@ -1935,14 +1954,14 @@ ${JSON.stringify(sample)}`;
             const response = await fetch(apiUrl, { method: "POST", headers: headers, body: JSON.stringify(body) });
             if (!response.ok) {
                 const errText = await response.text();
-                onUpdate(`錯誤：${response.status} ${response.statusText} - ${errText || '沒有詳細資料'}`);
+                onUpdate(`Error: ${response.status} ${response.statusText} - ${errText || 'No details'}`);
                 return;
             }
 
             if (!response.body) {
                 const json = await response.json();
                 const content = json?.choices?.[0]?.message?.content || '';
-                onUpdate(content || '未收到解釋內容。');
+                onUpdate(content || 'No explanation content received.');
                 return;
             }
 
@@ -1968,20 +1987,20 @@ ${JSON.stringify(sample)}`;
             }
 
             if (!fullText) {
-                onUpdate('未收到解釋內容，請再試一次。');
+                onUpdate('No explanation content received. Please try again.');
             }
-        } catch (e) { onUpdate("錯誤：" + e.message); }
+        } catch (e) { onUpdate("Error: " + e.message); }
     }
 
     async function getIntegratedCaseStudy(drug, outputId, btnId, readBtnId) {
         const btn = document.getElementById(btnId); const box = document.getElementById(outputId);
-        btn.innerHTML = '⏳ 生成中...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = '思考中...';
+        btn.innerHTML = '⏳ Generating...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = 'Thinking...';
         
         // Strict English Prompt
         const prompt = `請用繁體中文（香港）建立 ${drug.name} 護理個案，保留英文醫學術語。用 Markdown 點列，方便手機快速閱讀。包含：Patient snapshot、key vitals、用藥原因、3個nursing checks、1條critical-thinking題。`;
         
         await streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
-        btn.innerHTML = '✨ 重新生成個案'; btn.disabled = false; document.getElementById(readBtnId).style.display = 'block';
+        btn.innerHTML = '✨ Regenerate case'; btn.disabled = false; document.getElementById(readBtnId).style.display = 'block';
     }
 
     // --- UTILS ---
@@ -2029,7 +2048,7 @@ ${JSON.stringify(sample)}`;
         if (!file) return;
         const reader = new FileReader();
         const status = document.getElementById('upload-status');
-        status.innerText = '⏳ 匯入本機資料中...';
+        status.innerText = '⏳ Importing local data...';
         reader.onload = () => {
             try {
                 const parsed = JSON.parse(reader.result || '{}');
@@ -2042,10 +2061,10 @@ ${JSON.stringify(sample)}`;
                 applyFilter();
                 generateDailyPicks();
                 updateQueueStats(filteredList.length ? filteredList : activeSourceList);
-                status.innerText = `✅ 已匯入 ${normalized.length} 種藥物（本機）`;
-                document.getElementById('set-btn').innerText = '📚 使用：本機快取';
+                status.innerText = `✅ Imported ${normalized.length} drugs (local)`;
+                document.getElementById('set-btn').innerText = '📚 Source: Local cache';
             } catch (_) {
-                status.innerText = '❌ JSON 格式無效';
+                status.innerText = '❌ Invalid JSON format';
             }
             event.target.value = '';
         };
@@ -2080,7 +2099,7 @@ ${JSON.stringify(sample)}`;
         generateDailyPicks();
         updateQueueStats(filteredList.length ? filteredList : activeSourceList);
         toggleSettings();
-        alert("設定已儲存！");
+        alert("Settings saved!");
     }
     
     function updateProviderDisplay() {
@@ -2120,15 +2139,15 @@ ${JSON.stringify(sample)}`;
         if (url.includes("docs.google.com/spreadsheets") && url.includes("/edit")) fetchUrl = url.replace(/\/edit.*$/, "/export?format=csv");
         
         const status = document.getElementById('upload-status');
-        status.innerText = "⏳ 載入中...";
+        status.innerText = "⏳ Loading...";
         
         fetch(fetchUrl).then(r => r.text()).then(csv => {
             Papa.parse(csv, { header: true, skipEmptyLines: true, complete: function(results) {
                  if (results.data.length > 0) {
                      extendedDrugs = prepareDrugListForFastSearch(results.data);
 
-                     status.innerText = `✅ 已載入 ${extendedDrugs.length} 種藥物`;
-                     document.getElementById('set-btn').innerText = "📚 使用：Online CSV";
+                     status.innerText = `✅ Loaded ${extendedDrugs.length} drugs`;
+                     document.getElementById('set-btn').innerText = "📚 Source: Online CSV";
                      
                      if(autoSwitch) {
                          activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
@@ -2140,7 +2159,7 @@ ${JSON.stringify(sample)}`;
                  }
             }});
         }).catch(e => {
-            status.innerText = "❌ 載入失敗，改用本機資料。";
+            status.innerText = "❌ Load failed, switched to local data.";
             if(autoSwitch) {
                 activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
                 applyFilter();
@@ -2154,10 +2173,10 @@ ${JSON.stringify(sample)}`;
         const usingOnline = document.getElementById('set-btn').innerText.includes('Online CSV');
         if(usingOnline) {
             activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
-            document.getElementById('set-btn').innerText = "📚 使用：常用藥物";
+            document.getElementById('set-btn').innerText = "📚 Source: Common drugs";
         } else if(extendedDrugs.length > 0) {
             activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
-            document.getElementById('set-btn').innerText = "📚 使用：Online CSV";
+            document.getElementById('set-btn').innerText = "📚 Source: Online CSV";
         }
         saveLocalDrugCache(activeSourceList);
         applyFilter();
