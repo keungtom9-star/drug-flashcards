@@ -699,13 +699,6 @@
                 <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
                     <input id="auto-sync-startup" type="checkbox" style="width:16px; height:16px;"> Auto-sync online CSV on startup (slower)
                 </label>
-                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                    <button onclick="downloadLocalData()" class="action-btn" style="flex:1; min-width:180px;">⬇️ Download local data (JSON)</button>
-                    <label class="action-btn" style="flex:1; min-width:180px; text-align:center; cursor:pointer;">
-                        ⬆️ Import local data (JSON)
-                        <input id="local-data-file" type="file" accept="application/json,.json" style="display:none;" onchange="importLocalData(event)">
-                    </label>
-                </div>
                 <div id="upload-status" style="font-size:0.8rem; margin-top:5px; text-align:center;"></div>
             </div>
         </div>
@@ -788,7 +781,7 @@
     let ankiNewLimit = parseInt(localStorage.getItem('anki_new_limit') || '20', 10);
     let ankiLearnLimit = parseInt(localStorage.getItem('anki_learn_limit') || '20', 10);
     let ankiDueLimit = parseInt(localStorage.getItem('anki_due_limit') || '50', 10);
-    let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') === '1';
+    let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') !== '0';
 
     const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
     
@@ -2025,50 +2018,6 @@ ${JSON.stringify(sample)}`;
             }));
             localStorage.setItem(LOCAL_DRUG_CACHE_KEY, JSON.stringify(payload));
         } catch (_) {}
-    }
-
-    function downloadLocalData() {
-        const payload = {
-            exportedAt: new Date().toISOString(),
-            count: activeSourceList.length,
-            drugs: activeSourceList
-        };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `drug-data-${new Date().toISOString().slice(0,10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(a.href), 500);
-    }
-
-    function importLocalData(event) {
-        const file = event?.target?.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        const status = document.getElementById('upload-status');
-        status.innerText = '⏳ Importing local data...';
-        reader.onload = () => {
-            try {
-                const parsed = JSON.parse(reader.result || '{}');
-                const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.drugs) ? parsed.drugs : []);
-                if (!list.length) throw new Error('empty');
-                const normalized = prepareDrugListForFastSearch(list);
-                activeSourceList = normalized;
-                flashcardList = [...normalized];
-                saveLocalDrugCache(normalized);
-                applyFilter();
-                generateDailyPicks();
-                updateQueueStats(filteredList.length ? filteredList : activeSourceList);
-                status.innerText = `✅ Imported ${normalized.length} drugs (local)`;
-                document.getElementById('set-btn').innerText = '📚 Source: Local cache';
-            } catch (_) {
-                status.innerText = '❌ Invalid JSON format';
-            }
-            event.target.value = '';
-        };
-        reader.readAsText(file);
     }
 
     function toggleSettings() {
