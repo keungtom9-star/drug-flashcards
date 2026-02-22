@@ -1798,45 +1798,45 @@ Rules:
             remembering: [
                 {
                     type: 'drug_to_class',
-                    prompt: `🧠 [Remembering]\nDrug focus: ${correctDrug.name}\n${nursingContext}\nRecall-level check: identify the correct pharmacological class used in bedside medication rounds.`,
+                    prompt: `What is the pharmacological class of ${correctDrug.name}?`,
                     answerLabel: d => d.class,
                 },
                 {
                     type: 'drug_to_indication',
-                    prompt: `🧠 [Remembering]\nDrug focus: ${correctDrug.name}\n${nursingContext}\nRecall-level check: identify the primary clinical indication most relevant to routine nursing administration.`,
+                    prompt: `What is the key clinical indication of ${correctDrug.name}?`,
                     answerLabel: d => d.indication,
                 }
             ],
             understanding: [
                 {
                     type: 'class_to_drug',
-                    prompt: `📘 [Understanding]\nClass focus: "${correctDrug.class}"\nNursing interpretation: choose the drug that best matches this class and usual nursing intent for monitoring and safe administration.`,
+                    prompt: `Which drug belongs to the class "${correctDrug.class}"?`,
                     answerLabel: d => d.name,
                 },
                 {
                     type: 'indication_to_drug',
-                    prompt: `📘 [Understanding]\nIndication focus: "${correctDrug.indication}"\nNursing interpretation: choose the drug that best explains this indication in day-to-day ward practice.`,
+                    prompt: `Which drug best matches the indication "${correctDrug.indication}"?`,
                     answerLabel: d => d.name,
                 }
             ],
             applying: [
                 {
                     type: 'apply_indication',
-                    prompt: `🛠️ [Applying]\nClinical mini-scenario: A patient in ${correctDrug.system || getSystemForDrug(correctDrug)} requires treatment for "${correctDrug.indication}".\nApply knowledge of drug class, indication, and practical nursing administration priorities to select the most appropriate drug option.`,
+                    prompt: `A patient requires treatment for "${correctDrug.indication}". Which drug is the most appropriate choice?`,
                     answerLabel: d => d.name,
                 }
             ],
             analyzing: [
                 {
                     type: 'analyze_class',
-                    prompt: `🔎 [Analyzing]\nReference drug: ${correctDrug.name} (${correctDrug.class}).\nAnalyze all options and identify which option belongs to the same therapeutic class after comparing class-indication relationships relevant to nursing checks and medication safety.`,
+                    prompt: `Which option is in the same therapeutic class as ${correctDrug.name}?`,
                     answerLabel: d => d.name,
                 }
             ],
             evaluating: [
                 {
                     type: 'evaluate_best_fit',
-                    prompt: `⚖️ [Evaluating]\nDecision focus: indication "${correctDrug.indication}" in ${correctDrug.system || getSystemForDrug(correctDrug)} care.\nEvaluate all options and choose the best therapeutic fit considering bedside nursing priorities: appropriateness, safety monitoring needs, and risk awareness.`,
+                    prompt: `For indication "${correctDrug.indication}", which option is the best therapeutic fit?`,
                     answerLabel: d => d.name,
                 }
             ]
@@ -1899,7 +1899,7 @@ Rules:
     function renderPreparedQuizQuestion(container, qEl, q) {
         if (!q) return;
         currentQuizQuestion = q;
-        qEl.innerText = q.prompt;
+        qEl.innerText = formatQuizQuestionText(q.prompt);
         container.innerHTML = '';
         (q.options || []).forEach(optText => {
             const btn = document.createElement('button');
@@ -2009,6 +2009,7 @@ Strict rules:
 - exactly 4 options
 - exactly one best answer
 - "answer" must exactly match one option string
+- "question" must contain only the final learner-facing question text (no headings/prefixes like "Decision focus", "Reference drug", or level tags)
 - do not invent drugs outside the provided context
 - keep options balanced (no obvious giveaway)
 - explanation must mention nursing reasoning (e.g., indication match, class logic, monitoring/safety)
@@ -2071,6 +2072,15 @@ ${JSON.stringify(sample)}`;
         } catch {
             return null;
         }
+    }
+
+    function formatQuizQuestionText(text) {
+        const raw = String(text || '').trim();
+        if (!raw) return raw;
+        const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+        const cleaned = lines.filter(line => !/^(decision focus:|reference drug:|drug focus:|class focus:|indication focus:|nursing interpretation:)/i.test(line));
+        if (!cleaned.length) return raw;
+        return cleaned.length > 1 ? cleaned[cleaned.length - 1] : cleaned[0];
     }
 
     function checkAnswer(btn, selectedText, q) {
