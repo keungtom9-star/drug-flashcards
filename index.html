@@ -307,6 +307,13 @@
                 font-size: 0.95rem;
                 min-height: 52px;
             }
+            .quiz-controls-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .quiz-controls-grid .ios-select {
+                width: 100%;
+            }
             .result-card { padding: 13px; }
             .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -436,6 +443,19 @@
             line-height: 1.45;
             padding: 14px 16px;
             font-size: 0.98rem;
+        }
+
+        .quiz-controls-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .quiz-start-btn {
+            grid-column: 1 / -1;
+            margin: 0;
+            width: 100%;
         }
 
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
@@ -641,8 +661,8 @@
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
                 <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:8px; margin-bottom:12px;">
-                <select id="quiz-level" class="ios-select" style="margin:0;">
+            <div class="quiz-controls-grid">
+                <select id="quiz-level" class="ios-select" style="margin:0; width:100%;">
                     <option value="">Select level</option>
                     <option value="remembering">Remembering</option>
                     <option value="understanding">Understanding</option>
@@ -650,11 +670,18 @@
                     <option value="analyzing">Analyzing</option>
                     <option value="evaluating">Evaluating</option>
                 </select>
-                <select id="quiz-system" class="ios-select" style="margin:0;">
+                <select id="quiz-system" class="ios-select" style="margin:0; width:100%;">
                     <option value="">Select system</option>
                 </select>
-                <button onclick="generateQuizQuestion()" class="action-btn btn-primary" style="margin:0; width:auto; padding:10px 12px;">Start</button>
+                <select id="quiz-count" class="ios-select" style="margin:0; width:100%;">
+                    <option value="5">5 questions</option>
+                    <option value="10" selected>10 questions</option>
+                    <option value="15">15 questions</option>
+                    <option value="20">20 questions</option>
+                </select>
+                <button onclick="startQuizRound()" class="action-btn btn-primary quiz-start-btn" style="padding:10px 12px;">Start</button>
             </div>
+            <div id="quiz-round-progress" style="font-size:0.85rem; color:var(--ios-gray); margin-bottom:8px;">Round not started</div>
             <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Loading question...</p>
             <div class="quiz-stats-row">
                 <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
@@ -667,7 +694,7 @@
             <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
 
 
-            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next round →</button>
+            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next question →</button>
         </div>
     </div>
 
@@ -787,6 +814,11 @@
     let currentQuizQuestion = null;
     let selectedQuizLevel = '';
     let selectedQuizSystem = '';
+    let selectedQuizCount = 10;
+    let currentRoundTotal = 0;
+    let currentRoundAnswered = 0;
+    let quizQuestionQueue = [];
+    let quizGenerationInFlight = false;
     let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
@@ -1052,7 +1084,8 @@
         } else if (mode === 'quiz') {
             document.getElementById('quiz-section').style.display = 'block';
             document.getElementById('nav-quiz').classList.add('active');
-            generateQuizQuestion();
+            const qEl = document.getElementById('quiz-question');
+            if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         }
     }
 
@@ -1692,6 +1725,32 @@ Rules:
         document.getElementById('quiz-answered').innerText = `${answered}`;
     }
 
+    function updateQuizRoundProgress() {
+        const el = document.getElementById('quiz-round-progress');
+        if (!el) return;
+        if (!currentRoundTotal) {
+            el.innerText = 'Round not started';
+            return;
+        }
+        el.innerText = `Round progress: ${currentRoundAnswered}/${currentRoundTotal}`;
+    }
+
+    function startQuizRound() {
+        const levelEl = document.getElementById('quiz-level');
+        const systemEl = document.getElementById('quiz-system');
+        const countEl = document.getElementById('quiz-count');
+        selectedQuizLevel = levelEl ? levelEl.value : '';
+        selectedQuizSystem = systemEl ? systemEl.value : '';
+        selectedQuizCount = parseInt(countEl?.value || '10', 10) || 10;
+
+        currentRoundTotal = selectedQuizCount;
+        currentRoundAnswered = 0;
+        quizQuestionQueue = [];
+        quizGenerationInFlight = false;
+        updateQuizRoundProgress();
+        generateQuizQuestion();
+    }
+
     function getWeakDrugPool(list) {
         if (!list.length) return [];
         const scored = list.map(drug => {
@@ -1775,36 +1834,79 @@ Rules:
         document.getElementById('quiz-mini-explainer').style.display = 'none';
         updateQuizSessionUI();
 
-        selectedQuizLevel = levelEl ? levelEl.value : '';
-        selectedQuizSystem = systemEl ? systemEl.value : '';
-
         if (!selectedQuizLevel || !selectedQuizSystem) {
             qEl.innerText = "Please select both quiz level and drug system before each round.";
+            return;
+        }
+
+        if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
+            qEl.innerText = `Round complete (${currentRoundAnswered}/${currentRoundTotal}). Select options and press Start for a new round.`;
+            return;
+        }
+
+        if (quizQuestionQueue.length > 0) {
+            const nextQ = quizQuestionQueue.shift();
+            renderPreparedQuizQuestion(container, qEl, nextQ);
+            preGenerateNextQuestion();
             return;
         }
 
         const roundQuizList = quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (roundQuizList.length === 0) { qEl.innerText = "No drugs available for the selected system."; return; }
 
-        if (quizEngine === 'deepseek' && deepSeekKey && deepSeekKey.startsWith('sk-')) {
-            qEl.innerText = '🤖 Generating AI quiz question...';
-            const aiBuilt = await generateAIQuizQuestion(container, qEl, roundQuizList, selectedQuizLevel, selectedQuizSystem);
-            if (aiBuilt) return;
-            qEl.innerText = '⚠️ AI quiz unavailable. Falling back to local mode.';
+        qEl.innerText = 'Preparing question...';
+        const prepared = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+        if (!prepared) {
+            qEl.innerText = 'Unable to generate quiz question. Please try again.';
+            return;
         }
-
-        generateLocalQuizQuestion(container, qEl, roundQuizList, selectedQuizLevel);
+        renderPreparedQuizQuestion(container, qEl, prepared);
+        preGenerateNextQuestion();
     }
 
-    function generateLocalQuizQuestion(container, qEl, roundQuizList, level) {
+    function renderPreparedQuizQuestion(container, qEl, q) {
+        if (!q) return;
+        currentQuizQuestion = q;
+        qEl.innerText = q.prompt;
+        container.innerHTML = '';
+        (q.options || []).forEach(optText => {
+            const btn = document.createElement('button');
+            btn.className = 'action-btn quiz-option-btn';
+            btn.innerText = optText;
+            btn.onclick = () => checkAnswer(btn, optText, q);
+            container.appendChild(btn);
+        });
+    }
+
+    async function prepareQuizQuestion(roundQuizList, level, system) {
+        if (quizEngine === 'deepseek' && deepSeekKey && deepSeekKey.startsWith('sk-')) {
+            const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
+            if (aiQ) return aiQ;
+        }
+        return generateLocalQuizQuestionData(roundQuizList, level);
+    }
+
+    async function preGenerateNextQuestion() {
+        if (quizGenerationInFlight) return;
+        if (!currentRoundTotal || currentRoundAnswered >= currentRoundTotal - 1) return;
+        if (quizQuestionQueue.length > 0) return;
+        const roundQuizList = quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
+        if (!roundQuizList.length) return;
+        quizGenerationInFlight = true;
+        try {
+            const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+            if (nextQ) quizQuestionQueue.push(nextQ);
+        } finally {
+            quizGenerationInFlight = false;
+        }
+    }
+
+    function generateLocalQuizQuestionData(roundQuizList, level) {
         const weakPool = getWeakDrugPool(roundQuizList);
         const pickFromWeak = weakPool.length > 0 && Math.random() < 0.7;
         const sourcePool = pickFromWeak ? weakPool : roundQuizList;
         const correctDrug = sourcePool[Math.floor(Math.random() * sourcePool.length)];
         const q = buildQuizQuestion(correctDrug, level);
-        currentQuizQuestion = q;
-
-        qEl.innerText = q.prompt;
 
         const optionDrugs = [correctDrug];
         while (optionDrugs.length < Math.min(4, roundQuizList.length)) {
@@ -1825,17 +1927,13 @@ Rules:
         }
 
         optionTexts.sort(() => Math.random() - 0.5);
-
-        optionTexts.forEach(optText => {
-            const btn = document.createElement('button');
-            btn.className = 'action-btn quiz-option-btn';
-            btn.innerText = optText;
-            btn.onclick = () => checkAnswer(btn, optText, q);
-            container.appendChild(btn);
-        });
+        return {
+            ...q,
+            options: optionTexts
+        };
     }
 
-    async function generateAIQuizQuestion(container, qEl, roundQuizList, level, system) {
+    async function generateAIQuizQuestionData(roundQuizList, level, system) {
         try {
             const sample = [...roundQuizList].sort(() => Math.random() - 0.5).slice(0, 10).map(d => ({
                 name: d.name,
@@ -1890,18 +1988,9 @@ ${JSON.stringify(sample)}`;
                 answerLabel: () => parsed.answer
             };
 
-            currentQuizQuestion = q;
-            qEl.innerText = q.prompt;
-            q.options.forEach(optText => {
-                const btn = document.createElement('button');
-                btn.className = 'action-btn quiz-option-btn';
-                btn.innerText = optText;
-                btn.onclick = () => checkAnswer(btn, optText, q);
-                container.appendChild(btn);
-            });
-            return true;
+            return q;
         } catch (e) {
-            return false;
+            return null;
         }
     }
 
@@ -1966,9 +2055,17 @@ ${JSON.stringify(sample)}`;
          }
 
          updateQuizSessionUI();
+         currentRoundAnswered++;
+         updateQuizRoundProgress();
          localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
-         document.getElementById('next-quiz-btn').style.display = 'block';
+         const nextBtn = document.getElementById('next-quiz-btn');
+         if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
+             nextBtn.style.display = 'none';
+         } else {
+             nextBtn.style.display = 'block';
+         }
          currentQuizData = { q: q.prompt, u: selectedText, c: q.correctDrug, correctAnswerText: correct };
+         preGenerateNextQuestion();
     }
 
     function nextQuestion() { generateQuizQuestion(); }
