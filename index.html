@@ -450,12 +450,34 @@
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 8px;
             margin-bottom: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 10px;
         }
 
         .quiz-start-btn {
             grid-column: 1 / -1;
             margin: 0;
             width: 100%;
+        }
+
+        .quiz-topbar {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom: 10px;
+        }
+
+        .quiz-progress-pill {
+            font-size:0.85rem;
+            color:var(--ios-gray);
+            margin-bottom:8px;
+            background:#f1f5f9;
+            border:1px solid #e2e8f0;
+            border-radius:999px;
+            padding:6px 10px;
+            display:inline-block;
         }
 
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
@@ -657,13 +679,14 @@
 
     <div id="quiz-section" class="app-smooth" style="display:none;">
         <div class="ios-card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="quiz-topbar">
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
                 <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
             <div class="quiz-controls-grid">
                 <select id="quiz-level" class="ios-select" style="margin:0; width:100%;">
                     <option value="">Select level</option>
+                    <option value="mix">Mixed level</option>
                     <option value="remembering">Remembering</option>
                     <option value="understanding">Understanding</option>
                     <option value="applying">Applying</option>
@@ -672,6 +695,7 @@
                 </select>
                 <select id="quiz-system" class="ios-select" style="margin:0; width:100%;">
                     <option value="">Select system</option>
+                    <option value="All">All systems</option>
                 </select>
                 <select id="quiz-count" class="ios-select" style="margin:0; width:100%;">
                     <option value="5">5 questions</option>
@@ -681,7 +705,7 @@
                 </select>
                 <button onclick="startQuizRound()" class="action-btn btn-primary quiz-start-btn" style="padding:10px 12px;">Start</button>
             </div>
-            <div id="quiz-round-progress" style="font-size:0.85rem; color:var(--ios-gray); margin-bottom:8px;">Round not started</div>
+            <div id="quiz-round-progress" class="quiz-progress-pill">Round not started</div>
             <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Loading question...</p>
             <div class="quiz-stats-row">
                 <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
@@ -1238,6 +1262,7 @@
 
     function runFcAction(action, selectedDrugName) {
         const selected = selectedDrugName || fcSelectedDrug;
+        const currentDrug = flashcardList[fcCurrentIndex];
         updateFlashcardLinks(selected);
         if (action === 'google') {
             const googleQuery = `${selected} nursing considerations`;
@@ -1248,7 +1273,7 @@
             const d = {...flashcardList[fcCurrentIndex], name: selected};
             getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
         } else if (action === 'speak') {
-            const spoken = buildSpeakLabel(selected, drug.name);
+            const spoken = buildSpeakLabel(selected, currentDrug?.name || selected);
             speakText(spoken || selected);
         }
     }
@@ -1642,7 +1667,7 @@ Rules:
     function initQuizSystemDropdown() {
         const select = document.getElementById('quiz-system');
         if (!select) return;
-        while (select.options.length > 1) { select.remove(1); }
+        select.innerHTML = '<option value="">Select system</option><option value="All">All systems</option>';
         systemCategories.forEach(sys => {
             const opt = document.createElement('option');
             opt.value = sys;
@@ -1764,62 +1789,67 @@ Rules:
     }
 
     function buildQuizQuestion(correctDrug, level) {
+        const levels = ['remembering', 'understanding', 'applying', 'analyzing', 'evaluating'];
+        const resolvedLevel = level === 'mix'
+            ? levels[Math.floor(Math.random() * levels.length)]
+            : level;
+        const nursingContext = `System: ${correctDrug.system || getSystemForDrug(correctDrug)} | Class: ${correctDrug.class}`;
         const templatesByLevel = {
             remembering: [
                 {
                     type: 'drug_to_class',
-                    prompt: `🧠 [Remembering] ${correctDrug.name}\nWhich class is it in?`,
+                    prompt: `🧠 [Remembering]\nDrug focus: ${correctDrug.name}\n${nursingContext}\nRecall-level check: identify the correct pharmacological class used in bedside medication rounds.`,
                     answerLabel: d => d.class,
                 },
                 {
                     type: 'drug_to_indication',
-                    prompt: `🧠 [Remembering] ${correctDrug.name}\nWhat is its key indication?`,
+                    prompt: `🧠 [Remembering]\nDrug focus: ${correctDrug.name}\n${nursingContext}\nRecall-level check: identify the primary clinical indication most relevant to routine nursing administration.`,
                     answerLabel: d => d.indication,
                 }
             ],
             understanding: [
                 {
                     type: 'class_to_drug',
-                    prompt: `📘 [Understanding] Class: "${correctDrug.class}"\nWhich drug best fits this class?`,
+                    prompt: `📘 [Understanding]\nClass focus: "${correctDrug.class}"\nNursing interpretation: choose the drug that best matches this class and usual nursing intent for monitoring and safe administration.`,
                     answerLabel: d => d.name,
                 },
                 {
                     type: 'indication_to_drug',
-                    prompt: `📘 [Understanding] Indication: "${correctDrug.indication}"\nWhich drug is the best match?`,
+                    prompt: `📘 [Understanding]\nIndication focus: "${correctDrug.indication}"\nNursing interpretation: choose the drug that best explains this indication in day-to-day ward practice.`,
                     answerLabel: d => d.name,
                 }
             ],
             applying: [
                 {
                     type: 'apply_indication',
-                    prompt: `🛠️ [Applying] Patient needs treatment for "${correctDrug.indication}".\nWhich drug would you choose first from these options?`,
+                    prompt: `🛠️ [Applying]\nClinical mini-scenario: A patient in ${correctDrug.system || getSystemForDrug(correctDrug)} requires treatment for "${correctDrug.indication}".\nApply knowledge of drug class, indication, and practical nursing administration priorities to select the most appropriate drug option.`,
                     answerLabel: d => d.name,
                 }
             ],
             analyzing: [
                 {
                     type: 'analyze_class',
-                    prompt: `🔎 [Analyzing] Find the option in the same class as ${correctDrug.name}.\nClass hint: ${correctDrug.class}`,
+                    prompt: `🔎 [Analyzing]\nReference drug: ${correctDrug.name} (${correctDrug.class}).\nAnalyze all options and identify which option belongs to the same therapeutic class after comparing class-indication relationships relevant to nursing checks and medication safety.`,
                     answerLabel: d => d.name,
                 }
             ],
             evaluating: [
                 {
                     type: 'evaluate_best_fit',
-                    prompt: `⚖️ [Evaluating] For indication "${correctDrug.indication}", which option is the best therapeutic fit?`,
+                    prompt: `⚖️ [Evaluating]\nDecision focus: indication "${correctDrug.indication}" in ${correctDrug.system || getSystemForDrug(correctDrug)} care.\nEvaluate all options and choose the best therapeutic fit considering bedside nursing priorities: appropriateness, safety monitoring needs, and risk awareness.`,
                     answerLabel: d => d.name,
                 }
             ]
         };
 
-        const templates = templatesByLevel[level] || templatesByLevel.remembering;
+        const templates = templatesByLevel[resolvedLevel] || templatesByLevel.remembering;
         const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
         return {
             type: selectedTemplate.type,
             prompt: selectedTemplate.prompt,
             answerLabel: selectedTemplate.answerLabel,
             correctDrug,
-            level
+            level: resolvedLevel
         };
     }
 
@@ -1851,7 +1881,9 @@ Rules:
             return;
         }
 
-        const roundQuizList = quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
+        const roundQuizList = selectedQuizSystem === 'All'
+            ? [...quizList]
+            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (roundQuizList.length === 0) { qEl.innerText = "No drugs available for the selected system."; return; }
 
         qEl.innerText = 'Preparing question...';
@@ -1890,7 +1922,9 @@ Rules:
         if (quizGenerationInFlight) return;
         if (!currentRoundTotal || currentRoundAnswered >= currentRoundTotal - 1) return;
         if (quizQuestionQueue.length > 0) return;
-        const roundQuizList = quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
+        const roundQuizList = selectedQuizSystem === 'All'
+            ? [...quizList]
+            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (!roundQuizList.length) return;
         quizGenerationInFlight = true;
         try {
@@ -1942,18 +1976,44 @@ Rules:
             }));
 
             const modelName = currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat';
-            const prompt = `Create one pharmacology multiple-choice question for nursing students in English.
-The Bloom's cognitive level for this round is: ${level}.
-Only use drugs from this system: ${system}.
-Return strict JSON only:
-{"question":"...","options":["A","B","C","D"],"answer":"exact option text","drug":"drug name in options context","explanation":"1 short clinical explanation"}
+            const levelGuidance = {
+                remembering: 'Test factual recall only (drug class, key indication, common nursing fact). Avoid scenario reasoning.',
+                understanding: 'Test conceptual understanding (match class-to-drug or indication-to-drug) with brief clinical interpretation.',
+                applying: 'Use a short patient-care scenario requiring direct application of pharmacology to nursing action/choice.',
+                analyzing: 'Require comparison among options and discrimination of class-indication relationships before selecting answer.',
+                evaluating: 'Require judgment of best option using safety, appropriateness, and nursing monitoring priorities.',
+                mix: 'Randomly choose one Bloom level from remembering/understanding/applying/analyzing/evaluating and reflect it in the question stem.'
+            };
 
-Rules:
+            const prompt = `You are a senior nurse educator and clinical pharmacology instructor.
+Create ONE high-quality MCQ for nursing students in English.
+
+Round configuration:
+- Bloom level: ${level}
+- System scope: ${system}
+
+Level-specific design requirement:
+${levelGuidance[level] || levelGuidance.mix}
+
+Content requirements:
+- Prioritize clinically relevant nursing pharmacology.
+- Keep the stem focused on bedside decision making.
+- Use medication-safe wording and realistic ward context.
+- Keep language concise and mobile-readable.
+
+Output format:
+Return strict JSON only (no markdown, no extra text):
+{"question":"...","options":["A","B","C","D"],"answer":"exact option text","drug":"drug name in options context","explanation":"1-2 sentence nursing rationale"}
+
+Strict rules:
 - exactly 4 options
-- answer must exactly match one option
-- keep the question concise for mobile reading
-- keep options short and easy to scan
-- use only this drug list context:
+- exactly one best answer
+- "answer" must exactly match one option string
+- do not invent drugs outside the provided context
+- keep options balanced (no obvious giveaway)
+- explanation must mention nursing reasoning (e.g., indication match, class logic, monitoring/safety)
+
+Allowed drug context (use only these):
 ${JSON.stringify(sample)}`;
 
             const response = await fetch('https://api.deepseek.com/chat/completions', {
