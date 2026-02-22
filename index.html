@@ -1826,6 +1826,8 @@ Rules:
     async function generateQuizQuestion() {
         const container = document.getElementById('quiz-options');
         const qEl = document.getElementById('quiz-question');
+        const levelEl = document.getElementById('quiz-level');
+        const systemEl = document.getElementById('quiz-system');
         container.innerHTML = '';
         document.getElementById('quiz-feedback').style.display = 'none';
         document.getElementById('next-quiz-btn').style.display = 'none';
