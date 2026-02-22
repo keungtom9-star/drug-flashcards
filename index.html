@@ -1190,7 +1190,7 @@
         const selected = selectedDrugName || fcSelectedDrug;
         updateFlashcardLinks(selected);
         if (action === 'google') {
-            const googleQuery = `${selected} 中文 香港`;
+            const googleQuery = `${selected} nursing considerations`;
             openGoogleDeepLink(googleQuery);
         } else if (action === 'drugs') {
             openDrugsCom({name: selected});
@@ -1429,7 +1429,7 @@
 
     window.triggerSearchGoogle = function(btn) {
         withSearchDrugSelection(btn, 'Pick a drug for Google', (name) => {
-            const q = `${name} 中文 香港`;
+            const q = `${name} nursing considerations`;
             openGoogleDeepLink(q);
         });
     };
@@ -1469,7 +1469,7 @@
         btn.innerText = "⏳";
         box.style.display = 'block';
         withSearchDrugSelection(btn, 'Pick a drug for explanation', (pickedName) => {
-            const prompt = `請用繁體中文（香港）解釋 ${pickedName}，保留英文醫學術語。用 Markdown 短點列，方便手機一眼睇。格式：1) MOA 2) Key Indication 3) Monitoring 4) Safety Warning。每點不超過12字。`;
+            const prompt = `Explain ${pickedName} in English with standard medical terminology. Use short Markdown bullet points for fast mobile reading. Format: 1) MOA 2) Key Indication 3) Monitoring 4) Safety Warning. Keep each point under 12 words.`;
             streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
         });
         btn.innerText = "✅";
@@ -1490,14 +1490,14 @@
                 <div style="margin-top:10px; font-weight:600;">Searching database...</div>
             </div>`;
 
-        const prompt = `你是護理導師。使用者搜尋「${query}」。請只回傳 strict JSON。
-Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
-規則：
-1) 以繁體中文（香港）為主，保留英文醫學術語。
-2) 內容要短，方便手機快速閱讀。
-3) "system" 必須是以下其中一項：[Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia]。
-4) "nursing" 與 "side_effects" 用短點列字串。
-5) 只輸出 JSON，不要 markdown。`;
+        const prompt = `You are a nursing tutor. The user searched for "${query}". Return strict JSON only.
+Keys: "name", "class", "system", "indication", "nursing", "side_effects".
+Rules:
+1) Use English only with clear medical terminology.
+2) Keep content short for fast mobile reading.
+3) "system" must be exactly one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
+4) "nursing" and "side_effects" should be short bullet-like strings.
+5) Output JSON only, no markdown.`;
 
         try {
             let fullText = "";
@@ -1777,15 +1777,15 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
             }));
 
             const modelName = currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat';
-            const prompt = `請建立一條護理學生用的 pharmacology 四選一題目。題目主要用繁體中文（香港），保留英文醫學術語。
+            const prompt = `Create one pharmacology multiple-choice question for nursing students in English.
 Return strict JSON only:
 {"question":"...","options":["A","B","C","D"],"answer":"exact option text","drug":"drug name in options context","explanation":"1 short clinical explanation"}
 
 Rules:
 - exactly 4 options
 - answer must exactly match one option
-- 題目要精簡，適合手機閱讀
-- 選項要短，易於一眼掃描
+- keep the question concise for mobile reading
+- keep options short and easy to scan
 - use only this drug list context:
 ${JSON.stringify(sample)}`;
 
@@ -1989,8 +1989,7 @@ ${JSON.stringify(sample)}`;
         const btn = document.getElementById(btnId); const box = document.getElementById(outputId);
         btn.innerHTML = '⏳ Generating...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = 'Thinking...';
         
-        // Strict English Prompt
-        const prompt = `請用繁體中文（香港）建立 ${drug.name} 護理個案，保留英文醫學術語。用 Markdown 點列，方便手機快速閱讀。包含：Patient snapshot、key vitals、用藥原因、3個nursing checks、1條critical-thinking題。`;
+        const prompt = `Create a nursing case study for ${drug.name} in English. Keep medical terminology accurate. Use Markdown bullet points for fast mobile reading. Include: Patient snapshot, key vitals, medication rationale, 3 nursing checks, and 1 critical-thinking question.`;
         
         await streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
         btn.innerHTML = '✨ Regenerate case'; btn.disabled = false; document.getElementById(readBtnId).style.display = 'block';
