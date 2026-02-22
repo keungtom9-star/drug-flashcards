@@ -24,7 +24,7 @@
 
             --ecg-grid: #fff0f0;
             --ecg-line: #ffcccc;
-            --header-height: 108px;
+            --header-height: 132px;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -63,26 +63,46 @@
         }
 
         .top-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 12px 16px 8px;
         }
-        .app-title { font-size: 1.1rem; font-weight: 700; }
-        .back-btn {
-            background: none; border: none; color: var(--blue); font-size: 1rem;
-            cursor: pointer; padding: 5px; display: flex; align-items: center; gap:4px;
+        .app-title { font-size: 1.15rem; font-weight: 750; letter-spacing: -0.2px; }
+        .app-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-sec);
+            background: color-mix(in srgb, var(--blue) 10%, transparent);
+            border: 1px solid color-mix(in srgb, var(--blue) 20%, transparent);
+            padding: 4px 10px;
+            border-radius: 999px;
         }
 
         .tabs {
-            display: flex; justify-content: space-around;
-            padding: 0 5px 8px 5px;
+            display: flex;
+            gap: 8px;
+            padding: 0 10px 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
+        .tabs::-webkit-scrollbar { display: none; }
         .tab-btn {
-            background: none; border: none; font-size: 0.85rem; font-weight: 600;
-            color: var(--text-sec); padding: 8px 12px; border-radius: 20px;
+            flex: 0 0 auto;
+            background: transparent;
+            border: 1px solid var(--border);
+            font-size: 0.83rem;
+            font-weight: 650;
+            color: var(--text-sec);
+            padding: 8px 13px;
+            border-radius: 999px;
             transition: 0.2s;
         }
         .tab-btn.active {
-            background: var(--text-main); color: var(--bg-color);
+            background: var(--text-main);
+            color: var(--bg-color);
+            border-color: var(--text-main);
         }
 
         /* --- Layout --- */
@@ -105,7 +125,8 @@
         /* --- Cards --- */
         .card {
             background: var(--card-bg); border-radius: 16px; padding: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
         }
         .card-header {
             display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
@@ -266,12 +287,8 @@
     <!-- Sticky Header -->
     <div class="sticky-header">
         <div class="top-bar">
-            <button class="back-btn" onclick="window.location.href='index.html'">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                Back
-            </button>
-            <div class="app-title">Ward Cheatsheet</div>
-            <div style="width:50px"></div>
+            <div class="app-title">🩺 Ward Cheatsheet</div>
+            <div class="app-subtitle">Fast bedside reference</div>
         </div>
         <div class="tabs">
             <button class="tab-btn active" data-tab="labs" onclick="switchTab('labs')">Labs</button>
