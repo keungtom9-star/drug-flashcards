@@ -224,6 +224,8 @@
             font-weight:700; background:#eef2ff; color:#1d4ed8; cursor:pointer;
         }
         .intake-btn:active { opacity:0.8; }
+        .intake-reset-row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+        .intake-reset-row .intake-btn { flex:1 1 140px; }
         .intake-chip-wrap { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
         .intake-chip {
             border:none; background:var(--bg-color); color:var(--text-main);
@@ -1294,7 +1296,7 @@
             </div>
             <div id="intake-iv-list"></div>
 
-            <div style="display:flex; gap:8px; margin-top:10px;">
+            <div class="intake-reset-row">
                 <button class="intake-btn" style="flex:1; background:#fee2e2; color:#b91c1c;" onclick="intakeResetAll()">Reset All</button>
                 <button class="intake-btn" style="flex:1; background:#e5e7eb; color:#374151;" onclick="intakeResetOral()">Reset Oral</button>
                 <button class="intake-btn" style="flex:1; background:#ede9fe; color:#6d28d9;" onclick="intakeResetBolus()">Reset Bolus</button>
