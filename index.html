@@ -808,8 +808,7 @@
                 </div>
             </div>
             <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="local">Quiz engine: Local (fast, offline)</option>
-                <option value="deepseek">Quiz engine: DeepSeek AI</option>
+                <option value="deepseek">Quiz engine: DeepSeek AI (required)</option>
             </select>
         </div>
 
@@ -1994,7 +1993,7 @@ Language: ${langInstruction}.`;
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
     let fcSelectedDrug = ""; 
-    let quizEngine = localStorage.getItem('quiz_engine') || 'local';
+    let quizEngine = 'deepseek';
     let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
     let ankiDailyLimit = parseInt(localStorage.getItem('anki_daily_limit') || '20', 10);
     let ankiNewLimit = parseInt(localStorage.getItem('anki_new_limit') || '20', 10);
@@ -2067,7 +2066,7 @@ Language: ${langInstruction}.`;
         document.getElementById('provider-select').value = currentProvider;
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
-        document.getElementById('quiz-engine').value = quizEngine;
+        document.getElementById('quiz-engine').value = 'deepseek';
         document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
         document.getElementById('anki-new-limit').value = getAnkiLimit(ankiNewLimit, 20, 1, 100);
         document.getElementById('anki-learn-limit').value = getAnkiLimit(ankiLearnLimit, 20, 1, 100);
@@ -2941,71 +2940,6 @@ Rules:
         return scored.slice(0, Math.min(12, scored.length)).map(x => x.drug);
     }
 
-    function buildQuizQuestion(correctDrug, level) {
-        const levels = ['remembering', 'understanding', 'applying', 'analyzing', 'evaluating'];
-        const resolvedLevel = level === 'mix'
-            ? levels[Math.floor(Math.random() * levels.length)]
-            : level;
-        const nursingContext = `System: ${correctDrug.system || getSystemForDrug(correctDrug)} | Class: ${correctDrug.class}`;
-        const templatesByLevel = {
-            remembering: [
-                {
-                    type: 'drug_to_class',
-                    prompt: `What is the pharmacological class of ${correctDrug.name}?`,
-                    answerLabel: d => d.class,
-                },
-                {
-                    type: 'drug_to_indication',
-                    prompt: `What is the key clinical indication of ${correctDrug.name}?`,
-                    answerLabel: d => d.indication,
-                }
-            ],
-            understanding: [
-                {
-                    type: 'class_to_drug',
-                    prompt: `Which drug belongs to the class "${correctDrug.class}"?`,
-                    answerLabel: d => d.name,
-                },
-                {
-                    type: 'indication_to_drug',
-                    prompt: `Which drug best matches the indication "${correctDrug.indication}"?`,
-                    answerLabel: d => d.name,
-                }
-            ],
-            applying: [
-                {
-                    type: 'apply_indication',
-                    prompt: `A patient requires treatment for "${correctDrug.indication}". Which drug is the most appropriate choice?`,
-                    answerLabel: d => d.name,
-                }
-            ],
-            analyzing: [
-                {
-                    type: 'analyze_class',
-                    prompt: `Which option is in the same therapeutic class as ${correctDrug.name}?`,
-                    answerLabel: d => d.name,
-                }
-            ],
-            evaluating: [
-                {
-                    type: 'evaluate_best_fit',
-                    prompt: `For indication "${correctDrug.indication}", which option is the best therapeutic fit?`,
-                    answerLabel: d => d.name,
-                }
-            ]
-        };
-
-        const templates = templatesByLevel[resolvedLevel] || templatesByLevel.remembering;
-        const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
-        return {
-            type: selectedTemplate.type,
-            prompt: selectedTemplate.prompt,
-            answerLabel: selectedTemplate.answerLabel,
-            correctDrug,
-            level: resolvedLevel
-        };
-    }
-
     async function generateQuizQuestion() {
         const container = document.getElementById('quiz-options');
         const qEl = document.getElementById('quiz-question');
@@ -3045,6 +2979,10 @@ Rules:
             qEl.innerText = 'Unable to generate quiz question. Please try again.';
             return;
         }
+        if (prepared.error) {
+            qEl.innerText = prepared.error;
+            return;
+        }
         renderPreparedQuizQuestion(container, qEl, prepared);
         preGenerateNextQuestion();
     }
@@ -3064,11 +3002,12 @@ Rules:
     }
 
     async function prepareQuizQuestion(roundQuizList, level, system) {
-        if (quizEngine === 'deepseek' && deepSeekKey && deepSeekKey.startsWith('sk-')) {
-            const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
-            if (aiQ) return aiQ;
+        if (!deepSeekKey || !deepSeekKey.startsWith('sk-')) {
+            return { error: 'DeepSeek API key is required to generate AI quiz questions. Add your key in Settings.' };
         }
-        return generateLocalQuizQuestionData(roundQuizList, level);
+        const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
+        if (aiQ) return aiQ;
+        return { error: 'AI question generation failed. Please retry.' };
     }
 
     async function preGenerateNextQuestion() {
@@ -3082,42 +3021,10 @@ Rules:
         quizGenerationInFlight = true;
         try {
             const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-            if (nextQ) quizQuestionQueue.push(nextQ);
+            if (nextQ && !nextQ.error) quizQuestionQueue.push(nextQ);
         } finally {
             quizGenerationInFlight = false;
         }
-    }
-
-    function generateLocalQuizQuestionData(roundQuizList, level) {
-        const weakPool = getWeakDrugPool(roundQuizList);
-        const pickFromWeak = weakPool.length > 0 && Math.random() < 0.7;
-        const sourcePool = pickFromWeak ? weakPool : roundQuizList;
-        const correctDrug = sourcePool[Math.floor(Math.random() * sourcePool.length)];
-        const q = buildQuizQuestion(correctDrug, level);
-
-        const optionDrugs = [correctDrug];
-        while (optionDrugs.length < Math.min(4, roundQuizList.length)) {
-            const r = roundQuizList[Math.floor(Math.random() * roundQuizList.length)];
-            if (!optionDrugs.includes(r)) optionDrugs.push(r);
-        }
-
-        const optionTexts = [];
-        optionDrugs.forEach(d => {
-            const txt = q.answerLabel(d);
-            if (!optionTexts.includes(txt)) optionTexts.push(txt);
-        });
-
-        while (optionTexts.length < Math.min(4, roundQuizList.length)) {
-            const r = roundQuizList[Math.floor(Math.random() * roundQuizList.length)];
-            const txt = q.answerLabel(r);
-            if (!optionTexts.includes(txt)) optionTexts.push(txt);
-        }
-
-        optionTexts.sort(() => Math.random() - 0.5);
-        return {
-            ...q,
-            options: optionTexts
-        };
     }
 
     async function generateAIQuizQuestionData(roundQuizList, level, system) {
@@ -3417,7 +3324,7 @@ ${JSON.stringify(sample)}`;
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
-        localStorage.setItem('quiz_engine', document.getElementById('quiz-engine').value);
+        localStorage.setItem('quiz_engine', 'deepseek');
         localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
         localStorage.setItem('anki_due_limit', document.getElementById('anki-due-limit').value || '50');
         localStorage.setItem('anki_learn_limit', document.getElementById('anki-learn-limit').value || '20');
@@ -3426,7 +3333,7 @@ ${JSON.stringify(sample)}`;
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
-        quizEngine = document.getElementById('quiz-engine').value;
+        quizEngine = 'deepseek';
         ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
         ankiDueLimit = parseInt(document.getElementById('anki-due-limit').value || '50', 10);
         ankiLearnLimit = parseInt(document.getElementById('anki-learn-limit').value || '20', 10);
