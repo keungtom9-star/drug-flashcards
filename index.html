@@ -307,6 +307,13 @@
                 font-size: 0.95rem;
                 min-height: 52px;
             }
+            .quiz-controls-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .quiz-controls-grid .ios-select {
+                width: 100%;
+            }
             .result-card { padding: 13px; }
             .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -436,6 +443,41 @@
             line-height: 1.45;
             padding: 14px 16px;
             font-size: 0.98rem;
+        }
+
+        .quiz-controls-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 10px;
+        }
+
+        .quiz-start-btn {
+            grid-column: 1 / -1;
+            margin: 0;
+            width: 100%;
+        }
+
+        .quiz-topbar {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom: 10px;
+        }
+
+        .quiz-progress-pill {
+            font-size:0.85rem;
+            color:var(--ios-gray);
+            margin-bottom:8px;
+            background:#f1f5f9;
+            border:1px solid #e2e8f0;
+            border-radius:999px;
+            padding:6px 10px;
+            display:inline-block;
         }
 
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
@@ -637,10 +679,33 @@
 
     <div id="quiz-section" class="app-smooth" style="display:none;">
         <div class="ios-card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="quiz-topbar">
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
                 <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
+            <div class="quiz-controls-grid">
+                <select id="quiz-level" class="ios-select" style="margin:0; width:100%;">
+                    <option value="">Select level</option>
+                    <option value="mix">Mixed level</option>
+                    <option value="remembering">Remembering</option>
+                    <option value="understanding">Understanding</option>
+                    <option value="applying">Applying</option>
+                    <option value="analyzing">Analyzing</option>
+                    <option value="evaluating">Evaluating</option>
+                </select>
+                <select id="quiz-system" class="ios-select" style="margin:0; width:100%;">
+                    <option value="">Select system</option>
+                    <option value="All">All systems</option>
+                </select>
+                <select id="quiz-count" class="ios-select" style="margin:0; width:100%;">
+                    <option value="5">5 questions</option>
+                    <option value="10" selected>10 questions</option>
+                    <option value="15">15 questions</option>
+                    <option value="20">20 questions</option>
+                </select>
+                <button onclick="startQuizRound()" class="action-btn btn-primary quiz-start-btn" style="padding:10px 12px;">Start</button>
+            </div>
+            <div id="quiz-round-progress" class="quiz-progress-pill">Round not started</div>
             <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Loading question...</p>
             <div class="quiz-stats-row">
                 <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
@@ -653,7 +718,7 @@
             <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
 
 
-            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next →</button>
+            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next question →</button>
         </div>
     </div>
 
@@ -771,6 +836,13 @@
     let quizCurrentIndex = 0;
     let currentQuizData = null;
     let currentQuizQuestion = null;
+    let selectedQuizLevel = '';
+    let selectedQuizSystem = '';
+    let selectedQuizCount = 10;
+    let currentRoundTotal = 0;
+    let currentRoundAnswered = 0;
+    let quizQuestionQueue = [];
+    let quizGenerationInFlight = false;
     let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
@@ -856,6 +928,7 @@
         document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
 
         initSystemDropdown();
+        initQuizSystemDropdown();
         applyFilter(false);
         renderHistory();
         updateProviderDisplay();
@@ -1035,7 +1108,8 @@
         } else if (mode === 'quiz') {
             document.getElementById('quiz-section').style.display = 'block';
             document.getElementById('nav-quiz').classList.add('active');
-            generateQuizQuestion();
+            const qEl = document.getElementById('quiz-question');
+            if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         }
     }
 
@@ -1188,9 +1262,10 @@
 
     function runFcAction(action, selectedDrugName) {
         const selected = selectedDrugName || fcSelectedDrug;
+        const currentDrug = flashcardList[fcCurrentIndex];
         updateFlashcardLinks(selected);
         if (action === 'google') {
-            const googleQuery = `${selected} 中文 香港`;
+            const googleQuery = `${selected} nursing considerations`;
             openGoogleDeepLink(googleQuery);
         } else if (action === 'drugs') {
             openDrugsCom({name: selected});
@@ -1198,7 +1273,7 @@
             const d = {...flashcardList[fcCurrentIndex], name: selected};
             getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
         } else if (action === 'speak') {
-            const spoken = buildSpeakLabel(selected, drug.name);
+            const spoken = buildSpeakLabel(selected, currentDrug?.name || selected);
             speakText(spoken || selected);
         }
     }
@@ -1429,7 +1504,7 @@
 
     window.triggerSearchGoogle = function(btn) {
         withSearchDrugSelection(btn, 'Pick a drug for Google', (name) => {
-            const q = `${name} 中文 香港`;
+            const q = `${name} nursing considerations`;
             openGoogleDeepLink(q);
         });
     };
@@ -1469,7 +1544,7 @@
         btn.innerText = "⏳";
         box.style.display = 'block';
         withSearchDrugSelection(btn, 'Pick a drug for explanation', (pickedName) => {
-            const prompt = `請用繁體中文（香港）解釋 ${pickedName}，保留英文醫學術語。用 Markdown 短點列，方便手機一眼睇。格式：1) MOA 2) Key Indication 3) Monitoring 4) Safety Warning。每點不超過12字。`;
+            const prompt = `Explain ${pickedName} in English with standard medical terminology. Use short Markdown bullet points for fast mobile reading. Format: 1) MOA 2) Key Indication 3) Monitoring 4) Safety Warning. Keep each point under 12 words.`;
             streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
         });
         btn.innerText = "✅";
@@ -1490,14 +1565,14 @@
                 <div style="margin-top:10px; font-weight:600;">Searching database...</div>
             </div>`;
 
-        const prompt = `你是護理導師。使用者搜尋「${query}」。請只回傳 strict JSON。
-Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
-規則：
-1) 以繁體中文（香港）為主，保留英文醫學術語。
-2) 內容要短，方便手機快速閱讀。
-3) "system" 必須是以下其中一項：[Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia]。
-4) "nursing" 與 "side_effects" 用短點列字串。
-5) 只輸出 JSON，不要 markdown。`;
+        const prompt = `You are a nursing tutor. The user searched for "${query}". Return strict JSON only.
+Keys: "name", "class", "system", "indication", "nursing", "side_effects".
+Rules:
+1) Use English only with clear medical terminology.
+2) Keep content short for fast mobile reading.
+3) "system" must be exactly one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
+4) "nursing" and "side_effects" should be short bullet-like strings.
+5) Output JSON only, no markdown.`;
 
         try {
             let fullText = "";
@@ -1588,6 +1663,18 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
             opt.value = sys; opt.innerText = sys; select.appendChild(opt);
         });
     }
+
+    function initQuizSystemDropdown() {
+        const select = document.getElementById('quiz-system');
+        if (!select) return;
+        select.innerHTML = '<option value="">Select system</option><option value="All">All systems</option>';
+        systemCategories.forEach(sys => {
+            const opt = document.createElement('option');
+            opt.value = sys;
+            opt.innerText = sys;
+            select.appendChild(opt);
+        });
+    }
     
     function applyFilter(shouldReshuffle = true) {
         const sysCategory = document.getElementById('system-filter').value;
@@ -1663,6 +1750,32 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         document.getElementById('quiz-answered').innerText = `${answered}`;
     }
 
+    function updateQuizRoundProgress() {
+        const el = document.getElementById('quiz-round-progress');
+        if (!el) return;
+        if (!currentRoundTotal) {
+            el.innerText = 'Round not started';
+            return;
+        }
+        el.innerText = `Round progress: ${currentRoundAnswered}/${currentRoundTotal}`;
+    }
+
+    function startQuizRound() {
+        const levelEl = document.getElementById('quiz-level');
+        const systemEl = document.getElementById('quiz-system');
+        const countEl = document.getElementById('quiz-count');
+        selectedQuizLevel = levelEl ? levelEl.value : '';
+        selectedQuizSystem = systemEl ? systemEl.value : '';
+        selectedQuizCount = parseInt(countEl?.value || '10', 10) || 10;
+
+        currentRoundTotal = selectedQuizCount;
+        currentRoundAnswered = 0;
+        quizQuestionQueue = [];
+        quizGenerationInFlight = false;
+        updateQuizRoundProgress();
+        generateQuizQuestion();
+    }
+
     function getWeakDrugPool(list) {
         if (!list.length) return [];
         const scored = list.map(drug => {
@@ -1675,36 +1788,68 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         return scored.slice(0, Math.min(12, scored.length)).map(x => x.drug);
     }
 
-    function buildQuizQuestion(correctDrug) {
-        const templates = [
-            {
-                type: 'indication_to_drug',
-                prompt: `📌 Indication: "${correctDrug.indication}"\nWhich drug is the best match?`,
-                answerLabel: d => d.name,
-            },
-            {
-                type: 'class_to_drug',
-                prompt: `🧪 Class check: "${correctDrug.class}"\nWhich drug belongs here?`,
-                answerLabel: d => d.name,
-            },
-            {
-                type: 'drug_to_class',
-                prompt: `💊 ${correctDrug.name}\nWhich class is it in?`,
-                answerLabel: d => d.class,
-            },
-            {
-                type: 'drug_to_indication',
-                prompt: `🩺 ${correctDrug.name}\nWhat is its key indication?`,
-                answerLabel: d => d.indication,
-            }
-        ];
+    function buildQuizQuestion(correctDrug, level) {
+        const levels = ['remembering', 'understanding', 'applying', 'analyzing', 'evaluating'];
+        const resolvedLevel = level === 'mix'
+            ? levels[Math.floor(Math.random() * levels.length)]
+            : level;
+        const nursingContext = `System: ${correctDrug.system || getSystemForDrug(correctDrug)} | Class: ${correctDrug.class}`;
+        const templatesByLevel = {
+            remembering: [
+                {
+                    type: 'drug_to_class',
+                    prompt: `What is the pharmacological class of ${correctDrug.name}?`,
+                    answerLabel: d => d.class,
+                },
+                {
+                    type: 'drug_to_indication',
+                    prompt: `What is the key clinical indication of ${correctDrug.name}?`,
+                    answerLabel: d => d.indication,
+                }
+            ],
+            understanding: [
+                {
+                    type: 'class_to_drug',
+                    prompt: `Which drug belongs to the class "${correctDrug.class}"?`,
+                    answerLabel: d => d.name,
+                },
+                {
+                    type: 'indication_to_drug',
+                    prompt: `Which drug best matches the indication "${correctDrug.indication}"?`,
+                    answerLabel: d => d.name,
+                }
+            ],
+            applying: [
+                {
+                    type: 'apply_indication',
+                    prompt: `A patient requires treatment for "${correctDrug.indication}". Which drug is the most appropriate choice?`,
+                    answerLabel: d => d.name,
+                }
+            ],
+            analyzing: [
+                {
+                    type: 'analyze_class',
+                    prompt: `Which option is in the same therapeutic class as ${correctDrug.name}?`,
+                    answerLabel: d => d.name,
+                }
+            ],
+            evaluating: [
+                {
+                    type: 'evaluate_best_fit',
+                    prompt: `For indication "${correctDrug.indication}", which option is the best therapeutic fit?`,
+                    answerLabel: d => d.name,
+                }
+            ]
+        };
 
+        const templates = templatesByLevel[resolvedLevel] || templatesByLevel.remembering;
         const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
         return {
             type: selectedTemplate.type,
             prompt: selectedTemplate.prompt,
             answerLabel: selectedTemplate.answerLabel,
-            correctDrug
+            correctDrug,
+            level: resolvedLevel
         };
     }
 
@@ -1717,31 +1862,87 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
         document.getElementById('quiz-mini-explainer').style.display = 'none';
         updateQuizSessionUI();
 
-        if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
-
-        if (quizEngine === 'deepseek' && deepSeekKey && deepSeekKey.startsWith('sk-')) {
-            qEl.innerText = '🤖 Generating AI quiz question...';
-            const aiBuilt = await generateAIQuizQuestion(container, qEl);
-            if (aiBuilt) return;
-            qEl.innerText = '⚠️ AI quiz unavailable. Falling back to local mode.';
+        if (!selectedQuizLevel || !selectedQuizSystem) {
+            qEl.innerText = "Please select both quiz level and drug system before each round.";
+            return;
         }
 
-        generateLocalQuizQuestion(container, qEl);
+        if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
+            qEl.innerText = `Round complete (${currentRoundAnswered}/${currentRoundTotal}). Select options and press Start for a new round.`;
+            return;
+        }
+
+        if (quizQuestionQueue.length > 0) {
+            const nextQ = quizQuestionQueue.shift();
+            renderPreparedQuizQuestion(container, qEl, nextQ);
+            preGenerateNextQuestion();
+            return;
+        }
+
+        const roundQuizList = selectedQuizSystem === 'All'
+            ? [...quizList]
+            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
+        if (roundQuizList.length === 0) { qEl.innerText = "No drugs available for the selected system."; return; }
+
+        qEl.innerText = 'Preparing question...';
+        const prepared = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+        if (!prepared) {
+            qEl.innerText = 'Unable to generate quiz question. Please try again.';
+            return;
+        }
+        renderPreparedQuizQuestion(container, qEl, prepared);
+        preGenerateNextQuestion();
     }
 
-    function generateLocalQuizQuestion(container, qEl) {
-        const weakPool = getWeakDrugPool(quizList);
-        const pickFromWeak = weakPool.length > 0 && Math.random() < 0.7;
-        const sourcePool = pickFromWeak ? weakPool : quizList;
-        const correctDrug = sourcePool[Math.floor(Math.random() * sourcePool.length)];
-        const q = buildQuizQuestion(correctDrug);
+    function renderPreparedQuizQuestion(container, qEl, q) {
+        if (!q) return;
         currentQuizQuestion = q;
+        qEl.innerText = formatQuizQuestionText(q.prompt);
+        container.innerHTML = '';
+        (q.options || []).forEach(optText => {
+            const btn = document.createElement('button');
+            btn.className = 'action-btn quiz-option-btn';
+            btn.innerText = optText;
+            btn.onclick = () => checkAnswer(btn, optText, q);
+            container.appendChild(btn);
+        });
+    }
 
-        qEl.innerText = q.prompt;
+    async function prepareQuizQuestion(roundQuizList, level, system) {
+        if (quizEngine === 'deepseek' && deepSeekKey && deepSeekKey.startsWith('sk-')) {
+            const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
+            if (aiQ) return aiQ;
+        }
+        return generateLocalQuizQuestionData(roundQuizList, level);
+    }
+
+    async function preGenerateNextQuestion() {
+        if (quizGenerationInFlight) return;
+        if (!currentRoundTotal || currentRoundAnswered >= currentRoundTotal - 1) return;
+        if (quizQuestionQueue.length > 0) return;
+        const roundQuizList = selectedQuizSystem === 'All'
+            ? [...quizList]
+            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
+        if (!roundQuizList.length) return;
+        quizGenerationInFlight = true;
+        try {
+            const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+            if (nextQ) quizQuestionQueue.push(nextQ);
+        } finally {
+            quizGenerationInFlight = false;
+        }
+    }
+
+    function generateLocalQuizQuestionData(roundQuizList, level) {
+        const weakPool = getWeakDrugPool(roundQuizList);
+        const pickFromWeak = weakPool.length > 0 && Math.random() < 0.7;
+        const sourcePool = pickFromWeak ? weakPool : roundQuizList;
+        const correctDrug = sourcePool[Math.floor(Math.random() * sourcePool.length)];
+        const q = buildQuizQuestion(correctDrug, level);
 
         const optionDrugs = [correctDrug];
-        while (optionDrugs.length < Math.min(4, quizList.length)) {
-            const r = quizList[Math.floor(Math.random() * quizList.length)];
+        while (optionDrugs.length < Math.min(4, roundQuizList.length)) {
+            const r = roundQuizList[Math.floor(Math.random() * roundQuizList.length)];
             if (!optionDrugs.includes(r)) optionDrugs.push(r);
         }
 
@@ -1751,42 +1952,67 @@ Keys: "name", "class", "system", "indication", "nursing", "side_effects"。
             if (!optionTexts.includes(txt)) optionTexts.push(txt);
         });
 
-        while (optionTexts.length < Math.min(4, quizList.length)) {
-            const r = quizList[Math.floor(Math.random() * quizList.length)];
+        while (optionTexts.length < Math.min(4, roundQuizList.length)) {
+            const r = roundQuizList[Math.floor(Math.random() * roundQuizList.length)];
             const txt = q.answerLabel(r);
             if (!optionTexts.includes(txt)) optionTexts.push(txt);
         }
 
         optionTexts.sort(() => Math.random() - 0.5);
-
-        optionTexts.forEach(optText => {
-            const btn = document.createElement('button');
-            btn.className = 'action-btn quiz-option-btn';
-            btn.innerText = optText;
-            btn.onclick = () => checkAnswer(btn, optText, q);
-            container.appendChild(btn);
-        });
+        return {
+            ...q,
+            options: optionTexts
+        };
     }
 
-    async function generateAIQuizQuestion(container, qEl) {
+    async function generateAIQuizQuestionData(roundQuizList, level, system) {
         try {
-            const sample = [...quizList].sort(() => Math.random() - 0.5).slice(0, 10).map(d => ({
+            const sample = [...roundQuizList].sort(() => Math.random() - 0.5).slice(0, 10).map(d => ({
                 name: d.name,
                 class: d.class,
                 indication: d.indication
             }));
 
             const modelName = currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat';
-            const prompt = `請建立一條護理學生用的 pharmacology 四選一題目。題目主要用繁體中文（香港），保留英文醫學術語。
-Return strict JSON only:
-{"question":"...","options":["A","B","C","D"],"answer":"exact option text","drug":"drug name in options context","explanation":"1 short clinical explanation"}
+            const levelGuidance = {
+                remembering: 'Test factual recall only (drug class, key indication, common nursing fact). Avoid scenario reasoning.',
+                understanding: 'Test conceptual understanding (match class-to-drug or indication-to-drug) with brief clinical interpretation.',
+                applying: 'Use a short patient-care scenario requiring direct application of pharmacology to nursing action/choice.',
+                analyzing: 'Require comparison among options and discrimination of class-indication relationships before selecting answer.',
+                evaluating: 'Require judgment of best option using safety, appropriateness, and nursing monitoring priorities.',
+                mix: 'Randomly choose one Bloom level from remembering/understanding/applying/analyzing/evaluating and reflect it in the question stem.'
+            };
 
-Rules:
+            const prompt = `You are a senior nurse educator and clinical pharmacology instructor.
+Create ONE high-quality MCQ for nursing students in English.
+
+Round configuration:
+- Bloom level: ${level}
+- System scope: ${system}
+
+Level-specific design requirement:
+${levelGuidance[level] || levelGuidance.mix}
+
+Content requirements:
+- Prioritize clinically relevant nursing pharmacology.
+- Keep the stem focused on bedside decision making.
+- Use medication-safe wording and realistic ward context.
+- Keep language concise and mobile-readable.
+
+Output format:
+Return strict JSON only (no markdown, no extra text):
+{"question":"...","options":["A","B","C","D"],"answer":"exact option text","drug":"drug name in options context","explanation":"1-2 sentence nursing rationale"}
+
+Strict rules:
 - exactly 4 options
-- answer must exactly match one option
-- 題目要精簡，適合手機閱讀
-- 選項要短，易於一眼掃描
-- use only this drug list context:
+- exactly one best answer
+- "answer" must exactly match one option string
+- "question" must contain only the final learner-facing question text (no headings/prefixes like "Decision focus", "Reference drug", or level tags)
+- do not invent drugs outside the provided context
+- keep options balanced (no obvious giveaway)
+- explanation must mention nursing reasoning (e.g., indication match, class logic, monitoring/safety)
+
+Allowed drug context (use only these):
 ${JSON.stringify(sample)}`;
 
             const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -1809,7 +2035,7 @@ ${JSON.stringify(sample)}`;
             const parsed = parseAIQuizJSON(content);
             if (!parsed) return false;
 
-            const mappedDrug = quizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || quizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
+            const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
 
             const q = {
                 type: 'ai_quiz',
@@ -1821,18 +2047,9 @@ ${JSON.stringify(sample)}`;
                 answerLabel: () => parsed.answer
             };
 
-            currentQuizQuestion = q;
-            qEl.innerText = q.prompt;
-            q.options.forEach(optText => {
-                const btn = document.createElement('button');
-                btn.className = 'action-btn quiz-option-btn';
-                btn.innerText = optText;
-                btn.onclick = () => checkAnswer(btn, optText, q);
-                container.appendChild(btn);
-            });
-            return true;
+            return q;
         } catch (e) {
-            return false;
+            return null;
         }
     }
 
@@ -1853,6 +2070,15 @@ ${JSON.stringify(sample)}`;
         } catch {
             return null;
         }
+    }
+
+    function formatQuizQuestionText(text) {
+        const raw = String(text || '').trim();
+        if (!raw) return raw;
+        const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+        const cleaned = lines.filter(line => !/^(decision focus:|reference drug:|drug focus:|class focus:|indication focus:|nursing interpretation:)/i.test(line));
+        if (!cleaned.length) return raw;
+        return cleaned.length > 1 ? cleaned[cleaned.length - 1] : cleaned[0];
     }
 
     function checkAnswer(btn, selectedText, q) {
@@ -1897,9 +2123,17 @@ ${JSON.stringify(sample)}`;
          }
 
          updateQuizSessionUI();
+         currentRoundAnswered++;
+         updateQuizRoundProgress();
          localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
-         document.getElementById('next-quiz-btn').style.display = 'block';
+         const nextBtn = document.getElementById('next-quiz-btn');
+         if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
+             nextBtn.style.display = 'none';
+         } else {
+             nextBtn.style.display = 'block';
+         }
          currentQuizData = { q: q.prompt, u: selectedText, c: q.correctDrug, correctAnswerText: correct };
+         preGenerateNextQuestion();
     }
 
     function nextQuestion() { generateQuizQuestion(); }
@@ -1989,8 +2223,7 @@ ${JSON.stringify(sample)}`;
         const btn = document.getElementById(btnId); const box = document.getElementById(outputId);
         btn.innerHTML = '⏳ Generating...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = 'Thinking...';
         
-        // Strict English Prompt
-        const prompt = `請用繁體中文（香港）建立 ${drug.name} 護理個案，保留英文醫學術語。用 Markdown 點列，方便手機快速閱讀。包含：Patient snapshot、key vitals、用藥原因、3個nursing checks、1條critical-thinking題。`;
+        const prompt = `Create a nursing case study for ${drug.name} in English. Keep medical terminology accurate. Use Markdown bullet points for fast mobile reading. Include: Patient snapshot, key vitals, medication rationale, 3 nursing checks, and 1 critical-thinking question.`;
         
         await streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
         btn.innerHTML = '✨ Regenerate case'; btn.disabled = false; document.getElementById(readBtnId).style.display = 'block';
