@@ -641,6 +641,20 @@
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
                 <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:8px; margin-bottom:12px;">
+                <select id="quiz-level" class="ios-select" style="margin:0;">
+                    <option value="">Select level</option>
+                    <option value="remembering">Remembering</option>
+                    <option value="understanding">Understanding</option>
+                    <option value="applying">Applying</option>
+                    <option value="analyzing">Analyzing</option>
+                    <option value="evaluating">Evaluating</option>
+                </select>
+                <select id="quiz-system" class="ios-select" style="margin:0;">
+                    <option value="">Select system</option>
+                </select>
+                <button onclick="generateQuizQuestion()" class="action-btn btn-primary" style="margin:0; width:auto; padding:10px 12px;">Start</button>
+            </div>
             <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Loading question...</p>
             <div class="quiz-stats-row">
                 <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
@@ -653,7 +667,7 @@
             <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
 
 
-            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next →</button>
+            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next round →</button>
         </div>
     </div>
 
@@ -771,6 +785,8 @@
     let quizCurrentIndex = 0;
     let currentQuizData = null;
     let currentQuizQuestion = null;
+    let selectedQuizLevel = '';
+    let selectedQuizSystem = '';
     let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
@@ -856,6 +872,7 @@
         document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
 
         initSystemDropdown();
+        initQuizSystemDropdown();
         applyFilter(false);
         renderHistory();
         updateProviderDisplay();
@@ -1588,6 +1605,18 @@ Rules:
             opt.value = sys; opt.innerText = sys; select.appendChild(opt);
         });
     }
+
+    function initQuizSystemDropdown() {
+        const select = document.getElementById('quiz-system');
+        if (!select) return;
+        while (select.options.length > 1) { select.remove(1); }
+        systemCategories.forEach(sys => {
+            const opt = document.createElement('option');
+            opt.value = sys;
+            opt.innerText = sys;
+            select.appendChild(opt);
+        });
+    }
     
     function applyFilter(shouldReshuffle = true) {
         const sysCategory = document.getElementById('system-filter').value;
@@ -1675,73 +1704,111 @@ Rules:
         return scored.slice(0, Math.min(12, scored.length)).map(x => x.drug);
     }
 
-    function buildQuizQuestion(correctDrug) {
-        const templates = [
-            {
-                type: 'indication_to_drug',
-                prompt: `📌 Indication: "${correctDrug.indication}"\nWhich drug is the best match?`,
-                answerLabel: d => d.name,
-            },
-            {
-                type: 'class_to_drug',
-                prompt: `🧪 Class check: "${correctDrug.class}"\nWhich drug belongs here?`,
-                answerLabel: d => d.name,
-            },
-            {
-                type: 'drug_to_class',
-                prompt: `💊 ${correctDrug.name}\nWhich class is it in?`,
-                answerLabel: d => d.class,
-            },
-            {
-                type: 'drug_to_indication',
-                prompt: `🩺 ${correctDrug.name}\nWhat is its key indication?`,
-                answerLabel: d => d.indication,
-            }
-        ];
+    function buildQuizQuestion(correctDrug, level) {
+        const templatesByLevel = {
+            remembering: [
+                {
+                    type: 'drug_to_class',
+                    prompt: `🧠 [Remembering] ${correctDrug.name}\nWhich class is it in?`,
+                    answerLabel: d => d.class,
+                },
+                {
+                    type: 'drug_to_indication',
+                    prompt: `🧠 [Remembering] ${correctDrug.name}\nWhat is its key indication?`,
+                    answerLabel: d => d.indication,
+                }
+            ],
+            understanding: [
+                {
+                    type: 'class_to_drug',
+                    prompt: `📘 [Understanding] Class: "${correctDrug.class}"\nWhich drug best fits this class?`,
+                    answerLabel: d => d.name,
+                },
+                {
+                    type: 'indication_to_drug',
+                    prompt: `📘 [Understanding] Indication: "${correctDrug.indication}"\nWhich drug is the best match?`,
+                    answerLabel: d => d.name,
+                }
+            ],
+            applying: [
+                {
+                    type: 'apply_indication',
+                    prompt: `🛠️ [Applying] Patient needs treatment for "${correctDrug.indication}".\nWhich drug would you choose first from these options?`,
+                    answerLabel: d => d.name,
+                }
+            ],
+            analyzing: [
+                {
+                    type: 'analyze_class',
+                    prompt: `🔎 [Analyzing] Find the option in the same class as ${correctDrug.name}.\nClass hint: ${correctDrug.class}`,
+                    answerLabel: d => d.name,
+                }
+            ],
+            evaluating: [
+                {
+                    type: 'evaluate_best_fit',
+                    prompt: `⚖️ [Evaluating] For indication "${correctDrug.indication}", which option is the best therapeutic fit?`,
+                    answerLabel: d => d.name,
+                }
+            ]
+        };
 
+        const templates = templatesByLevel[level] || templatesByLevel.remembering;
         const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
         return {
             type: selectedTemplate.type,
             prompt: selectedTemplate.prompt,
             answerLabel: selectedTemplate.answerLabel,
-            correctDrug
+            correctDrug,
+            level
         };
     }
 
     async function generateQuizQuestion() {
         const container = document.getElementById('quiz-options');
         const qEl = document.getElementById('quiz-question');
+        const levelEl = document.getElementById('quiz-level');
+        const systemEl = document.getElementById('quiz-system');
         container.innerHTML = '';
         document.getElementById('quiz-feedback').style.display = 'none';
         document.getElementById('next-quiz-btn').style.display = 'none';
         document.getElementById('quiz-mini-explainer').style.display = 'none';
         updateQuizSessionUI();
 
-        if (quizList.length === 0) { qEl.innerText = "No drugs available."; return; }
+        selectedQuizLevel = levelEl ? levelEl.value : '';
+        selectedQuizSystem = systemEl ? systemEl.value : '';
+
+        if (!selectedQuizLevel || !selectedQuizSystem) {
+            qEl.innerText = "Please select both quiz level and drug system before each round.";
+            return;
+        }
+
+        const roundQuizList = quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
+        if (roundQuizList.length === 0) { qEl.innerText = "No drugs available for the selected system."; return; }
 
         if (quizEngine === 'deepseek' && deepSeekKey && deepSeekKey.startsWith('sk-')) {
             qEl.innerText = '🤖 Generating AI quiz question...';
-            const aiBuilt = await generateAIQuizQuestion(container, qEl);
+            const aiBuilt = await generateAIQuizQuestion(container, qEl, roundQuizList, selectedQuizLevel, selectedQuizSystem);
             if (aiBuilt) return;
             qEl.innerText = '⚠️ AI quiz unavailable. Falling back to local mode.';
         }
 
-        generateLocalQuizQuestion(container, qEl);
+        generateLocalQuizQuestion(container, qEl, roundQuizList, selectedQuizLevel);
     }
 
-    function generateLocalQuizQuestion(container, qEl) {
-        const weakPool = getWeakDrugPool(quizList);
+    function generateLocalQuizQuestion(container, qEl, roundQuizList, level) {
+        const weakPool = getWeakDrugPool(roundQuizList);
         const pickFromWeak = weakPool.length > 0 && Math.random() < 0.7;
-        const sourcePool = pickFromWeak ? weakPool : quizList;
+        const sourcePool = pickFromWeak ? weakPool : roundQuizList;
         const correctDrug = sourcePool[Math.floor(Math.random() * sourcePool.length)];
-        const q = buildQuizQuestion(correctDrug);
+        const q = buildQuizQuestion(correctDrug, level);
         currentQuizQuestion = q;
 
         qEl.innerText = q.prompt;
 
         const optionDrugs = [correctDrug];
-        while (optionDrugs.length < Math.min(4, quizList.length)) {
-            const r = quizList[Math.floor(Math.random() * quizList.length)];
+        while (optionDrugs.length < Math.min(4, roundQuizList.length)) {
+            const r = roundQuizList[Math.floor(Math.random() * roundQuizList.length)];
             if (!optionDrugs.includes(r)) optionDrugs.push(r);
         }
 
@@ -1751,8 +1818,8 @@ Rules:
             if (!optionTexts.includes(txt)) optionTexts.push(txt);
         });
 
-        while (optionTexts.length < Math.min(4, quizList.length)) {
-            const r = quizList[Math.floor(Math.random() * quizList.length)];
+        while (optionTexts.length < Math.min(4, roundQuizList.length)) {
+            const r = roundQuizList[Math.floor(Math.random() * roundQuizList.length)];
             const txt = q.answerLabel(r);
             if (!optionTexts.includes(txt)) optionTexts.push(txt);
         }
@@ -1768,9 +1835,9 @@ Rules:
         });
     }
 
-    async function generateAIQuizQuestion(container, qEl) {
+    async function generateAIQuizQuestion(container, qEl, roundQuizList, level, system) {
         try {
-            const sample = [...quizList].sort(() => Math.random() - 0.5).slice(0, 10).map(d => ({
+            const sample = [...roundQuizList].sort(() => Math.random() - 0.5).slice(0, 10).map(d => ({
                 name: d.name,
                 class: d.class,
                 indication: d.indication
@@ -1778,6 +1845,8 @@ Rules:
 
             const modelName = currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat';
             const prompt = `Create one pharmacology multiple-choice question for nursing students in English.
+The Bloom's cognitive level for this round is: ${level}.
+Only use drugs from this system: ${system}.
 Return strict JSON only:
 {"question":"...","options":["A","B","C","D"],"answer":"exact option text","drug":"drug name in options context","explanation":"1 short clinical explanation"}
 
@@ -1809,7 +1878,7 @@ ${JSON.stringify(sample)}`;
             const parsed = parseAIQuizJSON(content);
             if (!parsed) return false;
 
-            const mappedDrug = quizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || quizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
+            const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
 
             const q = {
                 type: 'ai_quiz',
