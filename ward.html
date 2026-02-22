@@ -224,6 +224,8 @@
             font-weight:700; background:#eef2ff; color:#1d4ed8; cursor:pointer;
         }
         .intake-btn:active { opacity:0.8; }
+        .intake-reset-row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+        .intake-reset-row .intake-btn { flex:1 1 140px; }
         .intake-chip-wrap { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
         .intake-chip {
             border:none; background:var(--bg-color); color:var(--text-main);
@@ -233,6 +235,35 @@
         .intake-chip.ideal { border:1px solid #f59e0b; background:#fffbeb; color:#b45309; }
         .intake-chip.ideal.active { background:#f59e0b; color:white; }
         .intake-result { display:flex; justify-content:space-between; background:var(--bg-color); border-radius:10px; padding:8px 10px; margin-top:8px; font-size:0.8rem; }
+        .intake-io-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .io-card {
+            margin: 0;
+            box-shadow: none;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+        }
+        .io-label { font-size:0.75rem; color:var(--text-sec); margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
+        .io-display { font-size:2rem; font-weight:800; text-align:center; line-height:1; margin-bottom:8px; }
+        .io-display.in { color: var(--orange); }
+        .io-display.out { color: var(--red); }
+        .intake-net-bar {
+            margin-top: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            font-size: 0.82rem;
+        }
+        .intake-net-value { font-size:1.1rem; font-weight:800; }
         .intake-total-bar {
             position: sticky; bottom: 8px; z-index: 20;
             background: rgba(30,30,30,0.88); color:white; border-radius:14px;
@@ -249,28 +280,34 @@
             .card { border-radius: 14px; padding: 12px; }
 
             #intake.container.active {
-                overflow: hidden;
+                overflow-y: auto;
                 padding: 8px 10px 10px;
                 gap: 8px;
             }
             #intake .card.full-width {
-                height: calc(100dvh - var(--header-height) - 18px);
+                min-height: calc(100dvh - var(--header-height) - 18px);
                 display: grid;
-                grid-template-rows: auto auto auto auto auto auto;
+                grid-template-rows: auto auto auto auto minmax(170px, 1fr) auto auto;
                 gap: 8px;
-                overflow: hidden;
+                overflow: visible;
                 padding: 10px;
             }
             #intake-iv-list {
                 overflow-y: auto;
-                min-height: 90px;
-                max-height: 30dvh;
+                min-height: 170px;
+                max-height: 42dvh;
                 padding-right: 2px;
+                border: 1px dashed var(--border);
+                border-radius: 10px;
+                padding: 6px;
             }
             .intake-header { margin-bottom: 0; }
             .intake-grid-3, .intake-grid-4 { gap: 6px; }
             .intake-btn { padding: 8px 0; font-size: 0.85rem; }
             .intake-total-bar { margin-top: 0; padding: 8px 10px; border-radius: 12px; }
+            .intake-io-grid { grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
+            .io-display { font-size: 1.8rem; }
+            .intake-reset-row .intake-btn { flex: 1 1 calc(50% - 6px); }
         }
 
         /* --- Utils --- */
@@ -1221,15 +1258,29 @@
                 <div class="intake-cutoff">Cutoff <input type="time" id="intake-cutoff" value="08:00" onchange="intakeUpdateGlobalCutoff()"></div>
             </div>
 
-            <div class="card" style="margin:0 0 10px 0; box-shadow:none; border:1px solid var(--border);">
-                <div style="font-size:0.8rem; color:var(--text-sec); margin-bottom:6px;">Oral Intake</div>
-                <div style="font-size:2rem; font-weight:800; color:var(--orange); text-align:center;" id="intake-oral-display">0</div>
-                <div class="intake-grid-3" style="margin-top:8px;">
-                    <button class="intake-btn" onclick="intakeAddOral(50)">+50</button>
-                    <button class="intake-btn" onclick="intakeAddOral(100)">+100</button>
-                    <button class="intake-btn" onclick="intakeAddOral(200)">+200</button>
+            <div class="intake-io-grid">
+                <div class="card io-card">
+                    <div class="io-label">Intake / Oral</div>
+                    <div class="io-display in" id="intake-oral-display">0</div>
+                    <div class="intake-grid-3" style="margin-top:8px;">
+                        <button class="intake-btn" onclick="intakeAddOral(50)">+50</button>
+                        <button class="intake-btn" onclick="intakeAddOral(100)">+100</button>
+                        <button class="intake-btn" onclick="intakeAddOral(200)">+200</button>
+                    </div>
+                    <button class="section-action" style="width:100%; margin-top:8px;" onclick="intakeCustomOral()">Custom Oral</button>
                 </div>
-                <button class="section-action" style="width:100%; margin-top:8px;" onclick="intakeCustomOral()">Custom Oral</button>
+
+                <div class="card io-card">
+                    <div class="io-label">Output</div>
+                    <div class="io-display out" id="intake-output-display">0</div>
+                    <div class="intake-grid-4" style="margin-top:8px;">
+                        <button class="intake-btn" onclick="intakeAddOutput(100)">+100</button>
+                        <button class="intake-btn" onclick="intakeAddOutput(200)">+200</button>
+                        <button class="intake-btn" onclick="intakeAddOutput(300)">+300</button>
+                        <button class="intake-btn" onclick="intakeAddOutput(500)">+500</button>
+                    </div>
+                    <button class="section-action" style="width:100%; margin-top:8px;" onclick="intakeCustomOutput()">Custom Output</button>
+                </div>
             </div>
 
             <div class="card" style="margin:0 0 10px 0; box-shadow:none; border:1px solid var(--border);">
@@ -1249,10 +1300,11 @@
             </div>
             <div id="intake-iv-list"></div>
 
-            <div style="display:flex; gap:8px; margin-top:10px;">
+            <div class="intake-reset-row">
                 <button class="intake-btn" style="flex:1; background:#fee2e2; color:#b91c1c;" onclick="intakeResetAll()">Reset All</button>
                 <button class="intake-btn" style="flex:1; background:#e5e7eb; color:#374151;" onclick="intakeResetOral()">Reset Oral</button>
                 <button class="intake-btn" style="flex:1; background:#ede9fe; color:#6d28d9;" onclick="intakeResetBolus()">Reset Bolus</button>
+                <button class="intake-btn" style="flex:1; background:#fef2f2; color:#b91c1c;" onclick="intakeResetOutput()">Reset Output</button>
             </div>
 
             <div class="intake-total-bar">
@@ -1261,6 +1313,11 @@
                     <div style="font-size:0.75rem; color:#d1d5db;" id="intake-breakdown">IV: 0 • Oral: 0</div>
                 </div>
                 <div style="font-size:1.6rem; font-weight:800;" id="intake-grand-total">0</div>
+            </div>
+
+            <div class="intake-net-bar">
+                <div>Net Balance (Intake - Output)</div>
+                <div class="intake-net-value" id="intake-net-total">0 mL</div>
             </div>
         </div>
     </div>
@@ -1282,6 +1339,7 @@
     let intakeBagId = 0;
     let intakeOralTotal = 0;
     let intakeBolusTotal = 0;
+    let intakeOutputTotal = 0;
     let intakeInitialized = false;
 
     function intakeInit() {
@@ -1300,6 +1358,12 @@
 
     function intakeAddBolus(n) { intakeBolusTotal += n; document.getElementById('intake-bolus-display').textContent = intakeBolusTotal; intakeRunCalc(); intakeVibrate(); }
     function intakeResetBolus() { if (intakeBolusTotal > 0 && confirm('Reset Bolus?')) { intakeBolusTotal = 0; document.getElementById('intake-bolus-display').textContent = '0'; intakeRunCalc(); intakeVibrate(); } }
+    function intakeAddOutput(n) { intakeOutputTotal += n; intakeRunCalc(); intakeVibrate(); }
+    function intakeResetOutput() { if (intakeOutputTotal > 0 && confirm('Reset Output?')) { intakeOutputTotal = 0; intakeRunCalc(); intakeVibrate(); } }
+    function intakeCustomOutput() {
+        const v = prompt('Output mL:');
+        if (v && !isNaN(parseFloat(v))) intakeAddOutput(parseFloat(v));
+    }
 
     function intakeAddBag() {
         intakeBagId++;
@@ -1358,6 +1422,7 @@
     function intakeResetAll() {
         if (confirm('Start Fresh? Resets everything to zero.')) {
             intakeOralTotal = 0; intakeBolusTotal = 0;
+            intakeOutputTotal = 0;
             document.getElementById('intake-bolus-display').textContent = '0';
             document.getElementById('intake-iv-list').innerHTML = '';
             intakeBagId = 0; intakeAddBag(); intakeRunCalc(); intakeVibrate();
@@ -1447,9 +1512,14 @@
     function intakeUpdateUI(ivCalc) {
         const totalIV = ivCalc + intakeBolusTotal;
         const grand = totalIV + intakeOralTotal;
+        const net = grand - intakeOutputTotal;
         document.getElementById('intake-oral-display').textContent = intakeOralTotal;
-        document.getElementById('intake-breakdown').textContent = `IV: ${Math.round(totalIV)} • Oral: ${intakeOralTotal}`;
+        document.getElementById('intake-output-display').textContent = intakeOutputTotal;
+        document.getElementById('intake-breakdown').textContent = `IV: ${Math.round(totalIV)} • Oral: ${intakeOralTotal} • Output: ${intakeOutputTotal}`;
         document.getElementById('intake-grand-total').textContent = Math.round(grand);
+        const netEl = document.getElementById('intake-net-total');
+        netEl.textContent = `${Math.round(net)} mL`;
+        netEl.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
     }
 
     function intakeVibrate() { if (navigator.vibrate) navigator.vibrate(5); }
