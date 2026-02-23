@@ -3049,6 +3049,45 @@ Rules:
         }
     }
 
+    function normalizeDrugNameForMatch(name) {
+        return String(name || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9+\s/-]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function findDrugFromOptionText(optionText, list) {
+        const normalizedOption = normalizeDrugNameForMatch(optionText);
+        if (!normalizedOption) return null;
+        return list.find(d => {
+            const name = normalizeDrugNameForMatch(d.name);
+            return normalizedOption.includes(name) || name.includes(normalizedOption);
+        }) || null;
+    }
+
+    function optionClassTokens(drug) {
+        const raw = String(drug?.class || '').toLowerCase();
+        if (!raw) return [];
+        return raw
+            .replace(/[()]/g, ' ')
+            .split(/[^a-z0-9]+/)
+            .map(t => t.trim())
+            .filter(Boolean)
+            .filter(t => !['agent', 'drug', 'drugs', 'class', 'classes', 'acting', 'combo', 'combination'].includes(t));
+    }
+
+    function hasStrongOptionSimilarity(options, roundQuizList) {
+        if (!Array.isArray(options) || options.length !== 4) return false;
+        const mapped = options.map(opt => findDrugFromOptionText(opt, roundQuizList));
+        if (mapped.some(x => !x)) return false;
+
+        const systems = mapped.map(d => d.system || getSystemForDrug(d));
+        const sameSystem = systems.every(s => s === systems[0]);
+
+        const tokenSets = mapped.map(d => new Set(optionClassTokens(d)));
+        const base = tokenSets[0];
+        const sharedCount = [...base].filter(tok => tokenSets.slice(1).every(set => set.has(tok))).length;
+
+        return sameSystem && sharedCount >= 1;
+    }
+
     async function generateAIQuizQuestionData(roundQuizList, level, system) {
         try {
             const sample = [...roundQuizList].sort(() => Math.random() - 0.5).slice(0, 10).map(d => ({
@@ -3094,45 +3133,50 @@ Strict rules:
 - "question" must contain only the final learner-facing question text (no headings/prefixes like "Decision focus", "Reference drug", or level tags)
 - do not invent drugs outside the provided context
 - keep options balanced with very similar-looking alternatives (same drug family/class or closely related choices)
+- all 4 options must be from one coherent cluster (e.g., all inhalers, all beta blockers, all loop diuretics, all anticoagulants)
 - avoid obvious outlier options
 - explanation must mention nursing reasoning (e.g., indication match, class logic, monitoring/safety)
 
 Allowed drug context (use only these):
 ${JSON.stringify(sample)}`;
 
-            const response = await fetch('https://api.deepseek.com/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${deepSeekKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [{ role: 'user', content: prompt }],
-                    temperature: 0.4,
-                    stream: false
-                })
-            });
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const response = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${deepSeekKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: modelName,
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: 0.35,
+                        stream: false
+                    })
+                });
 
-            if (!response.ok) return false;
-            const data = await response.json();
-            const content = data?.choices?.[0]?.message?.content || '';
-            const parsed = parseAIQuizJSON(content);
-            if (!parsed) return false;
+                if (!response.ok) continue;
+                const data = await response.json();
+                const content = data?.choices?.[0]?.message?.content || '';
+                const parsed = parseAIQuizJSON(content);
+                if (!parsed) continue;
+                if (!hasStrongOptionSimilarity(parsed.options, roundQuizList)) continue;
 
-            const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
+                const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
 
-            const q = {
-                type: 'ai_quiz',
-                prompt: parsed.question,
-                options: parsed.options,
-                correctAnswerText: parsed.answer,
-                aiExplanation: parsed.explanation,
-                correctDrug: mappedDrug,
-                answerLabel: () => parsed.answer
-            };
+                const q = {
+                    type: 'ai_quiz',
+                    prompt: parsed.question,
+                    options: parsed.options,
+                    correctAnswerText: parsed.answer,
+                    aiExplanation: parsed.explanation,
+                    correctDrug: mappedDrug,
+                    answerLabel: () => parsed.answer
+                };
+                return q;
+            }
 
-            return q;
+            return null;
         } catch (e) {
             return null;
         }
