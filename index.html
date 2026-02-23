@@ -491,6 +491,29 @@
             display:inline-block;
         }
 
+
+        .quiz-generating-wrap {
+            display: none;
+            margin: 8px 0 12px;
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: #e5e7eb;
+            overflow: hidden;
+        }
+        .quiz-generating-bar {
+            height: 100%;
+            width: 40%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #60a5fa, #2563eb, #60a5fa);
+            background-size: 200% 100%;
+            animation: quizLoadSlide 1.05s ease-in-out infinite;
+        }
+        @keyframes quizLoadSlide {
+            0% { transform: translateX(-120%); }
+            100% { transform: translateX(280%); }
+        }
+
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
         .multi-chip {
             background:#eef2ff; color:#3730a3; border-radius:999px; padding:4px 10px; font-size:0.75rem; font-weight:600;
@@ -716,6 +739,9 @@
             </div>
             <div id="quiz-round-progress" class="quiz-progress-pill">Round not started</div>
             <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Loading question...</p>
+            <div id="quiz-generating-wrap" class="quiz-generating-wrap" aria-live="polite" aria-label="Generating question">
+                <div class="quiz-generating-bar"></div>
+            </div>
             <div class="quiz-stats-row">
                 <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
                 <div class="quiz-stat-pill">Streak<strong id="quiz-streak">0</strong></div>
@@ -2009,8 +2035,10 @@ Language: ${langInstruction}.`;
     let currentRoundTotal = 0;
     let currentRoundAnswered = 0;
     let currentRoundIncorrect = [];
+    let currentRoundReview = [];
     let quizQuestionQueue = [];
     let quizGenerationInFlight = false;
+    const QUIZ_PREFETCH_TARGET = 2;
     let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
@@ -2949,10 +2977,12 @@ Rules:
         currentRoundTotal = selectedQuizCount;
         currentRoundAnswered = 0;
         currentRoundIncorrect = [];
+        currentRoundReview = [];
         quizQuestionQueue = [];
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
         generateQuizQuestion();
+        preGenerateNextQuestion();
     }
 
     function getWeakDrugPool(list) {
@@ -2965,6 +2995,12 @@ Rules:
         });
         scored.sort((a, b) => b.weakness - a.weakness);
         return scored.slice(0, Math.min(12, scored.length)).map(x => x.drug);
+    }
+
+    function setQuizGeneratingState(isGenerating) {
+        const barWrap = document.getElementById('quiz-generating-wrap');
+        if (!barWrap) return;
+        barWrap.style.display = isGenerating ? 'block' : 'none';
     }
 
     async function generateQuizQuestion() {
@@ -2984,6 +3020,7 @@ Rules:
         }
 
         if (quizQuestionQueue.length > 0) {
+            setQuizGeneratingState(false);
             const nextQ = quizQuestionQueue.shift();
             renderPreparedQuizQuestion(container, qEl, nextQ);
             preGenerateNextQuestion();
@@ -2996,17 +3033,22 @@ Rules:
         if (roundQuizList.length === 0) { qEl.innerText = "No drugs available for the selected system."; return; }
 
         qEl.innerText = 'Preparing question...';
-        const prepared = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-        if (!prepared) {
-            qEl.innerText = 'Unable to generate quiz question. Please try again.';
-            return;
+        setQuizGeneratingState(true);
+        try {
+            const prepared = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+            if (!prepared) {
+                qEl.innerText = 'Unable to generate quiz question. Please try again.';
+                return;
+            }
+            if (prepared.error) {
+                qEl.innerText = prepared.error;
+                return;
+            }
+            renderPreparedQuizQuestion(container, qEl, prepared);
+            preGenerateNextQuestion();
+        } finally {
+            setQuizGeneratingState(false);
         }
-        if (prepared.error) {
-            qEl.innerText = prepared.error;
-            return;
-        }
-        renderPreparedQuizQuestion(container, qEl, prepared);
-        preGenerateNextQuestion();
     }
 
     function renderPreparedQuizQuestion(container, qEl, q) {
@@ -3035,15 +3077,20 @@ Rules:
     async function preGenerateNextQuestion() {
         if (quizGenerationInFlight) return;
         if (!currentRoundTotal || currentRoundAnswered >= currentRoundTotal - 1) return;
-        if (quizQuestionQueue.length > 0) return;
         const roundQuizList = selectedQuizSystem === 'mix'
             ? [...quizList]
             : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (!roundQuizList.length) return;
         quizGenerationInFlight = true;
         try {
-            const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-            if (nextQ && !nextQ.error) quizQuestionQueue.push(nextQ);
+            while (
+                quizQuestionQueue.length < QUIZ_PREFETCH_TARGET &&
+                currentRoundAnswered + quizQuestionQueue.length < currentRoundTotal
+            ) {
+                const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+                if (!nextQ || nextQ.error) break;
+                quizQuestionQueue.push(nextQ);
+            }
         } finally {
             quizGenerationInFlight = false;
         }
@@ -3140,7 +3187,7 @@ Strict rules:
 Allowed drug context (use only these):
 ${JSON.stringify(sample)}`;
 
-            for (let attempt = 0; attempt < 3; attempt++) {
+            for (let attempt = 0; attempt < 2; attempt++) {
                 const response = await fetch('https://api.deepseek.com/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -3160,7 +3207,7 @@ ${JSON.stringify(sample)}`;
                 const content = data?.choices?.[0]?.message?.content || '';
                 const parsed = parseAIQuizJSON(content);
                 if (!parsed) continue;
-                if (!hasStrongOptionSimilarity(parsed.options, roundQuizList)) continue;
+                if (!hasStrongOptionSimilarity(parsed.options, roundQuizList) && attempt === 0) continue;
 
                 const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
 
@@ -3210,6 +3257,55 @@ ${JSON.stringify(sample)}`;
         return cleaned.length > 1 ? cleaned[cleaned.length - 1] : cleaned[0];
     }
 
+
+    function escapeHtml(text) {
+        return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function buildOptionRationale(optionText, q, correctText) {
+        const optionDrug = findDrugFromOptionText(optionText, quizList);
+        const correctDrug = q.correctDrug || findDrugFromOptionText(correctText, quizList);
+        const isCorrectOption = optionText === correctText;
+
+        if (isCorrectOption) {
+            if (correctDrug) {
+                return `This is the best answer because it matches the target indication (<strong>${escapeHtml(correctDrug.indication || 'clinical use')}</strong>) and class logic (<strong>${escapeHtml(correctDrug.class || 'drug class')}</strong>) in the stem.`;
+            }
+            return 'This is the best answer because it fits the key clinical clue in the question stem.';
+        }
+
+        if (optionDrug && correctDrug) {
+            const optionClass = String(optionDrug.class || '').trim();
+            const correctClass = String(correctDrug.class || '').trim();
+            const sameClass = optionClass && correctClass && optionClass.toLowerCase() === correctClass.toLowerCase();
+            if (sameClass) {
+                return `Close distractor: same class (<strong>${escapeHtml(optionClass)}</strong>) but not the best match for the clinical indication in this stem. The safer/more appropriate choice is <strong>${escapeHtml(correctText)}</strong>.`;
+            }
+            return `Not the best choice here: this option is primarily <strong>${escapeHtml(optionClass || 'a different class')}</strong> used for <strong>${escapeHtml(optionDrug.indication || 'a different indication')}</strong>, while the question points to <strong>${escapeHtml(correctText)}</strong> (${escapeHtml(correctClass || 'best-fit class')}).`;
+        }
+
+        return `Not best for this stem. Compare indication, class, and safety priorities—the strongest match is <strong>${escapeHtml(correctText)}</strong>.`;
+    }
+
+    function createRoundReviewEntry(q, selectedText, correctText, isCorrect) {
+        return {
+            question: formatQuizQuestionText(q.prompt),
+            selected: selectedText,
+            correct: correctText,
+            isCorrect,
+            aiExplanation: q.aiExplanation || '',
+            options: (q.options || []).map(opt => ({
+                text: opt,
+                rationale: buildOptionRationale(opt, q, correctText)
+            }))
+        };
+    }
+
     function checkAnswer(btn, selectedText, q) {
          const btns = document.querySelectorAll('#quiz-options button');
          btns.forEach(b => b.onclick = null);
@@ -3218,6 +3314,8 @@ ${JSON.stringify(sample)}`;
 
          const correct = q.correctAnswerText || q.answerLabel(q.correctDrug);
          const isCorrect = selectedText === correct;
+
+         currentRoundReview.push(createRoundReviewEntry(q, selectedText, correct, isCorrect));
 
          if(q.correctDrug?.name) {
              if(!quizStats[q.correctDrug.name]) quizStats[q.correctDrug.name] = { correct: 0, attempts: 0 };
@@ -3274,6 +3372,7 @@ ${JSON.stringify(sample)}`;
 
     function nextQuestion() { generateQuizQuestion(); }
 
+
     function showQuizReviewModal() {
         const modal = document.getElementById('quiz-review-modal');
         const summary = document.getElementById('quiz-review-summary');
@@ -3281,24 +3380,40 @@ ${JSON.stringify(sample)}`;
         if (!modal || !summary || !list) return;
 
         const incorrectCount = currentRoundIncorrect.length;
-        const score = currentRoundTotal ? Math.round(((currentRoundTotal - incorrectCount) / currentRoundTotal) * 100) : 0;
-        summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Incorrect <strong>${incorrectCount}</strong>.`;
+        const correctCount = Math.max(0, currentRoundAnswered - incorrectCount);
+        const score = currentRoundTotal ? Math.round((correctCount / currentRoundTotal) * 100) : 0;
+        summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Correct <strong>${correctCount}</strong> • Incorrect <strong>${incorrectCount}</strong>.`;
 
         list.innerHTML = '';
-        if (!incorrectCount) {
-            list.innerHTML = '<div style="padding:10px; border-radius:10px; background:#dcfce7; color:#166534;">Perfect round 🎉 No incorrect questions to review.</div>';
+        if (!currentRoundReview.length) {
+            list.innerHTML = '<div style="padding:10px; border-radius:10px; background:#f3f4f6; color:#374151;">No review data available for this round.</div>';
         } else {
-            currentRoundIncorrect.forEach((item, idx) => {
+            currentRoundReview.forEach((item, idx) => {
                 const row = document.createElement('div');
-                row.style.padding = '10px';
+                row.style.padding = '12px';
                 row.style.border = '1px solid #e5e7eb';
-                row.style.borderRadius = '10px';
-                row.style.marginBottom = '8px';
+                row.style.borderRadius = '12px';
+                row.style.marginBottom = '10px';
+                row.style.background = item.isCorrect ? '#f0fdf4' : '#fff7ed';
+
+                const optionsHtml = (item.options || []).map(opt => {
+                    const mark = opt.text === item.correct ? '✅' : '•';
+                    return `<div style="padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:6px; background:white;">
+                        <div style="font-weight:600; margin-bottom:4px;">${mark} ${escapeHtml(opt.text)}</div>
+                        <div style="font-size:0.84rem; color:#374151;">${opt.rationale}</div>
+                    </div>`;
+                }).join('');
+
                 row.innerHTML = `
-                    <div style="font-weight:700; margin-bottom:6px;">Q${idx + 1}. ${item.question}</div>
-                    <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Your answer:</strong> <span style="color:#b91c1c;">${item.selected}</span></div>
-                    <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Correct answer:</strong> <span style="color:#166534;">${item.correct}</span></div>
-                    <div style="font-size:0.86rem; color:#374151;"><strong>AI explanation:</strong> ${item.explanation || 'Review class-indication matching and nursing safety points.'}</div>
+                    <div style="font-weight:700; margin-bottom:6px;">Q${idx + 1}. ${escapeHtml(item.question)}</div>
+                    <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Your answer:</strong> <span style="color:${item.isCorrect ? '#166534' : '#b91c1c'};">${escapeHtml(item.selected)}</span></div>
+                    <div style="font-size:0.86rem; margin-bottom:8px;"><strong>Correct answer:</strong> <span style="color:#166534;">${escapeHtml(item.correct)}</span></div>
+                    <details open style="margin-bottom:8px;">
+                        <summary style="cursor:pointer; font-weight:600;">Detailed AI rationale</summary>
+                        <div style="margin-top:6px; font-size:0.86rem; color:#374151;">${escapeHtml(item.aiExplanation || 'No model explanation returned. Use the option-by-option rationale below.')}</div>
+                    </details>
+                    <div style="font-size:0.82rem; color:#6b7280; margin-bottom:6px; font-weight:600;">Option-by-option explanation</div>
+                    ${optionsHtml}
                 `;
                 list.appendChild(row);
             });
