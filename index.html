@@ -2011,6 +2011,7 @@ Language: ${langInstruction}.`;
     let currentRoundIncorrect = [];
     let quizQuestionQueue = [];
     let quizGenerationInFlight = false;
+    const QUIZ_PREFETCH_TARGET = 2;
     let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
@@ -2953,6 +2954,7 @@ Rules:
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
         generateQuizQuestion();
+        preGenerateNextQuestion();
     }
 
     function getWeakDrugPool(list) {
@@ -3035,15 +3037,20 @@ Rules:
     async function preGenerateNextQuestion() {
         if (quizGenerationInFlight) return;
         if (!currentRoundTotal || currentRoundAnswered >= currentRoundTotal - 1) return;
-        if (quizQuestionQueue.length > 0) return;
         const roundQuizList = selectedQuizSystem === 'mix'
             ? [...quizList]
             : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (!roundQuizList.length) return;
         quizGenerationInFlight = true;
         try {
-            const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-            if (nextQ && !nextQ.error) quizQuestionQueue.push(nextQ);
+            while (
+                quizQuestionQueue.length < QUIZ_PREFETCH_TARGET &&
+                currentRoundAnswered + quizQuestionQueue.length < currentRoundTotal
+            ) {
+                const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+                if (!nextQ || nextQ.error) break;
+                quizQuestionQueue.push(nextQ);
+            }
         } finally {
             quizGenerationInFlight = false;
         }
@@ -3140,7 +3147,7 @@ Strict rules:
 Allowed drug context (use only these):
 ${JSON.stringify(sample)}`;
 
-            for (let attempt = 0; attempt < 3; attempt++) {
+            for (let attempt = 0; attempt < 2; attempt++) {
                 const response = await fetch('https://api.deepseek.com/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -3160,7 +3167,7 @@ ${JSON.stringify(sample)}`;
                 const content = data?.choices?.[0]?.message?.content || '';
                 const parsed = parseAIQuizJSON(content);
                 if (!parsed) continue;
-                if (!hasStrongOptionSimilarity(parsed.options, roundQuizList)) continue;
+                if (!hasStrongOptionSimilarity(parsed.options, roundQuizList) && attempt === 0) continue;
 
                 const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
 
