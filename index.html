@@ -123,6 +123,17 @@
 
         #app-container { width: 92%; max-width: 600px; flex: 1; padding-bottom: 80px; }
 
+        body.ward-fullscreen header,
+        body.ward-fullscreen .glass-nav {
+            display: none;
+        }
+
+        body.ward-fullscreen #app-container {
+            width: 100%;
+            max-width: none;
+            padding-bottom: 0;
+        }
+
         /* Cards */
         .ios-card {
             background: var(--ios-card); border-radius: var(--radius-card); padding: 20px;
@@ -685,8 +696,7 @@
             </div>
             <div class="quiz-controls-grid">
                 <select id="quiz-level" class="ios-select" style="margin:0; width:100%;">
-                    <option value="">Select level</option>
-                    <option value="mix">Mixed level</option>
+                    <option value="all" selected>All levels</option>
                     <option value="remembering">Remembering</option>
                     <option value="understanding">Understanding</option>
                     <option value="applying">Applying</option>
@@ -694,8 +704,7 @@
                     <option value="evaluating">Evaluating</option>
                 </select>
                 <select id="quiz-system" class="ios-select" style="margin:0; width:100%;">
-                    <option value="">Select system</option>
-                    <option value="All">All systems</option>
+                    <option value="mix" selected>Mix systems</option>
                 </select>
                 <select id="quiz-count" class="ios-select" style="margin:0; width:100%;">
                     <option value="5">5 questions</option>
@@ -722,18 +731,15 @@
         </div>
     </div>
 
-    <div id="ward-section" class="app-smooth" style="display:none;">
-        <div class="ios-card" style="padding:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 style="margin:0; color:var(--ios-green);">Ward Cheatsheet</h3>
-                <span style="font-size:0.8rem; color:var(--ios-gray);">Embedded view</span>
-            </div>
+    <div id="ward-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
+        <button onclick="switchMode('search')" aria-label="Back" style="position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:12px; z-index:350; border:none; background:rgba(0,0,0,0.6); color:#fff; border-radius:999px; padding:8px 12px; font-weight:700;">← Back</button>
+        <div style="height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:78vh; background:var(--ios-bg);">
             <iframe
                 id="ward-frame"
                 title="Ward Cheatsheet"
                 src="ward.html"
                 loading="lazy"
-                style="width:100%; height:72vh; border:none; border-radius:14px; background:#fff;"
+                style="width:100%; height:100%; border:none; background:#fff;"
             ></iframe>
         </div>
     </div>
@@ -831,6 +837,21 @@
             <button onclick="closeProgressModal()" style="background:none; border:none; color:var(--ios-blue);">Close</button>
         </div>
         <div id="progress-list-content" style="overflow-y:auto; flex-grow:1;"></div>
+    </div>
+</div>
+
+<div id="quiz-review-modal" class="modal-overlay" onclick="if(event.target===this) closeQuizReviewModal()">
+    <div class="modal-card" style="max-width:680px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:12px;">
+            <h3 style="margin:0;">🧠 Round Review</h3>
+            <button onclick="closeQuizReviewModal()" style="background:none; border:none; color:var(--ios-blue);">Close</button>
+        </div>
+        <div id="quiz-review-summary" style="margin-bottom:12px; padding:10px; border-radius:10px; background:#eef6ff; color:#1e3a8a; font-size:0.9rem;">Preparing review...</div>
+        <div id="quiz-review-list" style="overflow-y:auto; max-height:42vh;"></div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+            <button onclick="continueQuizRound()" class="action-btn btn-primary" style="margin:0;">Continue another round</button>
+            <button onclick="closeQuizReviewModal()" class="action-btn" style="margin:0; background:#f3f4f6; color:#111827;">Stay here</button>
+        </div>
     </div>
 </div>
 
@@ -1987,6 +2008,7 @@ Language: ${langInstruction}.`;
     let selectedQuizCount = 10;
     let currentRoundTotal = 0;
     let currentRoundAnswered = 0;
+    let currentRoundIncorrect = [];
     let quizQuestionQueue = [];
     let quizGenerationInFlight = false;
     let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
@@ -2241,10 +2263,12 @@ Language: ${langInstruction}.`;
         sectionToShow.style.animation = 'fadeSlideUp .24s ease-out';
 
         if(mode === 'search') {
+            document.body.classList.remove('ward-fullscreen');
             document.getElementById('search-section').style.display = 'block';
             document.getElementById('nav-search').classList.add('active');
             document.getElementById('search-input').focus();
         } else if (mode === 'anki' || mode === 'flashcard') {
+            document.body.classList.remove('ward-fullscreen');
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
             document.getElementById('filter-bar').style.display = 'flex';
@@ -2255,11 +2279,13 @@ Language: ${langInstruction}.`;
             fcCurrentIndex = 0;
             renderCard();
         } else if (mode === 'quiz') {
+            document.body.classList.remove('ward-fullscreen');
             document.getElementById('quiz-section').style.display = 'block';
             document.getElementById('nav-quiz').classList.add('active');
             const qEl = document.getElementById('quiz-question');
             if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         } else if (mode === 'ward') {
+            document.body.classList.add('ward-fullscreen');
             document.getElementById('ward-section').style.display = 'block';
             document.getElementById('nav-ward').classList.add('active');
         }
@@ -2819,7 +2845,7 @@ Rules:
     function initQuizSystemDropdown() {
         const select = document.getElementById('quiz-system');
         if (!select) return;
-        select.innerHTML = '<option value="">Select system</option><option value="All">All systems</option>';
+        select.innerHTML = '<option value="mix">Mix systems</option>';
         systemCategories.forEach(sys => {
             const opt = document.createElement('option');
             opt.value = sys;
@@ -2922,6 +2948,7 @@ Rules:
 
         currentRoundTotal = selectedQuizCount;
         currentRoundAnswered = 0;
+        currentRoundIncorrect = [];
         quizQuestionQueue = [];
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
@@ -2951,13 +2978,8 @@ Rules:
         document.getElementById('quiz-mini-explainer').style.display = 'none';
         updateQuizSessionUI();
 
-        if (!selectedQuizLevel || !selectedQuizSystem) {
-            qEl.innerText = "Please select both quiz level and drug system before each round.";
-            return;
-        }
-
         if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
-            qEl.innerText = `Round complete (${currentRoundAnswered}/${currentRoundTotal}). Select options and press Start for a new round.`;
+            qEl.innerText = `Round complete (${currentRoundAnswered}/${currentRoundTotal}). Review your results below.`;
             return;
         }
 
@@ -2968,7 +2990,7 @@ Rules:
             return;
         }
 
-        const roundQuizList = selectedQuizSystem === 'All'
+        const roundQuizList = selectedQuizSystem === 'mix'
             ? [...quizList]
             : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (roundQuizList.length === 0) { qEl.innerText = "No drugs available for the selected system."; return; }
@@ -3014,7 +3036,7 @@ Rules:
         if (quizGenerationInFlight) return;
         if (!currentRoundTotal || currentRoundAnswered >= currentRoundTotal - 1) return;
         if (quizQuestionQueue.length > 0) return;
-        const roundQuizList = selectedQuizSystem === 'All'
+        const roundQuizList = selectedQuizSystem === 'mix'
             ? [...quizList]
             : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (!roundQuizList.length) return;
@@ -3025,6 +3047,45 @@ Rules:
         } finally {
             quizGenerationInFlight = false;
         }
+    }
+
+    function normalizeDrugNameForMatch(name) {
+        return String(name || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9+\s/-]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function findDrugFromOptionText(optionText, list) {
+        const normalizedOption = normalizeDrugNameForMatch(optionText);
+        if (!normalizedOption) return null;
+        return list.find(d => {
+            const name = normalizeDrugNameForMatch(d.name);
+            return normalizedOption.includes(name) || name.includes(normalizedOption);
+        }) || null;
+    }
+
+    function optionClassTokens(drug) {
+        const raw = String(drug?.class || '').toLowerCase();
+        if (!raw) return [];
+        return raw
+            .replace(/[()]/g, ' ')
+            .split(/[^a-z0-9]+/)
+            .map(t => t.trim())
+            .filter(Boolean)
+            .filter(t => !['agent', 'drug', 'drugs', 'class', 'classes', 'acting', 'combo', 'combination'].includes(t));
+    }
+
+    function hasStrongOptionSimilarity(options, roundQuizList) {
+        if (!Array.isArray(options) || options.length !== 4) return false;
+        const mapped = options.map(opt => findDrugFromOptionText(opt, roundQuizList));
+        if (mapped.some(x => !x)) return false;
+
+        const systems = mapped.map(d => d.system || getSystemForDrug(d));
+        const sameSystem = systems.every(s => s === systems[0]);
+
+        const tokenSets = mapped.map(d => new Set(optionClassTokens(d)));
+        const base = tokenSets[0];
+        const sharedCount = [...base].filter(tok => tokenSets.slice(1).every(set => set.has(tok))).length;
+
+        return sameSystem && sharedCount >= 1;
     }
 
     async function generateAIQuizQuestionData(roundQuizList, level, system) {
@@ -3042,7 +3103,7 @@ Rules:
                 applying: 'Use a short patient-care scenario requiring direct application of pharmacology to nursing action/choice.',
                 analyzing: 'Require comparison among options and discrimination of class-indication relationships before selecting answer.',
                 evaluating: 'Require judgment of best option using safety, appropriateness, and nursing monitoring priorities.',
-                mix: 'Randomly choose one Bloom level from remembering/understanding/applying/analyzing/evaluating and reflect it in the question stem.'
+                all: 'Randomly choose one Bloom level from remembering/understanding/applying/analyzing/evaluating and reflect it in the question stem.'
             };
 
             const prompt = `You are a senior nurse educator and clinical pharmacology instructor.
@@ -3053,7 +3114,7 @@ Round configuration:
 - System scope: ${system}
 
 Level-specific design requirement:
-${levelGuidance[level] || levelGuidance.mix}
+${levelGuidance[level] || levelGuidance.all}
 
 Content requirements:
 - Prioritize clinically relevant nursing pharmacology.
@@ -3071,45 +3132,51 @@ Strict rules:
 - "answer" must exactly match one option string
 - "question" must contain only the final learner-facing question text (no headings/prefixes like "Decision focus", "Reference drug", or level tags)
 - do not invent drugs outside the provided context
-- keep options balanced (no obvious giveaway)
+- keep options balanced with very similar-looking alternatives (same drug family/class or closely related choices)
+- all 4 options must be from one coherent cluster (e.g., all inhalers, all beta blockers, all loop diuretics, all anticoagulants)
+- avoid obvious outlier options
 - explanation must mention nursing reasoning (e.g., indication match, class logic, monitoring/safety)
 
 Allowed drug context (use only these):
 ${JSON.stringify(sample)}`;
 
-            const response = await fetch('https://api.deepseek.com/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${deepSeekKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [{ role: 'user', content: prompt }],
-                    temperature: 0.4,
-                    stream: false
-                })
-            });
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const response = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${deepSeekKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: modelName,
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: 0.35,
+                        stream: false
+                    })
+                });
 
-            if (!response.ok) return false;
-            const data = await response.json();
-            const content = data?.choices?.[0]?.message?.content || '';
-            const parsed = parseAIQuizJSON(content);
-            if (!parsed) return false;
+                if (!response.ok) continue;
+                const data = await response.json();
+                const content = data?.choices?.[0]?.message?.content || '';
+                const parsed = parseAIQuizJSON(content);
+                if (!parsed) continue;
+                if (!hasStrongOptionSimilarity(parsed.options, roundQuizList)) continue;
 
-            const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
+                const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
 
-            const q = {
-                type: 'ai_quiz',
-                prompt: parsed.question,
-                options: parsed.options,
-                correctAnswerText: parsed.answer,
-                aiExplanation: parsed.explanation,
-                correctDrug: mappedDrug,
-                answerLabel: () => parsed.answer
-            };
+                const q = {
+                    type: 'ai_quiz',
+                    prompt: parsed.question,
+                    options: parsed.options,
+                    correctAnswerText: parsed.answer,
+                    aiExplanation: parsed.explanation,
+                    correctDrug: mappedDrug,
+                    answerLabel: () => parsed.answer
+                };
+                return q;
+            }
 
-            return q;
+            return null;
         } catch (e) {
             return null;
         }
@@ -3172,6 +3239,12 @@ ${JSON.stringify(sample)}`;
              feedback.style.background = "#fee2e2"; feedback.style.color = "#991b1b";
              quizSession.streak = 0;
              btns.forEach(b => { if(b.innerText === correct) { b.style.background = '#dcfce7'; b.style.color = '#166534'; } });
+             currentRoundIncorrect.push({
+                 question: formatQuizQuestionText(q.prompt),
+                 selected: selectedText,
+                 correct,
+                 explanation: q.aiExplanation || ''
+             });
          }
 
          const mini = document.getElementById('quiz-mini-explainer');
@@ -3191,6 +3264,7 @@ ${JSON.stringify(sample)}`;
          const nextBtn = document.getElementById('next-quiz-btn');
          if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
              nextBtn.style.display = 'none';
+             showQuizReviewModal();
          } else {
              nextBtn.style.display = 'block';
          }
@@ -3199,6 +3273,48 @@ ${JSON.stringify(sample)}`;
     }
 
     function nextQuestion() { generateQuizQuestion(); }
+
+    function showQuizReviewModal() {
+        const modal = document.getElementById('quiz-review-modal');
+        const summary = document.getElementById('quiz-review-summary');
+        const list = document.getElementById('quiz-review-list');
+        if (!modal || !summary || !list) return;
+
+        const incorrectCount = currentRoundIncorrect.length;
+        const score = currentRoundTotal ? Math.round(((currentRoundTotal - incorrectCount) / currentRoundTotal) * 100) : 0;
+        summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Incorrect <strong>${incorrectCount}</strong>.`;
+
+        list.innerHTML = '';
+        if (!incorrectCount) {
+            list.innerHTML = '<div style="padding:10px; border-radius:10px; background:#dcfce7; color:#166534;">Perfect round 🎉 No incorrect questions to review.</div>';
+        } else {
+            currentRoundIncorrect.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.style.padding = '10px';
+                row.style.border = '1px solid #e5e7eb';
+                row.style.borderRadius = '10px';
+                row.style.marginBottom = '8px';
+                row.innerHTML = `
+                    <div style="font-weight:700; margin-bottom:6px;">Q${idx + 1}. ${item.question}</div>
+                    <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Your answer:</strong> <span style="color:#b91c1c;">${item.selected}</span></div>
+                    <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Correct answer:</strong> <span style="color:#166534;">${item.correct}</span></div>
+                    <div style="font-size:0.86rem; color:#374151;"><strong>AI explanation:</strong> ${item.explanation || 'Review class-indication matching and nursing safety points.'}</div>
+                `;
+                list.appendChild(row);
+            });
+        }
+        modal.style.display = 'flex';
+    }
+
+    function closeQuizReviewModal() {
+        const modal = document.getElementById('quiz-review-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function continueQuizRound() {
+        closeQuizReviewModal();
+        startQuizRound();
+    }
     
     function showProgressModal() {
         const modal = document.getElementById('progress-modal');
