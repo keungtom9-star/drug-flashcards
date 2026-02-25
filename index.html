@@ -836,6 +836,8 @@
              <div class="import-wrapper" style="margin-top:10px;">
                 <input type="text" id="sheet-url" class="settings-input" placeholder="Google Sheet CSV URL" style="margin-bottom:5px;" />
                 <button onclick="fetchSheetData()" class="action-btn">Load Sheet Data</button>
+                <input type="text" id="quiz-sheet-url" class="settings-input" placeholder="Quiz bank Google Sheet CSV URL" style="margin-top:8px; margin-bottom:5px;" />
+                <button onclick="fetchQuizSheetData()" class="action-btn" style="background:#eef6ff; color:#1d4ed8;">Load Quiz Database</button>
                 <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
                     <input id="auto-sync-startup" type="checkbox" style="width:16px; height:16px;"> Auto-sync online CSV on startup (slower)
                 </label>
@@ -2065,6 +2067,7 @@ Language: ${langInstruction}.`;
     let currentRoundIncorrect = [];
     let currentRoundReview = [];
     let recentQuizDrugNames = [];
+    let usedRoundCorrectDrugNames = [];
     let usedQuizQuestionKeys = [];
     let roundBulkGenerationStarted = false;
     let quizQuestionQueue = [];
@@ -2085,15 +2088,18 @@ Language: ${langInstruction}.`;
     let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') !== '0';
 
     const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
+    const LOCAL_QUIZ_BANK_KEY = 'drug_tutor_quiz_bank_v1';
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
     let deepSeekKey = localStorage.getItem('ds_key') || "sk-92db3cf721454bd7b351ca6ef40eaaf7";
     let openRouterKey = localStorage.getItem('openrouter_key') || '';
     let googleScriptURL = localStorage.getItem('google_script_url') || "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
+    let quizSheetURL = localStorage.getItem('quiz_sheet_url') || '';
     
     // Settings
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
+    let quizQuestionBank = [];
 
     // System Data
     const systemCategories = [
@@ -2145,12 +2151,14 @@ Language: ${langInstruction}.`;
         if(savedHist) searchHistory = JSON.parse(savedHist);
         const savedStats = localStorage.getItem('drug_tutor_quiz_stats');
         if(savedStats) quizStats = JSON.parse(savedStats);
+        quizQuestionBank = loadLocalQuizBank();
 
         // Init UI
         document.getElementById('provider-select').value = currentProvider;
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('openrouter-key').value = openRouterKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
+        document.getElementById('quiz-sheet-url').value = quizSheetURL;
         document.getElementById('quiz-engine').value = 'deepseek';
         document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
         document.getElementById('anki-new-limit').value = getAnkiLimit(ankiNewLimit, 20, 1, 100);
@@ -3014,6 +3022,7 @@ Rules:
         currentRoundIncorrect = [];
         currentRoundReview = [];
         recentQuizDrugNames = [];
+        usedRoundCorrectDrugNames = [];
         usedQuizQuestionKeys = [];
         roundBulkGenerationStarted = false;
         quizQuestionQueue = [];
@@ -3024,16 +3033,106 @@ Rules:
         preGenerateNextQuestion();
     }
 
+    function getMasteryMetrics(drugName) {
+        const s = quizStats[drugName];
+        if (!s || !s.attempts) return { attempts: 0, accuracy: 0, masteryBand: 'new' };
+        const accuracy = s.correct / s.attempts;
+        const attempts = s.attempts;
+        const masteryBand = (accuracy >= 0.85 && attempts >= 4)
+            ? 'mastered'
+            : (accuracy >= 0.6 && attempts >= 2 ? 'developing' : 'weak');
+        return { attempts, accuracy, masteryBand };
+    }
+
     function getWeakDrugPool(list) {
         if (!list.length) return [];
         const scored = list.map(drug => {
-            const s = quizStats[drug.name];
-            if (!s || !s.attempts) return { drug, weakness: 1.2 };
-            const accuracy = s.correct / s.attempts;
-            return { drug, weakness: Math.max(0.05, 1 - accuracy) + Math.min(0.5, s.attempts * 0.03) };
+            const m = getMasteryMetrics(drug.name);
+            if (!m.attempts) return { drug, weakness: 1.35 };
+            let weakness = Math.max(0.08, 1 - m.accuracy);
+            if (m.masteryBand === 'mastered') weakness *= 0.35;
+            if (m.masteryBand === 'developing') weakness *= 0.75;
+            if (m.masteryBand === 'weak') weakness *= 1.15;
+            return { drug, weakness };
         });
         scored.sort((a, b) => b.weakness - a.weakness);
-        return scored.slice(0, Math.min(12, scored.length)).map(x => x.drug);
+        return scored.slice(0, Math.min(18, scored.length)).map(x => x.drug);
+    }
+
+    function buildAdaptiveQuizSample(roundQuizList, sampleSize = 12) {
+        if (!Array.isArray(roundQuizList) || !roundQuizList.length) return [];
+        const pool = [...roundQuizList];
+        const selected = [];
+
+        while (pool.length && selected.length < sampleSize) {
+            const weighted = pool.map(drug => {
+                const m = getMasteryMetrics(drug.name);
+                let weight = 1;
+                if (!m.attempts) weight = 2.2;
+                else if (m.masteryBand === 'weak') weight = 1.7;
+                else if (m.masteryBand === 'developing') weight = 1.0;
+                else weight = 0.35; // mastered appears less often
+                return { drug, weight };
+            });
+
+            const total = weighted.reduce((sum, x) => sum + x.weight, 0);
+            let r = Math.random() * total;
+            let pickIndex = 0;
+            for (let i = 0; i < weighted.length; i++) {
+                r -= weighted[i].weight;
+                if (r <= 0) {
+                    pickIndex = i;
+                    break;
+                }
+            }
+
+            const pickedDrug = weighted[pickIndex].drug;
+            selected.push(pickedDrug);
+            const removeIdx = pool.findIndex(d => d.name === pickedDrug.name);
+            if (removeIdx >= 0) pool.splice(removeIdx, 1);
+        }
+
+        return selected;
+    }
+
+    function setQuizGeneratingState(isGenerating, forceComplete = false) {
+        const barWrap = document.getElementById('quiz-generating-wrap');
+        const bar = document.getElementById('quiz-generating-bar');
+        const meta = document.getElementById('quiz-generating-meta');
+        if (!barWrap || !bar || !meta) return;
+
+        if (quizGeneratingTimer) {
+            clearInterval(quizGeneratingTimer);
+            quizGeneratingTimer = null;
+        }
+
+        if (isGenerating) {
+            quizGeneratingPct = 0;
+            bar.style.width = '0%';
+            meta.innerText = 'Generating... 0%';
+            barWrap.style.display = 'block';
+            quizGeneratingTimer = setInterval(() => {
+                quizGeneratingPct = Math.min(92, quizGeneratingPct + (quizGeneratingPct < 45 ? 6 : 2));
+                bar.style.width = `${quizGeneratingPct}%`;
+                meta.innerText = `Generating... ${Math.round(quizGeneratingPct)}%`;
+            }, 180);
+            return;
+        }
+
+        if (forceComplete) {
+            quizGeneratingPct = 100;
+            bar.style.width = '100%';
+            meta.innerText = 'Generating... 100%';
+            setTimeout(() => {
+                barWrap.style.display = 'none';
+            }, 180);
+            return;
+        }
+
+        barWrap.style.display = 'none';
+        quizGeneratingPct = 0;
+        bar.style.width = '0%';
+        meta.innerText = 'Generating... 0%';
     }
 
     function setQuizGeneratingState(isGenerating, forceComplete = false) {
@@ -3131,6 +3230,44 @@ Rules:
         }
     }
 
+
+    function getQuizHintText(q, hintLevel) {
+        const correctText = q?.correctAnswerText || q?.answerLabel?.(q?.correctDrug) || '';
+        const correctDrug = q?.correctDrug || findDrugFromOptionText(correctText, quizList);
+        const options = q?.options || [];
+        const wrongOptions = options.filter(opt => opt !== correctText);
+
+        if (Array.isArray(q?.hints) && q.hints[hintLevel - 1]) {
+            return `Hint ${hintLevel}: ${escapeHtml(q.hints[hintLevel - 1])}`;
+        }
+
+        if (hintLevel <= 1) {
+            const cls = correctDrug?.class || 'the same therapeutic class shown in the options';
+            return `Hint 1: Focus on the option that best matches the <strong>drug class</strong> needed here (${escapeHtml(cls)}).`;
+        }
+        if (hintLevel === 2) {
+            const indication = correctDrug?.indication || 'the key clinical indication in the stem';
+            return `Hint 2: Prioritize the option whose main <strong>indication</strong> aligns with ${escapeHtml(indication)}.`;
+        }
+        if (hintLevel === 3) {
+            const remove = wrongOptions.slice(0, 1).map(o => `<strong>${escapeHtml(o)}</strong>`).join(', ');
+            if (remove) return `Hint 3: You can usually eliminate ${remove} first based on mismatch with the scenario.`;
+            return 'Hint 3: Eliminate the least indication-matched option first, then compare safety priorities.';
+        }
+        return `Final hint: The best answer is in the same therapeutic pathway as <strong>${escapeHtml(correctText)}</strong>. Re-check indication and bedside safety priorities.`;
+    }
+
+    function showNextQuizHint() {
+        if (!currentQuizQuestion) return;
+        currentHintLevel += 1;
+        const hintBox = document.getElementById('quiz-hint-box');
+        const hintBtn = document.getElementById('quiz-hint-btn');
+        if (!hintBox || !hintBtn) return;
+        hintBox.style.display = 'block';
+        hintBox.innerHTML = getQuizHintText(currentQuizQuestion, currentHintLevel);
+        hintBtn.innerText = currentHintLevel >= 3 ? '💡 Show final hint' : `💡 More hint (${currentHintLevel}/3)`;
+    }
+
     function renderPreparedQuizQuestion(container, qEl, q) {
         if (!q) return;
         currentQuizQuestion = q;
@@ -3200,11 +3337,17 @@ Rules:
             : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
         if (!roundQuizList.length) return;
 
+        const targetQueueSize = Math.max(0, currentRoundTotal - 1 - currentRoundAnswered);
+        if (quizQuestionQueue.length >= targetQueueSize) return;
+
         quizGenerationInFlight = true;
         try {
-            while (currentRoundAnswered + quizQuestionQueue.length < currentRoundTotal - 1) {
+            let attempts = 0;
+            const maxAttempts = Math.max(10, targetQueueSize * 6);
+            while (quizQuestionQueue.length < targetQueueSize && attempts < maxAttempts) {
+                attempts++;
                 const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-                if (!nextQ || nextQ.error) break;
+                if (!nextQ || nextQ.error) continue;
                 quizQuestionQueue.push(nextQ);
             }
         } finally {
@@ -3220,30 +3363,11 @@ Rules:
         } else if (!deepSeekKey || !deepSeekKey.startsWith('sk-')) {
             return { error: 'DeepSeek API key is required to generate AI quiz questions. Add your key in Settings.' };
         }
+        const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
+        if (sheetQ) return sheetQ;
         const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
         if (aiQ) return aiQ;
         return { error: 'AI question generation failed. Please retry.' };
-    }
-
-    async function preGenerateNextQuestion() {
-        if (quizGenerationInFlight) return;
-        if (!currentRoundTotal || currentRoundAnswered >= currentRoundTotal - 1) return;
-        const roundQuizList = selectedQuizSystem === 'mix'
-            ? [...quizList]
-            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
-        if (!roundQuizList.length) return;
-        quizGenerationInFlight = true;
-        try {
-            while (
-                currentRoundAnswered + quizQuestionQueue.length < currentRoundTotal - 1
-            ) {
-                const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-                if (!nextQ || nextQ.error) break;
-                quizQuestionQueue.push(nextQ);
-            }
-        } finally {
-            quizGenerationInFlight = false;
-        }
     }
 
     function normalizeDrugNameForMatch(name) {
@@ -3298,9 +3422,26 @@ Rules:
         if (recentQuizDrugNames.length > 4) recentQuizDrugNames.shift();
     }
 
+    function rememberRoundCorrectDrug(drugName) {
+        const normalized = String(drugName || '').toLowerCase().trim();
+        if (!normalized) return;
+        if (!usedRoundCorrectDrugNames.includes(normalized)) usedRoundCorrectDrugNames.push(normalized);
+    }
+
+    function canUseRoundCorrectDrug(drugName, roundQuizList) {
+        const normalized = String(drugName || '').toLowerCase().trim();
+        if (!normalized) return true;
+        const uniqueAvailable = new Set((roundQuizList || []).map(d => String(d.name || '').toLowerCase().trim())).size;
+        if (uniqueAvailable <= usedRoundCorrectDrugNames.length) return true;
+        return !usedRoundCorrectDrugNames.includes(normalized);
+    }
+
     async function generateAIQuizQuestionData(roundQuizList, level, system) {
         try {
-            const sample = [...roundQuizList].sort(() => Math.random() - 0.5).slice(0, 10).map(d => ({
+            const adaptiveSampleSize = Math.min(Math.max(12, currentRoundTotal || 10), Math.max(12, roundQuizList.length));
+            const adaptivePool = buildAdaptiveQuizSample(roundQuizList, adaptiveSampleSize);
+            const sampleSource = adaptivePool.length ? adaptivePool : [...roundQuizList].sort(() => Math.random() - 0.5).slice(0, adaptiveSampleSize);
+            const sample = sampleSource.map(d => ({
                 name: d.name,
                 class: d.class,
                 indication: d.indication
@@ -3333,6 +3474,7 @@ ${levelGuidance[level] || levelGuidance.all}
 
 Content requirements:
 - Prioritize clinically relevant nursing pharmacology.
+- Prefer lower-mastery / less-practiced drugs; de-prioritize highly mastered drugs.
 - Keep the stem focused on bedside decision making.
 - Use medication-safe wording and realistic ward context.
 - Keep language concise and mobile-readable.
@@ -3384,6 +3526,7 @@ ${JSON.stringify(sample)}`;
                 const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
                 const mappedDrugName = mappedDrug?.name || parsed.drug || parsed.answer;
                 if (isRecentlyUsedQuizDrug(mappedDrugName) && attempt === 0) continue;
+                if (!canUseRoundCorrectDrug(mappedDrugName, roundQuizList)) continue;
 
                 const q = {
                     type: 'ai_quiz',
@@ -3395,6 +3538,7 @@ ${JSON.stringify(sample)}`;
                     answerLabel: () => parsed.answer
                 };
                 rememberQuizDrug(mappedDrugName);
+                rememberRoundCorrectDrug(mappedDrugName);
                 rememberQuizQuestion(parsed.question, parsed.answer);
                 return q;
             }
@@ -3746,6 +3890,80 @@ ${JSON.stringify(sample)}`;
         } catch (_) {}
     }
 
+    function normalizeQuizBankRows(rows) {
+        return (rows || []).map((r, idx) => {
+            const q = String(r.question || r.q || '').trim();
+            const a = String(r.option_a || r.A || '').trim();
+            const b = String(r.option_b || r.B || '').trim();
+            const c = String(r.option_c || r.C || '').trim();
+            const d = String(r.option_d || r.D || '').trim();
+            const answer = String(r.answer || '').trim();
+            if (!q || !a || !b || !c || !d || !answer) return null;
+            const options = [a, b, c, d];
+            if (!options.includes(answer)) return null;
+            return {
+                id: String(r.id || `sheet-${idx+1}`),
+                question: q,
+                options,
+                answer,
+                explanation: String(r.explanation || '').trim(),
+                drug: String(r.drug || '').trim(),
+                level: String(r.level || 'all').trim().toLowerCase(),
+                system: String(r.system || 'mix').trim(),
+                hint1: String(r.hint1 || '').trim(),
+                hint2: String(r.hint2 || '').trim(),
+                hint3: String(r.hint3 || '').trim()
+            };
+        }).filter(Boolean);
+    }
+
+    function loadLocalQuizBank() {
+        try {
+            const raw = localStorage.getItem(LOCAL_QUIZ_BANK_KEY);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function saveLocalQuizBank(list) {
+        try {
+            localStorage.setItem(LOCAL_QUIZ_BANK_KEY, JSON.stringify(list || []));
+        } catch (_) {}
+    }
+
+    function getSheetQuizQuestion(roundQuizList, level, system) {
+        if (!quizQuestionBank.length) return null;
+        const levelNorm = String(level || 'all').toLowerCase();
+        const systemNorm = String(system || 'mix').toLowerCase();
+        const filtered = quizQuestionBank.filter(item => {
+            const levelOk = levelNorm === 'all' || !item.level || item.level === 'all' || item.level === levelNorm;
+            const systemOk = systemNorm === 'mix' || !item.system || item.system.toLowerCase() === 'mix' || item.system.toLowerCase() === systemNorm;
+            if (!levelOk || !systemOk) return false;
+            if (isRepeatedQuizQuestion(item.question, item.answer)) return false;
+            if (!canUseRoundCorrectDrug(item.drug || item.answer, roundQuizList)) return false;
+            return true;
+        });
+        if (!filtered.length) return null;
+        const picked = filtered[Math.floor(Math.random() * filtered.length)];
+        const mappedDrug = roundQuizList.find(d => normalizeDrugNameForMatch(d.name) === normalizeDrugNameForMatch(picked.drug)) || findDrugFromOptionText(picked.answer, roundQuizList) || null;
+        rememberRoundCorrectDrug(picked.drug || picked.answer);
+        rememberQuizDrug(picked.drug || picked.answer);
+        rememberQuizQuestion(picked.question, picked.answer);
+        return {
+            type: 'sheet_quiz',
+            prompt: picked.question,
+            options: picked.options,
+            correctAnswerText: picked.answer,
+            aiExplanation: picked.explanation,
+            correctDrug: mappedDrug,
+            hints: [picked.hint1, picked.hint2, picked.hint3].filter(Boolean),
+            answerLabel: () => picked.answer
+        };
+    }
+
     function toggleSettings() {
         const p = document.getElementById('settings-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
@@ -3756,6 +3974,7 @@ ${JSON.stringify(sample)}`;
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('openrouter_key', document.getElementById('openrouter-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
+        localStorage.setItem('quiz_sheet_url', document.getElementById('quiz-sheet-url').value);
         localStorage.setItem('quiz_engine', 'deepseek');
         localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
         localStorage.setItem('anki_due_limit', document.getElementById('anki-due-limit').value || '50');
@@ -3766,6 +3985,7 @@ ${JSON.stringify(sample)}`;
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
         openRouterKey = document.getElementById('openrouter-key').value;
+        quizSheetURL = document.getElementById('quiz-sheet-url').value;
         quizEngine = 'deepseek';
         ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
         ankiDueLimit = parseInt(document.getElementById('anki-due-limit').value || '50', 10);
@@ -3825,6 +4045,28 @@ ${JSON.stringify(sample)}`;
                 generateDailyPicks();
                 updateQueueStats(filteredList.length ? filteredList : activeSourceList);
             }
+        });
+    }
+
+
+
+    function fetchQuizSheetData() {
+        const url = document.getElementById('quiz-sheet-url').value;
+        let fetchUrl = url;
+        if (url.includes('docs.google.com/spreadsheets') && url.includes('/edit')) fetchUrl = url.replace(/\/edit.*$/, '/export?format=csv');
+
+        const status = document.getElementById('upload-status');
+        status.innerText = '⏳ Loading quiz database...';
+
+        fetch(fetchUrl).then(r => r.text()).then(csv => {
+            Papa.parse(csv, { header: true, skipEmptyLines: true, complete: function(results) {
+                const bank = normalizeQuizBankRows(results.data || []);
+                quizQuestionBank = bank;
+                saveLocalQuizBank(bank);
+                status.innerText = `✅ Loaded ${bank.length} quiz questions`;
+            }});
+        }).catch(() => {
+            status.innerText = '❌ Quiz database load failed';
         });
     }
 
