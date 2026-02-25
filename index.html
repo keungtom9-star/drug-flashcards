@@ -446,6 +446,15 @@
             background:#eff6ff; color:#1e3a8a; font-size:0.82rem; line-height:1.45;
         }
 
+        .quiz-hint-box {
+            display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
+            background:#fffbeb; color:#92400e; font-size:0.83rem; line-height:1.45;
+            border:1px solid #fde68a;
+        }
+        .quiz-hint-actions {
+            display:none; margin-top:10px; gap:8px;
+        }
+
         .quiz-option-btn {
             text-align: left;
             justify-content: flex-start;
@@ -755,6 +764,10 @@
                 <div class="quiz-stat-pill">Answered<strong id="quiz-answered">0</strong></div>
             </div>
             <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div id="quiz-hint-actions" class="quiz-hint-actions">
+                <button id="quiz-hint-btn" class="action-btn" style="margin:0; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;">💡 Get hint</button>
+            </div>
+            <div id="quiz-hint-box" class="quiz-hint-box"></div>
             
             <div id="quiz-feedback" style="display:none; margin-top:15px; padding:12px; border-radius:12px; text-align:center;"></div>
             <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
@@ -2043,6 +2056,7 @@ Language: ${langInstruction}.`;
     let quizCurrentIndex = 0;
     let currentQuizData = null;
     let currentQuizQuestion = null;
+    let currentHintLevel = 0;
     let selectedQuizLevel = '';
     let selectedQuizSystem = '';
     let selectedQuizCount = 10;
@@ -2051,6 +2065,8 @@ Language: ${langInstruction}.`;
     let currentRoundIncorrect = [];
     let currentRoundReview = [];
     let recentQuizDrugNames = [];
+    let usedQuizQuestionKeys = [];
+    let roundBulkGenerationStarted = false;
     let quizQuestionQueue = [];
     let quizGeneratingPct = 0;
     let quizGeneratingTimer = null;
@@ -2998,6 +3014,8 @@ Rules:
         currentRoundIncorrect = [];
         currentRoundReview = [];
         recentQuizDrugNames = [];
+        usedQuizQuestionKeys = [];
+        roundBulkGenerationStarted = false;
         quizQuestionQueue = [];
         setQuizGeneratingState(false);
         quizGenerationInFlight = false;
@@ -3067,6 +3085,8 @@ Rules:
         document.getElementById('quiz-feedback').style.display = 'none';
         document.getElementById('next-quiz-btn').style.display = 'none';
         document.getElementById('quiz-mini-explainer').style.display = 'none';
+        document.getElementById('quiz-hint-actions').style.display = 'none';
+        document.getElementById('quiz-hint-box').style.display = 'none';
         updateQuizSessionUI();
 
         if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
@@ -3078,7 +3098,7 @@ Rules:
             setQuizGeneratingState(false);
             const nextQ = quizQuestionQueue.shift();
             renderPreparedQuizQuestion(container, qEl, nextQ);
-            preGenerateNextQuestion();
+            preGenerateRoundQuestions();
             return;
         }
 
@@ -3100,17 +3120,67 @@ Rules:
                 return;
             }
             renderPreparedQuizQuestion(container, qEl, prepared);
-            preGenerateNextQuestion();
+            if (!roundBulkGenerationStarted) {
+                roundBulkGenerationStarted = true;
+                preGenerateRoundQuestions();
+            } else {
+                preGenerateRoundQuestions();
+            }
         } finally {
             setQuizGeneratingState(false, true);
         }
     }
 
+
+    function getQuizHintText(q, hintLevel) {
+        const correctText = q?.correctAnswerText || q?.answerLabel?.(q?.correctDrug) || '';
+        const correctDrug = q?.correctDrug || findDrugFromOptionText(correctText, quizList);
+        const options = q?.options || [];
+        const wrongOptions = options.filter(opt => opt !== correctText);
+
+        if (hintLevel <= 1) {
+            const cls = correctDrug?.class || 'the same therapeutic class shown in the options';
+            return `Hint 1: Focus on the option that best matches the <strong>drug class</strong> needed here (${escapeHtml(cls)}).`;
+        }
+        if (hintLevel === 2) {
+            const indication = correctDrug?.indication || 'the key clinical indication in the stem';
+            return `Hint 2: Prioritize the option whose main <strong>indication</strong> aligns with ${escapeHtml(indication)}.`;
+        }
+        if (hintLevel === 3) {
+            const remove = wrongOptions.slice(0, 1).map(o => `<strong>${escapeHtml(o)}</strong>`).join(', ');
+            if (remove) return `Hint 3: You can usually eliminate ${remove} first based on mismatch with the scenario.`;
+            return 'Hint 3: Eliminate the least indication-matched option first, then compare safety priorities.';
+        }
+        return `Final hint: The best answer is in the same therapeutic pathway as <strong>${escapeHtml(correctText)}</strong>. Re-check indication and bedside safety priorities.`;
+    }
+
+    function showNextQuizHint() {
+        if (!currentQuizQuestion) return;
+        currentHintLevel += 1;
+        const hintBox = document.getElementById('quiz-hint-box');
+        const hintBtn = document.getElementById('quiz-hint-btn');
+        if (!hintBox || !hintBtn) return;
+        hintBox.style.display = 'block';
+        hintBox.innerHTML = getQuizHintText(currentQuizQuestion, currentHintLevel);
+        hintBtn.innerText = currentHintLevel >= 3 ? '💡 Show final hint' : `💡 More hint (${currentHintLevel}/3)`;
+    }
+
     function renderPreparedQuizQuestion(container, qEl, q) {
         if (!q) return;
         currentQuizQuestion = q;
+        currentHintLevel = 0;
         qEl.innerText = formatQuizQuestionText(q.prompt);
         container.innerHTML = '';
+        const hintActions = document.getElementById('quiz-hint-actions');
+        const hintBox = document.getElementById('quiz-hint-box');
+        const hintBtn = document.getElementById('quiz-hint-btn');
+        if (hintActions && hintBox && hintBtn) {
+            hintActions.style.display = 'flex';
+            hintBox.style.display = 'none';
+            hintBox.innerHTML = '';
+            hintBtn.innerText = '💡 Get hint';
+            hintBtn.onclick = () => showNextQuizHint();
+        }
         (q.options || []).forEach(optText => {
             const btn = document.createElement('button');
             btn.className = 'action-btn quiz-option-btn';
@@ -3118,6 +3188,62 @@ Rules:
             btn.onclick = () => checkAnswer(btn, optText, q);
             container.appendChild(btn);
         });
+    }
+
+
+    function normalizeQuestionKey(questionText, answerText) {
+        return `${String(questionText || '').toLowerCase().replace(/\s+/g, ' ').trim()}::${String(answerText || '').toLowerCase().trim()}`;
+    }
+
+    function rememberQuizQuestion(questionText, answerText) {
+        const key = normalizeQuestionKey(questionText, answerText);
+        if (!key || key === '::') return;
+        usedQuizQuestionKeys.push(key);
+        if (usedQuizQuestionKeys.length > 40) usedQuizQuestionKeys.shift();
+    }
+
+    function isRepeatedQuizQuestion(questionText, answerText) {
+        const key = normalizeQuestionKey(questionText, answerText);
+        if (!key || key === '::') return false;
+        return usedQuizQuestionKeys.includes(key);
+    }
+
+    function optionsHaveDuplicateMeanings(options, roundQuizList, answerText) {
+        if (!Array.isArray(options) || options.length !== 4) return true;
+        const normalized = options.map(o => normalizeDrugNameForMatch(o));
+        if (new Set(normalized).size !== 4) return true;
+
+        const mapped = options.map(opt => findDrugFromOptionText(opt, roundQuizList));
+        const mappedNames = mapped.filter(Boolean).map(d => normalizeDrugNameForMatch(d.name));
+        if (mappedNames.length >= 2 && new Set(mappedNames).size !== mappedNames.length) return true;
+
+        const correctDrug = findDrugFromOptionText(answerText, roundQuizList);
+        if (correctDrug) {
+            const target = normalizeDrugNameForMatch(correctDrug.name);
+            const sameAsCorrect = mappedNames.filter(n => n === target).length;
+            if (sameAsCorrect > 1) return true;
+        }
+        return false;
+    }
+
+    async function preGenerateRoundQuestions() {
+        if (quizGenerationInFlight || !roundBulkGenerationStarted) return;
+        if (!currentRoundTotal) return;
+        const roundQuizList = selectedQuizSystem === 'mix'
+            ? [...quizList]
+            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
+        if (!roundQuizList.length) return;
+
+        quizGenerationInFlight = true;
+        try {
+            while (currentRoundAnswered + quizQuestionQueue.length < currentRoundTotal - 1) {
+                const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
+                if (!nextQ || nextQ.error) break;
+                quizQuestionQueue.push(nextQ);
+            }
+        } finally {
+            quizGenerationInFlight = false;
+        }
     }
 
     async function prepareQuizQuestion(roundQuizList, level, system) {
@@ -3143,8 +3269,7 @@ Rules:
         quizGenerationInFlight = true;
         try {
             while (
-                quizQuestionQueue.length < QUIZ_PREFETCH_TARGET &&
-                currentRoundAnswered + quizQuestionQueue.length < currentRoundTotal
+                currentRoundAnswered + quizQuestionQueue.length < currentRoundTotal - 1
             ) {
                 const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
                 if (!nextQ || nextQ.error) break;
@@ -3252,13 +3377,14 @@ Return strict JSON only (no markdown, no extra text):
 
 Strict rules:
 - exactly 4 options
-- exactly one best answer
+- exactly one best answer (other options must be clearly less appropriate for this exact stem)
 - "answer" must exactly match one option string
 - "question" must contain only the final learner-facing question text (no headings/prefixes like "Decision focus", "Reference drug", or level tags)
 - do not invent drugs outside the provided context
 - keep options balanced with very similar-looking alternatives (same drug family/class or closely related choices)
 - all 4 options must be from one coherent cluster (e.g., all inhalers, all beta blockers, all loop diuretics, all anticoagulants)
 - avoid obvious outlier options
+- ensure distractors are plausible but not equally correct in the given scenario
 - explanation must mention nursing reasoning (e.g., indication match, class logic, monitoring/safety)
 - prefer a different correct drug from the most recent questions in this round unless clinically impossible
 
@@ -3286,6 +3412,8 @@ ${JSON.stringify(sample)}`;
                 const parsed = parseAIQuizJSON(content);
                 if (!parsed) continue;
                 if (!hasStrongOptionSimilarity(parsed.options, roundQuizList) && attempt === 0) continue;
+                if (optionsHaveDuplicateMeanings(parsed.options, roundQuizList, parsed.answer)) continue;
+                if (isRepeatedQuizQuestion(parsed.question, parsed.answer)) continue;
 
                 const mappedDrug = roundQuizList.find(d => d.name.toLowerCase() === String(parsed.drug || '').toLowerCase()) || roundQuizList.find(d => d.name.toLowerCase().includes(String(parsed.drug || '').toLowerCase())) || null;
                 const mappedDrugName = mappedDrug?.name || parsed.drug || parsed.answer;
@@ -3301,6 +3429,7 @@ ${JSON.stringify(sample)}`;
                     answerLabel: () => parsed.answer
                 };
                 rememberQuizDrug(mappedDrugName);
+                rememberQuizQuestion(parsed.question, parsed.answer);
                 return q;
             }
 
@@ -3406,6 +3535,8 @@ ${JSON.stringify(sample)}`;
          btns.forEach(b => b.onclick = null);
          const feedback = document.getElementById('quiz-feedback');
          feedback.style.display = 'block';
+         const hintActions = document.getElementById('quiz-hint-actions');
+         if (hintActions) hintActions.style.display = 'none';
 
          const correct = q.correctAnswerText || q.answerLabel(q.correctDrug);
          const isCorrect = selectedText === correct;
@@ -3464,7 +3595,7 @@ ${JSON.stringify(sample)}`;
              nextBtn.style.display = 'block';
          }
          currentQuizData = { q: q.prompt, u: selectedText, c: q.correctDrug, correctAnswerText: correct };
-         preGenerateNextQuestion();
+         preGenerateRoundQuestions();
     }
 
     function nextQuestion() { generateQuizQuestion(); }
