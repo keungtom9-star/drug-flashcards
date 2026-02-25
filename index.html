@@ -3032,6 +3032,18 @@ Rules:
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
         generateQuizQuestion();
+        preGenerateNextQuestion();
+    }
+
+    function getMasteryMetrics(drugName) {
+        const s = quizStats[drugName];
+        if (!s || !s.attempts) return { attempts: 0, accuracy: 0, masteryBand: 'new' };
+        const accuracy = s.correct / s.attempts;
+        const attempts = s.attempts;
+        const masteryBand = (accuracy >= 0.85 && attempts >= 4)
+            ? 'mastered'
+            : (accuracy >= 0.6 && attempts >= 2 ? 'developing' : 'weak');
+        return { attempts, accuracy, masteryBand };
     }
 
     function getMasteryMetrics(drugName) {
