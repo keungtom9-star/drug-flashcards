@@ -3030,6 +3030,7 @@ Rules:
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
         generateQuizQuestion();
+        preGenerateNextQuestion();
     }
 
     function getMasteryMetrics(drugName) {
@@ -3092,6 +3093,46 @@ Rules:
         }
 
         return selected;
+    }
+
+    function setQuizGeneratingState(isGenerating, forceComplete = false) {
+        const barWrap = document.getElementById('quiz-generating-wrap');
+        const bar = document.getElementById('quiz-generating-bar');
+        const meta = document.getElementById('quiz-generating-meta');
+        if (!barWrap || !bar || !meta) return;
+
+        if (quizGeneratingTimer) {
+            clearInterval(quizGeneratingTimer);
+            quizGeneratingTimer = null;
+        }
+
+        if (isGenerating) {
+            quizGeneratingPct = 0;
+            bar.style.width = '0%';
+            meta.innerText = 'Generating... 0%';
+            barWrap.style.display = 'block';
+            quizGeneratingTimer = setInterval(() => {
+                quizGeneratingPct = Math.min(92, quizGeneratingPct + (quizGeneratingPct < 45 ? 6 : 2));
+                bar.style.width = `${quizGeneratingPct}%`;
+                meta.innerText = `Generating... ${Math.round(quizGeneratingPct)}%`;
+            }, 180);
+            return;
+        }
+
+        if (forceComplete) {
+            quizGeneratingPct = 100;
+            bar.style.width = '100%';
+            meta.innerText = 'Generating... 100%';
+            setTimeout(() => {
+                barWrap.style.display = 'none';
+            }, 180);
+            return;
+        }
+
+        barWrap.style.display = 'none';
+        quizGeneratingPct = 0;
+        bar.style.width = '0%';
+        meta.innerText = 'Generating... 0%';
     }
 
     function setQuizGeneratingState(isGenerating, forceComplete = false) {
