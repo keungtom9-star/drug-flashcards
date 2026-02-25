@@ -3131,40 +3131,6 @@ Rules:
         }
     }
 
-
-    function getQuizHintText(q, hintLevel) {
-        const correctText = q?.correctAnswerText || q?.answerLabel?.(q?.correctDrug) || '';
-        const correctDrug = q?.correctDrug || findDrugFromOptionText(correctText, quizList);
-        const options = q?.options || [];
-        const wrongOptions = options.filter(opt => opt !== correctText);
-
-        if (hintLevel <= 1) {
-            const cls = correctDrug?.class || 'the same therapeutic class shown in the options';
-            return `Hint 1: Focus on the option that best matches the <strong>drug class</strong> needed here (${escapeHtml(cls)}).`;
-        }
-        if (hintLevel === 2) {
-            const indication = correctDrug?.indication || 'the key clinical indication in the stem';
-            return `Hint 2: Prioritize the option whose main <strong>indication</strong> aligns with ${escapeHtml(indication)}.`;
-        }
-        if (hintLevel === 3) {
-            const remove = wrongOptions.slice(0, 1).map(o => `<strong>${escapeHtml(o)}</strong>`).join(', ');
-            if (remove) return `Hint 3: You can usually eliminate ${remove} first based on mismatch with the scenario.`;
-            return 'Hint 3: Eliminate the least indication-matched option first, then compare safety priorities.';
-        }
-        return `Final hint: The best answer is in the same therapeutic pathway as <strong>${escapeHtml(correctText)}</strong>. Re-check indication and bedside safety priorities.`;
-    }
-
-    function showNextQuizHint() {
-        if (!currentQuizQuestion) return;
-        currentHintLevel += 1;
-        const hintBox = document.getElementById('quiz-hint-box');
-        const hintBtn = document.getElementById('quiz-hint-btn');
-        if (!hintBox || !hintBtn) return;
-        hintBox.style.display = 'block';
-        hintBox.innerHTML = getQuizHintText(currentQuizQuestion, currentHintLevel);
-        hintBtn.innerText = currentHintLevel >= 3 ? '💡 Show final hint' : `💡 More hint (${currentHintLevel}/3)`;
-    }
-
     function renderPreparedQuizQuestion(container, qEl, q) {
         if (!q) return;
         currentQuizQuestion = q;
