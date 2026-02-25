@@ -2070,6 +2070,7 @@ Language: ${langInstruction}.`;
     let usedRoundCorrectDrugNames = [];
     let usedQuizQuestionKeys = [];
     let roundBulkGenerationStarted = false;
+    let roundQuestionSerial = 0;
     let quizQuestionQueue = [];
     let quizGeneratingPct = 0;
     let quizGeneratingTimer = null;
@@ -2095,7 +2096,7 @@ Language: ${langInstruction}.`;
     let deepSeekKey = localStorage.getItem('ds_key') || "sk-92db3cf721454bd7b351ca6ef40eaaf7";
     let openRouterKey = localStorage.getItem('openrouter_key') || '';
     let googleScriptURL = localStorage.getItem('google_script_url') || "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
-    let quizSheetURL = localStorage.getItem('quiz_sheet_url') || '';
+    let quizSheetURL = localStorage.getItem('quiz_sheet_url') || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
     
     // Settings
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
@@ -3025,12 +3026,24 @@ Rules:
         usedRoundCorrectDrugNames = [];
         usedQuizQuestionKeys = [];
         roundBulkGenerationStarted = false;
+        roundQuestionSerial = 0;
         quizQuestionQueue = [];
         setQuizGeneratingState(false);
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
         generateQuizQuestion();
         preGenerateNextQuestion();
+    }
+
+    function getMasteryMetrics(drugName) {
+        const s = quizStats[drugName];
+        if (!s || !s.attempts) return { attempts: 0, accuracy: 0, masteryBand: 'new' };
+        const accuracy = s.correct / s.attempts;
+        const attempts = s.attempts;
+        const masteryBand = (accuracy >= 0.85 && attempts >= 4)
+            ? 'mastered'
+            : (accuracy >= 0.6 && attempts >= 2 ? 'developing' : 'weak');
+        return { attempts, accuracy, masteryBand };
     }
 
     function getMasteryMetrics(drugName) {
@@ -3093,46 +3106,6 @@ Rules:
         }
 
         return selected;
-    }
-
-    function setQuizGeneratingState(isGenerating, forceComplete = false) {
-        const barWrap = document.getElementById('quiz-generating-wrap');
-        const bar = document.getElementById('quiz-generating-bar');
-        const meta = document.getElementById('quiz-generating-meta');
-        if (!barWrap || !bar || !meta) return;
-
-        if (quizGeneratingTimer) {
-            clearInterval(quizGeneratingTimer);
-            quizGeneratingTimer = null;
-        }
-
-        if (isGenerating) {
-            quizGeneratingPct = 0;
-            bar.style.width = '0%';
-            meta.innerText = 'Generating... 0%';
-            barWrap.style.display = 'block';
-            quizGeneratingTimer = setInterval(() => {
-                quizGeneratingPct = Math.min(92, quizGeneratingPct + (quizGeneratingPct < 45 ? 6 : 2));
-                bar.style.width = `${quizGeneratingPct}%`;
-                meta.innerText = `Generating... ${Math.round(quizGeneratingPct)}%`;
-            }, 180);
-            return;
-        }
-
-        if (forceComplete) {
-            quizGeneratingPct = 100;
-            bar.style.width = '100%';
-            meta.innerText = 'Generating... 100%';
-            setTimeout(() => {
-                barWrap.style.display = 'none';
-            }, 180);
-            return;
-        }
-
-        barWrap.style.display = 'none';
-        quizGeneratingPct = 0;
-        bar.style.width = '0%';
-        meta.innerText = 'Generating... 0%';
     }
 
     function setQuizGeneratingState(isGenerating, forceComplete = false) {
@@ -3356,17 +3329,40 @@ Rules:
     }
 
     async function prepareQuizQuestion(roundQuizList, level, system) {
-        if (currentProvider === 'openrouter-trinity') {
-            if (!openRouterKey || !openRouterKey.startsWith('sk-')) {
-                return { error: 'OpenRouter API key is required for Trinity quiz questions. Add your key in Settings.' };
-            }
-        } else if (!deepSeekKey || !deepSeekKey.startsWith('sk-')) {
-            return { error: 'DeepSeek API key is required to generate AI quiz questions. Add your key in Settings.' };
+        const canUseAI = (currentProvider === 'openrouter-trinity')
+            ? !!(openRouterKey && openRouterKey.startsWith('sk-'))
+            : !!(deepSeekKey && deepSeekKey.startsWith('sk-'));
+
+        const hasSheetBank = Array.isArray(quizQuestionBank) && quizQuestionBank.length > 0;
+        const preferSheetThisTurn = hasSheetBank && (roundQuestionSerial % 2 === 0);
+        roundQuestionSerial++;
+
+        if (preferSheetThisTurn) {
+            const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
+            if (sheetQ) return sheetQ;
         }
-        const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
-        if (sheetQ) return sheetQ;
-        const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
-        if (aiQ) return aiQ;
+
+        if (canUseAI) {
+            const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
+            if (aiQ) return aiQ;
+        }
+
+        if (!preferSheetThisTurn && hasSheetBank) {
+            const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
+            if (sheetQ) return sheetQ;
+        }
+
+        if (!canUseAI && !hasSheetBank) {
+            if (currentProvider === 'openrouter-trinity') {
+                return { error: 'OpenRouter API key is required for Trinity quiz questions, or load a quiz database in Settings.' };
+            }
+            return { error: 'DeepSeek API key is required to generate AI quiz questions, or load a quiz database in Settings.' };
+        }
+
+        if (!canUseAI && hasSheetBank) {
+            return { error: 'No eligible quiz-bank question found for current filters. Try changing level/system.' };
+        }
+
         return { error: 'AI question generation failed. Please retry.' };
     }
 
