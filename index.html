@@ -747,7 +747,10 @@
                     <option value="10" selected>10 questions</option>
                     <option value="15">15 questions</option>
                     <option value="20">20 questions</option>
+                    <option value="25">25 questions</option>
+                    <option value="50">50 questions</option>
                 </select>
+                <button onclick="showQuizLevelBadge()" class="action-btn" style="padding:10px 12px; margin:0; background:#eef6ff; color:#1d4ed8; border:1px solid #bfdbfe;">Show level</button>
                 <button onclick="startQuizRound()" class="action-btn btn-primary quiz-start-btn" style="padding:10px 12px;">Start</button>
             </div>
             <div id="quiz-round-progress" class="quiz-progress-pill">Round not started</div>
@@ -902,6 +905,10 @@
             <button onclick="closeQuizReviewModal()" style="background:none; border:none; color:var(--ios-blue);">Close</button>
         </div>
         <div id="quiz-review-summary" style="margin-bottom:12px; padding:10px; border-radius:10px; background:#eef6ff; color:#1e3a8a; font-size:0.9rem;">Preparing review...</div>
+        <div id="quiz-review-actions" style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+            <button onclick="renderRoundReview('incorrect')" class="action-btn" style="margin:0; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;">Review incorrect questions</button>
+            <button onclick="renderRoundReview('all')" class="action-btn" style="margin:0; background:#f3f4f6; color:#111827; border:1px solid #e5e7eb;">Review all answers</button>
+        </div>
         <div id="quiz-review-list" style="overflow-y:auto; max-height:42vh;"></div>
         <div style="display:flex; gap:8px; margin-top:12px;">
             <button onclick="continueQuizRound()" class="action-btn btn-primary" style="margin:0;">Continue another round</button>
@@ -2071,6 +2078,8 @@ Language: ${langInstruction}.`;
     let usedQuizQuestionKeys = [];
     let roundBulkGenerationStarted = false;
     let roundQuestionSerial = 0;
+    let roundAiQuestionCount = 0;
+    let roundSheetQuestionCount = 0;
     let quizQuestionQueue = [];
     let quizGeneratingPct = 0;
     let quizGeneratingTimer = null;
@@ -3010,6 +3019,17 @@ Rules:
         el.innerText = `Round progress: ${currentRoundAnswered}/${currentRoundTotal}`;
     }
 
+    function showQuizLevelBadge() {
+        const levelEl = document.getElementById('quiz-level');
+        const feedback = document.getElementById('quiz-feedback');
+        if (!feedback) return;
+        const levelText = String(levelEl?.value || 'all').replace(/^./, c => c.toUpperCase());
+        feedback.style.display = 'block';
+        feedback.style.background = '#eef6ff';
+        feedback.style.color = '#1e3a8a';
+        feedback.innerHTML = `<strong>Current level:</strong> ${escapeHtml(levelText)}`;
+    }
+
     function startQuizRound() {
         const levelEl = document.getElementById('quiz-level');
         const systemEl = document.getElementById('quiz-system');
@@ -3027,6 +3047,8 @@ Rules:
         usedQuizQuestionKeys = [];
         roundBulkGenerationStarted = false;
         roundQuestionSerial = 0;
+        roundAiQuestionCount = 0;
+        roundSheetQuestionCount = 0;
         quizQuestionQueue = [];
         setQuizGeneratingState(false);
         quizGenerationInFlight = false;
@@ -3334,22 +3356,41 @@ Rules:
             : !!(deepSeekKey && deepSeekKey.startsWith('sk-'));
 
         const hasSheetBank = Array.isArray(quizQuestionBank) && quizQuestionBank.length > 0;
-        const preferSheetThisTurn = hasSheetBank && (roundQuestionSerial % 2 === 0);
+        const roundHalfPoint = Math.ceil((currentRoundTotal || selectedQuizCount || 10) / 2);
+        const shouldUseSheet = hasSheetBank && roundSheetQuestionCount < roundHalfPoint && (roundSheetQuestionCount <= roundAiQuestionCount);
+        const shouldUseAI = canUseAI && roundAiQuestionCount < roundHalfPoint && (roundAiQuestionCount <= roundSheetQuestionCount || !hasSheetBank);
         roundQuestionSerial++;
 
-        if (preferSheetThisTurn) {
+        if (shouldUseSheet) {
             const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
-            if (sheetQ) return sheetQ;
+            if (sheetQ) {
+                roundSheetQuestionCount++;
+                return sheetQ;
+            }
+        }
+
+        if (shouldUseAI) {
+            const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
+            if (aiQ) {
+                roundAiQuestionCount++;
+                return aiQ;
+            }
+        }
+
+        if (hasSheetBank) {
+            const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
+            if (sheetQ) {
+                roundSheetQuestionCount++;
+                return sheetQ;
+            }
         }
 
         if (canUseAI) {
             const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
-            if (aiQ) return aiQ;
-        }
-
-        if (!preferSheetThisTurn && hasSheetBank) {
-            const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
-            if (sheetQ) return sheetQ;
+            if (aiQ) {
+                roundAiQuestionCount++;
+                return aiQ;
+            }
         }
 
         if (!canUseAI && !hasSheetBank) {
@@ -3710,55 +3751,68 @@ ${JSON.stringify(sample)}`;
     function showQuizReviewModal() {
         const modal = document.getElementById('quiz-review-modal');
         const summary = document.getElementById('quiz-review-summary');
-        const list = document.getElementById('quiz-review-list');
-        if (!modal || !summary || !list) return;
+        if (!modal || !summary) return;
 
         const incorrectCount = currentRoundIncorrect.length;
         const correctCount = Math.max(0, currentRoundAnswered - incorrectCount);
         const score = currentRoundTotal ? Math.round((correctCount / currentRoundTotal) * 100) : 0;
-        summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Correct <strong>${correctCount}</strong> • Incorrect <strong>${incorrectCount}</strong>.`;
+        summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Correct <strong>${correctCount}</strong> • Incorrect <strong>${incorrectCount}</strong>. Choose how you want to review this round.`;
 
-        list.innerHTML = '';
-        if (!currentRoundIncorrect.length || !currentRoundReview.length) {
-            list.innerHTML = '<div style="padding:10px; border-radius:10px; background:#f3f4f6; color:#374151;">Perfect round 🎉 No incorrect answers to review.</div>';
-        } else {
-            currentRoundReview.forEach((item, idx) => {
-                const row = document.createElement('div');
-                row.style.padding = '12px';
-                row.style.border = '1px solid #e5e7eb';
-                row.style.borderRadius = '12px';
-                row.style.marginBottom = '10px';
-                row.style.background = item.isCorrect ? '#f0fdf4' : '#fff7ed';
-
-                const optionsHtml = (item.options || []).map(opt => {
-                    const mark = opt.text === item.correct ? '✅' : '•';
-                    return `<div style="padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:6px; background:white;">
-                        <div style="font-weight:600; margin-bottom:4px;">${mark} ${escapeHtml(opt.text)}</div>
-                        <div style="font-size:0.84rem; color:#374151;">${opt.rationale}</div>
-                    </div>`;
-                }).join('');
-
-                row.innerHTML = `
-                    <div style="font-weight:700; margin-bottom:6px;">Q${idx + 1}. ${escapeHtml(item.question)}</div>
-                    <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Your answer:</strong> <span style="color:${item.isCorrect ? '#166534' : '#b91c1c'};">${escapeHtml(item.selected)}</span></div>
-                    <div style="font-size:0.86rem; margin-bottom:8px;"><strong>Correct answer:</strong> <span style="color:#166534;">${escapeHtml(item.correct)}</span></div>
-                    <details open style="margin-bottom:8px;">
-                        <summary style="cursor:pointer; font-weight:600;">Detailed AI rationale</summary>
-                        <div style="margin-top:6px; font-size:0.86rem; color:#374151; line-height:1.45;">${escapeHtml(item.aiExplanation || 'No model explanation returned. Use the option-by-option rationale below.')}</div>
-                    </details>
-                    ${item.clinicalFocus ? `<div style="font-size:0.84rem; color:#1f2937; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px; margin-bottom:8px;">
-                        <div><strong>Drug focus:</strong> ${escapeHtml(item.clinicalFocus.drug)}</div>
-                        <div><strong>Class:</strong> ${escapeHtml(item.clinicalFocus.drugClass || 'N/A')}</div>
-                        <div><strong>Indication:</strong> ${escapeHtml(item.clinicalFocus.indication || 'N/A')}</div>
-                        <div><strong>Nursing note:</strong> ${escapeHtml(item.clinicalFocus.nursing || 'Monitor indication-response, contraindications, and safety parameters.')}</div>
-                    </div>` : ''}
-                    <div style="font-size:0.82rem; color:#6b7280; margin-bottom:6px; font-weight:600;">Why each option is right/wrong</div>
-                    ${optionsHtml}
-                `;
-                list.appendChild(row);
-            });
-        }
+        renderRoundReview('incorrect');
         modal.style.display = 'flex';
+    }
+
+    function renderRoundReview(mode = 'incorrect') {
+        const list = document.getElementById('quiz-review-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        const source = mode === 'all'
+            ? currentRoundReview
+            : currentRoundReview.filter(item => !item.isCorrect);
+
+        if (!source.length) {
+            list.innerHTML = mode === 'all'
+                ? '<div style="padding:10px; border-radius:10px; background:#f3f4f6; color:#374151;">No answers captured for this round yet.</div>'
+                : '<div style="padding:10px; border-radius:10px; background:#f0fdf4; color:#166534;">Perfect round 🎉 No incorrect answers to review.</div>';
+            return;
+        }
+
+        source.forEach((item, idx) => {
+            const row = document.createElement('div');
+            row.style.padding = '12px';
+            row.style.border = '1px solid #e5e7eb';
+            row.style.borderRadius = '12px';
+            row.style.marginBottom = '10px';
+            row.style.background = item.isCorrect ? '#f0fdf4' : '#fff7ed';
+
+            const optionsHtml = (item.options || []).map(opt => {
+                const mark = opt.text === item.correct ? '✅' : '•';
+                return `<div style="padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:6px; background:white;">
+                    <div style="font-weight:600; margin-bottom:4px;">${mark} ${escapeHtml(opt.text)}</div>
+                    <div style="font-size:0.84rem; color:#374151;">${opt.rationale}</div>
+                </div>`;
+            }).join('');
+
+            row.innerHTML = `
+                <div style="font-weight:700; margin-bottom:6px;">Q${idx + 1}. ${escapeHtml(item.question)}</div>
+                <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Your answer:</strong> <span style="color:${item.isCorrect ? '#166534' : '#b91c1c'};">${escapeHtml(item.selected)}</span></div>
+                <div style="font-size:0.86rem; margin-bottom:8px;"><strong>Correct answer:</strong> <span style="color:#166534;">${escapeHtml(item.correct)}</span></div>
+                <details open style="margin-bottom:8px;">
+                    <summary style="cursor:pointer; font-weight:600;">Detailed AI rationale</summary>
+                    <div style="margin-top:6px; font-size:0.86rem; color:#374151; line-height:1.45;">${escapeHtml(item.aiExplanation || 'No model explanation returned. Use the option-by-option rationale below.')}</div>
+                </details>
+                ${item.clinicalFocus ? `<div style="font-size:0.84rem; color:#1f2937; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px; margin-bottom:8px;">
+                    <div><strong>Drug focus:</strong> ${escapeHtml(item.clinicalFocus.drug)}</div>
+                    <div><strong>Class:</strong> ${escapeHtml(item.clinicalFocus.drugClass || 'N/A')}</div>
+                    <div><strong>Indication:</strong> ${escapeHtml(item.clinicalFocus.indication || 'N/A')}</div>
+                    <div><strong>Nursing note:</strong> ${escapeHtml(item.clinicalFocus.nursing || 'Monitor indication-response, contraindications, and safety parameters.')}</div>
+                </div>` : ''}
+                <div style="font-size:0.82rem; color:#6b7280; margin-bottom:6px; font-weight:600;">Why each option is right/wrong</div>
+                ${optionsHtml}
+            `;
+            list.appendChild(row);
+        });
     }
 
     function closeQuizReviewModal() {
