@@ -957,7 +957,7 @@
                         <div class="detail-content" id="fc-side-effects">...</div>
                     </div>
                     <div class="detail-row">
-                        <div class="detail-label">Nursing Considerations</div>
+                        <div class="detail-label">中文 香港</div>
                         <div class="detail-content" id="fc-nursing" style="font-size:0.9rem; line-height:1.5;">...</div>
                     </div>
 
@@ -3063,7 +3063,7 @@ Language: ${langInstruction}.`;
         const currentDrug = flashcardList[fcCurrentIndex];
         updateFlashcardLinks(selected);
         if (action === 'google') {
-            const googleQuery = `${selected} nursing considerations`;
+            const googleQuery = `${selected} 中文 香港`;
             openGoogleDeepLink(googleQuery);
         } else if (action === 'drugs') {
             openDrugsCom({name: selected});
@@ -3329,7 +3329,7 @@ Language: ${langInstruction}.`;
 
     window.triggerSearchGoogle = function(btn) {
         withSearchDrugSelection(btn, 'Pick a drug for Google', (name) => {
-            const q = `${name} nursing considerations`;
+            const q = `${name} 中文 香港`;
             openGoogleDeepLink(q);
         });
     };
