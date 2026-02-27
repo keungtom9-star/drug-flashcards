@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <link rel="prefetch" href="ward.html" as="document">
+    <link rel="prefetch" href="drugquiz.html" as="document">
     
     <style>
         :root {
@@ -597,6 +598,7 @@
     <button class="nav-btn active" id="nav-search" onclick="switchMode('search')">🧸 Search</button>
     <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')">🗂️ Flashcard</button>
     <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')">🧠 Quiz</button>
+    <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')">🏥 Clinical</button>
     <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')">🩺 Ward</button>
 </div>
 
@@ -789,6 +791,20 @@
                 src="ward.html"
                 loading="lazy"
                 style="width:100%; height:100%; border:none; background:#fff;"
+            ></iframe>
+        </div>
+    </div>
+
+    <div id="clinical-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
+        <button id="clinical-back-btn" onclick="switchMode('search')" aria-label="Back" style="position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:12px; z-index:350; border:none; background:rgba(0,0,0,0.6); color:#fff; border-radius:999px; padding:8px 12px; font-weight:700;">← Back</button>
+        <div style="height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:78vh; background:var(--ios-bg); position:relative;">
+            <div id="clinical-loading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:5; color:#6b7280; font-weight:700; background:linear-gradient(180deg, rgba(242,242,247,0.92), rgba(242,242,247,0.7)); transition:opacity .25s ease;">Loading Clinical Bank…</div>
+            <iframe
+                id="clinical-frame"
+                title="Clinical Bank"
+                src="drugquiz.html"
+                loading="eager"
+                style="width:100%; height:100%; border:none; background:#fff; opacity:0; transition:opacity .25s ease;"
             ></iframe>
         </div>
     </div>
@@ -2198,6 +2214,7 @@ Language: ${langInstruction}.`;
             if (status) status.innerText = '⚡ Fast startup using local data';
         }
         
+        setupClinicalPreload();
         switchMode('search');
     };
 
@@ -2324,6 +2341,71 @@ Language: ${langInstruction}.`;
         return `${target.generic}. Brand name ${target.brand}`;
     }
 
+    let clinicalBackSyncTimer = null;
+    let clinicalFrameReady = false;
+
+    function setClinicalReadyState(isReady) {
+        const frame = document.getElementById('clinical-frame');
+        const loader = document.getElementById('clinical-loading');
+        if (frame) frame.style.opacity = isReady ? '1' : '0';
+        if (loader) {
+            loader.style.opacity = isReady ? '0' : '1';
+            loader.style.pointerEvents = isReady ? 'none' : 'auto';
+        }
+    }
+
+    function setupClinicalPreload() {
+        const frame = document.getElementById('clinical-frame');
+        if (!frame) return;
+
+        const onReady = () => {
+            clinicalFrameReady = true;
+            setClinicalReadyState(true);
+            syncClinicalBackButton();
+        };
+
+        frame.addEventListener('load', onReady, { once: true });
+
+        // Ensure eager warm-up on first app load.
+        if (!frame.getAttribute('src')) frame.setAttribute('src', 'drugquiz.html');
+    }
+
+
+    function clearClinicalBackSync() {
+        if (clinicalBackSyncTimer) {
+            clearInterval(clinicalBackSyncTimer);
+            clinicalBackSyncTimer = null;
+        }
+    }
+
+    function syncClinicalBackButton() {
+        const backBtn = document.getElementById('clinical-back-btn');
+        const frame = document.getElementById('clinical-frame');
+        if (!backBtn || !frame) return;
+
+        try {
+            const doc = frame.contentDocument;
+            if (!doc) {
+                backBtn.style.display = '';
+                return;
+            }
+            const isOpen = (id) => {
+                const el = doc.getElementById(id);
+                return !!el && doc.defaultView.getComputedStyle(el).display !== 'none';
+            };
+            const inNestedView = isOpen('quiz-view') || isOpen('subtopic-view') || isOpen('gen-view');
+            backBtn.style.display = inNestedView ? 'none' : '';
+        } catch (e) {
+            backBtn.style.display = '';
+        }
+    }
+
+    function beginClinicalBackSync() {
+        clearClinicalBackSync();
+        syncClinicalBackButton();
+        clinicalBackSyncTimer = setInterval(syncClinicalBackButton, 250);
+    }
+
     // --- NAVIGATION MODES ---
     function switchMode(mode) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -2331,24 +2413,29 @@ Language: ${langInstruction}.`;
         document.getElementById('quiz-section').style.display = 'none';
         document.getElementById('search-section').style.display = 'none';
         document.getElementById('ward-section').style.display = 'none';
+        document.getElementById('clinical-section').style.display = 'none';
         document.getElementById('filter-bar').style.display = 'none';
 
         const sectionToShow = mode === 'quiz'
             ? document.getElementById('quiz-section')
             : (mode === 'search'
                 ? document.getElementById('search-section')
-                : (mode === 'ward' ? document.getElementById('ward-section') : document.getElementById('flashcard-section')));
+                : (mode === 'ward'
+                    ? document.getElementById('ward-section')
+                    : (mode === 'clinical' ? document.getElementById('clinical-section') : document.getElementById('flashcard-section'))));
         sectionToShow.classList.remove('mode-transition');
         void sectionToShow.offsetWidth;
         sectionToShow.classList.add('mode-transition');
         sectionToShow.style.animation = 'fadeSlideUp .24s ease-out';
 
         if(mode === 'search') {
+            clearClinicalBackSync();
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('search-section').style.display = 'block';
             document.getElementById('nav-search').classList.add('active');
             document.getElementById('search-input').focus();
         } else if (mode === 'anki' || mode === 'flashcard') {
+            clearClinicalBackSync();
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
@@ -2360,15 +2447,23 @@ Language: ${langInstruction}.`;
             fcCurrentIndex = 0;
             renderCard();
         } else if (mode === 'quiz') {
+            clearClinicalBackSync();
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('quiz-section').style.display = 'block';
             document.getElementById('nav-quiz').classList.add('active');
             const qEl = document.getElementById('quiz-question');
             if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         } else if (mode === 'ward') {
+            clearClinicalBackSync();
             document.body.classList.add('ward-fullscreen');
             document.getElementById('ward-section').style.display = 'block';
             document.getElementById('nav-ward').classList.add('active');
+        } else if (mode === 'clinical') {
+            document.body.classList.add('ward-fullscreen');
+            document.getElementById('clinical-section').style.display = 'block';
+            document.getElementById('nav-clinical').classList.add('active');
+            setClinicalReadyState(clinicalFrameReady);
+            beginClinicalBackSync();
         }
     }
 
