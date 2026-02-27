@@ -130,6 +130,11 @@
             display: none;
         }
 
+        body.ward-fullscreen {
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
         body.ward-fullscreen #app-container {
             width: 100%;
             max-width: none;
@@ -389,6 +394,22 @@
             .immersive-back-btn {
                 padding: 9px 12px;
                 font-size: 0.92rem;
+            }
+
+            body.ward-fullscreen #ward-section {
+                position: fixed;
+                inset: 0;
+            }
+
+            body.ward-fullscreen #ward-section .immersive-shell {
+                height: 100dvh;
+                min-height: 100dvh;
+                padding: 0;
+            }
+
+            body.ward-fullscreen #ward-section .immersive-frame {
+                border-radius: 0;
+                box-shadow: none;
             }
         }
 
@@ -2264,6 +2285,10 @@ Language: ${langInstruction}.`;
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
     const DAILY_RECOMMENDATION_LIMIT = 8;
+    const IOS_EDGE_SWIPE_MAX_START_X = 28;
+    const IOS_EDGE_SWIPE_TRIGGER_X = 72;
+    const IOS_EDGE_SWIPE_MAX_VERTICAL_DRIFT = 90;
+    let iosGestureState = { tracking: false, startX: 0, startY: 0, mode: null };
     let fcSelectedDrug = ""; 
     let quizEngine = 'deepseek';
     let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
@@ -2402,6 +2427,7 @@ Language: ${langInstruction}.`;
         
         setupWardPreload();
         setupClinicalPreload();
+        setupIOSBackGesture();
         switchMode('search');
     };
 
@@ -2610,6 +2636,84 @@ Language: ${langInstruction}.`;
         clearClinicalBackSync();
         syncClinicalBackButton();
         clinicalBackSyncTimer = setInterval(syncClinicalBackButton, 250);
+    }
+
+    function getActiveFullscreenMode() {
+        if (!document.body.classList.contains('ward-fullscreen')) return null;
+        const wardVisible = document.getElementById('ward-section')?.style.display === 'block';
+        const clinicalVisible = document.getElementById('clinical-section')?.style.display === 'block';
+        if (clinicalVisible) return 'clinical';
+        if (wardVisible) return 'ward';
+        return null;
+    }
+
+    function isMobileGestureContext() {
+        const ua = navigator.userAgent || '';
+        return window.matchMedia('(max-width: 900px)').matches || /iPhone|iPad|iPod|Android/i.test(ua);
+    }
+
+    function triggerIosBackGesture(mode) {
+        if (mode === 'clinical') {
+            const frame = document.getElementById('clinical-frame');
+            try {
+                const childWin = frame?.contentWindow;
+                if (childWin && typeof childWin.goBack === 'function') {
+                    childWin.goBack();
+                    return;
+                }
+            } catch (e) {}
+        }
+        switchMode('search');
+    }
+
+    function setupIOSBackGesture() {
+        if (window.__iosGestureSetupDone) return;
+        window.__iosGestureSetupDone = true;
+
+        document.addEventListener('touchstart', (event) => {
+            if (!isMobileGestureContext()) return;
+            const mode = getActiveFullscreenMode();
+            if (!mode) return;
+            const touch = event.touches && event.touches[0];
+            if (!touch) return;
+            if (touch.clientX > IOS_EDGE_SWIPE_MAX_START_X) return;
+            iosGestureState = {
+                tracking: true,
+                startX: touch.clientX,
+                startY: touch.clientY,
+                mode
+            };
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (event) => {
+            if (!iosGestureState.tracking) return;
+            const touch = event.touches && event.touches[0];
+            if (!touch) return;
+            const dx = touch.clientX - iosGestureState.startX;
+            const dy = Math.abs(touch.clientY - iosGestureState.startY);
+            if (dx > 12 && dy < IOS_EDGE_SWIPE_MAX_VERTICAL_DRIFT) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        const endGesture = (event) => {
+            if (!iosGestureState.tracking) return;
+            const touch = (event.changedTouches && event.changedTouches[0]) || null;
+            const dx = touch ? (touch.clientX - iosGestureState.startX) : 0;
+            const dy = touch ? Math.abs(touch.clientY - iosGestureState.startY) : Infinity;
+            const mode = iosGestureState.mode;
+            iosGestureState = { tracking: false, startX: 0, startY: 0, mode: null };
+
+            if (!mode) return;
+            if (dx >= IOS_EDGE_SWIPE_TRIGGER_X && dy <= IOS_EDGE_SWIPE_MAX_VERTICAL_DRIFT) {
+                triggerIosBackGesture(mode);
+            }
+        };
+
+        document.addEventListener('touchend', endGesture, { passive: true });
+        document.addEventListener('touchcancel', () => {
+            iosGestureState = { tracking: false, startX: 0, startY: 0, mode: null };
+        }, { passive: true });
     }
 
     // --- NAVIGATION MODES ---
