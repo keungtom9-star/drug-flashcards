@@ -1,1 +1,863 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Clinical Bank</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Modern Palette */
+            --primary: #007AFF;       
+            --primary-dim: #eef7ff;
+            --secondary: #5856D6;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --surface: #ffffff;
+            --background: #f2f2f7; 
+            --text-main: #1c1c1e;
+            --text-muted: #8e8e93;
+            --border: rgba(0,0,0,0.08);
+            
+            /* Spacing & Radius */
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --shadow-sm: 0 4px 6px rgba(0,0,0,0.02);
+            --shadow-md: 0 12px 24px rgba(0,0,0,0.08);
+            --glass: rgba(255, 255, 255, 0.85);
+            --max-width: 900px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased; 
+        }
+
+        .app-container { 
+            width: 100%; max-width: var(--max-width); 
+            display: flex; flex-direction: column; 
+            height: 100vh; position: relative; 
+            background: var(--background);
+            box-shadow: 0 0 50px rgba(0,0,0,0.05);
+        }
+
+        /* --- HEADER --- */
+        .sticky-header {
+            position: sticky; top: 0; 
+            background: var(--glass);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 15px 20px; 
+            border-bottom: 1px solid rgba(0,0,0,0.05); 
+            z-index: 100;
+        }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        h1 { 
+            font-size: 1.5rem; font-weight: 800; margin: 0; letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .icon-btn { 
+            background: rgba(0,0,0,0.05); border: none; 
+            width: 40px; height: 40px; border-radius: 50%; 
+            font-size: 1.2rem; cursor: pointer; color: var(--text-main);
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .icon-btn:hover { background: rgba(0,0,0,0.1); }
+        .gen-btn { background: var(--secondary); color: white; margin-right: 8px; }
+        .gen-btn:hover { background: #4a48b8; }
+
+        /* --- SEARCH --- */
+        .search-box { position: relative; width: 100%; margin: 0 auto; }
+        .main-input {
+            width: 100%; padding: 12px 40px 12px 15px; font-size: 1rem; border: none;
+            border-radius: 12px; outline: none; background: rgba(118, 118, 128, 0.12);
+            color: var(--text-main); transition: all 0.2s;
+        }
+        .main-input:focus { background: #fff; box-shadow: 0 0 0 2px var(--primary); }
+        .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
+
+        /* --- GRID LAYOUT --- */
+        .grid-area { 
+            flex: 1; overflow-y: auto; padding: 20px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); 
+            gap: 20px; align-content: start;
+        }
+
+        .grid-card {
+            background: var(--surface); border-radius: var(--radius-lg); padding: 0; 
+            text-align: center; cursor: pointer; 
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s;
+            box-shadow: var(--shadow-sm); border: 1px solid white; 
+            display: flex; flex-direction: column; 
+            position: relative; overflow: hidden; height: 210px;
+        }
+        @media (hover: hover) {
+            .grid-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
+            .grid-card:hover .card-icon-img { transform: scale(1.1); }
+        }
+        .grid-card:active { transform: scale(0.96); }
+
+        .card-hero {
+            width: 100%; height: 60%; position: relative;
+            display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; background-color: #f0f9ff;
+        }
+        .card-icon-img { 
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
+            object-fit: cover; transition: transform 0.5s ease; z-index: 1; 
+        }
+        .card-icon-fallback { font-size: 4rem; display: none; z-index: 0; } 
+
+        .card-info { 
+            width: 100%; height: 40%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            background: #ffffff; padding: 0 12px; 
+            border-top: 1px solid rgba(0,0,0,0.03); z-index: 2;
+        }
+        .card-name { 
+            font-weight: 700; font-size: 0.95rem; color: var(--text-main); 
+            line-height: 1.25; margin-bottom: 6px; 
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        
+        .card-progress-track { width: 100%; height: 6px; background: #f2f2f7; border-radius: 3px; overflow: hidden; }
+        .card-progress-fill { height: 100%; background: var(--success); width: 0%; border-radius: 3px;}
+        .card-stats { font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; font-weight: 600; }
+
+        /* --- SUBTOPIC LIST STYLE --- */
+        .grid-card.text-only {
+            height: auto; min-height: 70px; 
+            flex-direction: row; align-items: center; text-align: left; 
+            padding: 15px 20px; justify-content: space-between;
+        }
+        .grid-card.text-only .card-hero { display: none; }
+        .grid-card.text-only .card-info { height: auto; padding: 0; border: none; align-items: flex-start; }
+        .grid-card.text-only .card-name { font-size: 1.05rem; margin-bottom: 2px; }
+        .grid-card.text-only::after { content: '›'; font-size: 1.8rem; color: #c7c7cc; font-weight: 400; margin-left: 10px; margin-top: -3px;}
+
+        /* --- MODALS (Shared) --- */
+        .overlay-bg {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 250; 
+            backdrop-filter: blur(5px); justify-content: center; align-items: flex-end;
+        }
+        @media(min-width: 600px) { .overlay-bg { align-items: center; } }
+
+        .modal-box {
+            background: var(--surface); width: 100%; max-width: 500px;
+            border-radius: 24px 24px 0 0; padding: 30px; 
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+            animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @media(min-width: 600px) { .modal-box { border-radius: 24px; } }
+
+        /* --- QUIZ & GENERATOR VIEW --- */
+        #quiz-view, #subtopic-view { 
+            display: none; flex-direction: column; height: 100%; 
+            background: var(--background); position: absolute; top: 0; left: 0; width: 100%; z-index: 200; 
+        }
+        .view-header { 
+            padding: 15px 20px; background: var(--glass); 
+            backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); 
+            display: flex; align-items: center; justify-content: space-between; 
+        }
+        
+        #quiz-container, #gen-container { 
+            flex: 1; overflow-y: auto; padding: 20px; 
+            display: flex; flex-direction: column; align-items: center; 
+            max-width: 800px; margin: 0 auto; width: 100%; 
+        }
+        
+        .q-card { 
+            background: var(--surface); padding: 30px 25px; 
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-md); 
+            width: 100%; animation: slideUp 0.4s; margin-bottom: 20px;
+        }
+        
+        .q-badge { 
+            display: inline-block; font-size: 0.75rem; font-weight: 700; 
+            text-transform: uppercase; padding: 6px 12px; border-radius: 20px; 
+            margin-bottom: 20px; background: var(--primary-dim); color: var(--primary); 
+        }
+        .q-text { font-size: 1.3rem; font-weight: 700; margin-bottom: 30px; line-height: 1.4; color: #1c1c1e; }
+        
+        .option { 
+            background: #fff; padding: 20px; margin-bottom: 12px; 
+            border-radius: 16px; border: 2px solid transparent; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03); cursor: pointer; 
+            display: flex; gap: 15px; align-items: center; 
+            transition: all 0.2s; font-size: 1rem; color: #333; 
+        }
+        .option:active { background: #f5f5f5; transform: scale(0.99); }
+        .option.correct { background: #ecfdf5; border-color: var(--success); }
+        .option.wrong { background: #fef2f2; border-color: var(--danger); }
+        .option-letter { 
+            font-weight: 700; font-size: 0.9rem; width: 32px; height: 32px; 
+            border-radius: 50%; background: rgba(0,0,0,0.05); color: var(--text-muted); 
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
+        }
+        .option.correct .option-letter { background: var(--success); color: white; }
+        .option.wrong .option-letter { background: var(--danger); color: white; }
+
+        .explanation { 
+            margin-top: 25px; padding: 25px; background: #f0f9ff; 
+            border-radius: 16px; font-size: 0.95rem; color: #0c4a6e; 
+            display: none; line-height: 1.6; border-left: 4px solid var(--primary); 
+        }
+        
+        .btn-ai-explain { 
+            width: 100%; border: none; background: #fff; color: var(--primary); 
+            padding: 16px; border-radius: 12px; margin-top: 20px; 
+            font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1); 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+
+        .quiz-nav { 
+            padding: 20px; background: var(--surface); 
+            border-top: 1px solid rgba(0,0,0,0.05); 
+            display: flex; gap: 15px; width: 100%; 
+            padding-bottom: max(20px, env(safe-area-inset-bottom)); 
+        }
+        .nav-btn { flex: 1; padding: 18px; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; font-size: 1rem; }
+        .btn-prev { background: rgba(0,0,0,0.05); color: var(--text-main); }
+        .btn-next { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3); }
+
+        /* --- GENERATOR STYLES --- */
+        .gen-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 1rem; }
+        .gen-label { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block; text-transform: uppercase; }
+        .gen-select { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 1rem; background: white; }
+        
+        .gen-action-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 10px; }
+        .btn-magic { background: linear-gradient(135deg, #5856D6 0%, #007AFF 100%); color: white; }
+        .btn-save-sheet { background: var(--success); color: white; display: none;} /* Hidden until gen */
+
+        /* --- SETTINGS MODAL --- */
+        .settings-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 1rem; background: #f9f9f9; }
+        .switch { position: relative; display: inline-block; width: 52px; height: 32px; } 
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e9e9ea; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: var(--success); } 
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        /* Animations */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        /* Utilities */
+        #lang-select { padding: 8px 12px; border-radius: 20px; border: none; font-size: 0.85rem; background: rgba(0,0,0,0.05); font-weight: 600; cursor: pointer; }
+        .empty-state { text-align: center; margin-top: 50px; color: var(--text-muted); }
+        .back-btn { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        
+        /* Mode Select Buttons */
+        .mode-title { font-size: 1.6rem; font-weight: 800; margin: 0 0 25px 0; color: var(--text-main); }
+        .mode-btn { width: 100%; padding: 18px; margin-bottom: 12px; border: none; border-radius: 16px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: transform 0.1s; }
+        .mode-btn:active { transform: scale(0.98); }
+        .btn-play-all { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); }
+        .btn-play-new { background: var(--primary-dim); color: var(--primary); }
+        .btn-play-wrong { background: #fff1f2; color: var(--danger); }
+        .btn-play-wrong:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="sticky-header">
+            <div class="header-top">
+                <h1>🩺 Clinical Bank</h1>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="icon-btn gen-btn" onclick="openGenerator()">✨</button>
+                    <select id="lang-select">
+                        <option value="english">🇺🇸 ENG</option>
+                        <option value="lihkg">🇭🇰 HK</option>
+                    </select>
+                    <button class="icon-btn" onclick="openSettings()">⚙️</button>
+                </div>
+            </div>
+            <div class="search-box">
+                <input type="text" id="topic-search" class="main-input" placeholder="Search topics..." oninput="filterTopics()">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div id="db-status" style="font-size:0.7rem; color:var(--text-muted); margin-top:8px; text-align:center; font-weight:500;">
+                Connecting...
+            </div>
+        </div>
+
+        <div id="topic-area" class="grid-area"></div>
+
+        <div id="mode-overlay" class="overlay-bg" onclick="if(event.target===this) closeModeSelector()">
+            <div class="modal-box">
+                <h2 class="mode-title" id="mode-title">Topic</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 30px;">
+                    <div style="background:var(--background); padding:15px 10px; border-radius:16px; text-align:center;">
+                        <span class="stat-val" style="color:var(--success); font-size:1.4rem; font-weight:800; display:block;" id="stat-correct">0</span>
+                        <span style="font-size:0.7rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Correct</span>
+                    </div>
+                    <div style="background:var(--background); padding:15px 10px; border-radius:16px; text-align:center;">
+                        <span class="stat-val" style="color:var(--danger); font-size:1.4rem; font-weight:800; display:block;" id="stat-wrong">0</span>
+                        <span style="font-size:0.7rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Wrong</span>
+                    </div>
+                    <div style="background:var(--background); padding:15px 10px; border-radius:16px; text-align:center;">
+                        <span class="stat-val" style="color:var(--primary); font-size:1.4rem; font-weight:800; display:block;" id="stat-new">0</span>
+                        <span style="font-size:0.7rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">New</span>
+                    </div>
+                </div>
+
+                <button class="mode-btn btn-play-all" onclick="confirmStart('all')">
+                    <span>Play All</span> <span id="count-all">0</span>
+                </button>
+                <button class="mode-btn btn-play-new" onclick="confirmStart('new')">
+                    <span>New Questions Only</span> <span id="count-new">0</span>
+                </button>
+                <button class="mode-btn btn-play-wrong" id="btn-retry-wrong" onclick="confirmStart('wrong')">
+                    <span>Retry Wrong Answers</span> <span id="count-wrong">0</span>
+                </button>
+                <button style="width:100%; padding:15px; background:transparent; border:none; color:var(--text-muted); font-weight:600; margin-top:10px; cursor:pointer;" onclick="closeModeSelector()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="generator-overlay" class="overlay-bg" onclick="if(event.target===this) closeGenerator()">
+            <div class="modal-box">
+                <h2 class="mode-title">✨ AI Question Factory</h2>
+                
+                <label class="gen-label">System (Topic)</label>
+                <select id="gen-topic" class="gen-select">
+                    <option>Cardio</option><option>Respiratory</option><option>Neurology</option>
+                    <option>Pharmacology</option><option>Gastro</option><option>Renal</option>
+                    <option>Musculoskeletal</option><option>Derma</option><option>Pediatrics</option>
+                    <option>Maternity</option><option>Endocrine</option><option>Oncology</option>
+                    <option>Infection</option><option>Surgery</option><option>Emergency</option>
+                    <option>Eye</option><option>HA Interview Questions</option><option>Other</option>
+                </select>
+
+                <label class="gen-label">Disease / Condition (Subtopic)</label>
+                <input type="text" id="gen-subtopic" class="gen-input" placeholder="e.g. Atrial Fibrillation, Asthma...">
+
+                <button id="btn-generate-start" class="gen-action-btn btn-magic" onclick="startGeneration()">
+                    🔮 Generate Question
+                </button>
+
+                <div id="gen-status" style="text-align:center; color:var(--text-muted); margin-top:10px; font-size:0.9rem;"></div>
+            </div>
+        </div>
+
+        <div id="gen-view" style="display:none; flex-direction:column; height:100%; background:var(--background); position:absolute; top:0; left:0; width:100%; z-index:220;">
+            <div class="view-header">
+                <button class="back-btn" onclick="closeGenView()">Exit Factory</button>
+                <div style="font-weight:700;">Review Generated</div>
+                <div style="width:50px"></div>
+            </div>
+            
+            <div id="gen-container">
+                </div>
+
+            <div class="quiz-nav" style="flex-direction:column; gap:10px;">
+                <button id="btn-save-db" class="nav-btn" style="background:var(--success); color:white; width:100%; box-shadow:0 4px 12px rgba(52, 199, 89, 0.3);">
+                    💾 Save to Library
+                </button>
+                <button class="nav-btn" onclick="startGeneration()" style="background:var(--primary); color:white; width:100%;">
+                    🔄 Generate Next
+                </button>
+            </div>
+        </div>
+
+        <div id="subtopic-view">
+            <div class="view-header">
+                <button class="back-btn" onclick="closeSubtopics()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
+                </button>
+                <div class="view-title" id="subtopic-title">Subtopics</div>
+                <div style="width: 50px;"></div> 
+            </div>
+            <div id="subtopic-area" class="grid-area" style="grid-template-columns: 1fr;"></div>
+        </div>
+
+        <div id="quiz-view">
+            <div class="view-header">
+                <button class="back-btn" onclick="closeQuiz()">
+                   <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Exit
+                </button>
+                <span class="accuracy-badge" id="accuracy-display" style="font-weight:700; font-size:0.9rem;">🎯 0%</span>
+            </div>
+            <div class="card-progress-track" style="border-radius:0;">
+                <div class="card-progress-fill" id="progress-bar"></div>
+            </div>
+            
+            <div id="quiz-container"></div>
+
+            <div class="quiz-nav">
+                <button class="nav-btn btn-prev" id="btn-prev" onclick="prevQuestion()">Previous</button>
+                <button class="nav-btn btn-next" id="btn-next" onclick="nextQuestion()">Next</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="settings-overlay" class="overlay-bg" onclick="if(event.target===this) closeSettings(false)">
+        <div class="modal-box" style="margin:auto; border-radius:24px; max-width:400px;">
+            <h3 style="margin:0 0 20px 0; font-size:1.4rem;">Settings</h3>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;">
+                <label style="font-weight:600; font-size:1rem;">Auto-Play Audio</label>
+                <label class="switch">
+                    <input type="checkbox" id="audio-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <label style="font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-top:5px;">Google Sheet CSV URL (Read)</label>
+            <input type="text" id="sheet-url" class="settings-input" style="margin-bottom:10px;">
+
+            <label style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">Apps Script URL (Write/Save)</label>
+            <input type="text" id="script-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." style="margin-bottom:10px;">
+            
+            <label style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">DeepSeek API Key</label>
+            <input type="password" id="api-key" class="settings-input">
+            
+            <button onclick="resetProgress()" style="width:100%; padding:14px; background:#fee2e2; color:var(--danger); border:none; border-radius:12px; font-weight:600; margin-top:20px; cursor:pointer;">⚠ Reset All Progress</button>
+            <button class="btn-save-settings" onclick="saveSettings()" style="width:100%; padding:16px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer; margin-top:10px;">Save Changes</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Basic config
+        const DEFAULT_SHEET = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3fHW561ZytpwsS-aFRm3T-71oUgs_EhCgnI0KrJlALra1SfusPiMgUNAC0HpauzgkJXQgGGqgQmU1/pub?output=csv";
+        // --- UPDATED: Your specific Apps Script URL is now hardcoded here ---
+        const DEFAULT_SCRIPT = "https://script.google.com/macros/s/AKfycbyeuVCaJl6qt_WbGPS1SldfOg-kP-8RrX-zzlao8k2wbxcT_AUuXKo3OJv6y5MHxAFkPQ/exec";
+        const PRELOADED_KEY = "sk-92db3cf721454bd7b351ca6ef40eaaf7"; // Default DeepSeek key
+
+        // State
+        let dbQuestions = [], uniqueTopics = {}, quizQueue = [], currentQIndex = 0;
+        let sessionCorrect = 0, sessionAttempted = 0, activeTopicName = "", audioEnabled = false;
+        let userProgress = JSON.parse(localStorage.getItem('quiz_progress')) || {};
+        let currentSelectionRows = [];
+        let generatedQTemp = null; // Temp holder for generated question
+
+        window.onload = () => {
+            document.getElementById('api-key').value = localStorage.getItem('api_key') || PRELOADED_KEY;
+            document.getElementById('sheet-url').value = localStorage.getItem('sheet_url') || DEFAULT_SHEET;
+            // Load the default script URL if not already saved by the user
+            document.getElementById('script-url').value = localStorage.getItem('script_url') || DEFAULT_SCRIPT;
+            
+            audioEnabled = localStorage.getItem('audio_enabled') === 'true';
+            document.getElementById('audio-toggle').checked = audioEnabled;
+            
+            loadSheet();
+        };
+
+        // --- CORE LOGIC ---
+        function getQID(q) {
+            const str = (q.Topic + q.Question).replace(/\s/g, '').toLowerCase();
+            let hash = 0; for (let i = 0; i < str.length; i++) hash = (hash << 5) - hash + str.charCodeAt(i) | 0;
+            return "id_" + Math.abs(hash);
+        }
+
+        function saveProgress(q, isCorrect) {
+            userProgress[getQID(q)] = isCorrect ? 'c' : 'w';
+            localStorage.setItem('quiz_progress', JSON.stringify(userProgress));
+        }
+
+        function getTopicStats(rows) {
+            let correct = 0, wrong = 0, nev = 0;
+            rows.forEach(r => {
+                const s = userProgress[getQID(r)];
+                if (s === 'c') correct++; else if (s === 'w') wrong++; else nev++;
+            });
+            return { correct, wrong, new: nev, total: rows.length };
+        }
+
+        window.resetProgress = () => {
+            if(confirm("Delete all local progress?")) {
+                userProgress = {}; localStorage.removeItem('quiz_progress'); location.reload();
+            }
+        };
+
+        // --- VISUALS ---
+        function getTopicVisuals(t) {
+            t = t.toLowerCase(); let f='default.png', e='🩺';
+            if (t.includes('cardio')||t.includes('heart')) { f='cardio.png'; e='🫀'; }
+            else if (t.includes('resp')||t.includes('lung')) { f='respiratory.png'; e='🫁'; }
+            else if (t.includes('neuro')||t.includes('brain')) { f='neurology.png'; e='🧠'; }
+            else if (t.includes('pharm')||t.includes('drug')) { f='pharmacology.png'; e='💊'; }
+            else if (t.includes('gastro')) { f='gastro.png'; e='🤢'; }
+            else if (t.includes('ren')||t.includes('kidney')) { f='renal.png'; e='🚽'; }
+            else if (t.includes('musc')||t.includes('bone')) { f='musculoskeletal.png'; e='🦴'; }
+            else if (t.includes('derm')||t.includes('skin')) { f='derma.png'; e='🖐️'; }
+            else if (t.includes('pedia')||t.includes('child')) { f='pediatrics.png'; e='👶'; }
+            else if (t.includes('matern')||t.includes('birth')) { f='maternity.png'; e='🤰'; }
+            else if (t.includes('endo')||t.includes('diabetes')) { f='endocrine.png'; e='🍬'; }
+            else if (t.includes('onco')||t.includes('cancer')) { f='oncology.png'; e='🎗️'; }
+            else if (t.includes('infect')||t.includes('virus')) { f='infection.png'; e='🦠'; }
+            else if (t.includes('surg')) { f='surgery.png'; e='🔪'; }
+            else if (t.includes('emerg')||t.includes('trauma')) { f='emergency.png'; e='🚑'; }
+            else if (t.includes('eye')) { f='eye.png'; e='👁️'; }
+            else if (t.includes('ha interview')) { f='ha-interview.png'; e='🗣️'; }
+            return { src: `icons/${f}`, emoji: e };
+        }
+        
+        function getTopicColor(s) { 
+            let hash = 0; for(let i=0;i<s.length;i++) hash=s.charCodeAt(i)+((hash<<5)-hash); 
+            return `hsl(${Math.abs(hash)%360}, 85%, 97%)`; 
+        }
+
+        function speakText(t) {
+            if (!audioEnabled || !t) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(t); u.lang='en-US'; 
+            window.speechSynthesis.speak(u);
+        }
+        function stopAudio() { window.speechSynthesis.cancel(); }
+
+        // --- NAVIGATION ---
+        window.handleTopicClick = (n) => {
+            activeTopicName = n;
+            const rows = dbQuestions.filter(q => q.Topic && q.Topic.trim() === n);
+            const subs = [...new Set(rows.map(r => r.Subtopic ? r.Subtopic.trim() : "").filter(s => s !== ""))];
+            if (subs.length > 0) renderSubtopics(subs, rows); else openModeSelector(n, rows);
+        };
+
+        window.openModeSelector = (t, r) => {
+            currentSelectionRows = r;
+            const s = getTopicStats(r);
+            document.getElementById('mode-title').innerText = t;
+            document.getElementById('stat-correct').innerText = s.correct;
+            document.getElementById('stat-wrong').innerText = s.wrong;
+            document.getElementById('stat-new').innerText = s.new;
+            document.getElementById('count-all').innerText = s.total;
+            document.getElementById('count-new').innerText = s.new;
+            document.getElementById('count-wrong').innerText = s.wrong;
+            const wBtn = document.getElementById('btn-retry-wrong');
+            wBtn.disabled = s.wrong === 0;
+            wBtn.style.opacity = s.wrong === 0 ? "0.5" : "1";
+            document.getElementById('mode-overlay').style.display = 'flex';
+        };
+
+        window.closeModeSelector = () => document.getElementById('mode-overlay').style.display = 'none';
+
+        window.confirmStart = (m) => {
+            let q = [];
+            if (m === 'all') q = currentSelectionRows;
+            else if (m === 'new') q = currentSelectionRows.filter(r => !userProgress[getQID(r)]);
+            else if (m === 'wrong') q = currentSelectionRows.filter(r => userProgress[getQID(r)] === 'w');
+
+            if(q.length === 0) return alert("No questions available.");
+            closeModeSelector(); startQuiz(q);
+        };
+
+        // --- RENDERERS ---
+        function renderTopics() {
+            const c = document.getElementById('topic-area'); c.innerHTML = '';
+            Object.keys(uniqueTopics).sort().forEach(t => {
+                const rows = dbQuestions.filter(q => q.Topic && q.Topic.trim() === t);
+                const s = getTopicStats(rows);
+                const card = createGridCard(t, s, false); 
+                card.onclick = () => handleTopicClick(t); c.appendChild(card);
+            });
+        }
+
+        function renderSubtopics(l, all) {
+            const c = document.getElementById('subtopic-area'); c.innerHTML = '';
+            document.getElementById('subtopic-title').innerText = activeTopicName;
+            document.getElementById('subtopic-view').style.display = 'flex';
+            l.forEach(s => {
+                const rows = all.filter(r => r.Subtopic && r.Subtopic.trim() === s);
+                const card = createGridCard(s, getTopicStats(rows), true);
+                card.onclick = () => openModeSelector(`${activeTopicName}: ${s}`, rows); c.appendChild(card);
+            });
+        }
+
+        function createGridCard(t, s, isSub) {
+            const el = document.createElement('div');
+            const pct = s.total === 0 ? 0 : Math.round((s.correct / s.total) * 100);
+            
+            if (isSub) {
+                el.className = 'grid-card text-only';
+                el.innerHTML = `
+                    <div class="card-info" style="width:100%">
+                        <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                             <span class="card-name">${t}</span>
+                             <span style="font-size:0.8rem; font-weight:600; color:${pct===100?'var(--success)':'var(--text-muted)'}">${pct}%</span>
+                        </div>
+                        <div class="card-progress-track"><div class="card-progress-fill" style="width:${pct}%"></div></div>
+                    </div>
+                `;
+            } else {
+                el.className = 'grid-card'; el.setAttribute('data-name', t.toLowerCase());
+                const v = getTopicVisuals(t); const bg = getTopicColor(t);
+                const uid1 = Math.random().toString(36); const uid2 = Math.random().toString(36);
+
+                el.innerHTML = `
+                    <div class="card-hero" style="background:${bg}">
+                        <img id="i${uid1}" src="${v.src}" class="card-icon-img" onerror="this.style.display='none';document.getElementById('e${uid2}').style.display='block'">
+                        <span id="e${uid2}" class="card-icon-fallback">${v.emoji}</span>
+                    </div>
+                    <div class="card-info">
+                        <span class="card-name">${t}</span>
+                        <div class="card-progress-track"><div class="card-progress-fill" style="width:${pct}%"></div></div>
+                        <div class="card-stats">${s.correct} / ${s.total} Done</div>
+                    </div>
+                `;
+            }
+            return el;
+        }
+
+        window.closeSubtopics = () => document.getElementById('subtopic-view').style.display = 'none';
+        window.filterTopics = () => { 
+            const term = document.getElementById('topic-search').value.toLowerCase(); 
+            document.querySelectorAll('#topic-area .grid-card').forEach(c => { 
+                const n = c.getAttribute('data-name'); 
+                if(n) c.style.display = n.includes(term) ? 'flex' : 'none'; 
+            }); 
+        };
+
+        // --- QUIZ LOGIC ---
+        function startQuiz(q) { 
+            stopAudio(); 
+            quizQueue = q.sort(()=>Math.random()-0.5); 
+            currentQIndex=0; sessionCorrect=0; sessionAttempted=0; 
+            document.getElementById('quiz-view').style.display='flex'; 
+            renderCurrentQuestion(); 
+        }
+        
+        window.closeQuiz = () => { 
+            stopAudio(); document.getElementById('quiz-view').style.display='none'; loadSheet();
+        };
+
+        window.nextQuestion = () => {
+            stopAudio();
+            if(currentQIndex < quizQueue.length - 1) {
+                currentQIndex++; renderCurrentQuestion();
+            } else {
+                const sc = sessionAttempted===0?0:Math.round((sessionCorrect/sessionAttempted)*100);
+                document.getElementById('quiz-container').innerHTML=`
+                    <div class="empty-state">
+                        <div style="font-size:5rem; margin-bottom:10px;">🎉</div>
+                        <h2 style="margin-bottom:10px;">Session Complete!</h2>
+                        <p style="font-size:1.2rem; color:var(--text-muted);">Score: <strong>${sc}%</strong></p>
+                        <button class="nav-btn btn-next" onclick="closeQuiz()" style="margin-top:30px;width:auto; padding:15px 40px; border-radius:30px;">Finish</button>
+                    </div>`;
+                document.getElementById('btn-next').disabled=true;
+                document.getElementById('btn-prev').disabled=true;
+            }
+        };
+
+        window.prevQuestion = () => { 
+            stopAudio(); if(currentQIndex > 0){ currentQIndex--; renderCurrentQuestion(); } 
+        };
+
+        function renderCurrentQuestion() {
+            const q = quizQueue[currentQIndex]; const uid = Date.now();
+            speakText(q.Question); 
+            document.getElementById('progress-bar').style.width = `${((currentQIndex+1)/quizQueue.length)*100}%`;
+            document.getElementById('btn-prev').disabled=(currentQIndex===0); 
+            document.getElementById('btn-next').disabled=false; 
+            document.getElementById('btn-next').innerText=(currentQIndex===quizQueue.length-1)?"Finish":"Next";
+
+            document.getElementById('quiz-container').innerHTML = buildCardHTML(q, uid, true);
+        }
+
+        // --- SHARED CARD HTML ---
+        function buildCardHTML(q, uid, enableInteraction) {
+            return `
+                <div class="q-card">
+                    <span class="q-badge">${q.Level||'Recall'}</span>
+                    <div class="q-text">${q.Question}</div>
+                    <div class="options-group">
+                        ${renderOption(q,'A',q.OptionA,uid,enableInteraction)}
+                        ${renderOption(q,'B',q.OptionB,uid,enableInteraction)}
+                        ${renderOption(q,'C',q.OptionC,uid,enableInteraction)}
+                        ${renderOption(q,'D',q.OptionD,uid,enableInteraction)}
+                    </div>
+                    <div id="exp-${uid}" class="explanation">
+                        <div style="font-weight:700; margin-bottom:8px;">💡 Rationale</div>
+                        ${q.Explanation}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderOption(q,l,t,id,enable) { 
+            if(!t)return''; 
+            const safeQ = JSON.stringify(q).replace(/"/g, '&quot;');
+            const onclick = enable ? `onclick="check(this,'${l}','${q.Correct}','exp-${id}',${safeQ})"` : "";
+            return `<div class="option" ${onclick}>
+                        <div class="option-letter">${l}</div>
+                        <div style="flex:1">${t}</div>
+                    </div>`; 
+        }
+
+        window.check = (el,s,c,eid,q) => {
+            if(el.parentElement.getAttribute('data-done'))return; 
+            el.parentElement.setAttribute('data-done','true'); 
+            sessionAttempted++;
+            
+            const corr = (s===c.trim().toUpperCase());
+            if(corr) { el.classList.add('correct'); sessionCorrect++; } 
+            else { el.classList.add('wrong'); }
+            
+            if(!corr) {
+                const map = {'A':0,'B':1,'C':2,'D':3};
+                const idx = map[c.trim().toUpperCase()];
+                const opts = el.parentElement.querySelectorAll('.option');
+                if(opts[idx]) opts[idx].classList.add('correct');
+            }
+
+            saveProgress(q, corr);
+            if(document.getElementById('accuracy-display')) {
+                document.getElementById('accuracy-display').innerText = `🎯 ${Math.round((sessionCorrect/sessionAttempted)*100)}%`;
+            }
+            
+            const expDiv = document.getElementById(eid);
+            expDiv.style.display='block';
+            speakText("Rationale: " + expDiv.innerText.replace("💡 Rationale",""));
+        };
+
+        // --- AI GENERATOR ---
+        window.openGenerator = () => document.getElementById('generator-overlay').style.display='flex';
+        window.closeGenerator = () => document.getElementById('generator-overlay').style.display='none';
+        window.closeGenView = () => document.getElementById('gen-view').style.display='none';
+
+        window.startGeneration = async () => {
+            const apiKey = document.getElementById('api-key').value;
+            if(!apiKey) return alert("Please enter API Key in Settings.");
+
+            const topic = document.getElementById('gen-topic').value;
+            const sub = document.getElementById('gen-subtopic').value;
+            if(!sub) return alert("Please enter a Disease/Condition.");
+
+            document.getElementById('generator-overlay').style.display='none';
+            document.getElementById('gen-view').style.display='flex';
+            
+            const container = document.getElementById('gen-container');
+            container.innerHTML = `<div style="text-align:center; margin-top:50px;">
+                <div style="font-size:3rem; animation:pulse 1s infinite;">🔮</div>
+                <h3>Crafting Question...</h3>
+                <p style="color:#888;">Topic: ${topic} | Focus: ${sub}</p>
+            </div>`;
+            document.getElementById('btn-save-db').style.display='none';
+
+            // PROMPT
+            const prompt = `Generate 1 multiple choice clinical question for System: ${topic} regarding Disease: ${sub}.
+            Strictly JSON format:
+            {
+              "Topic": "${topic}",
+              "Subtopic": "${sub}",
+              "Level": "One of: Remembering, Understanding, Applying, Analyzing, Evaluating",
+              "Question": "Clinical scenario...",
+              "OptionA": "...",
+              "OptionB": "...",
+              "OptionC": "...",
+              "OptionD": "...",
+              "Correct": "Single letter A/B/C/D",
+              "Explanation": "Detailed medical rationale."
+            }`;
+
+            try {
+                const res = await fetch("https://api.deepseek.com/chat/completions", { 
+                    method:"POST", 
+                    headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`}, 
+                    body:JSON.stringify({
+                        model:"deepseek-chat",
+                        messages:[{role:"user",content: prompt}],
+                        temperature: 0.7
+                    }) 
+                });
+                
+                const json = await res.json();
+                let content = json.choices[0].message.content;
+                // Cleanup JSON if needed
+                if(content.includes("```json")) content = content.split("```json")[1].split("```")[0];
+                if(content.includes("```")) content = content.split("```")[1].split("```")[0];
+                
+                generatedQTemp = JSON.parse(content);
+                
+                container.innerHTML = buildCardHTML(generatedQTemp, 'gen', true); // Interactive preview
+                
+                // Setup Save Button
+                const saveBtn = document.getElementById('btn-save-db');
+                saveBtn.style.display='block';
+                saveBtn.innerText = "💾 Save to Library";
+                saveBtn.disabled = false;
+                saveBtn.onclick = () => saveToSheet(generatedQTemp, saveBtn);
+
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state" style="color:red">Error: ${e.message}</div>`;
+            }
+        };
+
+        window.saveToSheet = (q, btn) => {
+            const scriptUrl = document.getElementById('script-url').value;
+            if(!scriptUrl) return alert("Configuration Error: Script URL is missing.");
+            
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            fetch(scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors', // Important for Google Script
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(q)
+            }).then(() => {
+                btn.innerText = "✅ Saved!";
+                btn.style.background = "#e5e7eb";
+                btn.style.color = "#333";
+            }).catch(e => {
+                alert("Save failed: " + e);
+                btn.innerText = "Retry Save";
+                btn.disabled = false;
+            });
+        };
+
+        // --- SETTINGS ---
+        window.openSettings=()=>{document.getElementById('settings-overlay').style.display='flex';};
+        window.closeSettings=()=>{document.getElementById('settings-overlay').style.display='none';};
+        
+        window.saveSettings=()=>{
+            localStorage.setItem('sheet_url',document.getElementById('sheet-url').value);
+            localStorage.setItem('script_url',document.getElementById('script-url').value);
+            localStorage.setItem('api_key',document.getElementById('api-key').value);
+            localStorage.setItem('audio_enabled',document.getElementById('audio-toggle').checked);
+            audioEnabled=document.getElementById('audio-toggle').checked;
+            loadSheet(); closeSettings();
+        };
+
+        window.loadSheet=()=>{
+            const status = document.getElementById('db-status');
+            status.innerText="Updating Library...";
+            Papa.parse(document.getElementById('sheet-url').value,{
+                download:true, header:true, skipEmptyLines:true,
+                complete:r=>{
+                    dbQuestions=r.data; uniqueTopics={};
+                    dbQuestions.forEach(row=>{if(row.Topic)uniqueTopics[row.Topic.trim()]=1;});
+                    renderTopics();
+                    status.innerText=`${dbQuestions.length} Questions Loaded`;
+                },
+                error: (e) => { status.innerText = "Connection Error"; }
+            });
+        };
+    </script>
+</body>
+</html>
