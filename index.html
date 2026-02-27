@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <link rel="prefetch" href="ward.html" as="document">
+    <link rel="prefetch" href="drugquiz.html" as="document">
     
     <style>
         :root {
@@ -796,13 +797,14 @@
 
     <div id="clinical-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
         <button id="clinical-back-btn" onclick="switchMode('search')" aria-label="Back" style="position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:12px; z-index:350; border:none; background:rgba(0,0,0,0.6); color:#fff; border-radius:999px; padding:8px 12px; font-weight:700;">← Back</button>
-        <div style="height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:78vh; background:var(--ios-bg);">
+        <div style="height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:78vh; background:var(--ios-bg); position:relative;">
+            <div id="clinical-loading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:5; color:#6b7280; font-weight:700; background:linear-gradient(180deg, rgba(242,242,247,0.92), rgba(242,242,247,0.7)); transition:opacity .25s ease;">Loading Clinical Bank…</div>
             <iframe
                 id="clinical-frame"
                 title="Clinical Bank"
                 src="drugquiz.html"
-                loading="lazy"
-                style="width:100%; height:100%; border:none; background:#fff;"
+                loading="eager"
+                style="width:100%; height:100%; border:none; background:#fff; opacity:0; transition:opacity .25s ease;"
             ></iframe>
         </div>
     </div>
@@ -2212,6 +2214,7 @@ Language: ${langInstruction}.`;
             if (status) status.innerText = '⚡ Fast startup using local data';
         }
         
+        setupClinicalPreload();
         switchMode('search');
     };
 
@@ -2339,6 +2342,34 @@ Language: ${langInstruction}.`;
     }
 
     let clinicalBackSyncTimer = null;
+    let clinicalFrameReady = false;
+
+    function setClinicalReadyState(isReady) {
+        const frame = document.getElementById('clinical-frame');
+        const loader = document.getElementById('clinical-loading');
+        if (frame) frame.style.opacity = isReady ? '1' : '0';
+        if (loader) {
+            loader.style.opacity = isReady ? '0' : '1';
+            loader.style.pointerEvents = isReady ? 'none' : 'auto';
+        }
+    }
+
+    function setupClinicalPreload() {
+        const frame = document.getElementById('clinical-frame');
+        if (!frame) return;
+
+        const onReady = () => {
+            clinicalFrameReady = true;
+            setClinicalReadyState(true);
+            syncClinicalBackButton();
+        };
+
+        frame.addEventListener('load', onReady, { once: true });
+
+        // Ensure eager warm-up on first app load.
+        if (!frame.getAttribute('src')) frame.setAttribute('src', 'drugquiz.html');
+    }
+
 
     function clearClinicalBackSync() {
         if (clinicalBackSyncTimer) {
@@ -2431,6 +2462,7 @@ Language: ${langInstruction}.`;
             document.body.classList.add('ward-fullscreen');
             document.getElementById('clinical-section').style.display = 'block';
             document.getElementById('nav-clinical').classList.add('active');
+            setClinicalReadyState(clinicalFrameReady);
             beginClinicalBackSync();
         }
     }
