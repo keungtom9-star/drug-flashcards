@@ -456,18 +456,31 @@
                 font-size: 0.92rem;
             }
 
-            body.ward-fullscreen #ward-section {
+            body.ward-fullscreen #ward-section,
+            body.ward-fullscreen #clinical-section {
                 position: fixed;
-                inset: 0;
+                left: 0;
+                right: 0;
+                top: calc(env(safe-area-inset-top) + 64px);
             }
 
-            body.ward-fullscreen #ward-section .immersive-shell {
-                height: 100dvh;
-                min-height: 100dvh;
+            body.ward-fullscreen #ward-section {
+                bottom: calc(env(safe-area-inset-bottom) + 54px);
+            }
+
+            body.ward-fullscreen #clinical-section {
+                bottom: calc(env(safe-area-inset-bottom) + 72px);
+            }
+
+            body.ward-fullscreen #ward-section .immersive-shell,
+            body.ward-fullscreen #clinical-section .immersive-shell {
+                height: 100%;
+                min-height: 100%;
                 padding: 0;
             }
 
-            body.ward-fullscreen #ward-section .immersive-frame {
+            body.ward-fullscreen #ward-section .immersive-frame,
+            body.ward-fullscreen #clinical-section .immersive-frame {
                 border-radius: 0;
                 box-shadow: none;
             }
@@ -595,19 +608,19 @@
         }
 
         /* Flashcard */
-        .flashcard-wrapper { perspective: 1000px; height: 600px; cursor: pointer; }
+        .flashcard-wrapper { perspective: 1000px; -webkit-perspective: 1000px; height: 600px; cursor: pointer; }
         .flashcard-inner {
             position: relative; width: 100%; height: 100%; text-align: center;
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
         }
         .flashcard-wrapper.flipped .flashcard-inner { transform: rotateY(180deg); }
         .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
             border-radius: var(--radius-card); background: var(--ios-card);
             box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
             justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
         }
-        .card-back { transform: rotateY(180deg); justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
+        .card-back { transform: rotateY(180deg) translateZ(1px); -webkit-transform: rotateY(180deg) translateZ(1px); justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
 
         .drug-title {
             font-size: 2.2rem; font-weight: 800;
@@ -3075,12 +3088,18 @@ Language: ${langInstruction}.`;
     }
 
     function flipCard(e) {
-        if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'SELECT') return;
+        const blocked = ['BUTTON', 'A', 'SELECT', 'INPUT', 'TEXTAREA', 'LABEL'];
+        if (blocked.includes(e.target.tagName) || e.target.closest('.action-btn, .external-links-grid, .multi-chip-wrap, .ai-output')) return;
+
         const card = document.getElementById('flashcard');
-        card.classList.toggle('flipped');
-        const showingBack = card.classList.contains('flipped');
-        document.getElementById('show-answer-btn').style.display = showingBack ? 'none' : 'flex';
-        document.getElementById('anki-controls').style.display = showingBack ? 'grid' : 'none';
+        const isFlipped = card.classList.contains('flipped');
+
+        // Prevent accidental flip-back while reading/scrolling back content.
+        if (isFlipped) return;
+
+        card.classList.add('flipped');
+        document.getElementById('show-answer-btn').style.display = 'none';
+        document.getElementById('anki-controls').style.display = 'grid';
     }
 
     function nextCard() {
