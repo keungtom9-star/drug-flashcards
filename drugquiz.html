@@ -643,7 +643,13 @@
         }
         
         window.closeQuiz = () => { 
-            stopAudio(); document.getElementById('quiz-view').style.display='none'; loadSheet();
+            stopAudio();
+            document.getElementById('quiz-view').style.display = 'none';
+            document.getElementById('mode-overlay').style.display = 'none';
+            document.getElementById('subtopic-view').style.display = 'none';
+            currentSelectionRows = [];
+            activeTopicName = "";
+            loadSheet();
         };
 
         window.nextQuestion = () => {
