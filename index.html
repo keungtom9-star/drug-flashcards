@@ -57,14 +57,18 @@
         /* iOS Header */
         header {
             width: 100%;
-            padding: 15px 20px;
+            padding: 12px 20px 10px;
             box-sizing: border-box;
-            background: transparent;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(14px);
             display: flex;
             flex-direction: column;
             align-items: center;
             margin-bottom: 5px;
-            position: relative;
+            position: sticky;
+            top: 0;
+            z-index: 700;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
         }
 
         h1 {
@@ -93,6 +97,7 @@
         }
         
         /* Settings Button */
+        .top-back-btn,
         .settings-btn-top {
             position: absolute;
             right: 20px; top: 20px;
@@ -104,7 +109,10 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             transition: transform 0.2s;
         }
-        .settings-btn-top:active { transform: scale(0.9); background: rgba(0,0,0,0.1); }
+        .top-back-btn {
+            left: 20px; right: auto; top: 14px;
+        }
+        .settings-btn-top:active, .top-back-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.1); }
 
         /* Nav */
         .glass-nav {
@@ -120,13 +128,21 @@
             flex: 1; height: 38px; border: none; background: transparent;
             border-radius: 10px; font-weight: 600; font-size: 0.9rem;
             color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         }
+        .nav-ico { font-size: 1rem; line-height: 1; }
+        .nav-label { line-height: 1; }
         .nav-btn.active { background-color: var(--ios-card); color: var(--ios-blue); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
 
         #app-container { width: 92%; max-width: 600px; flex: 1; padding-bottom: 80px; }
 
         body.ward-fullscreen header,
         body.ward-fullscreen .glass-nav {
+            display: flex;
+            z-index: 700;
+        }
+
+        body.ward-fullscreen .top-back-btn {
             display: none;
         }
 
@@ -285,6 +301,7 @@
 
 
         .mobile-tab-label { display: none; }
+        .nav-label-mobile { display: none; }
 
         .app-smooth {
             contain: content;
@@ -308,6 +325,49 @@
 
         /* Explicit dual UI modes */
         body.mobile-ui .subtitle::after { content: ' • Mobile UI'; }
+
+        body.mobile-ui:not(.ward-fullscreen) {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        body.mobile-ui:not(.ward-fullscreen) #app-container {
+            position: fixed;
+            left: 3%;
+            right: 3%;
+            top: calc(env(safe-area-inset-top) + 98px);
+            bottom: calc(env(safe-area-inset-bottom) + 76px);
+            width: auto;
+            max-width: none;
+            padding-bottom: 0;
+            overflow: hidden;
+        }
+
+        body.mobile-ui:not(.ward-fullscreen) #search-section,
+        body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
+        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
+            height: 100%;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
+        }
+
+        body.mobile-ui:not(.ward-fullscreen) #filter-bar {
+            position: fixed;
+            left: 3%;
+            right: 3%;
+            top: calc(env(safe-area-inset-top) + 98px);
+            width: auto !important;
+            max-width: none;
+            z-index: 210;
+            margin: 0;
+            padding-bottom: 0;
+        }
 
         body.desktop-ui header {
             width: 100%;
@@ -426,34 +486,43 @@
             header { padding: 10px 14px 8px; }
             h1 { font-size: 1.35rem; }
             .subtitle { font-size: 0.74rem; }
-            .settings-btn-top { right: 14px; top: 12px; width: 34px; height: 34px; }
+            .top-back-btn,
+        .settings-btn-top, .top-back-btn { right: 14px; top: 10px; width: 34px; height: 34px; }
+            .top-back-btn { left: 14px; right: auto; }
 
             .glass-nav {
                 position: fixed;
                 top: auto;
-                bottom: calc(8px + env(safe-area-inset-bottom));
-                left: 10px;
-                right: 10px;
-                width: auto;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
                 max-width: none;
                 margin-bottom: 0;
-                z-index: 500;
-                border-radius: 18px;
-                padding: 7px;
-                box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+                z-index: 800;
+                border-radius: 0;
+                padding: 7px 10px calc(env(safe-area-inset-bottom) + 7px);
+                box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+                border-left: none;
+                border-right: none;
+                border-bottom: none;
+                background: rgba(255,255,255,0.96);
             }
 
             .nav-btn {
-                height: 42px;
-                font-size: 0.82rem;
+                height: 44px;
+                font-size: 0.78rem;
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
                 align-items: center;
                 justify-content: center;
             }
+            .nav-ico { font-size: 1rem; }
+            .nav-label { display: none; }
+            .nav-label-mobile { display: block; font-size: 0.64rem; font-weight: 700; }
 
-            #app-container { width: 94%; padding-bottom: 130px; }
+            #app-container { width: 94%; padding-bottom: 118px; }
             #filter-bar { width: 94% !important; }
 
             .flashcard-wrapper {
@@ -764,16 +833,17 @@
         <img src="apple-touch-icon.png" class="app-icon-img" alt="App Icon">
         AI Drug Tutor
     </h1>
+    <button onclick="handleTopBack()" class="top-back-btn">←</button>
     <button onclick="toggleSettings()" class="settings-btn-top">⚙️</button>
     <div class="subtitle" id="provider-display">DeepSeek</div>
 </header>
 
 <div class="glass-nav">
-    <button class="nav-btn active" id="nav-search" onclick="switchMode('search')">🧸 Search</button>
-    <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')">🗂️ Flashcard</button>
-    <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')">🧠 Quiz</button>
-    <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')">🏥 Clinical</button>
-    <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')">🩺 Ward</button>
+    <button class="nav-btn active" id="nav-search" onclick="switchMode('search')"><span class="nav-ico">🧸</span><span class="nav-label">Search</span><span class="nav-label-mobile">Search</span></button>
+    <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')"><span class="nav-ico">🗂️</span><span class="nav-label">Flashcard</span><span class="nav-label-mobile">Flash</span></button>
+    <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')"><span class="nav-ico">🧩</span><span class="nav-label">Quiz</span><span class="nav-label-mobile">Quiz</span></button>
+    <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')"><span class="nav-ico">🏥</span><span class="nav-label">Clinical</span><span class="nav-label-mobile">Clinical</span></button>
+    <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')"><span class="nav-ico">🩺</span><span class="nav-label">Ward</span><span class="nav-label-mobile">Ward</span></button>
 </div>
 
 <div id="filter-bar" class="filter-scroller" style="display:none; width: 92%; max-width:600px;">
@@ -957,7 +1027,6 @@
     </div>
 
     <div id="ward-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
-        <button class="immersive-back-btn" onclick="switchMode('search')" aria-label="Back">← Back</button>
         <div class="immersive-shell">
             <iframe
                 id="ward-frame"
@@ -970,7 +1039,6 @@
     </div>
 
     <div id="clinical-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
-        <button id="clinical-back-btn" class="immersive-back-btn" onclick="switchMode('search')" aria-label="Back">← Back</button>
         <div class="immersive-shell" style="position:relative;">
             <div id="clinical-loading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:5; color:#6b7280; font-weight:700; background:linear-gradient(180deg, rgba(242,242,247,0.92), rgba(242,242,247,0.7)); transition:opacity .25s ease;">
                 <div class="clinical-loading-box" role="status" aria-live="polite">
@@ -2740,6 +2808,20 @@ Language: ${langInstruction}.`;
     }
 
     // --- NAVIGATION MODES ---
+    function handleTopBack() {
+        const active = document.querySelector('.nav-btn.active')?.id;
+        if (active === 'nav-clinical') {
+            triggerIosBackGesture('clinical');
+            return;
+        }
+        if (active && active !== 'nav-search') {
+            switchMode('search');
+            return;
+        }
+        const input = document.getElementById('search-input');
+        if (input) input.blur();
+    }
+
     function switchMode(mode) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('flashcard-section').style.display = 'none';
