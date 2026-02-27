@@ -459,21 +459,14 @@
             body.ward-fullscreen #ward-section,
             body.ward-fullscreen #clinical-section {
                 position: fixed;
-                left: 0;
-                right: 0;
-                top: calc(env(safe-area-inset-top) + 56px);
-            }
-
-            body.ward-fullscreen #ward-section,
-            body.ward-fullscreen #clinical-section {
-                bottom: calc(env(safe-area-inset-bottom) + 64px);
+                inset: 0;
             }
 
             body.ward-fullscreen #ward-section .immersive-shell,
             body.ward-fullscreen #clinical-section .immersive-shell {
-                height: 100%;
-                min-height: 100%;
-                padding: 0;
+                height: 100dvh;
+                min-height: 100dvh;
+                padding: calc(env(safe-area-inset-top) + 56px) 0 calc(env(safe-area-inset-bottom) + 64px);
             }
 
             body.ward-fullscreen #ward-section .immersive-frame,
