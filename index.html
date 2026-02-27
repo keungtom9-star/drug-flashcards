@@ -136,35 +136,33 @@
 
         #app-container { width: 92%; max-width: 600px; flex: 1; padding-bottom: 80px; }
 
-        body.ward-fullscreen header,
-        body.ward-fullscreen .glass-nav {
+        body.ward-fullscreen header {
             display: flex;
-            z-index: 700;
+        }
+
+        body.ward-fullscreen .glass-nav {
+            display: none;
         }
 
         body.ward-fullscreen {
-            overflow: hidden;
-            overscroll-behavior: none;
-        }
-
-        body.ward-fullscreen {
-            overflow: hidden;
-            overscroll-behavior: none;
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
         }
 
         body.ward-fullscreen #app-container {
-            width: 100%;
-            max-width: none;
-            padding-bottom: 0;
-            height: 100dvh;
-            padding-left: 0;
-            padding-right: 0;
+            width: 92%;
+            max-width: 600px;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
+            height: auto;
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         body.ward-fullscreen #ward-section,
         body.ward-fullscreen #clinical-section {
-            position: fixed;
-            inset: 0;
+            position: relative;
+            inset: auto;
             z-index: 220;
             background: radial-gradient(circle at top, #f8fbff 0%, #eef2ff 45%, #eef3f8 100%);
         }
@@ -183,6 +181,23 @@
             border-radius: 18px;
             background: #fff;
             box-shadow: 0 12px 36px rgba(15, 23, 42, 0.14);
+        }
+
+        body.ward-fullscreen .immersive-shell {
+            height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 84px);
+            min-height: 70vh;
+            padding: 8px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        body.ward-fullscreen .immersive-frame {
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        body.ward-fullscreen .immersive-back-btn {
+            display: none;
         }
 
         .immersive-back-btn {
@@ -457,20 +472,10 @@
                 font-size: 0.92rem;
             }
 
-            body.ward-fullscreen #ward-section {
-                position: fixed;
-                inset: 0;
-            }
-
-            body.ward-fullscreen #ward-section .immersive-shell {
-                height: 100dvh;
-                min-height: 100dvh;
-                padding: 0;
-            }
-
-            body.ward-fullscreen #ward-section .immersive-frame {
-                border-radius: 0;
-                box-shadow: none;
+            body.ward-fullscreen #ward-section,
+            body.ward-fullscreen #clinical-section {
+                position: relative;
+                inset: auto;
             }
         }
 
@@ -1050,7 +1055,6 @@
     </div>
 
     <div id="ward-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
-        <button class="immersive-back-btn" onclick="switchMode('search')" aria-label="Back">← Back</button>
         <div class="immersive-shell">
             <iframe
                 id="ward-frame"
@@ -1063,7 +1067,6 @@
     </div>
 
     <div id="clinical-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
-        <button id="clinical-back-btn" class="immersive-back-btn" onclick="switchMode('search')" aria-label="Back">← Back</button>
         <div class="immersive-shell" style="position:relative;">
             <div id="clinical-loading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:5; color:#6b7280; font-weight:700; background:linear-gradient(180deg, rgba(242,242,247,0.92), rgba(242,242,247,0.7)); transition:opacity .25s ease;">
                 <div class="clinical-loading-box" role="status" aria-live="polite">
