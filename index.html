@@ -30,15 +30,15 @@
             --text-primary: #000000;
             --text-secondary: #3C3C4399; /* 60% opacity */
             
-            --radius-card: 20px;
+            --radius-card: 24px;
             --radius-btn: 12px;
-            --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.06);
+            --shadow-soft: 0 10px 24px rgba(59, 130, 246, 0.12);
             --glass-bg: rgba(255, 255, 255, 0.85);
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--ios-bg);
+            background: radial-gradient(circle at top, #f8fbff 0%, #f2f2f7 55%, #eef6ff 100%);
             color: var(--text-primary);
             margin: 0;
             padding: 0;
@@ -101,12 +101,12 @@
         .settings-btn-top {
             position: absolute;
             right: 20px; top: 20px;
-            background: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.92);
             border: 1px solid rgba(0,0,0,0.05);
             width: 36px; height: 36px; border-radius: 50%;
             font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
             cursor: pointer; backdrop-filter: blur(10px); color: var(--text-primary);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 6px 14px rgba(59,130,246,0.16);
             transition: transform 0.2s;
         }
         .top-back-btn {
@@ -118,8 +118,8 @@
         .glass-nav {
             position: sticky; top: 10px; z-index: 100;
             width: 92%; max-width: 600px;
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-radius: 16px; padding: 6px;
+            background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 18px; padding: 7px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
             display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px;
         }
@@ -140,6 +140,11 @@
         body.ward-fullscreen .glass-nav {
             display: flex;
             z-index: 700;
+        }
+
+        body.ward-fullscreen {
+            overflow: hidden;
+            overscroll-behavior: none;
         }
 
         body.ward-fullscreen {
@@ -224,7 +229,7 @@
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;
         }
         .daily-card {
-            background: linear-gradient(145deg, #ffffff, #f7fbff); border-radius: 16px; padding: 15px;
+            background: linear-gradient(145deg, #ffffff, #eef6ff); border-radius: 20px; padding: 15px;
             box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
             justify-content: space-between; min-height: 100px; cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(0,0,0,0.05);
@@ -267,7 +272,7 @@
 
         .anki-meta {
             margin-top: 10px;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             color: var(--ios-gray);
             text-align: center;
         }
@@ -284,7 +289,7 @@
             border-radius: 10px;
             padding: 8px;
             text-align: center;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             color: var(--ios-gray);
         }
 
@@ -489,16 +494,20 @@
             .glass-nav {
                 position: fixed;
                 top: auto;
-                bottom: calc(8px + env(safe-area-inset-bottom));
-                left: 10px;
-                right: 10px;
-                width: auto;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
                 max-width: none;
                 margin-bottom: 0;
-                z-index: 500;
-                border-radius: 18px;
-                padding: 7px;
-                box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+                z-index: 800;
+                border-radius: 0;
+                padding: 4px 8px calc(env(safe-area-inset-bottom) + 4px);
+                box-shadow: 0 -1px 8px rgba(0,0,0,0.06);
+                border-left: none;
+                border-right: none;
+                border-bottom: none;
+                background: rgba(255,255,255,0.96);
             }
 
             .nav-btn {
@@ -514,7 +523,7 @@
             .nav-label { display: none; }
             .nav-label-mobile { display: block; font-size: 0.64rem; font-weight: 700; }
 
-            #app-container { width: 94%; padding-bottom: 130px; }
+            #app-container { width: 94%; padding-bottom: 102px; }
             #filter-bar { width: 94% !important; }
 
             .flashcard-wrapper {
@@ -555,7 +564,7 @@
             #clinical-loading {
                 align-items: flex-start !important;
                 justify-content: flex-start !important;
-                padding-top: calc(env(safe-area-inset-top) + 64px);
+                padding-top: calc(env(safe-area-inset-top) + 56px);
                 padding-left: 14px;
                 padding-right: 14px;
             }
@@ -588,19 +597,20 @@
         }
 
         /* Flashcard */
-        .flashcard-wrapper { perspective: 1000px; height: 600px; cursor: pointer; }
+        .flashcard-wrapper { height: 600px; cursor: pointer; }
         .flashcard-inner {
             position: relative; width: 100%; height: 100%; text-align: center;
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d;
         }
-        .flashcard-wrapper.flipped .flashcard-inner { transform: rotateY(180deg); }
         .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            position: absolute; width: 100%; height: 100%;
             border-radius: var(--radius-card); background: var(--ios-card);
             box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
             justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
         }
-        .card-back { transform: rotateY(180deg); justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
+        .card-front { display: flex; }
+        .card-back { display: none; justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
+        .flashcard-wrapper.flipped .card-front { display: none; }
+        .flashcard-wrapper.flipped .card-back { display: flex; }
 
         .drug-title {
             font-size: 2.2rem; font-weight: 800;
@@ -627,6 +637,27 @@
         .btn-green { background: var(--ios-green); color: white; }
 
         .external-links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
+
+        #flashcard-section {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+        #flashcard-section > * { max-width: 100%; min-width: 0; }
+        .flashcard-wrapper, .flashcard-inner, .card-face {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+        .card-back { padding-right: 14px; }
+        .detail-row, .detail-content, .action-btn, .external-links-grid {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            word-break: break-word;
+        }
 
         /* Modals & Misc */
         .modal-overlay {
@@ -657,7 +688,7 @@
         }
 
         .result-card {
-            background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px;
+            background: white; padding: 16px; border-radius: 20px; margin-bottom: 12px;
             border: 1px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: all 0.2s; cursor: pointer;
             /* Text wrapping safety */
             word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;
@@ -947,7 +978,7 @@
             </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:0 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:0 10px; gap:8px; flex-wrap:wrap;">
             <button onclick="prevCard()" class="action-btn" style="width:auto;">← Previous</button>
             <span id="counter" style="font-weight:700; color:var(--ios-gray);">1 / 10</span>
             <button onclick="nextCard()" class="action-btn" style="width:auto;">Next →</button>
@@ -2842,7 +2873,8 @@ Language: ${langInstruction}.`;
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('search-section').style.display = 'block';
             document.getElementById('nav-search').classList.add('active');
-            document.getElementById('search-input').focus();
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.blur();
         } else if (mode === 'anki' || mode === 'flashcard') {
             clearClinicalBackSync();
             document.body.classList.remove('ward-fullscreen');
@@ -3048,12 +3080,18 @@ Language: ${langInstruction}.`;
     }
 
     function flipCard(e) {
-        if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'SELECT') return;
+        const blocked = ['BUTTON', 'A', 'SELECT', 'INPUT', 'TEXTAREA', 'LABEL'];
+        if (blocked.includes(e.target.tagName) || e.target.closest('.action-btn, .external-links-grid, .multi-chip-wrap, .ai-output')) return;
+
         const card = document.getElementById('flashcard');
-        card.classList.toggle('flipped');
-        const showingBack = card.classList.contains('flipped');
-        document.getElementById('show-answer-btn').style.display = showingBack ? 'none' : 'flex';
-        document.getElementById('anki-controls').style.display = showingBack ? 'grid' : 'none';
+        const isFlipped = card.classList.contains('flipped');
+
+        // Prevent accidental flip-back while reading/scrolling back content.
+        if (isFlipped) return;
+
+        card.classList.add('flipped');
+        document.getElementById('show-answer-btn').style.display = 'none';
+        document.getElementById('anki-controls').style.display = 'grid';
     }
 
     function nextCard() {
