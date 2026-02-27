@@ -138,10 +138,12 @@
 
         body.ward-fullscreen header {
             display: flex;
+            z-index: 900;
         }
 
         body.ward-fullscreen .glass-nav {
-            display: none;
+            display: flex;
+            z-index: 900;
         }
 
         body.ward-fullscreen {
@@ -355,8 +357,8 @@
             position: fixed;
             left: 3%;
             right: 3%;
-            top: calc(env(safe-area-inset-top) + 98px);
-            bottom: calc(env(safe-area-inset-bottom) + 86px);
+            top: calc(env(safe-area-inset-top) + 144px);
+            bottom: calc(env(safe-area-inset-bottom) + 10px);
             width: auto;
             max-width: none;
             padding-bottom: 0;
@@ -377,7 +379,7 @@
             position: fixed;
             left: 3%;
             right: 3%;
-            top: calc(env(safe-area-inset-top) + 98px);
+            top: calc(env(safe-area-inset-top) + 144px);
             width: auto !important;
             max-width: none;
             z-index: 210;
@@ -497,38 +499,32 @@
             .top-back-btn { left: 14px; right: auto; }
 
             .glass-nav {
-                position: fixed;
-                top: auto;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                max-width: none;
-                margin-bottom: 0;
-                z-index: 800;
-                border-radius: 0;
-                padding: 4px 8px calc(env(safe-area-inset-bottom) + 4px);
-                box-shadow: 0 -1px 8px rgba(0,0,0,0.06);
-                border-left: none;
-                border-right: none;
-                border-bottom: none;
-                background: rgba(255,255,255,0.96);
+                position: sticky;
+                top: calc(env(safe-area-inset-top) + 2px);
+                width: 94%;
+                max-width: 600px;
+                margin-bottom: 8px;
+                z-index: 700;
+                border-radius: 14px;
+                padding: 4px 6px;
+                box-shadow: 0 3px 16px rgba(0,0,0,0.08);
+                background: rgba(255,255,255,0.95);
             }
 
             .nav-btn {
-                height: 44px;
-                font-size: 0.78rem;
+                height: 34px;
+                font-size: 0.72rem;
                 display: flex;
-                flex-direction: column;
-                gap: 2px;
+                flex-direction: row;
+                gap: 4px;
                 align-items: center;
                 justify-content: center;
             }
-            .nav-ico { font-size: 1rem; }
-            .nav-label { display: none; }
-            .nav-label-mobile { display: block; font-size: 0.64rem; font-weight: 700; }
+            .nav-ico { font-size: 0.86rem; }
+            .nav-label { display: block; font-size: 0.68rem; }
+            .nav-label-mobile { display: none; }
 
-            #app-container { width: 94%; padding-bottom: 102px; }
+            #app-container { width: 94%; padding-bottom: 16px; }
             #filter-bar { width: 94% !important; }
 
             .flashcard-wrapper {
