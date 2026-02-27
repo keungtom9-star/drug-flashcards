@@ -459,24 +459,14 @@
             body.ward-fullscreen #ward-section,
             body.ward-fullscreen #clinical-section {
                 position: fixed;
-                left: 0;
-                right: 0;
-                top: calc(env(safe-area-inset-top) + 64px);
-            }
-
-            body.ward-fullscreen #ward-section {
-                bottom: calc(env(safe-area-inset-bottom) + 54px);
-            }
-
-            body.ward-fullscreen #clinical-section {
-                bottom: calc(env(safe-area-inset-bottom) + 72px);
+                inset: 0;
             }
 
             body.ward-fullscreen #ward-section .immersive-shell,
             body.ward-fullscreen #clinical-section .immersive-shell {
-                height: 100%;
-                min-height: 100%;
-                padding: 0;
+                height: 100dvh;
+                min-height: 100dvh;
+                padding: calc(env(safe-area-inset-top) + 56px) 0 calc(env(safe-area-inset-bottom) + 64px);
             }
 
             body.ward-fullscreen #ward-section .immersive-frame,
@@ -575,7 +565,7 @@
             #clinical-loading {
                 align-items: flex-start !important;
                 justify-content: flex-start !important;
-                padding-top: calc(env(safe-area-inset-top) + 64px);
+                padding-top: calc(env(safe-area-inset-top) + 56px);
                 padding-left: 14px;
                 padding-right: 14px;
             }
@@ -608,19 +598,20 @@
         }
 
         /* Flashcard */
-        .flashcard-wrapper { perspective: 1000px; -webkit-perspective: 1000px; height: 600px; cursor: pointer; }
+        .flashcard-wrapper { height: 600px; cursor: pointer; }
         .flashcard-inner {
             position: relative; width: 100%; height: 100%; text-align: center;
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
         }
-        .flashcard-wrapper.flipped .flashcard-inner { transform: rotateY(180deg); }
         .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            position: absolute; width: 100%; height: 100%;
             border-radius: var(--radius-card); background: var(--ios-card);
             box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
             justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
         }
-        .card-back { transform: rotateY(180deg) translateZ(1px); -webkit-transform: rotateY(180deg) translateZ(1px); justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
+        .card-front { display: flex; }
+        .card-back { display: none; justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
+        .flashcard-wrapper.flipped .card-front { display: none; }
+        .flashcard-wrapper.flipped .card-back { display: flex; }
 
         .drug-title {
             font-size: 2.2rem; font-weight: 800;
