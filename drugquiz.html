@@ -350,7 +350,7 @@
                     <option>Musculoskeletal</option><option>Derma</option><option>Pediatrics</option>
                     <option>Maternity</option><option>Endocrine</option><option>Oncology</option>
                     <option>Infection</option><option>Surgery</option><option>Emergency</option>
-                    <option>Eye</option><option>Other</option>
+                    <option>Eye</option><option>HA Interview Questions</option><option>Other</option>
                 </select>
 
                 <label class="gen-label">Disease / Condition (Subtopic)</label>
@@ -514,6 +514,7 @@
             else if (t.includes('surg')) { f='surgery.png'; e='🔪'; }
             else if (t.includes('emerg')||t.includes('trauma')) { f='emergency.png'; e='🚑'; }
             else if (t.includes('eye')) { f='eye.png'; e='👁️'; }
+            else if (t.includes('ha interview')) { f='ha-interview.png'; e='🗣️'; }
             return { src: `icons/${f}`, emoji: e };
         }
         
