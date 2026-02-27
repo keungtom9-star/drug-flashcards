@@ -771,6 +771,85 @@
         window.closeGenerator = () => document.getElementById('generator-overlay').style.display='none';
         window.closeGenView = () => document.getElementById('gen-view').style.display='none';
 
+        window.goBack = () => {
+            const genOpen = document.getElementById('gen-view')?.style.display !== 'none';
+            const quizOpen = document.getElementById('quiz-view')?.style.display !== 'none';
+            const subtopicOpen = document.getElementById('subtopic-view')?.style.display !== 'none';
+
+            if (genOpen) {
+                closeGenView();
+                return;
+            }
+            if (quizOpen) {
+                closeQuiz();
+                return;
+            }
+            if (subtopicOpen) {
+                closeSubtopics();
+                return;
+            }
+
+            try {
+                if (window.parent && window.parent !== window && typeof window.parent.switchMode === 'function') {
+                    window.parent.switchMode('search');
+                    return;
+                }
+            } catch (e) {}
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'pwa-ios-back', source: 'clinical' }, '*');
+                }
+            } catch (e) {}
+        };
+
+        function setupIOSPWAGesture() {
+            if (window.__quizGestureSetupDone) return;
+            window.__quizGestureSetupDone = true;
+
+            const edgeMaxStart = 28;
+            const triggerDistance = 72;
+            const maxVerticalDrift = 90;
+            const state = { tracking: false, startX: 0, startY: 0 };
+
+            document.addEventListener('touchstart', (event) => {
+                const touch = event.touches && event.touches[0];
+                if (!touch) return;
+                if (touch.clientX > edgeMaxStart) return;
+                if (event.target && event.target.closest && event.target.closest('.topic-grid, #topic-area')) return;
+                state.tracking = true;
+                state.startX = touch.clientX;
+                state.startY = touch.clientY;
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (event) => {
+                if (!state.tracking) return;
+                const touch = event.touches && event.touches[0];
+                if (!touch) return;
+                const dx = touch.clientX - state.startX;
+                const dy = Math.abs(touch.clientY - state.startY);
+                if (dx > 12 && dy < maxVerticalDrift) event.preventDefault();
+            }, { passive: false });
+
+            const endSwipe = (event) => {
+                if (!state.tracking) return;
+                const touch = (event.changedTouches && event.changedTouches[0]) || null;
+                const dx = touch ? (touch.clientX - state.startX) : 0;
+                const dy = touch ? Math.abs(touch.clientY - state.startY) : Infinity;
+                state.tracking = false;
+                if (dx >= triggerDistance && dy <= maxVerticalDrift) {
+                    goBack();
+                }
+            };
+
+            document.addEventListener('touchend', endSwipe, { passive: true });
+            document.addEventListener('touchcancel', () => {
+                state.tracking = false;
+            }, { passive: true });
+        }
+
+        setupIOSPWAGesture();
+
         window.startGeneration = async () => {
             const apiKey = document.getElementById('api-key').value;
             if(!apiKey) return alert("Please enter API Key in Settings.");
