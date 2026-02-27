@@ -259,6 +259,41 @@
         .flashcard-wrapper { animation: fadeSlideUp 0.3s ease both; }
         .glass-nav .nav-btn.active { animation: softPulse 1.8s ease-in-out infinite; }
 
+        /* Explicit dual UI modes */
+        body.mobile-ui .subtitle::after { content: ' • Mobile UI'; }
+
+        body.desktop-ui header {
+            width: min(96%, 1200px);
+            margin-top: 6px;
+            padding: 14px 24px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-soft);
+        }
+        body.desktop-ui .glass-nav {
+            width: min(96%, 1200px);
+            max-width: 1200px;
+            position: sticky;
+            top: 12px;
+        }
+        body.desktop-ui #app-container {
+            width: min(96%, 1200px);
+            max-width: 1200px;
+            padding-bottom: 48px;
+        }
+        body.desktop-ui .daily-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        body.desktop-ui .system-scroll-container {
+            gap: 10px;
+        }
+        body.desktop-ui .flashcard-wrapper {
+            height: 72dvh;
+            max-height: 760px;
+        }
+        body.desktop-ui .subtitle::after { content: ' • Desktop UI'; }
+
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
@@ -2166,8 +2201,26 @@ Language: ${langInstruction}.`;
         try { void frame.contentWindow; } catch (e) {}
     }
 
+    let deviceLayoutMedia = null;
+
+    function applyDeviceUILayout() {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        document.body.classList.toggle('mobile-ui', isMobile);
+        document.body.classList.toggle('desktop-ui', !isMobile);
+    }
+
+    function setupDeviceUILayoutWatcher() {
+        applyDeviceUILayout();
+        deviceLayoutMedia = window.matchMedia('(max-width: 768px)');
+        const listener = () => applyDeviceUILayout();
+        if (deviceLayoutMedia.addEventListener) deviceLayoutMedia.addEventListener('change', listener);
+        else if (deviceLayoutMedia.addListener) deviceLayoutMedia.addListener(listener);
+    }
+
     // --- INITIALIZATION ---
     window.onload = function() {
+        setupDeviceUILayoutWatcher();
+
         if(typeof commonDrugs !== 'undefined') {
             activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
             flashcardList = [...activeSourceList];
