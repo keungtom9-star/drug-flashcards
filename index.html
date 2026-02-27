@@ -12,6 +12,8 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <link rel="prefetch" href="ward.html" as="document">
+    <link rel="preload" href="ward.html" as="document">
+    <link rel="prefetch" href="drugquiz.html" as="document">
     
     <style>
         :root {
@@ -257,6 +259,61 @@
         .flashcard-wrapper { animation: fadeSlideUp 0.3s ease both; }
         .glass-nav .nav-btn.active { animation: softPulse 1.8s ease-in-out infinite; }
 
+        /* Explicit dual UI modes */
+        body.mobile-ui .subtitle::after { content: ' • Mobile UI'; }
+
+        body.desktop-ui header {
+            width: min(96%, 1200px);
+            margin-top: 6px;
+            padding: 14px 24px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-soft);
+        }
+        body.desktop-ui .glass-nav {
+            width: min(96%, 1200px);
+            max-width: 1200px;
+            position: sticky;
+            top: 12px;
+        }
+        body.desktop-ui #app-container {
+            width: min(96%, 1200px);
+            max-width: 1200px;
+            padding-bottom: 48px;
+        }
+        body.desktop-ui .daily-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        body.desktop-ui .system-scroll-container {
+            gap: 10px;
+        }
+        body.desktop-ui .flashcard-wrapper {
+            height: 72dvh;
+            max-height: 760px;
+        }
+        body.desktop-ui .subtitle::after { content: ' • Desktop UI'; }
+
+        .clinical-loading-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.86);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+            backdrop-filter: blur(10px);
+        }
+        .clinical-loading-spinner {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid rgba(0,122,255,0.2);
+            border-top-color: var(--ios-blue);
+            animation: spin 0.8s linear infinite;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
@@ -327,6 +384,25 @@
             }
             .result-card { padding: 13px; }
             .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+            #clinical-back-btn {
+                top: calc(env(safe-area-inset-top) + 8px) !important;
+                left: 10px !important;
+                padding: 7px 11px !important;
+                border-radius: 999px !important;
+                font-size: 0.86rem;
+            }
+            #clinical-loading {
+                align-items: flex-start !important;
+                justify-content: flex-start !important;
+                padding-top: calc(env(safe-area-inset-top) + 64px);
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+            #clinical-loading .clinical-loading-box {
+                width: 100%;
+                max-width: 320px;
+            }
         }
 
         /* System Scroll */
@@ -788,7 +864,7 @@
                 id="ward-frame"
                 title="Ward Cheatsheet"
                 src="ward.html"
-                loading="lazy"
+                loading="eager"
                 style="width:100%; height:100%; border:none; background:#fff;"
             ></iframe>
         </div>
@@ -796,13 +872,19 @@
 
     <div id="clinical-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
         <button id="clinical-back-btn" onclick="switchMode('search')" aria-label="Back" style="position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:12px; z-index:350; border:none; background:rgba(0,0,0,0.6); color:#fff; border-radius:999px; padding:8px 12px; font-weight:700;">← Back</button>
-        <div style="height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:78vh; background:var(--ios-bg);">
+        <div style="height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:78vh; background:var(--ios-bg); position:relative;">
+            <div id="clinical-loading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:5; color:#6b7280; font-weight:700; background:linear-gradient(180deg, rgba(242,242,247,0.92), rgba(242,242,247,0.7)); transition:opacity .25s ease;">
+                <div class="clinical-loading-box" role="status" aria-live="polite">
+                    <div class="clinical-loading-spinner"></div>
+                    <div>Loading Clinical Bank…</div>
+                </div>
+            </div>
             <iframe
                 id="clinical-frame"
                 title="Clinical Bank"
                 src="drugquiz.html"
-                loading="lazy"
-                style="width:100%; height:100%; border:none; background:#fff;"
+                loading="eager"
+                style="width:100%; height:100%; border:none; background:#fff; opacity:0; transition:opacity .25s ease;"
             ></iframe>
         </div>
     </div>
@@ -2155,8 +2237,34 @@ Language: ${langInstruction}.`;
         return list.map(normalizeDrugData);
     }
 
+    function setupWardPreload() {
+        const frame = document.getElementById('ward-frame');
+        if (!frame) return;
+        if (!frame.getAttribute('src')) frame.setAttribute('src', 'ward.html');
+        // Trigger iframe init early so Ward opens instantly when tab is tapped.
+        try { void frame.contentWindow; } catch (e) {}
+    }
+
+    let deviceLayoutMedia = null;
+
+    function applyDeviceUILayout() {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        document.body.classList.toggle('mobile-ui', isMobile);
+        document.body.classList.toggle('desktop-ui', !isMobile);
+    }
+
+    function setupDeviceUILayoutWatcher() {
+        applyDeviceUILayout();
+        deviceLayoutMedia = window.matchMedia('(max-width: 768px)');
+        const listener = () => applyDeviceUILayout();
+        if (deviceLayoutMedia.addEventListener) deviceLayoutMedia.addEventListener('change', listener);
+        else if (deviceLayoutMedia.addListener) deviceLayoutMedia.addListener(listener);
+    }
+
     // --- INITIALIZATION ---
     window.onload = function() {
+        setupDeviceUILayoutWatcher();
+
         if(typeof commonDrugs !== 'undefined') {
             activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
             flashcardList = [...activeSourceList];
@@ -2212,6 +2320,8 @@ Language: ${langInstruction}.`;
             if (status) status.innerText = '⚡ Fast startup using local data';
         }
         
+        setupWardPreload();
+        setupClinicalPreload();
         switchMode('search');
     };
 
@@ -2339,6 +2449,53 @@ Language: ${langInstruction}.`;
     }
 
     let clinicalBackSyncTimer = null;
+    let clinicalFrameReady = false;
+
+    function setClinicalReadyState(isReady) {
+        const frame = document.getElementById('clinical-frame');
+        const loader = document.getElementById('clinical-loading');
+        if (frame) frame.style.opacity = isReady ? '1' : '0';
+        if (loader) {
+            loader.style.opacity = isReady ? '0' : '1';
+            loader.style.pointerEvents = isReady ? 'none' : 'auto';
+        }
+    }
+
+    function setupClinicalPreload() {
+        const frame = document.getElementById('clinical-frame');
+        if (!frame) return;
+
+        const markReady = () => {
+            clinicalFrameReady = true;
+            setClinicalReadyState(true);
+            syncClinicalBackButton();
+        };
+
+        const isAlreadyLoaded = () => {
+            try {
+                const doc = frame.contentDocument;
+                return !!doc && doc.readyState === 'complete';
+            } catch (e) {
+                return false;
+            }
+        };
+
+        if (isAlreadyLoaded()) {
+            markReady();
+            return;
+        }
+
+        frame.addEventListener('load', markReady, { once: true });
+
+        // Safety net in case load event is missed in some browsers.
+        setTimeout(() => {
+            if (isAlreadyLoaded() && !clinicalFrameReady) markReady();
+        }, 1200);
+
+        // Ensure eager warm-up on first app load.
+        if (!frame.getAttribute('src')) frame.setAttribute('src', 'drugquiz.html');
+    }
+
 
     function clearClinicalBackSync() {
         if (clinicalBackSyncTimer) {
@@ -2431,6 +2588,7 @@ Language: ${langInstruction}.`;
             document.body.classList.add('ward-fullscreen');
             document.getElementById('clinical-section').style.display = 'block';
             document.getElementById('nav-clinical').classList.add('active');
+            setClinicalReadyState(clinicalFrameReady);
             beginClinicalBackSync();
         }
     }
