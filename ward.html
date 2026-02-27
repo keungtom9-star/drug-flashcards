@@ -8,8 +8,9 @@
     
     <style>
         :root {
-            --bg-color: #F2F2F7;
+            --bg-color: #F2F6FF;
             --card-bg: #FFFFFF;
+            --soft-shadow: 0 10px 24px rgba(59,130,246,0.12);
             --text-main: #000000;
             --text-sec: #6e6e73;
             --border: #E5E5EA;
@@ -34,7 +35,7 @@
         html, body { height: 100dvh; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            background: radial-gradient(circle at top, #f8fbff 0%, var(--bg-color) 60%, #edf4ff 100%);
             color: var(--text-main);
             margin: 0;
             padding: 0;
@@ -49,7 +50,7 @@
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
             padding-top: max(10px, env(safe-area-inset-top));
-            background-color: var(--card-bg);
+            background-color: rgba(255,255,255,0.94);
         }
 
         .top-bar {
@@ -133,8 +134,8 @@
 
         /* --- Cards --- */
         .card {
-            background: var(--card-bg); border-radius: 16px; padding: 16px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            background: var(--card-bg); border-radius: 18px; padding: 16px;
+            box-shadow: var(--soft-shadow);
             border: 1px solid var(--border);
         }
         .card-header {
