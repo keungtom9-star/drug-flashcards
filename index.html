@@ -183,6 +183,17 @@
             box-shadow: 0 12px 36px rgba(15, 23, 42, 0.14);
         }
 
+        body.ward-fullscreen .immersive-shell {
+            height: 100dvh;
+            min-height: 100dvh;
+            padding: 0;
+        }
+
+        body.ward-fullscreen .immersive-frame {
+            border-radius: 0;
+            box-shadow: none;
+        }
+
         .immersive-back-btn {
             position: fixed;
             top: calc(env(safe-area-inset-top) + 12px);
@@ -455,20 +466,10 @@
                 font-size: 0.92rem;
             }
 
-            body.ward-fullscreen #ward-section {
+            body.ward-fullscreen #ward-section,
+            body.ward-fullscreen #clinical-section {
                 position: fixed;
                 inset: 0;
-            }
-
-            body.ward-fullscreen #ward-section .immersive-shell {
-                height: 100dvh;
-                min-height: 100dvh;
-                padding: 0;
-            }
-
-            body.ward-fullscreen #ward-section .immersive-frame {
-                border-radius: 0;
-                box-shadow: none;
             }
         }
 
