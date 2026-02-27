@@ -2427,6 +2427,7 @@ Language: ${langInstruction}.`;
         
         setupWardPreload();
         setupClinicalPreload();
+        setupEmbeddedPwaBackBridge();
         setupIOSBackGesture();
         switchMode('search');
     };
@@ -2664,6 +2665,28 @@ Language: ${langInstruction}.`;
             } catch (e) {}
         }
         switchMode('search');
+    }
+
+    function setupEmbeddedPwaBackBridge() {
+        if (window.__embeddedPwaBackBridgeSetupDone) return;
+        window.__embeddedPwaBackBridgeSetupDone = true;
+
+        window.addEventListener('message', (event) => {
+            const data = event && event.data;
+            if (!data || data.type !== 'pwa-ios-back') return;
+            if (!document.body.classList.contains('ward-fullscreen')) return;
+
+            if (data.source === 'clinical') {
+                const clinicalVisible = document.getElementById('clinical-section')?.style.display === 'block';
+                if (clinicalVisible) switchMode('search');
+                return;
+            }
+
+            if (data.source === 'ward') {
+                const wardVisible = document.getElementById('ward-section')?.style.display === 'block';
+                if (wardVisible) switchMode('search');
+            }
+        });
     }
 
     function setupIOSBackGesture() {
