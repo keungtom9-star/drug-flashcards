@@ -23,7 +23,7 @@
             --success: #34C759;
             --danger: #FF3B30;
             --surface: #ffffff;
-            --background: #f2f2f7; 
+            --background: #f2f6ff; 
             --text-main: #1c1c1e;
             --text-muted: #8e8e93;
             --border: rgba(0,0,0,0.08);
@@ -32,7 +32,7 @@
             --radius-lg: 20px;
             --radius-md: 14px;
             --shadow-sm: 0 4px 6px rgba(0,0,0,0.02);
-            --shadow-md: 0 12px 24px rgba(0,0,0,0.08);
+            --shadow-md: 0 14px 28px rgba(59,130,246,0.16);
             --glass: rgba(255, 255, 255, 0.85);
             --max-width: 900px;
         }
@@ -41,7 +41,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--background);
+            background: radial-gradient(circle at top, #f8fbff 0%, var(--background) 60%, #eef4ff 100%);
             color: var(--text-main);
             margin: 0; padding: 0;
             display: flex; flex-direction: column; align-items: center;
@@ -54,13 +54,13 @@
             display: flex; flex-direction: column; 
             height: 100vh; position: relative; 
             background: var(--background);
-            box-shadow: 0 0 50px rgba(0,0,0,0.05);
+            box-shadow: 0 12px 30px rgba(59,130,246,0.12);
         }
 
         /* --- HEADER --- */
         .sticky-header {
             position: sticky; top: 0; 
-            background: var(--glass);
+            background: rgba(255,255,255,0.94);
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 15px 20px; 
             border-bottom: 1px solid rgba(0,0,0,0.05); 
@@ -76,7 +76,7 @@
         }
 
         .icon-btn { 
-            background: rgba(0,0,0,0.05); border: none; 
+            background: #eef4ff; border: 1px solid #dbeafe; 
             width: 40px; height: 40px; border-radius: 50%; 
             font-size: 1.2rem; cursor: pointer; color: var(--text-main);
             display: flex; align-items: center; justify-content: center;
@@ -178,7 +178,7 @@
             background: var(--background); position: absolute; top: 0; left: 0; width: 100%; z-index: 200; 
         }
         .view-header { 
-            padding: 15px 20px; background: var(--glass); 
+            padding: 15px 20px; background: rgba(255,255,255,0.94); 
             backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); 
             display: flex; align-items: center; justify-content: space-between; 
         }
@@ -286,7 +286,7 @@
         
         <div class="sticky-header">
             <div class="header-top">
-                <h1>🩺 Clinical Bank</h1>
+                <h1>🩺</h1>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <button class="icon-btn gen-btn" onclick="openGenerator()">✨</button>
                     <select id="lang-select">
@@ -770,6 +770,85 @@
         window.openGenerator = () => document.getElementById('generator-overlay').style.display='flex';
         window.closeGenerator = () => document.getElementById('generator-overlay').style.display='none';
         window.closeGenView = () => document.getElementById('gen-view').style.display='none';
+
+        window.goBack = () => {
+            const genOpen = document.getElementById('gen-view')?.style.display !== 'none';
+            const quizOpen = document.getElementById('quiz-view')?.style.display !== 'none';
+            const subtopicOpen = document.getElementById('subtopic-view')?.style.display !== 'none';
+
+            if (genOpen) {
+                closeGenView();
+                return;
+            }
+            if (quizOpen) {
+                closeQuiz();
+                return;
+            }
+            if (subtopicOpen) {
+                closeSubtopics();
+                return;
+            }
+
+            try {
+                if (window.parent && window.parent !== window && typeof window.parent.switchMode === 'function') {
+                    window.parent.switchMode('search');
+                    return;
+                }
+            } catch (e) {}
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'pwa-ios-back', source: 'clinical' }, '*');
+                }
+            } catch (e) {}
+        };
+
+        function setupIOSPWAGesture() {
+            if (window.__quizGestureSetupDone) return;
+            window.__quizGestureSetupDone = true;
+
+            const edgeMaxStart = 28;
+            const triggerDistance = 72;
+            const maxVerticalDrift = 90;
+            const state = { tracking: false, startX: 0, startY: 0 };
+
+            document.addEventListener('touchstart', (event) => {
+                const touch = event.touches && event.touches[0];
+                if (!touch) return;
+                if (touch.clientX > edgeMaxStart) return;
+                if (event.target && event.target.closest && event.target.closest('.topic-grid, #topic-area')) return;
+                state.tracking = true;
+                state.startX = touch.clientX;
+                state.startY = touch.clientY;
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (event) => {
+                if (!state.tracking) return;
+                const touch = event.touches && event.touches[0];
+                if (!touch) return;
+                const dx = touch.clientX - state.startX;
+                const dy = Math.abs(touch.clientY - state.startY);
+                if (dx > 12 && dy < maxVerticalDrift) event.preventDefault();
+            }, { passive: false });
+
+            const endSwipe = (event) => {
+                if (!state.tracking) return;
+                const touch = (event.changedTouches && event.changedTouches[0]) || null;
+                const dx = touch ? (touch.clientX - state.startX) : 0;
+                const dy = touch ? Math.abs(touch.clientY - state.startY) : Infinity;
+                state.tracking = false;
+                if (dx >= triggerDistance && dy <= maxVerticalDrift) {
+                    goBack();
+                }
+            };
+
+            document.addEventListener('touchend', endSwipe, { passive: true });
+            document.addEventListener('touchcancel', () => {
+                state.tracking = false;
+            }, { passive: true });
+        }
+
+        setupIOSPWAGesture();
 
         window.startGeneration = async () => {
             const apiKey = document.getElementById('api-key').value;
