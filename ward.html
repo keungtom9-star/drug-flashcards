@@ -165,6 +165,23 @@
         .r-details { font-size: 0.75rem; margin-top: 4px; line-height: 1.4; color: var(--text-main); opacity: 0.9; }
         .r-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
 
+
+        .mini-ecg {
+            margin-top: 6px;
+            border: 1px solid color-mix(in srgb, var(--red) 35%, var(--border));
+            border-radius: 6px;
+            background-image:
+                linear-gradient(var(--ecg-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--ecg-line) 1px, transparent 1px);
+            background-size: 16px 16px;
+            background-color: var(--ecg-grid);
+            padding: 3px 4px;
+        }
+        .mini-ecg svg { width: 100%; height: 34px; display:block; }
+        .mini-ecg polyline { fill: none; stroke: var(--red); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .mini-ecg .warn-line { stroke: var(--orange); }
+        .mini-ecg .safe-line { stroke: var(--green); }
+
         .lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; }
         .lead-item { background: var(--bg-color); padding: 8px; border-radius: 6px; }
 
@@ -467,26 +484,36 @@
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Ventricular Fibrillation (VF) <span class="r-tag" style="background:var(--red); color:white;">SHOCK</span></div>
                 <div class="r-details">Chaotic waveform, no organized P/QRS/T, no cardiac output. <strong>Defibrillate + CPR immediately.</strong></div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,17 8,13 16,20 24,12 32,18 40,14 48,23 56,10 64,20 72,16 80,22 88,11 96,17 104,14 112,24 120,12 128,18 136,9 144,21 152,12 160,19 168,11 176,23 184,14 192,20 200,12 208,25 216,8 224,19 232,13 240,22 248,10 256,18 264,15 272,23 280,12 288,19 296,10 304,21 320,14"/></svg></div>
+                
             </div>
 
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Pulseless Ventricular Tachycardia <span class="r-tag" style="background:var(--red); color:white;">SHOCK</span></div>
                 <div class="r-details">Regular broad-complex tachycardia (usually 120-250 bpm), absent pulse. <strong>Defibrillate + CPR.</strong></div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,17 10,17 20,17 30,4 40,30 50,4 60,30 70,17 80,17 90,4 100,30 110,4 120,30 130,17 140,17 150,4 160,30 170,4 180,30 190,17 200,17 210,4 220,30 230,4 240,30 250,17 260,17 270,4 280,30 290,4 300,30 320,17"/></svg></div>
+                
             </div>
 
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Torsades de Pointes <span class="r-tag" style="background:var(--red); color:white;">Mg / SHOCK</span></div>
                 <div class="r-details">Polymorphic VT with twisting axis, often QT prolongation related. Treat reversible causes and give magnesium.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,17 10,14 20,10 30,6 40,4 50,8 60,16 70,24 80,30 90,26 100,18 110,10 120,5 130,8 140,16 150,24 160,30 170,24 180,16 190,8 200,5 210,10 220,18 230,26 240,30 250,24 260,16 270,8 280,4 290,8 300,14 320,18"/></svg></div>
+                
             </div>
 
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Asystole / PEA <span class="r-tag" style="background:var(--red); color:white;">CPR</span></div>
                 <div class="r-details">No shockable rhythm. Confirm in 2 leads, start high-quality CPR, adrenaline, and treat 4H/4T causes.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,18 40,18 80,18 120,18 160,18 200,18 240,18 280,18 320,18"/></svg></div>
+                
             </div>
 
             <div class="rhythm-card r-warn">
                 <div class="r-title">STEMI Pattern</div>
                 <div class="r-details">ST elevation in ≥2 contiguous leads (usually ≥1mm limb, ≥2mm precordial). Activate urgent reperfusion pathway.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 20,18 30,8 36,2 42,24 48,18 64,12 88,12 112,12 130,18 150,18 160,8 166,2 172,24 178,18 194,12 218,12 242,12 260,18 280,18 290,8 296,2 302,24 308,18 320,18"/></svg></div>
+                
             </div>
         </div>
         
@@ -495,18 +522,26 @@
             <div class="rhythm-card r-safe">
                 <div class="r-title">1st Degree</div>
                 <div class="r-details">PR &gt;0.20s (Constant). Regular. Benign.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 14,18 22,14 30,18 44,18 58,18 68,4 72,1 76,28 84,18 96,18 108,18 118,14 126,18 142,18 156,18 166,4 170,1 174,28 182,18 194,18 206,18 216,14 224,18 240,18 254,18 264,4 268,1 272,28 280,18 292,18 320,18"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">2nd Degree Type I (Wenckebach)</div>
                 <div class="r-details">PR gets longer, longer, longer... then drops QRS.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 10,14 18,18 42,18 58,4 62,1 66,28 74,18 84,14 92,18 122,18 138,4 142,1 146,28 154,18 164,14 172,18 206,18 222,4 226,1 230,28 238,18 248,14 256,18 294,18 320,18"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">2nd Degree Type II</div>
                 <div class="r-details">PR constant, but random QRS drops. Danger.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 12,14 20,18 40,18 56,4 60,1 64,28 72,18 88,14 96,18 116,18 132,18 148,14 156,18 176,18 192,4 196,1 200,28 208,18 224,14 232,18 252,18 268,18 284,14 292,18 320,18"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-lethal">
                 <div class="r-title">3rd Degree (Complete)</div>
                 <div class="r-details">P's and QRS distinct and independent. Slow rate. Pacemaker needed.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,18 10,14 18,18 28,18 38,18 48,18 58,18 68,4 72,1 76,28 84,18 94,18 104,14 112,18 122,18 132,18 142,18 152,18 162,4 166,1 170,28 178,18 188,18 198,14 206,18 216,18 226,18 236,18 246,18 256,4 260,1 264,28 272,18 282,18 292,14 300,18 320,18"/></svg></div>
+                
             </div>
         </div>
 
@@ -515,26 +550,38 @@
             <div class="rhythm-card r-safe">
                 <div class="r-title">Normal Sinus Rhythm (NSR)</div>
                 <div class="r-details">Rate 60-100, regular rhythm, upright P before each QRS, fixed PR interval.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 10,18 18,14 26,18 40,18 56,4 60,1 64,28 72,18 88,18 96,14 104,18 118,18 134,4 138,1 142,28 150,18 166,18 174,14 182,18 196,18 212,4 216,1 220,28 228,18 244,18 252,14 260,18 274,18 290,4 294,1 298,28 306,18 320,18"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">Sinus Bradycardia / Sinus Tachycardia</div>
                 <div class="r-details">Sinus morphology preserved with rate &lt;60 (brady) or &gt;100 (tachy).</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 14,18 22,14 30,18 52,18 74,4 78,1 82,28 90,18 112,18 120,14 128,18 150,18 172,4 176,1 180,28 188,18 210,18 218,14 226,18 248,18 270,4 274,1 278,28 286,18 320,18"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">SVT <span class="r-tag" style="background:var(--orange); color:white;">FAST</span></div>
                 <div class="r-details">Regular narrow-complex tachycardia (typically 150-250), P waves often hidden.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 8,18 14,4 18,1 22,28 28,18 36,18 42,4 46,1 50,28 56,18 64,18 70,4 74,1 78,28 84,18 92,18 98,4 102,1 106,28 112,18 120,18 126,4 130,1 134,28 140,18 148,18 154,4 158,1 162,28 168,18 176,18 182,4 186,1 190,28 196,18 204,18 210,4 214,1 218,28 224,18 232,18 238,4 242,1 246,28 252,18 260,18 266,4 270,1 274,28 280,18 320,18"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">Atrial Fibrillation (AF)</div>
                 <div class="r-details">Irregularly irregular rhythm, absent organized P waves, variable ventricular response.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 10,17 18,4 22,1 26,28 34,18 48,18 58,4 62,1 66,28 74,18 90,18 104,4 108,1 112,28 120,18 132,18 146,4 150,1 154,28 162,18 182,18 192,4 196,1 200,28 208,18 226,18 240,4 244,1 248,28 256,18 270,18 284,4 288,1 292,28 300,18 320,18"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">Atrial Flutter</div>
                 <div class="r-details">Sawtooth flutter waves (commonly ~300 atrial bpm), often 2:1 or variable AV block.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,20 8,14 16,20 24,14 32,20 40,14 48,20 56,14 64,20 72,14 80,20 88,14 96,20 104,14 112,20 120,3 124,1 128,28 136,20 144,14 152,20 160,14 168,20 176,14 184,20 192,14 200,20 208,14 216,20 224,14 232,20 240,3 244,1 248,28 256,20 264,14 272,20 280,14 288,20 296,14 304,20 320,20"/></svg></div>
+                
             </div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">PAC / PVC</div>
                 <div class="r-details">Premature atrial beats (narrow) or ventricular beats (wide, bizarre) with compensatory pause.</div>
+                <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 10,18 18,14 26,18 40,18 56,4 60,1 64,28 72,18 88,18 96,14 104,18 118,18 134,4 138,1 142,28 150,18 166,18 172,30 176,1 188,30 196,18 208,18 216,14 224,18 238,18 254,4 258,1 262,28 270,18 286,18 294,14 302,18 320,18"/></svg></div>
+                
             </div>
         </div>
 
