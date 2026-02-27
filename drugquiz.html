@@ -519,8 +519,33 @@
         }
         
         function getTopicColor(s) { 
-            let hash = 0; for(let i=0;i<s.length;i++) hash=s.charCodeAt(i)+((hash<<5)-hash); 
-            return `hsl(${Math.abs(hash)%360}, 85%, 97%)`; 
+            const key = (s || '').toLowerCase();
+            const palette = [
+                { match: ['cardio', 'heart'], color: '#ffe4e6' },
+                { match: ['resp', 'lung'], color: '#e0f2fe' },
+                { match: ['neuro', 'brain'], color: '#ede9fe' },
+                { match: ['pharm', 'drug'], color: '#dcfce7' },
+                { match: ['gastro'], color: '#fef3c7' },
+                { match: ['ren', 'kidney'], color: '#e0f2fe' },
+                { match: ['musc', 'bone'], color: '#f3e8ff' },
+                { match: ['derm', 'skin'], color: '#ffedd5' },
+                { match: ['pedia', 'child'], color: '#fce7f3' },
+                { match: ['matern', 'birth'], color: '#fae8ff' },
+                { match: ['endo', 'diabetes'], color: '#fde68a' },
+                { match: ['onco', 'cancer'], color: '#ffe4e6' },
+                { match: ['infect', 'virus'], color: '#fee2e2' },
+                { match: ['surg'], color: '#e2e8f0' },
+                { match: ['emerg', 'trauma'], color: '#fee2e2' },
+                { match: ['eye'], color: '#cffafe' },
+                { match: ['ha interview'], color: '#f3e8ff' }
+            ];
+
+            const found = palette.find(item => item.match.some(term => key.includes(term)));
+            if (found) return found.color;
+
+            let hash = 0;
+            for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${Math.abs(hash) % 360}, 85%, 97%)`;
         }
 
         function speakText(t) {
@@ -643,7 +668,13 @@
         }
         
         window.closeQuiz = () => { 
-            stopAudio(); document.getElementById('quiz-view').style.display='none'; loadSheet();
+            stopAudio();
+            document.getElementById('quiz-view').style.display = 'none';
+            document.getElementById('mode-overlay').style.display = 'none';
+            document.getElementById('subtopic-view').style.display = 'none';
+            currentSelectionRows = [];
+            activeTopicName = "";
+            loadSheet();
         };
 
         window.nextQuestion = () => {

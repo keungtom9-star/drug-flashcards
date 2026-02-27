@@ -795,7 +795,7 @@
     </div>
 
     <div id="clinical-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
-        <button onclick="switchMode('search')" aria-label="Back" style="position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:12px; z-index:350; border:none; background:rgba(0,0,0,0.6); color:#fff; border-radius:999px; padding:8px 12px; font-weight:700;">← Back</button>
+        <button id="clinical-back-btn" onclick="switchMode('search')" aria-label="Back" style="position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:12px; z-index:350; border:none; background:rgba(0,0,0,0.6); color:#fff; border-radius:999px; padding:8px 12px; font-weight:700;">← Back</button>
         <div style="height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height:78vh; background:var(--ios-bg);">
             <iframe
                 id="clinical-frame"
@@ -2338,6 +2338,43 @@ Language: ${langInstruction}.`;
         return `${target.generic}. Brand name ${target.brand}`;
     }
 
+    let clinicalBackSyncTimer = null;
+
+    function clearClinicalBackSync() {
+        if (clinicalBackSyncTimer) {
+            clearInterval(clinicalBackSyncTimer);
+            clinicalBackSyncTimer = null;
+        }
+    }
+
+    function syncClinicalBackButton() {
+        const backBtn = document.getElementById('clinical-back-btn');
+        const frame = document.getElementById('clinical-frame');
+        if (!backBtn || !frame) return;
+
+        try {
+            const doc = frame.contentDocument;
+            if (!doc) {
+                backBtn.style.display = '';
+                return;
+            }
+            const isOpen = (id) => {
+                const el = doc.getElementById(id);
+                return !!el && doc.defaultView.getComputedStyle(el).display !== 'none';
+            };
+            const inNestedView = isOpen('quiz-view') || isOpen('subtopic-view') || isOpen('gen-view');
+            backBtn.style.display = inNestedView ? 'none' : '';
+        } catch (e) {
+            backBtn.style.display = '';
+        }
+    }
+
+    function beginClinicalBackSync() {
+        clearClinicalBackSync();
+        syncClinicalBackButton();
+        clinicalBackSyncTimer = setInterval(syncClinicalBackButton, 250);
+    }
+
     // --- NAVIGATION MODES ---
     function switchMode(mode) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -2361,11 +2398,13 @@ Language: ${langInstruction}.`;
         sectionToShow.style.animation = 'fadeSlideUp .24s ease-out';
 
         if(mode === 'search') {
+            clearClinicalBackSync();
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('search-section').style.display = 'block';
             document.getElementById('nav-search').classList.add('active');
             document.getElementById('search-input').focus();
         } else if (mode === 'anki' || mode === 'flashcard') {
+            clearClinicalBackSync();
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
@@ -2377,12 +2416,14 @@ Language: ${langInstruction}.`;
             fcCurrentIndex = 0;
             renderCard();
         } else if (mode === 'quiz') {
+            clearClinicalBackSync();
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('quiz-section').style.display = 'block';
             document.getElementById('nav-quiz').classList.add('active');
             const qEl = document.getElementById('quiz-question');
             if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         } else if (mode === 'ward') {
+            clearClinicalBackSync();
             document.body.classList.add('ward-fullscreen');
             document.getElementById('ward-section').style.display = 'block';
             document.getElementById('nav-ward').classList.add('active');
@@ -2390,6 +2431,7 @@ Language: ${langInstruction}.`;
             document.body.classList.add('ward-fullscreen');
             document.getElementById('clinical-section').style.display = 'block';
             document.getElementById('nav-clinical').classList.add('active');
+            beginClinicalBackSync();
         }
     }
 
