@@ -112,6 +112,25 @@
             .full-width { grid-column: span 2; }
         }
 
+        @media (max-width: 768px) {
+            :root { --header-height: 108px; }
+            .top-bar { padding: 8px 12px 6px; gap: 4px; }
+            .app-title { font-size: 1rem; }
+            .tabs { padding: 0 8px 6px; gap: 6px; }
+            .tab-btn { padding: 6px 10px; font-size: 0.76rem; }
+            .container { padding: 8px 10px 8px; gap: 8px; }
+
+            #intake .card { padding: 10px; border-radius: 12px; }
+            .intake-header { padding: 8px 10px; margin-bottom: 6px; }
+            .intake-title { font-size: 0.92rem; }
+            .intake-cutoff { font-size: 0.72rem; }
+            .intake-grid-3, .intake-grid-4 { gap: 6px; }
+            .intake-btn { padding: 7px 0; font-size: 0.76rem; border-radius: 8px; }
+            .intake-chip { padding: 5px 9px; font-size: 0.72rem; }
+            .intake-result { margin-top: 6px; padding: 6px 8px; font-size: 0.72rem; }
+            .intake-reset-row { margin-top: 6px; gap: 6px; }
+        }
+
         /* --- Cards --- */
         .card {
             background: var(--card-bg); border-radius: 16px; padding: 16px;
