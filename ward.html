@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
     <title>Ward Cheatsheet Pro</title>
     
     <style>
         :root {
-            --bg-color: #F2F2F7;
+            --bg-color: #F2F6FF;
             --card-bg: #FFFFFF;
+            --soft-shadow: 0 10px 24px rgba(59,130,246,0.12);
             --text-main: #000000;
             --text-sec: #6e6e73;
             --border: #E5E5EA;
@@ -25,18 +27,7 @@
             --ecg-grid: #fff0f0;
             --ecg-line: #ffcccc;
             --header-height: 132px;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #000000;
-                --card-bg: #1C1C1E;
-                --text-main: #FFFFFF;
-                --text-sec: #8E8E93;
-                --border: #38383A;
-                --ecg-grid: #2a1a1a;
-                --ecg-line: #502020;
-            }
+            color-scheme: light;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -44,7 +35,7 @@
         html, body { height: 100dvh; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            background: radial-gradient(circle at top, #f8fbff 0%, var(--bg-color) 60%, #edf4ff 100%);
             color: var(--text-main);
             margin: 0;
             padding: 0;
@@ -59,7 +50,7 @@
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
             padding-top: max(10px, env(safe-area-inset-top));
-            background-color: var(--card-bg);
+            background-color: rgba(255,255,255,0.94);
         }
 
         .top-bar {
@@ -122,10 +113,29 @@
             .full-width { grid-column: span 2; }
         }
 
+        @media (max-width: 768px) {
+            :root { --header-height: 108px; }
+            .top-bar { padding: 8px 12px 6px; gap: 4px; }
+            .app-title { font-size: 1rem; }
+            .tabs { padding: 0 8px 6px; gap: 6px; }
+            .tab-btn { padding: 6px 10px; font-size: 0.76rem; }
+            .container { padding: 8px 10px 8px; gap: 8px; }
+
+            #intake .card { padding: 10px; border-radius: 12px; }
+            .intake-header { padding: 8px 10px; margin-bottom: 6px; }
+            .intake-title { font-size: 0.92rem; }
+            .intake-cutoff { font-size: 0.72rem; }
+            .intake-grid-3, .intake-grid-4 { gap: 6px; }
+            .intake-btn { padding: 7px 0; font-size: 0.76rem; border-radius: 8px; }
+            .intake-chip { padding: 5px 9px; font-size: 0.72rem; }
+            .intake-result { margin-top: 6px; padding: 6px 8px; font-size: 0.72rem; }
+            .intake-reset-row { margin-top: 6px; gap: 6px; }
+        }
+
         /* --- Cards --- */
         .card {
-            background: var(--card-bg); border-radius: 16px; padding: 16px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            background: var(--card-bg); border-radius: 18px; padding: 16px;
+            box-shadow: var(--soft-shadow);
             border: 1px solid var(--border);
         }
         .card-header {
@@ -195,13 +205,6 @@
         .t-inf { background: #DCFCE7; color: var(--green); }
         .t-pump { background: #fee2e2; color: var(--red); }
         .t-im { background: #FEF3C7; color: #D97706; }
-        
-        @media (prefers-color-scheme: dark) {
-            .t-push { background: rgba(0, 122, 255, 0.2); color: #60a5fa; }
-            .t-inf { background: rgba(52, 199, 89, 0.2); color: #86efac; }
-            .t-pump { background: rgba(255, 59, 48, 0.2); color: #fca5a5; }
-            .t-im { background: rgba(255, 149, 0, 0.2); color: #fcd34d; }
-        }
 
 
         /* --- Intake Flow (embedded app) --- */
@@ -1596,6 +1599,69 @@
             }
         }
     }
+
+    function triggerPWABackToParent() {
+        try {
+            if (window.parent && window.parent !== window && typeof window.parent.switchMode === 'function') {
+                window.parent.switchMode('search');
+                return;
+            }
+        } catch (e) {}
+
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'pwa-ios-back', source: 'ward' }, '*');
+            }
+        } catch (e) {}
+    }
+
+    function setupIOSPWAGesture() {
+        if (window.__wardGestureSetupDone) return;
+        window.__wardGestureSetupDone = true;
+
+        const edgeMaxStart = 28;
+        const triggerDistance = 72;
+        const maxVerticalDrift = 90;
+        const state = { tracking: false, startX: 0, startY: 0 };
+
+        document.addEventListener('touchstart', (event) => {
+            const touch = event.touches && event.touches[0];
+            if (!touch) return;
+            if (touch.clientX > edgeMaxStart) return;
+            if (event.target && event.target.closest && event.target.closest('.tabs, .intake-chip-wrap')) return;
+            state.tracking = true;
+            state.startX = touch.clientX;
+            state.startY = touch.clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (event) => {
+            if (!state.tracking) return;
+            const touch = event.touches && event.touches[0];
+            if (!touch) return;
+            const dx = touch.clientX - state.startX;
+            const dy = Math.abs(touch.clientY - state.startY);
+            if (dx > 12 && dy < maxVerticalDrift) event.preventDefault();
+        }, { passive: false });
+
+        const endSwipe = (event) => {
+            if (!state.tracking) return;
+            const touch = (event.changedTouches && event.changedTouches[0]) || null;
+            const dx = touch ? (touch.clientX - state.startX) : 0;
+            const dy = touch ? Math.abs(touch.clientY - state.startY) : Infinity;
+            state.tracking = false;
+            if (dx >= triggerDistance && dy <= maxVerticalDrift) {
+                triggerPWABackToParent();
+            }
+        };
+
+        document.addEventListener('touchend', endSwipe, { passive: true });
+        document.addEventListener('touchcancel', () => {
+            state.tracking = false;
+        }, { passive: true });
+    }
+
+    setupIOSPWAGesture();
+
 </script>
 
 </body>
