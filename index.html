@@ -2695,6 +2695,7 @@ Language: ${langInstruction}.`;
 
     let clinicalBackSyncTimer = null;
     let clinicalFrameReady = false;
+    let clinicalLoadListenerAttached = false;
 
     function setClinicalReadyState(isReady) {
         const frame = document.getElementById('clinical-frame');
@@ -2713,33 +2714,44 @@ Language: ${langInstruction}.`;
 
         const markReady = () => {
             clinicalFrameReady = true;
+            clinicalLoadListenerAttached = false;
             setClinicalReadyState(true);
             syncClinicalBackButton();
         };
 
         const isAlreadyLoaded = () => {
             try {
+                const currentSrc = frame.getAttribute('src') || '';
+                if (!currentSrc || currentSrc === 'about:blank') return false;
                 const doc = frame.contentDocument;
-                return !!doc && doc.readyState === 'complete';
+                const href = frame.contentWindow?.location?.href || '';
+                const isBlankDoc = href === 'about:blank';
+                return !!doc && doc.readyState === 'complete' && !isBlankDoc;
             } catch (e) {
                 return false;
             }
         };
+
+        if (!frame.getAttribute('src')) {
+            clinicalFrameReady = false;
+            setClinicalReadyState(false);
+            frame.setAttribute('src', clinicalSrc);
+        }
 
         if (isAlreadyLoaded()) {
             markReady();
             return;
         }
 
-        frame.addEventListener('load', markReady, { once: true });
+        if (!clinicalLoadListenerAttached) {
+            clinicalLoadListenerAttached = true;
+            frame.addEventListener('load', markReady, { once: true });
+        }
 
         // Safety net in case load event is missed in some browsers.
         setTimeout(() => {
             if (isAlreadyLoaded() && !clinicalFrameReady) markReady();
         }, 1200);
-
-        // Warm-up when requested by user or idle prewarm.
-        if (!frame.getAttribute('src')) frame.setAttribute('src', clinicalSrc);
     }
 
 
