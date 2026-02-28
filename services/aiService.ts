@@ -13,7 +13,7 @@ export const streamAI = async (
   if (settings.provider === 'yinli') {
     url = YINLI_URL;
     headers["Authorization"] = `Bearer ${settings.yinliKey}`;
-    body.model = settings.yinliModel || "gemini-2.5-flash";
+    body.model = settings.yinliModel || "gemini-3.1-pro-preview";
   }
 
   const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
@@ -57,7 +57,7 @@ export const getFullAIResponse = async (prompt: string, settings: Settings): Pro
   if (settings.provider === 'yinli') {
     url = YINLI_URL;
     headers["Authorization"] = `Bearer ${settings.yinliKey}`;
-    body.model = settings.yinliModel || "gemini-2.5-flash";
+    body.model = settings.yinliModel || "gemini-3.1-pro-preview";
   }
 
   const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
