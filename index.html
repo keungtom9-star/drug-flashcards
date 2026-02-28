@@ -866,8 +866,7 @@
     <button class="nav-btn active" id="nav-search" onclick="switchMode('search')"><span class="nav-ico">🧸</span><span class="nav-label">Search</span><span class="nav-label-mobile">Search</span></button>
     <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')"><span class="nav-ico">🗂️</span><span class="nav-label">Flashcard</span><span class="nav-label-mobile">Flash</span></button>
     <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')"><span class="nav-ico">🧩</span><span class="nav-label">Quiz</span><span class="nav-label-mobile">Quiz</span></button>
-    <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')"><span class="nav-ico">🏥</span><span class="nav-label">Clinical</span><span class="nav-label-mobile">Clinical</span></button>
-    <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')"><span class="nav-ico">🩺</span><span class="nav-label">Ward</span><span class="nav-label-mobile">Ward</span></button>
+    <button class="nav-btn" id="nav-settings" style="color:var(--ios-indigo);" onclick="switchMode('settings')"><span class="nav-ico">⚙️</span><span class="nav-label">Settings</span><span class="nav-label-mobile">Settings</span></button>
 </div>
 
 <div id="filter-bar" class="filter-scroller" style="display:none; width: 92%; max-width:600px;">
@@ -1099,6 +1098,14 @@
             <h3 style="margin:0;">Settings</h3>
             <button onclick="toggleSettings()" style="background:none; border:none; color:var(--ios-blue); font-weight:600; font-size:1rem;">Done</button>
         </div>
+
+        <div style="margin-bottom:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Quick Access</label>
+            <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px;">
+                <button onclick="openToolMode('ward')" class="action-btn" style="margin:0; background:#ecfdf5; color:#047857;">🩺 Ward</button>
+                <button onclick="openToolMode('clinical')" class="action-btn" style="margin:0; background:#f3e8ff; color:#7c3aed;">🏥 Clinical</button>
+            </div>
+        </div>
         
         <div style="margin-bottom:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">AI Model</label>
@@ -1106,6 +1113,7 @@
                 <option value="deepseek">DeepSeek V3 (Fast)</option>
                 <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
                 <option value="openrouter-trinity">OpenRouter Trinity (Free)</option>
+                <option value="yinli-gemini">Yinli Gemini 3.1 Pro Preview</option>
             </select>
         </div>
 
@@ -1119,6 +1127,12 @@
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">OpenRouter API Key</label>
             <input type="password" id="openrouter-key" class="settings-input" placeholder="sk-or-v1-...">
             <div style="font-size:0.75rem; color:var(--ios-gray);">Model: arcee-ai/trinity-large-preview:free</div>
+        </div>
+
+        <div id="yinli-config" class="config-section" style="display:none;">
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Yinli API Key</label>
+            <input type="password" id="yinli-key" class="settings-input" placeholder="sk-...">
+            <div style="font-size:0.75rem; color:var(--ios-gray);">Endpoint: https://yinli.one/v1/chat/completions · Model: gemini-3.1-pro-preview</div>
         </div>
         
         <div style="margin-top:20px;">
@@ -2397,8 +2411,11 @@ Language: ${langInstruction}.`;
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
     let deepSeekKey = localStorage.getItem('ds_key') || "sk-92db3cf721454bd7b351ca6ef40eaaf7";
     let openRouterKey = localStorage.getItem('openrouter_key') || '';
+    let yinliKey = localStorage.getItem('yinli_key') || '';
     let googleScriptURL = localStorage.getItem('google_script_url') || "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
     let quizSheetURL = localStorage.getItem('quiz_sheet_url') || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
+    const YINLI_API_URL = 'https://yinli.one/v1/chat/completions';
+    const YINLI_MODEL_NAME = 'gemini-3.1-pro-preview';
     
     // Settings
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
@@ -2486,6 +2503,7 @@ Language: ${langInstruction}.`;
         document.getElementById('provider-select').value = currentProvider;
         document.getElementById('deepseek-key').value = deepSeekKey;
         document.getElementById('openrouter-key').value = openRouterKey;
+        document.getElementById('yinli-key').value = yinliKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
         document.getElementById('quiz-sheet-url').value = quizSheetURL;
         document.getElementById('quiz-engine').value = 'deepseek';
@@ -2847,6 +2865,10 @@ Language: ${langInstruction}.`;
     }
 
     function switchMode(mode) {
+        if (mode === 'settings') {
+            toggleSettings();
+            return;
+        }
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('flashcard-section').style.display = 'none';
         document.getElementById('quiz-section').style.display = 'none';
@@ -2897,14 +2919,17 @@ Language: ${langInstruction}.`;
             clearClinicalBackSync();
             document.body.classList.add('ward-fullscreen');
             document.getElementById('ward-section').style.display = 'block';
-            document.getElementById('nav-ward').classList.add('active');
         } else if (mode === 'clinical') {
             document.body.classList.add('ward-fullscreen');
             document.getElementById('clinical-section').style.display = 'block';
-            document.getElementById('nav-clinical').classList.add('active');
             setClinicalReadyState(clinicalFrameReady);
             beginClinicalBackSync();
         }
+    }
+
+    function openToolMode(mode) {
+        toggleSettings();
+        switchMode(mode);
     }
 
     // --- ANKI CARD LOGIC ---
@@ -3915,7 +3940,9 @@ Rules:
     async function prepareQuizQuestion(roundQuizList, level, system) {
         const canUseAI = (currentProvider === 'openrouter-trinity')
             ? !!(openRouterKey && openRouterKey.startsWith('sk-'))
-            : !!(deepSeekKey && deepSeekKey.startsWith('sk-'));
+            : (currentProvider === 'yinli-gemini'
+                ? !!yinliKey
+                : !!(deepSeekKey && deepSeekKey.startsWith('sk-')));
 
         const hasSheetBank = Array.isArray(quizQuestionBank) && quizQuestionBank.length > 0;
         const roundHalfPoint = Math.ceil((currentRoundTotal || selectedQuizCount || 10) / 2);
@@ -3958,6 +3985,9 @@ Rules:
         if (!canUseAI && !hasSheetBank) {
             if (currentProvider === 'openrouter-trinity') {
                 return { error: 'OpenRouter API key is required for Trinity quiz questions, or load a quiz database in Settings.' };
+            }
+            if (currentProvider === 'yinli-gemini') {
+                return { error: 'Yinli API key is required for Gemini quiz questions, or load a quiz database in Settings.' };
             }
             return { error: 'DeepSeek API key is required to generate AI quiz questions, or load a quiz database in Settings.' };
         }
@@ -4048,10 +4078,10 @@ Rules:
 
             const modelName = currentProvider === 'openrouter-trinity'
                 ? 'arcee-ai/trinity-large-preview:free'
-                : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat');
+                : (currentProvider === 'yinli-gemini' ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'));
             const aiApiUrl = currentProvider === 'openrouter-trinity'
                 ? 'https://openrouter.ai/api/v1/chat/completions'
-                : 'https://api.deepseek.com/chat/completions';
+                : (currentProvider === 'yinli-gemini' ? YINLI_API_URL : 'https://api.deepseek.com/chat/completions');
             const levelGuidance = {
                 remembering: 'Test factual recall only (drug class, key indication, common nursing fact). Avoid scenario reasoning.',
                 understanding: 'Test conceptual understanding (match class-to-drug or indication-to-drug) with brief clinical interpretation.',
@@ -4102,7 +4132,7 @@ ${JSON.stringify(sample)}`;
                 const response = await fetch(aiApiUrl, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${currentProvider === 'openrouter-trinity' ? openRouterKey : deepSeekKey}`,
+                        'Authorization': `Bearer ${currentProvider === 'openrouter-trinity' ? openRouterKey : (currentProvider === 'yinli-gemini' ? yinliKey : deepSeekKey)}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -4407,15 +4437,16 @@ ${JSON.stringify(sample)}`;
     // --- AI FUNCTIONS ---
     async function streamAIResponse(messages, onUpdate) {
         const usingOpenRouter = currentProvider === 'openrouter-trinity';
+        const usingYinli = currentProvider === 'yinli-gemini';
         const apiUrl = usingOpenRouter
             ? "https://openrouter.ai/api/v1/chat/completions"
-            : "https://api.deepseek.com/chat/completions";
+            : (usingYinli ? YINLI_API_URL : "https://api.deepseek.com/chat/completions");
         const modelName = usingOpenRouter
             ? 'arcee-ai/trinity-large-preview:free'
-            : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat');
+            : (usingYinli ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'));
 
         const headers = {
-            "Authorization": `Bearer ${usingOpenRouter ? openRouterKey : deepSeekKey}`,
+            "Authorization": `Bearer ${usingOpenRouter ? openRouterKey : (usingYinli ? yinliKey : deepSeekKey)}`,
             "Content-Type": "application/json"
         };
         
@@ -4585,6 +4616,7 @@ ${JSON.stringify(sample)}`;
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('openrouter_key', document.getElementById('openrouter-key').value);
+        localStorage.setItem('yinli_key', document.getElementById('yinli-key').value);
         localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
         localStorage.setItem('quiz_sheet_url', document.getElementById('quiz-sheet-url').value);
         localStorage.setItem('quiz_engine', 'deepseek');
@@ -4597,6 +4629,7 @@ ${JSON.stringify(sample)}`;
         currentProvider = document.getElementById('provider-select').value;
         deepSeekKey = document.getElementById('deepseek-key').value;
         openRouterKey = document.getElementById('openrouter-key').value;
+        yinliKey = document.getElementById('yinli-key').value;
         quizSheetURL = document.getElementById('quiz-sheet-url').value;
         quizEngine = 'deepseek';
         ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
@@ -4613,12 +4646,15 @@ ${JSON.stringify(sample)}`;
     
     function updateProviderDisplay() {
         const val = document.getElementById('provider-select').value;
-        document.getElementById('deepseek-config').style.display = val === 'openrouter-trinity' ? 'none' : 'block';
+        document.getElementById('deepseek-config').style.display = (val === 'openrouter-trinity' || val === 'yinli-gemini') ? 'none' : 'block';
         document.getElementById('openrouter-config').style.display = val === 'openrouter-trinity' ? 'block' : 'none';
+        document.getElementById('yinli-config').style.display = val === 'yinli-gemini' ? 'block' : 'none';
         if (val === 'deepseek-r1') {
             document.getElementById('provider-display').innerText = 'DeepSeek R1';
         } else if (val === 'openrouter-trinity') {
             document.getElementById('provider-display').innerText = 'OpenRouter Trinity';
+        } else if (val === 'yinli-gemini') {
+            document.getElementById('provider-display').innerText = 'Yinli Gemini 3.1 Pro';
         } else {
             document.getElementById('provider-display').innerText = 'DeepSeek V3';
         }
