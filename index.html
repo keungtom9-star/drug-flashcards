@@ -11,9 +11,8 @@
     <link rel="icon" href="apple-touch-icon.png" type="image/png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="prefetch" href="ward.html" as="document">
-    <link rel="preload" href="ward.html" as="document">
-    <link rel="prefetch" href="drugquiz.html" as="document">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     
     <style>
         :root {
@@ -866,7 +865,8 @@
     <button class="nav-btn active" id="nav-search" onclick="switchMode('search')"><span class="nav-ico">🧸</span><span class="nav-label">Search</span><span class="nav-label-mobile">Search</span></button>
     <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')"><span class="nav-ico">🗂️</span><span class="nav-label">Flashcard</span><span class="nav-label-mobile">Flash</span></button>
     <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')"><span class="nav-ico">🧩</span><span class="nav-label">Quiz</span><span class="nav-label-mobile">Quiz</span></button>
-    <button class="nav-btn" id="nav-settings" style="color:var(--ios-indigo);" onclick="switchMode('settings')"><span class="nav-ico">⚙️</span><span class="nav-label">Settings</span><span class="nav-label-mobile">Settings</span></button>
+    <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')"><span class="nav-ico">🩺</span><span class="nav-label">Ward</span><span class="nav-label-mobile">Ward</span></button>
+    <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')"><span class="nav-ico">🏥</span><span class="nav-label">Clinical</span><span class="nav-label-mobile">Clinical</span></button>
 </div>
 
 <div id="filter-bar" class="filter-scroller" style="display:none; width: 92%; max-width:600px;">
@@ -1055,8 +1055,8 @@
                 id="ward-frame"
                 class="immersive-frame"
                 title="Ward Cheatsheet"
-                src="ward.html"
-                loading="eager"
+                data-src="ward.html"
+                loading="lazy"
             ></iframe>
         </div>
     </div>
@@ -1073,8 +1073,8 @@
                 id="clinical-frame"
                 class="immersive-frame"
                 title="Clinical Bank"
-                src="drugquiz.html"
-                loading="eager"
+                data-src="drugquiz.html"
+                loading="lazy"
                 style="opacity:0; transition:opacity .25s ease;"
             ></iframe>
         </div>
@@ -2454,9 +2454,37 @@ Language: ${langInstruction}.`;
     function setupWardPreload() {
         const frame = document.getElementById('ward-frame');
         if (!frame) return;
-        if (!frame.getAttribute('src')) frame.setAttribute('src', 'ward.html');
+        const wardSrc = frame.getAttribute('data-src') || 'ward.html';
+        if (!frame.getAttribute('src')) frame.setAttribute('src', wardSrc);
         // Trigger iframe init early so Ward opens instantly when tab is tapped.
         try { void frame.contentWindow; } catch (e) {}
+    }
+
+    function scheduleToolPrewarm() {
+        const warm = () => {
+            setupWardPreload();
+            setupClinicalPreload();
+        };
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(warm, { timeout: 2200 });
+        } else {
+            setTimeout(warm, 900);
+        }
+    }
+
+    function setupToolPrewarmTriggers() {
+        const wardNav = document.getElementById('nav-ward');
+        const clinicalNav = document.getElementById('nav-clinical');
+        if (wardNav) {
+            wardNav.addEventListener('pointerenter', setupWardPreload, { once: true });
+            wardNav.addEventListener('touchstart', setupWardPreload, { passive: true, once: true });
+            wardNav.addEventListener('focus', setupWardPreload, { once: true });
+        }
+        if (clinicalNav) {
+            clinicalNav.addEventListener('pointerenter', setupClinicalPreload, { once: true });
+            clinicalNav.addEventListener('touchstart', setupClinicalPreload, { passive: true, once: true });
+            clinicalNav.addEventListener('focus', setupClinicalPreload, { once: true });
+        }
     }
 
     let deviceLayoutMedia = null;
@@ -2476,7 +2504,7 @@ Language: ${langInstruction}.`;
     }
 
     // --- INITIALIZATION ---
-    window.onload = function() {
+    window.addEventListener('DOMContentLoaded', () => {
         setupDeviceUILayoutWatcher();
 
         if(typeof commonDrugs !== 'undefined') {
@@ -2535,12 +2563,12 @@ Language: ${langInstruction}.`;
             if (status) status.innerText = '⚡ Fast startup using local data';
         }
         
-        setupWardPreload();
-        setupClinicalPreload();
+        setupToolPrewarmTriggers();
+        scheduleToolPrewarm();
         setupEmbeddedPwaBackBridge();
         setupIOSBackGesture();
         switchMode('search');
-    };
+    });
 
 
     function getAnkiDailyLimit() {
@@ -2667,6 +2695,7 @@ Language: ${langInstruction}.`;
 
     let clinicalBackSyncTimer = null;
     let clinicalFrameReady = false;
+    let clinicalLoadListenerAttached = false;
 
     function setClinicalReadyState(isReady) {
         const frame = document.getElementById('clinical-frame');
@@ -2681,36 +2710,48 @@ Language: ${langInstruction}.`;
     function setupClinicalPreload() {
         const frame = document.getElementById('clinical-frame');
         if (!frame) return;
+        const clinicalSrc = frame.getAttribute('data-src') || 'drugquiz.html';
 
         const markReady = () => {
             clinicalFrameReady = true;
+            clinicalLoadListenerAttached = false;
             setClinicalReadyState(true);
             syncClinicalBackButton();
         };
 
         const isAlreadyLoaded = () => {
             try {
+                const currentSrc = frame.getAttribute('src') || '';
+                if (!currentSrc || currentSrc === 'about:blank') return false;
                 const doc = frame.contentDocument;
-                return !!doc && doc.readyState === 'complete';
+                const href = frame.contentWindow?.location?.href || '';
+                const isBlankDoc = href === 'about:blank';
+                return !!doc && doc.readyState === 'complete' && !isBlankDoc;
             } catch (e) {
                 return false;
             }
         };
+
+        if (!frame.getAttribute('src')) {
+            clinicalFrameReady = false;
+            setClinicalReadyState(false);
+            frame.setAttribute('src', clinicalSrc);
+        }
 
         if (isAlreadyLoaded()) {
             markReady();
             return;
         }
 
-        frame.addEventListener('load', markReady, { once: true });
+        if (!clinicalLoadListenerAttached) {
+            clinicalLoadListenerAttached = true;
+            frame.addEventListener('load', markReady, { once: true });
+        }
 
         // Safety net in case load event is missed in some browsers.
         setTimeout(() => {
             if (isAlreadyLoaded() && !clinicalFrameReady) markReady();
         }, 1200);
-
-        // Ensure eager warm-up on first app load.
-        if (!frame.getAttribute('src')) frame.setAttribute('src', 'drugquiz.html');
     }
 
 
@@ -2916,12 +2957,16 @@ Language: ${langInstruction}.`;
             const qEl = document.getElementById('quiz-question');
             if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         } else if (mode === 'ward') {
+            setupWardPreload();
             clearClinicalBackSync();
             document.body.classList.add('ward-fullscreen');
             document.getElementById('ward-section').style.display = 'block';
+            document.getElementById('nav-ward').classList.add('active');
         } else if (mode === 'clinical') {
+            setupClinicalPreload();
             document.body.classList.add('ward-fullscreen');
             document.getElementById('clinical-section').style.display = 'block';
+            document.getElementById('nav-clinical').classList.add('active');
             setClinicalReadyState(clinicalFrameReady);
             beginClinicalBackSync();
         }
