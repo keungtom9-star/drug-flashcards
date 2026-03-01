@@ -562,9 +562,9 @@
 
             #quiz-section .ios-card { padding: 8px !important; }
             #quiz-section h3 { font-size: 0.95rem; margin-bottom: 6px !important; }
-            #quiz-round-progress { font-size: 0.7rem; margin-bottom: 4px; }
+            #quiz-round-progress { font-size: 0.78rem; margin-bottom: 4px; }
             #quiz-question {
-                font-size: 0.82rem !important;
+                font-size: 0.95rem !important;
                 line-height: 1.2;
                 min-height: 38px !important;
                 margin: 4px 0 6px 0 !important;
@@ -573,10 +573,10 @@
             .quiz-stat-pill { padding: 4px 6px; font-size: 0.66rem; }
             .quiz-stat-pill strong { font-size: 0.82rem; }
             .quiz-option-btn {
-                font-size: 0.72rem;
-                min-height: 34px;
-                padding: 8px 9px;
-                line-height: 1.2;
+                font-size: 0.88rem;
+                min-height: 40px;
+                padding: 9px 10px;
+                line-height: 1.25;
             }
             #quiz-options { gap: 6px !important; }
             .quiz-controls-grid {
@@ -1037,7 +1037,7 @@
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
                 <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
-            <div class="quiz-controls-grid">
+            <div id="quiz-setup-controls" class="quiz-controls-grid">
                 <select id="quiz-level" class="ios-select" style="margin:0; width:100%;">
                     <option value="all" selected>All levels</option>
                     <option value="remembering">Remembering</option>
@@ -2983,8 +2983,8 @@ Language: ${langInstruction}.`;
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
-            document.getElementById('filter-bar').style.display = 'flex';
-            const source = filteredList.length ? filteredList : activeSourceList;
+            const source = [...activeSourceList];
+            filteredList = [...activeSourceList];
             hydrateAnkiForList(source);
             flashcardList = getTodayStudyQueue(source, getAnkiDailyLimit());
             updateQueueStats(source);
@@ -2995,8 +2995,10 @@ Language: ${langInstruction}.`;
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('quiz-section').style.display = 'block';
             document.getElementById('nav-quiz').classList.add('active');
+            const roundInProgress = currentRoundTotal > 0 && currentRoundAnswered < currentRoundTotal;
+            setQuizSetupControlsVisible(!roundInProgress);
             const qEl = document.getElementById('quiz-question');
-            if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
+            if (qEl && !roundInProgress) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         } else if (mode === 'ward') {
             setupWardPreload();
             clearClinicalBackSync();
@@ -3703,6 +3705,12 @@ Rules:
         feedback.innerHTML = `<strong>Current level:</strong> ${escapeHtml(levelText)}`;
     }
 
+    function setQuizSetupControlsVisible(show) {
+        const wrap = document.getElementById('quiz-setup-controls');
+        if (!wrap) return;
+        wrap.style.display = show ? 'grid' : 'none';
+    }
+
     function startQuizRound() {
         const levelEl = document.getElementById('quiz-level');
         const systemEl = document.getElementById('quiz-system');
@@ -3734,6 +3742,7 @@ Rules:
         setQuizGeneratingState(false);
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
+        setQuizSetupControlsVisible(false);
         if (currentRoundTotal !== selectedQuizCount) {
             const feedback = document.getElementById('quiz-feedback');
             if (feedback) {
@@ -4476,6 +4485,7 @@ ${JSON.stringify(sample)}`;
         summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Correct <strong>${correctCount}</strong> • Incorrect <strong>${incorrectCount}</strong>. Choose how you want to review this round.`;
 
         renderRoundReview('incorrect');
+        setQuizSetupControlsVisible(true);
         modal.style.display = 'flex';
     }
 
