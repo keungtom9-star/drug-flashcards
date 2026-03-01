@@ -3738,13 +3738,14 @@ Rules:
         recentQuizDrugNames = [];
         usedRoundCorrectDrugNames = [];
         usedQuizQuestionKeys = [];
-        roundBulkGenerationStarted = false;
+        roundBulkGenerationStarted = true;
         roundQuestionSerial = 0;
         roundAiQuestionCount = 0;
         roundSheetQuestionCount = 0;
         roundTargetAiCount = Math.floor(currentRoundTotal / 2);
         roundTargetSheetCount = Math.floor(currentRoundTotal / 2);
-        roundNextQuestionSource = 'ai';
+        // Prefer database for first prompt so the round appears instantly while AI questions pre-generate.
+        roundNextQuestionSource = 'db';
         quizQuestionQueue = [];
         setQuizGeneratingState(false);
         quizGenerationInFlight = false;
@@ -3760,7 +3761,6 @@ Rules:
             }
         }
         generateQuizQuestion();
-        preGenerateNextQuestion();
     }
 
     function getMasteryMetrics(drugName) {
