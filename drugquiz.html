@@ -285,10 +285,6 @@
     <div class="app-container">
         
         <div class="sticky-header">
-            <div class="search-box">
-                <input type="text" id="topic-search" class="main-input" placeholder="Search topics..." oninput="filterTopics()">
-                <span class="search-icon">🔍</span>
-            </div>
             <div id="db-status" style="font-size:0.7rem; color:var(--text-muted); margin-top:8px; text-align:center; font-weight:500;">
                 Connecting...
             </div>
@@ -640,7 +636,8 @@
 
         window.closeSubtopics = () => document.getElementById('subtopic-view').style.display = 'none';
         window.filterTopics = () => { 
-            const term = document.getElementById('topic-search').value.toLowerCase(); 
+            const input = document.getElementById('topic-search');
+            const term = input ? input.value.toLowerCase() : '';
             document.querySelectorAll('#topic-area .grid-card').forEach(c => { 
                 const n = c.getAttribute('data-name'); 
                 if(n) c.style.display = n.includes(term) ? 'flex' : 'none'; 
