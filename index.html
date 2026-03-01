@@ -381,17 +381,25 @@
             touch-action: pan-y;
         }
 
+        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+
         body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
         body.mobile-ui:not(.ward-fullscreen) #quiz-section {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
             gap: 6px;
         }
 
         body.mobile-ui:not(.ward-fullscreen) #quiz-section .ios-card {
-            height: 100%;
-            overflow: hidden;
+            height: auto;
+            min-height: 100%;
+            overflow: visible;
             padding: 10px;
         }
 
