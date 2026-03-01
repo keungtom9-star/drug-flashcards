@@ -374,6 +374,13 @@
             padding-bottom: 0;
         }
 
+        body.mobile-ui:not(.ward-fullscreen) #search-section {
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+
         body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
         body.mobile-ui:not(.ward-fullscreen) #quiz-section {
             display: flex;
