@@ -368,10 +368,31 @@
         body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
         body.mobile-ui:not(.ward-fullscreen) #quiz-section {
             height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: auto;
+            padding-bottom: 0;
+        }
+
+        body.mobile-ui:not(.ward-fullscreen) #search-section {
             overflow-y: auto;
-            overscroll-behavior: contain;
+            overscroll-behavior-y: contain;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 8px;
+            touch-action: pan-y;
+        }
+
+        body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
+        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        body.mobile-ui:not(.ward-fullscreen) #quiz-section .ios-card {
+            height: 100%;
+            overflow: hidden;
+            padding: 10px;
         }
 
         body.mobile-ui:not(.ward-fullscreen) #filter-bar {
@@ -527,27 +548,52 @@
             #filter-bar { width: 94% !important; }
 
             .flashcard-wrapper {
-                height: 66dvh;
-                min-height: 460px;
-                max-height: 680px;
+                height: 43dvh;
+                min-height: 250px;
+                max-height: 360px;
             }
 
-            .drug-title { font-size: 1.8rem; }
-            .detail-content { font-size: 0.97rem; }
-            .action-btn { min-height: 44px; }
+            .card-face { padding: 8px; }
+            .card-back { padding-top: 6px; overflow: hidden; }
+            .drug-title { font-size: 0.96rem; margin: 2px 0; line-height: 1.15; }
+            .detail-row { margin-bottom: 4px; padding-bottom: 3px; }
+            .detail-label { font-size: 0.56rem; margin-bottom: 0; }
+            .detail-content { font-size: 0.66rem; line-height: 1.12; }
+            #fc-nursing { font-size: 0.64rem !important; line-height: 1.18 !important; }
+            .action-btn { min-height: 28px; padding: 4px 7px; font-size: 0.68rem; }
+            #flashcard-section { gap: 4px; }
+            #flashcard-section > div[style*='margin-top:20px'] { margin-top: 4px !important; }
+            #counter { font-size: 0.72rem !important; }
+            #show-answer-btn { margin-top: 6px !important; }
+            .anki-btn { padding: 7px 4px; font-size: 0.66rem; }
+
+            #quiz-section .ios-card { padding: 8px !important; }
+            #quiz-section h3 { font-size: 0.95rem; margin-bottom: 6px !important; }
+            #quiz-round-progress { font-size: 0.78rem; margin-bottom: 4px; }
             #quiz-question {
-                font-size: 1rem !important;
-                line-height: 1.45;
-                min-height: 72px !important;
+                font-size: 0.95rem !important;
+                line-height: 1.2;
+                min-height: 38px !important;
+                margin: 4px 0 6px 0 !important;
             }
+            .quiz-stats-row { gap: 6px; margin-bottom: 6px; }
+            .quiz-stat-pill { padding: 4px 6px; font-size: 0.66rem; }
+            .quiz-stat-pill strong { font-size: 0.82rem; }
             .quiz-option-btn {
-                font-size: 0.95rem;
-                min-height: 52px;
+                font-size: 0.88rem;
+                min-height: 40px;
+                padding: 9px 10px;
+                line-height: 1.25;
             }
+            #quiz-options { gap: 6px !important; }
             .quiz-controls-grid {
                 grid-template-columns: 1fr;
-                gap: 10px;
+                gap: 6px;
+                margin-bottom: 6px;
+                padding: 6px;
             }
+            .quiz-controls-grid .ios-select,
+            #quiz-section .action-btn { font-size: 0.7rem; min-height: 30px; padding: 6px 8px; }
             .quiz-controls-grid .ios-select {
                 width: 100%;
             }
@@ -613,7 +659,7 @@
         .flashcard-wrapper.flipped .card-back { display: flex; }
 
         .drug-title {
-            font-size: 2.2rem; font-weight: 800;
+            font-size: 1.6rem; font-weight: 800;
             background: linear-gradient(135deg, var(--ios-blue), var(--ios-indigo));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin: 15px 0; line-height: 1.2;
@@ -622,9 +668,10 @@
         .detail-row { width: 100%; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F2F2F7; }
         .detail-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ios-gray); font-weight: 600; margin-bottom: 4px; }
         .detail-content { 
-            font-size: 1.05rem; font-weight: 500; color: var(--text-primary); line-height: 1.4;
+            font-size: 0.88rem; font-weight: 500; color: var(--text-primary); line-height: 1.28;
             word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;
         }
+        #fc-nursing { font-size: 0.8rem !important; line-height: 1.3 !important; }
 
         .action-btn {
             background: var(--ios-bg); color: var(--ios-blue); border: none;
@@ -924,12 +971,10 @@
             <div class="flashcard-inner">
                 
                 <div class="card-face card-front">
-                    <div style="font-size: 4rem; margin-bottom: 10px;">💊</div>
-                    <div style="font-size:0.9rem; color:var(--ios-gray); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Generic Name</div>
                     <h2 id="fc-name" class="drug-title">Drug Name</h2>
-                    <p style="color:var(--ios-gray); margin-top:0;">Tap the card to flip</p>
+                    <p style="color:var(--ios-gray); margin-top:0; font-size:0.8rem;">Tap the card to flip</p>
                     
-                    <button onclick="event.stopPropagation(); triggerFcAction('speak')" class="action-btn" style="width:auto; margin-top:20px; background: #F2F2F7;">
+                    <button onclick="event.stopPropagation(); triggerFcAction('speak')" class="action-btn" style="width:auto; margin-top:12px; background: #F2F2F7;">
                         🗣️ Speak name
                     </button>
                 </div>
@@ -999,7 +1044,7 @@
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
                 <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
             </div>
-            <div class="quiz-controls-grid">
+            <div id="quiz-setup-controls" class="quiz-controls-grid">
                 <select id="quiz-level" class="ios-select" style="margin:0; width:100%;">
                     <option value="all" selected>All levels</option>
                     <option value="remembering">Remembering</option>
@@ -2382,6 +2427,9 @@ Language: ${langInstruction}.`;
     let roundQuestionSerial = 0;
     let roundAiQuestionCount = 0;
     let roundSheetQuestionCount = 0;
+    let roundTargetAiCount = 0;
+    let roundTargetSheetCount = 0;
+    let roundNextQuestionSource = 'ai';
     let quizQuestionQueue = [];
     let quizGeneratingPct = 0;
     let quizGeneratingTimer = null;
@@ -2942,8 +2990,8 @@ Language: ${langInstruction}.`;
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('flashcard-section').style.display = 'block';
             document.getElementById('nav-flash').classList.add('active');
-            document.getElementById('filter-bar').style.display = 'flex';
-            const source = filteredList.length ? filteredList : activeSourceList;
+            const source = [...activeSourceList];
+            filteredList = [...activeSourceList];
             hydrateAnkiForList(source);
             flashcardList = getTodayStudyQueue(source, getAnkiDailyLimit());
             updateQueueStats(source);
@@ -2954,8 +3002,10 @@ Language: ${langInstruction}.`;
             document.body.classList.remove('ward-fullscreen');
             document.getElementById('quiz-section').style.display = 'block';
             document.getElementById('nav-quiz').classList.add('active');
+            const roundInProgress = currentRoundTotal > 0 && currentRoundAnswered < currentRoundTotal;
+            setQuizSetupControlsVisible(!roundInProgress);
             const qEl = document.getElementById('quiz-question');
-            if (qEl) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
+            if (qEl && !roundInProgress) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
         } else if (mode === 'ward') {
             setupWardPreload();
             clearClinicalBackSync();
@@ -3662,6 +3712,12 @@ Rules:
         feedback.innerHTML = `<strong>Current level:</strong> ${escapeHtml(levelText)}`;
     }
 
+    function setQuizSetupControlsVisible(show) {
+        const wrap = document.getElementById('quiz-setup-controls');
+        if (!wrap) return;
+        wrap.style.display = show ? 'grid' : 'none';
+    }
+
     function startQuizRound() {
         const levelEl = document.getElementById('quiz-level');
         const systemEl = document.getElementById('quiz-system');
@@ -3670,7 +3726,12 @@ Rules:
         selectedQuizSystem = systemEl ? systemEl.value : '';
         selectedQuizCount = parseInt(countEl?.value || '10', 10) || 10;
 
-        currentRoundTotal = selectedQuizCount;
+        let enforcedCount = selectedQuizCount;
+        if (enforcedCount % 2 !== 0) {
+            enforcedCount = Math.max(2, enforcedCount - 1);
+        }
+
+        currentRoundTotal = enforcedCount;
         currentRoundAnswered = 0;
         currentRoundIncorrect = [];
         currentRoundReview = [];
@@ -3681,10 +3742,23 @@ Rules:
         roundQuestionSerial = 0;
         roundAiQuestionCount = 0;
         roundSheetQuestionCount = 0;
+        roundTargetAiCount = Math.floor(currentRoundTotal / 2);
+        roundTargetSheetCount = Math.floor(currentRoundTotal / 2);
+        roundNextQuestionSource = 'ai';
         quizQuestionQueue = [];
         setQuizGeneratingState(false);
         quizGenerationInFlight = false;
         updateQuizRoundProgress();
+        setQuizSetupControlsVisible(false);
+        if (currentRoundTotal !== selectedQuizCount) {
+            const feedback = document.getElementById('quiz-feedback');
+            if (feedback) {
+                feedback.style.display = 'block';
+                feedback.style.background = '#fff7ed';
+                feedback.style.color = '#9a3412';
+                feedback.innerHTML = `<strong>1:1 mix enforced:</strong> adjusted to ${currentRoundTotal} questions (${roundTargetAiCount} AI + ${roundTargetSheetCount} database).`;
+            }
+        }
         generateQuizQuestion();
         preGenerateNextQuestion();
     }
@@ -3990,58 +4064,80 @@ Rules:
                 : !!(deepSeekKey && deepSeekKey.startsWith('sk-')));
 
         const hasSheetBank = Array.isArray(quizQuestionBank) && quizQuestionBank.length > 0;
-        const roundHalfPoint = Math.ceil((currentRoundTotal || selectedQuizCount || 10) / 2);
-        const shouldUseSheet = hasSheetBank && roundSheetQuestionCount < roundHalfPoint && (roundSheetQuestionCount <= roundAiQuestionCount);
-        const shouldUseAI = canUseAI && roundAiQuestionCount < roundHalfPoint && (roundAiQuestionCount <= roundSheetQuestionCount || !hasSheetBank);
+        const aiRemaining = Math.max(0, roundTargetAiCount - roundAiQuestionCount);
+        const dbRemaining = Math.max(0, roundTargetSheetCount - roundSheetQuestionCount);
+
+        if (aiRemaining <= 0 && dbRemaining <= 0) {
+            return { error: 'Round source targets already reached.' };
+        }
+
         roundQuestionSerial++;
 
-        if (shouldUseSheet) {
+        const tryDatabase = () => {
+            if (!hasSheetBank || dbRemaining <= 0) return null;
             const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
-            if (sheetQ) {
-                roundSheetQuestionCount++;
-                return sheetQ;
-            }
-        }
+            if (!sheetQ) return null;
+            roundSheetQuestionCount++;
+            roundNextQuestionSource = 'ai';
+            return sheetQ;
+        };
 
-        if (shouldUseAI) {
+        const tryAI = async () => {
+            if (!canUseAI || aiRemaining <= 0) return null;
             const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
-            if (aiQ) {
-                roundAiQuestionCount++;
-                return aiQ;
-            }
-        }
+            if (!aiQ) return null;
+            roundAiQuestionCount++;
+            roundNextQuestionSource = 'db';
+            return aiQ;
+        };
 
-        if (hasSheetBank) {
-            const sheetQ = getSheetQuizQuestion(roundQuizList, level, system);
-            if (sheetQ) {
-                roundSheetQuestionCount++;
-                return sheetQ;
-            }
-        }
-
-        if (canUseAI) {
-            const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
-            if (aiQ) {
-                roundAiQuestionCount++;
-                return aiQ;
-            }
+        if (roundNextQuestionSource === 'ai') {
+            const aiQ = await tryAI();
+            if (aiQ) return aiQ;
+            const sheetQ = tryDatabase();
+            if (sheetQ) return sheetQ;
+        } else {
+            const sheetQ = tryDatabase();
+            if (sheetQ) return sheetQ;
+            const aiQ = await tryAI();
+            if (aiQ) return aiQ;
         }
 
         if (!canUseAI && !hasSheetBank) {
             if (currentProvider === 'openrouter-trinity') {
-                return { error: 'OpenRouter API key is required for Trinity quiz questions, or load a quiz database in Settings.' };
+                return { error: 'OpenRouter API key is required for AI half, and a quiz database is required for database half.' };
             }
             if (currentProvider === 'yinli-gemini') {
-                return { error: 'Yinli API key is required for Gemini quiz questions, or load a quiz database in Settings.' };
+                return { error: 'Yinli API key is required for AI half, and a quiz database is required for database half.' };
             }
-            return { error: 'DeepSeek API key is required to generate AI quiz questions, or load a quiz database in Settings.' };
+            return { error: 'DeepSeek API key is required for AI half, and a quiz database is required for database half.' };
         }
 
-        if (!canUseAI && hasSheetBank) {
-            return { error: 'No eligible quiz-bank question found for current filters. Try changing level/system.' };
+        if (dbRemaining > 0 && !hasSheetBank) {
+            return { error: '1:1 mix requires database questions, but quiz database is empty. Load quiz database in Settings.' };
         }
 
-        return { error: 'AI question generation failed. Please retry.' };
+        if (aiRemaining > 0 && !canUseAI) {
+            if (currentProvider === 'openrouter-trinity') {
+                return { error: '1:1 mix requires AI questions, but OpenRouter API key is missing.' };
+            }
+            if (currentProvider === 'yinli-gemini') {
+                return { error: '1:1 mix requires AI questions, but Yinli API key is missing.' };
+            }
+            return { error: '1:1 mix requires AI questions, but DeepSeek API key is missing.' };
+        }
+
+        if (dbRemaining > 0) {
+            return { error: system === 'mix'
+                ? 'No eligible database question found for current level. Adjust level/filter or refresh quiz database.'
+                : 'No eligible database question found for selected system and level. Need database questions from that system for 1:1 mix.' };
+        }
+
+        if (aiRemaining > 0) {
+            return { error: 'AI question generation failed for required 1:1 mix slot. Please retry.' };
+        }
+
+        return { error: 'Unable to prepare question for strict 1:1 source balancing.' };
     }
 
     function normalizeDrugNameForMatch(name) {
@@ -4396,6 +4492,7 @@ ${JSON.stringify(sample)}`;
         summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Correct <strong>${correctCount}</strong> • Incorrect <strong>${incorrectCount}</strong>. Choose how you want to review this round.`;
 
         renderRoundReview('incorrect');
+        setQuizSetupControlsVisible(true);
         modal.style.display = 'flex';
     }
 
@@ -4628,7 +4725,10 @@ ${JSON.stringify(sample)}`;
         const systemNorm = String(system || 'mix').toLowerCase();
         const filtered = quizQuestionBank.filter(item => {
             const levelOk = levelNorm === 'all' || !item.level || item.level === 'all' || item.level === levelNorm;
-            const systemOk = systemNorm === 'mix' || !item.system || item.system.toLowerCase() === 'mix' || item.system.toLowerCase() === systemNorm;
+            const itemSystem = String(item.system || '').toLowerCase();
+            const systemOk = systemNorm === 'mix'
+                ? (!itemSystem || itemSystem === 'mix')
+                : (itemSystem === systemNorm);
             if (!levelOk || !systemOk) return false;
             if (isRepeatedQuizQuestion(item.question, item.answer)) return false;
             if (!canUseRoundCorrectDrug(item.drug || item.answer, roundQuizList)) return false;
