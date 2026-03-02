@@ -5,325 +5,213 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="color-scheme" content="light">
     <title>Ward Cheatsheet Pro</title>
-    
+
     <style>
-        :root {
-            --bg-color: #F2F6FF;
-            --card-bg: #FFFFFF;
-            --soft-shadow: 0 10px 24px rgba(59,130,246,0.12);
-            --text-main: #000000;
-            --text-sec: #6e6e73;
-            --border: #E5E5EA;
-            
-            --blue: #007AFF;
-            --green: #34C759;
-            --red: #FF3B30;
-            --orange: #FF9500;
-            --purple: #AF52DE;
-            --teal: #30B0C7;
-            --indigo: #5856D6;
-            --pink: #FF2D55;
+    :root {
+        /* Modern iOS 17 Color Palette */
+        --bg-color: #F2F2F7;
+        --card-bg: #FFFFFF;
+        --soft-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        --text-main: #000000;
+        --text-sec: #3C3C4399; /* 60% opacity black */
+        --border: rgba(60, 60, 67, 0.1); /* Subtle separator */
 
-            --ecg-grid: #fff0f0;
-            --ecg-line: #ffcccc;
-            --header-height: 132px;
-            color-scheme: light;
-        }
+        /* Clinical Colors */
+        --blue: #007AFF;
+        --green: #34C759;
+        --red: #FF3B30;
+        --orange: #FF9500;
+        --purple: #AF52DE;
+        --teal: #30B0C7;
+        --indigo: #5856D6;
+        --pink: #FF2D55;
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        --header-height: auto; /* Dynamic based on content */
+        color-scheme: light;
+    }
 
-        html, body { height: 100dvh; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at top, #f8fbff 0%, var(--bg-color) 60%, #edf4ff 100%);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
+    /* --- FIT ALL WORDS & RESET --- */
+    * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: break-word;
+        hyphens: auto;
+    }
 
-        /* --- Header & Tabs --- */
-        .sticky-header {
-            position: sticky; top: 0; z-index: 1000;
-            background: rgba(var(--card-bg), 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            padding-top: max(10px, env(safe-area-inset-top));
-            background-color: rgba(255,255,255,0.94);
-        }
+    /* --- LIMITED SCROLLING LAYOUT --- */
+    html, body {
+        height: 100dvh;
+        width: 100%;
+        overflow: hidden; /* Lock body */
+        margin: 0; padding: 0;
+    }
 
-        .top-bar {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 6px;
-            padding: 12px 16px 8px;
-        }
-        .app-title { font-size: 1.15rem; font-weight: 750; letter-spacing: -0.2px; }
-        .app-subtitle {
-            font-size: 0.75rem;
-            color: var(--text-sec);
-            background: color-mix(in srgb, var(--blue) 10%, transparent);
-            border: 1px solid color-mix(in srgb, var(--blue) 20%, transparent);
-            padding: 4px 10px;
-            border-radius: 999px;
-        }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: radial-gradient(circle at top, #f8fbff 0%, #f2f2f7 60%, #eef6ff 100%);
+        color: var(--text-main);
+        display: flex;
+        flex-direction: column; /* Stack Header -> Content */
+    }
 
-        .tabs {
-            display: flex;
-            gap: 8px;
-            padding: 0 10px 10px;
-            overflow-x: auto;
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
-        }
-        .tabs::-webkit-scrollbar { display: none; }
-        .tab-btn {
-            flex: 0 0 auto;
-            background: transparent;
-            border: 1px solid var(--border);
-            font-size: 0.83rem;
-            font-weight: 650;
-            color: var(--text-sec);
-            padding: 8px 13px;
-            border-radius: 999px;
-            transition: 0.2s;
-        }
-        .tab-btn.active {
-            background: var(--text-main);
-            color: var(--bg-color);
-            border-color: var(--text-main);
-        }
+    /* --- HEADER (Fixed) --- */
+    .sticky-header {
+        flex-shrink: 0; /* Never shrink */
+        position: relative; /* Part of flex flow */
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-bottom: 1px solid var(--border);
+        padding-top: max(10px, env(safe-area-inset-top));
+        z-index: 1000;
+    }
 
-        /* --- Layout --- */
-        .container {
-            display: none; /* Hidden by default */
-            padding: 12px 16px 14px;
-            max-width: 1000px; margin: 0 auto;
-            grid-template-columns: 1fr; gap: 12px;
-            height: calc(100dvh - var(--header-height));
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .container.active { display: grid; }
-        
-        @media (min-width: 768px) {
-            .container.active { grid-template-columns: 1fr 1fr; }
-            .full-width { grid-column: span 2; }
-        }
+    .top-bar { display: none; } /* Simplified for clean look */
 
-        @media (max-width: 768px) {
-            :root { --header-height: 108px; }
-            .top-bar { padding: 8px 12px 6px; gap: 4px; }
-            .app-title { font-size: 1rem; }
-            .tabs { padding: 0 8px 6px; gap: 6px; }
-            .tab-btn { padding: 6px 10px; font-size: 0.76rem; }
-            .container { padding: 8px 10px 8px; gap: 8px; }
+    .tabs {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
 
-            #intake .card { padding: 10px; border-radius: 12px; }
-            .intake-header { padding: 8px 10px; margin-bottom: 6px; }
-            .intake-title { font-size: 0.92rem; }
-            .intake-cutoff { font-size: 0.72rem; }
-            .intake-grid-3, .intake-grid-4 { gap: 6px; }
-            .intake-btn { padding: 7px 0; font-size: 0.76rem; border-radius: 8px; }
-            .intake-chip { padding: 5px 9px; font-size: 0.72rem; }
-            .intake-result { margin-top: 6px; padding: 6px 8px; font-size: 0.72rem; }
-            .intake-reset-row { margin-top: 6px; gap: 6px; }
-        }
+    .tab-btn {
+        flex: 0 0 auto;
+        background: transparent;
+        border: none;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-sec);
+        padding: 8px 16px;
+        border-radius: 20px;
+        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+    }
+    .tab-btn.active {
+        background: #fff;
+        color: var(--text-main);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
 
-        /* --- Cards --- */
-        .card {
-            background: var(--card-bg); border-radius: 18px; padding: 16px;
-            box-shadow: var(--soft-shadow);
-            border: 1px solid var(--border);
-        }
-        .card-header {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-            font-size: 0.8rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
-            color: var(--text-sec); border-bottom: 1px solid var(--border); padding-bottom: 8px;
-        }
-        
-        /* --- Tables --- */
-        .val-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .val-table td { padding: 8px 0; border-bottom: 1px solid var(--border); }
-        .val-table tr:last-child td { border-bottom: none; }
-        .val-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-        .unit { font-size: 0.7rem; color: var(--text-sec); font-weight: 400; margin-left: 2px; }
+    /* --- SCROLLABLE CONTENT --- */
+    .container {
+        display: none;
+        flex: 1; /* Take remaining height */
+        overflow-y: auto; /* Internal scroll */
+        -webkit-overflow-scrolling: touch;
+        padding: 16px;
+        padding-bottom: 120px; /* Space for bottom interaction */
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+    }
+    .container.active { display: block; }
 
-        /* --- ECG Specific Styles --- */
-        .ecg-grid-box {
-            background: color-mix(in srgb, var(--red) 8%, var(--card-bg));
-            border: 1px solid var(--red);
-            border-radius: 8px; padding: 10px; margin-bottom: 10px;
-            font-family: monospace; font-size: 0.8rem; color: var(--red);
-        }
+    /* --- CARDS & UI --- */
+    .card {
+        background: var(--card-bg);
+        border-radius: 22px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: var(--soft-shadow);
+        border: 1px solid rgba(255,255,255,0.6);
+    }
 
-        .rhythm-card {
-            border-left: 4px solid #ccc; padding: 10px; margin-bottom: 8px;
-            background: rgba(128,128,128,0.05); border-radius: 0 8px 8px 0;
-        }
-        .r-lethal { border-left-color: var(--red); background: rgba(255, 59, 48, 0.1); }
-        .r-warn { border-left-color: var(--orange); background: rgba(255, 149, 0, 0.1); }
-        .r-safe { border-left-color: var(--green); }
-        
-        .r-title { font-weight: 800; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center;}
-        .r-details { font-size: 0.75rem; margin-top: 4px; line-height: 1.4; color: var(--text-main); opacity: 0.9; }
-        .r-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
+    .card-header {
+        display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+        font-size: 0.85rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
+        color: var(--text-sec); border-bottom: 1px solid var(--border); padding-bottom: 8px;
+    }
 
+    /* --- TABLE POLISH --- */
+    .val-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+    .val-table td {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+    }
+    .val-table tr:last-child td { border-bottom: none; }
+    .val-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: normal; } /* Allow wrapping */
+    .unit { font-size: 0.75rem; color: var(--text-sec); font-weight: 400; display: inline-block; }
 
-        .mini-ecg { display: none; }
-        .mini-ecg svg { width: 100%; height: 34px; display:block; }
-        .mini-ecg polyline { fill: none; stroke: var(--red); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-        .mini-ecg .warn-line { stroke: var(--orange); }
-        .mini-ecg .safe-line { stroke: var(--green); }
+    /* --- ECG & SPECIALTY --- */
+    .ecg-grid-box {
+        background: #fff5f5; border: 1px solid #ffcccc;
+        border-radius: 12px; padding: 12px; margin-bottom: 12px;
+        font-family: "Menlo", monospace; font-size: 0.8rem; color: var(--red);
+    }
 
-        .lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; }
-        .lead-item { background: var(--bg-color); padding: 8px; border-radius: 6px; }
+    .rhythm-card {
+        border-left: 5px solid #ccc; padding: 14px; margin-bottom: 10px;
+        background: #f9f9f9; border-radius: 0 12px 12px 0;
+    }
+    .r-lethal { border-left-color: var(--red); background: #fff0f0; }
+    .r-warn { border-left-color: var(--orange); background: #fff8eb; }
+    .r-safe { border-left-color: var(--green); background: #f0fdf4; }
 
-        /* --- Drug List Styles --- */
-        .search-box {
-            width: 100%; padding: 12px; border-radius: 10px; border: none;
-            background: var(--bg-color); color: var(--text-main);
-            font-size: 1rem; margin-bottom: 12px; outline: none;
-        }
-        .drug-row { border-bottom: 1px solid var(--border); padding: 12px 0; display: block; }
-        .d-header { display:flex; flex-direction:column; margin-bottom:6px; }
-        .d-name { font-weight: 700; color: var(--blue); font-size: 1rem; }
-        .d-trade { font-size: 0.75rem; color: var(--text-sec); font-weight:400; }
-        
-        .d-info-grid { display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.85rem; margin-top: 4px; }
-        .d-block { display:flex; gap: 8px; align-items: baseline; }
-        .d-label { 
-            font-weight: 700; font-size: 0.7rem; text-transform: uppercase; 
-            min-width: 40px; color: var(--text-sec);
-        }
-        .d-content { flex:1; line-height: 1.3; }
-        
-        .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; display: inline-block; margin-right: 4px; vertical-align: middle;}
-        .t-push { background: #E0E7FF; color: var(--blue); }
-        .t-inf { background: #DCFCE7; color: var(--green); }
-        .t-pump { background: #fee2e2; color: var(--red); }
-        .t-im { background: #FEF3C7; color: #D97706; }
+    .r-title { font-weight: 800; font-size: 1rem; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;}
+    .r-details { font-size: 0.85rem; line-height: 1.5; color: var(--text-main); opacity: 0.9; }
 
+    /* --- DRUG SEARCH --- */
+    .search-box {
+        width: 100%; padding: 14px 16px;
+        border-radius: 16px; border: none;
+        background: rgba(118, 118, 128, 0.12);
+        color: var(--text-main); font-size: 1rem; outline: none;
+        transition: background 0.2s;
+        margin-bottom: 20px;
+    }
+    .search-box:focus { background: #fff; box-shadow: 0 0 0 2px var(--blue); }
 
-        /* --- Intake Flow (embedded app) --- */
-        .intake-header {
-            background: var(--bg-color);
-            border-radius: 14px;
-            padding: 10px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .intake-title { font-size: 1rem; font-weight: 700; }
-        .intake-cutoff { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--text-sec); }
-        .intake-cutoff input {
-            border: none; background: white; color: var(--blue);
-            border-radius: 8px; padding: 4px 8px; font-weight: 700;
-        }
-        .intake-grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-        .intake-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-        .intake-btn {
-            border:none; border-radius:10px; padding:10px 0;
-            font-weight:700; background:#eef2ff; color:#1d4ed8; cursor:pointer;
-        }
-        .intake-btn:active { opacity:0.8; }
-        .intake-reset-row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-        .intake-reset-row .intake-btn { flex:1 1 140px; }
-        .intake-chip-wrap { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
-        .intake-chip {
-            border:none; background:var(--bg-color); color:var(--text-main);
-            border-radius:999px; padding:7px 12px; white-space:nowrap; cursor:pointer;
-        }
-        .intake-chip.active { background:var(--blue); color:white; }
-        .intake-chip.ideal { border:1px solid #f59e0b; background:#fffbeb; color:#b45309; }
-        .intake-chip.ideal.active { background:#f59e0b; color:white; }
-        .intake-result { display:flex; justify-content:space-between; background:var(--bg-color); border-radius:10px; padding:8px 10px; margin-top:8px; font-size:0.8rem; }
-        .intake-io-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .io-card {
-            margin: 0;
-            box-shadow: none;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px;
-        }
-        .io-label { font-size:0.75rem; color:var(--text-sec); margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
-        .io-display { font-size:2rem; font-weight:800; text-align:center; line-height:1; margin-bottom:8px; }
-        .io-display.in { color: var(--orange); }
-        .io-display.out { color: var(--red); }
-        .intake-net-bar {
-            margin-top: 8px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            padding: 10px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            font-size: 0.82rem;
-        }
-        .intake-net-value { font-size:1.1rem; font-weight:800; }
-        .intake-total-bar {
-            position: sticky; bottom: 8px; z-index: 20;
-            background: rgba(30,30,30,0.88); color:white; border-radius:14px;
-            padding:10px 14px; display:flex; justify-content:space-between; align-items:center;
-            margin-top: 8px;
-        }
+    .drug-row {
+        border-bottom: 1px solid var(--border); padding: 14px 0;
+    }
+    .d-name { font-weight: 700; color: var(--blue); font-size: 1.05rem; display: block; margin-bottom: 2px;}
 
+    .tag {
+        padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;
+        display: inline-block; margin: 2px 4px 2px 0; vertical-align: middle;
+    }
+    .t-push { background: #E0E7FF; color: var(--blue); }
+    .t-inf { background: #DCFCE7; color: var(--green); }
+    .t-pump { background: #FEE2E2; color: var(--red); }
 
-        @media (max-width: 767px) {
-            :root { --header-height: 104px; }
-            .top-bar { padding: 8px 12px; }
-            .tabs { padding: 0 4px 6px 4px; }
-            .tab-btn { padding: 7px 10px; font-size: 0.8rem; }
-            .card { border-radius: 14px; padding: 12px; }
+    /* --- INTAKE --- */
+    .intake-total-bar {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        width: 92%; max-width: 600px; z-index: 500;
+        background: rgba(30,30,30,0.9); backdrop-filter: blur(10px);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        border-radius: 20px; padding: 12px 20px;
+        color: white; display: flex; justify-content: space-between; align-items: center;
+    }
+    .intake-btn {
+        border-radius: 14px; font-size: 0.9rem; padding: 12px 0;
+        transition: transform 0.1s;
+    }
+    .intake-btn:active { transform: scale(0.96); }
 
-            #intake.container.active {
-                overflow-y: auto;
-                padding: 8px 10px 10px;
-                gap: 8px;
-            }
-            #intake .card.full-width {
-                min-height: calc(100dvh - var(--header-height) - 18px);
-                display: grid;
-                grid-template-rows: auto auto auto auto minmax(170px, 1fr) auto auto;
-                gap: 8px;
-                overflow: visible;
-                padding: 10px;
-            }
-            #intake-iv-list {
-                overflow-y: auto;
-                min-height: 170px;
-                max-height: 42dvh;
-                padding-right: 2px;
-                border: 1px dashed var(--border);
-                border-radius: 10px;
-                padding: 6px;
-            }
-            .intake-header { margin-bottom: 0; }
-            .intake-grid-3, .intake-grid-4 { gap: 6px; }
-            .intake-btn { padding: 8px 0; font-size: 0.85rem; }
-            .intake-total-bar { margin-top: 0; padding: 8px 10px; border-radius: 12px; }
-            .intake-io-grid { grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
-            .io-display { font-size: 1.8rem; }
-            .intake-reset-row .intake-btn { flex: 1 1 calc(50% - 6px); }
-        }
+    .intake-chip-wrap { padding-bottom: 6px; }
+    .intake-chip { padding: 8px 14px; font-size: 0.8rem; border-radius: 20px; }
 
-        /* --- Utils --- */
-        .calc-box { text-align: center; padding: 10px; background: var(--bg-color); border-radius: 8px; margin-bottom: 8px; }
-        .cannula-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .c-item { padding: 8px; border-radius: 8px; color: white; text-align: center; }
-        .c-size { font-weight: bold; font-size: 0.85rem; display: block; }
-        .c-use { font-size: 0.7rem; opacity: 0.95; }
+    /* Details/Summary Polish */
+    details > summary {
+        padding: 12px; margin: -12px; margin-bottom: 4px; border-radius: 12px;
+        transition: background 0.2s;
+    }
+    details > summary:active { background: rgba(0,0,0,0.05); }
 
-    </style>
+    @media (min-width: 768px) {
+        .container.active { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+        .full-width { grid-column: span 2; }
+        #intake.container.active { display: block; } /* Intake remains linear */
+    }
+</style>
 </head>
 <body>
 
@@ -340,7 +228,7 @@
 
     <!-- ================= LABS TAB ================= -->
     <div id="labs" class="container active">
-        
+
         <div class="card">
             <div class="card-header"><span style="color:var(--red)">🩸</span> Haematology</div>
             <table class="val-table">
@@ -388,7 +276,7 @@
                 <tr><td>Chol (T) <span class="unit">(cardiovascular risk)</span></td><td class="val-val">&lt; 5.2 <span class="unit">mmol/L</span></td></tr>
             </table>
         </div>
-        
+
         <div class="card full-width">
             <div class="card-header"><span style="color:var(--red)">🫀</span> Cardiac Markers</div>
             <table class="val-table">
@@ -403,7 +291,7 @@
 
     <!-- ================= ECG TAB ================= -->
     <div id="ecg" class="container">
-        
+
         <div class="card full-width">
             <div class="card-header">📐 ECG Grid & Core Measurements</div>
             <div class="ecg-grid-box">
@@ -465,68 +353,68 @@
 
         <div class="card full-width">
             <div class="card-header">🚨 Critical ECG Patterns</div>
-            
+
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Ventricular Fibrillation (VF) <span class="r-tag" style="background:var(--red); color:white;">SHOCK</span></div>
                 <div class="r-details">Chaotic waveform, no organized P/QRS/T, no cardiac output. <strong>Defibrillate + CPR immediately.</strong></div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,17 8,13 16,20 24,12 32,18 40,14 48,23 56,10 64,20 72,16 80,22 88,11 96,17 104,14 112,24 120,12 128,18 136,9 144,21 152,12 160,19 168,11 176,23 184,14 192,20 200,12 208,25 216,8 224,19 232,13 240,22 248,10 256,18 264,15 272,23 280,12 288,19 296,10 304,21 320,14"/></svg></div>
-                
+
             </div>
 
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Pulseless Ventricular Tachycardia <span class="r-tag" style="background:var(--red); color:white;">SHOCK</span></div>
                 <div class="r-details">Regular broad-complex tachycardia (usually 120-250 bpm), absent pulse. <strong>Defibrillate + CPR.</strong></div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,17 10,17 20,17 30,4 40,30 50,4 60,30 70,17 80,17 90,4 100,30 110,4 120,30 130,17 140,17 150,4 160,30 170,4 180,30 190,17 200,17 210,4 220,30 230,4 240,30 250,17 260,17 270,4 280,30 290,4 300,30 320,17"/></svg></div>
-                
+
             </div>
 
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Torsades de Pointes <span class="r-tag" style="background:var(--red); color:white;">Mg / SHOCK</span></div>
                 <div class="r-details">Polymorphic VT with twisting axis, often QT prolongation related. Treat reversible causes and give magnesium.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,17 10,14 20,10 30,6 40,4 50,8 60,16 70,24 80,30 90,26 100,18 110,10 120,5 130,8 140,16 150,24 160,30 170,24 180,16 190,8 200,5 210,10 220,18 230,26 240,30 250,24 260,16 270,8 280,4 290,8 300,14 320,18"/></svg></div>
-                
+
             </div>
 
             <div class="rhythm-card r-lethal">
                 <div class="r-title">Asystole / PEA <span class="r-tag" style="background:var(--red); color:white;">CPR</span></div>
                 <div class="r-details">No shockable rhythm. Confirm in 2 leads, start high-quality CPR, adrenaline, and treat 4H/4T causes.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,18 40,18 80,18 120,18 160,18 200,18 240,18 280,18 320,18"/></svg></div>
-                
+
             </div>
 
             <div class="rhythm-card r-warn">
                 <div class="r-title">STEMI Pattern</div>
                 <div class="r-details">ST elevation in ≥2 contiguous leads (usually ≥1mm limb, ≥2mm precordial). Activate urgent reperfusion pathway.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 20,18 30,8 36,2 42,24 48,18 64,12 88,12 112,12 130,18 150,18 160,8 166,2 172,24 178,18 194,12 218,12 242,12 260,18 280,18 290,8 296,2 302,24 308,18 320,18"/></svg></div>
-                
+
             </div>
         </div>
-        
+
         <div class="card full-width">
             <div class="card-header">🛑 Heart Blocks</div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">1st Degree</div>
                 <div class="r-details">PR &gt;0.20s (Constant). Regular. Benign.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 14,18 22,14 30,18 44,18 58,18 68,4 72,1 76,28 84,18 96,18 108,18 118,14 126,18 142,18 156,18 166,4 170,1 174,28 182,18 194,18 206,18 216,14 224,18 240,18 254,18 264,4 268,1 272,28 280,18 292,18 320,18"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">2nd Degree Type I (Wenckebach)</div>
                 <div class="r-details">PR gets longer, longer, longer... then drops QRS.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 10,14 18,18 42,18 58,4 62,1 66,28 74,18 84,14 92,18 122,18 138,4 142,1 146,28 154,18 164,14 172,18 206,18 222,4 226,1 230,28 238,18 248,14 256,18 294,18 320,18"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">2nd Degree Type II</div>
                 <div class="r-details">PR constant, but random QRS drops. Danger.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 12,14 20,18 40,18 56,4 60,1 64,28 72,18 88,14 96,18 116,18 132,18 148,14 156,18 176,18 192,4 196,1 200,28 208,18 224,14 232,18 252,18 268,18 284,14 292,18 320,18"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-lethal">
                 <div class="r-title">3rd Degree (Complete)</div>
                 <div class="r-details">P's and QRS distinct and independent. Slow rate. Pacemaker needed.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline points="0,18 10,14 18,18 28,18 38,18 48,18 58,18 68,4 72,1 76,28 84,18 94,18 104,14 112,18 122,18 132,18 142,18 152,18 162,4 166,1 170,28 178,18 188,18 198,14 206,18 216,18 226,18 236,18 246,18 256,4 260,1 264,28 272,18 282,18 292,14 300,18 320,18"/></svg></div>
-                
+
             </div>
         </div>
 
@@ -536,37 +424,37 @@
                 <div class="r-title">Normal Sinus Rhythm (NSR)</div>
                 <div class="r-details">Rate 60-100, regular rhythm, upright P before each QRS, fixed PR interval.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 10,18 18,14 26,18 40,18 56,4 60,1 64,28 72,18 88,18 96,14 104,18 118,18 134,4 138,1 142,28 150,18 166,18 174,14 182,18 196,18 212,4 216,1 220,28 228,18 244,18 252,14 260,18 274,18 290,4 294,1 298,28 306,18 320,18"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">Sinus Bradycardia / Sinus Tachycardia</div>
                 <div class="r-details">Sinus morphology preserved with rate &lt;60 (brady) or &gt;100 (tachy).</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 14,18 22,14 30,18 52,18 74,4 78,1 82,28 90,18 112,18 120,14 128,18 150,18 172,4 176,1 180,28 188,18 210,18 218,14 226,18 248,18 270,4 274,1 278,28 286,18 320,18"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">SVT <span class="r-tag" style="background:var(--orange); color:white;">FAST</span></div>
                 <div class="r-details">Regular narrow-complex tachycardia (typically 150-250), P waves often hidden.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 8,18 14,4 18,1 22,28 28,18 36,18 42,4 46,1 50,28 56,18 64,18 70,4 74,1 78,28 84,18 92,18 98,4 102,1 106,28 112,18 120,18 126,4 130,1 134,28 140,18 148,18 154,4 158,1 162,28 168,18 176,18 182,4 186,1 190,28 196,18 204,18 210,4 214,1 218,28 224,18 232,18 238,4 242,1 246,28 252,18 260,18 266,4 270,1 274,28 280,18 320,18"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">Atrial Fibrillation (AF)</div>
                 <div class="r-details">Irregularly irregular rhythm, absent organized P waves, variable ventricular response.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,18 10,17 18,4 22,1 26,28 34,18 48,18 58,4 62,1 66,28 74,18 90,18 104,4 108,1 112,28 120,18 132,18 146,4 150,1 154,28 162,18 182,18 192,4 196,1 200,28 208,18 226,18 240,4 244,1 248,28 256,18 270,18 284,4 288,1 292,28 300,18 320,18"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-warn">
                 <div class="r-title">Atrial Flutter</div>
                 <div class="r-details">Sawtooth flutter waves (commonly ~300 atrial bpm), often 2:1 or variable AV block.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="warn-line" points="0,20 8,14 16,20 24,14 32,20 40,14 48,20 56,14 64,20 72,14 80,20 88,14 96,20 104,14 112,20 120,3 124,1 128,28 136,20 144,14 152,20 160,14 168,20 176,14 184,20 192,14 200,20 208,14 216,20 224,14 232,20 240,3 244,1 248,28 256,20 264,14 272,20 280,14 288,20 296,14 304,20 320,20"/></svg></div>
-                
+
             </div>
             <div class="rhythm-card r-safe">
                 <div class="r-title">PAC / PVC</div>
                 <div class="r-details">Premature atrial beats (narrow) or ventricular beats (wide, bizarre) with compensatory pause.</div>
                 <div class="mini-ecg"><svg viewBox="0 0 320 34" preserveAspectRatio="none"><polyline class="safe-line" points="0,18 10,18 18,14 26,18 40,18 56,4 60,1 64,28 72,18 88,18 96,14 104,18 118,18 134,4 138,1 142,28 150,18 166,18 172,30 176,1 188,30 196,18 208,18 216,14 224,18 238,18 254,4 258,1 262,28 270,18 286,18 294,14 302,18 320,18"/></svg></div>
-                
+
             </div>
         </div>
 
@@ -574,7 +462,7 @@
 
     <!-- ================= TOOLS TAB ================= -->
     <div id="tools" class="container">
-        
+
         <div class="card">
             <div class="card-header"><span style="color:var(--teal)">💧</span> Drip Rate Calc</div>
             <div class="calc-box">
@@ -598,7 +486,7 @@
                 <tr><td>Q8H (62ml)</td><td class="val-val">3s / 1 drop</td></tr>
                 <tr><td>Q12H (41ml)</td><td class="val-val">4s / 1 drop</td></tr>
             </table>
-            
+
              <div class="formula-box" style="margin-top:10px; padding:10px; background:var(--bg-color); border-radius:8px;">
                 <div class="formula-title" style="font-weight:700; font-size:0.8rem;">⚖️ Maint. (>20kg)</div>
                 <div class="formula-text" style="font-family:monospace;">Weight (kg) + 40 = mL/hr</div>
@@ -674,7 +562,7 @@
         </div>
 <div class="card full-width">
             <div class="card-header"><span style="color:var(--purple)">📋</span> Procedure Trolley Setup</div>
-            
+
             <!-- 1. Abdominal Tapping -->
             <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
                 <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
@@ -798,7 +686,7 @@
                     </ul>
                 </div>
             </details>
-            
+
             <!-- 9. Knee Tap -->
             <details style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
                 <summary style="font-weight:700; cursor:pointer; font-size:0.9rem; list-style:none; display:flex; justify-content:space-between; outline:none;">
@@ -890,10 +778,10 @@
         <div class="card full-width" style="min-height: 80vh;">
             <div class="card-header">💊 Injectables Guide</div>
             <input type="search" id="medSearch" class="search-box" placeholder="Search drug..." onkeyup="filterMeds()">
-            
+
             <div style="font-size:0.7rem; color:var(--text-sec); margin-bottom:10px; text-align:center;">
-                <span class="tag t-push">PUSH</span> IV Direct &nbsp; 
-                <span class="tag t-inf">INF</span> IV Drip &nbsp; 
+                <span class="tag t-push">PUSH</span> IV Direct &nbsp;
+                <span class="tag t-inf">INF</span> IV Drip &nbsp;
                 <span class="tag t-pump">PUMP</span> Machine &nbsp;
                 <span class="tag t-im">IM</span>
             </div>
@@ -941,7 +829,7 @@
 
             <div id="medList">
                 <!-- Data from original file starts here -->
-                
+
                 <div class="drug-row">
                     <div class="d-header">
                         <span class="d-name">Aciclovir</span>
@@ -1628,7 +1516,7 @@
             const tradeDiv = items[i].getElementsByClassName("d-trade")[0];
             const nameTxt = nameDiv ? (nameDiv.textContent || nameDiv.innerText) : "";
             const tradeTxt = tradeDiv ? (tradeDiv.textContent || tradeDiv.innerText) : "";
-            
+
             if (nameTxt.toUpperCase().indexOf(filter) > -1 || tradeTxt.toUpperCase().indexOf(filter) > -1) {
                 items[i].style.display = "";
             } else {

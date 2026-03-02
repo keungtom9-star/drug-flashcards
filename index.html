@@ -27,881 +27,201 @@
             --ios-gray: #8E8E93;
             --ios-separator: #C6C6C8;
             --text-primary: #000000;
-            --text-secondary: #3C3C4399; /* 60% opacity */
+            --text-secondary: #3C3C4399;
             
             --radius-card: 24px;
-            --radius-btn: 12px;
-            --shadow-soft: 0 10px 24px rgba(59, 130, 246, 0.12);
+            --radius-btn: 14px;
+            --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.04); /* Softer, more beautiful shadow */
             --glass-bg: rgba(255, 255, 255, 0.85);
+        }
+
+        /* --- 1. LIMITED SCROLLING & APP LAYOUT --- */
+        html, body {
+            height: 100dvh; /* Exact viewport height */
+            width: 100%;
+            overflow: hidden; /* Prevent whole-page bounce */
+            margin: 0; padding: 0;
+            position: fixed; /* Lock layout */
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at top, #f8fbff 0%, #f2f2f7 55%, #eef6ff 100%);
+            background: radial-gradient(circle at top, #f8fbff 0%, #f2f2f7 60%, #eef6ff 100%);
             color: var(--text-primary);
-            margin: 0;
-            padding: 0;
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            -webkit-tap-highlight-color: transparent;
-            min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            flex-direction: column; /* Stack Header -> Nav -> Content */
             align-items: center;
-            transition: opacity 0.18s ease;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: 0; /* Handled by container */
         }
 
-        body.page-leaving { opacity: 0.7; }
-
-        /* iOS Header */
+        /* Header stays fixed at top naturally in flex col */
         header {
             width: 100%;
-            padding: 12px 20px 10px;
+            flex-shrink: 0; /* Never shrink */
+            padding: 12px 20px 8px;
             box-sizing: border-box;
-            background: rgba(255,255,255,0.88);
-            backdrop-filter: blur(14px);
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 5px;
-            position: sticky;
-            top: 0;
             z-index: 700;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
+            border-bottom: 1px solid rgba(0,0,0,0.04);
         }
 
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        /* Nav stays fixed below header */
+        .glass-nav {
+            flex-shrink: 0;
+            width: 94%; max-width: 600px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 18px; padding: 6px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex; justify-content: space-between; gap: 8px;
+            margin: 8px 0 12px 0;
+            z-index: 600;
         }
-        
+
+        /* --- 2. FIT ALL WORD --- */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            /* Force wrapping everywhere */
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .nav-btn span { white-space: nowrap; } /* Exception: Keep nav labels on one line */
+
+        /* --- SCROLLABLE CONTENT AREA --- */
+        #app-container {
+            flex: 1; /* Fill remaining vertical space */
+            width: 100%;
+            max-width: 600px;
+            overflow-y: auto; /* Internal scroll only */
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; /* Smooth scroll */
+            padding: 0 16px 120px 16px; /* Bottom padding for scroll space */
+            scrollbar-width: none;
+        }
+        #app-container::-webkit-scrollbar { display: none; }
+
+        /* Typography & UI Polish */
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 750;
+            letter-spacing: -0.03em;
+            margin: 0;
+            display: flex; align-items: center; gap: 10px;
+            color: #1c1c1e;
+        }
+
         .app-icon-img {
-            width: 38px; height: 38px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 36px; height: 36px;
+            border-radius: 9px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
 
         .subtitle {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
-            margin-top: 5px;
-            background: rgba(0,0,0,0.05);
-            padding: 4px 10px;
-            border-radius: 12px;
-        }
-        
-        /* Settings Button */
-        .top-back-btn,
-        .settings-btn-top {
-            position: absolute;
-            right: 20px; top: 20px;
-            background: rgba(255,255,255,0.92);
-            border: 1px solid rgba(0,0,0,0.05);
-            width: 36px; height: 36px; border-radius: 50%;
-            font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; backdrop-filter: blur(10px); color: var(--text-primary);
-            box-shadow: 0 6px 14px rgba(59,130,246,0.16);
-            transition: transform 0.2s;
-        }
-        .top-back-btn {
-            left: 20px; right: auto; top: 14px;
-        }
-        .settings-btn-top:active, .top-back-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.1); }
-
-        /* Nav */
-        .glass-nav {
-            position: sticky; top: 10px; z-index: 100;
-            width: 92%; max-width: 600px;
-            background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-radius: 18px; padding: 7px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
-            display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px;
+            margin-top: 4px;
+            background: rgba(0,0,0,0.04);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-weight: 500;
         }
 
         .nav-btn {
-            flex: 1; height: 38px; border: none; background: transparent;
-            border-radius: 10px; font-weight: 600; font-size: 0.9rem;
-            color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease;
+            flex: 1; height: 40px; border: none; background: transparent;
+            border-radius: 12px; font-weight: 600; font-size: 0.85rem;
+            color: var(--ios-gray); cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
             display: flex; align-items: center; justify-content: center; gap: 6px;
         }
-        .nav-ico { font-size: 1rem; line-height: 1; }
-        .nav-label { line-height: 1; }
-        .nav-btn.active { background-color: var(--ios-card); color: var(--ios-blue); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-
-        #app-container { width: 92%; max-width: 600px; flex: 1; padding-bottom: 80px; }
-
-        body.ward-fullscreen header {
-            display: flex;
-            z-index: 900;
+        .nav-btn.active {
+            background-color: #fff;
+            color: var(--ios-blue);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transform: scale(1.02);
         }
 
-        body.ward-fullscreen .glass-nav {
-            display: flex;
-            z-index: 900;
-        }
-
-        body.ward-fullscreen {
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
-        }
-
+        /* Fullscreen adjustments for Ward/Clinical */
         body.ward-fullscreen #app-container {
-            width: 92%;
-            max-width: 600px;
-            padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
-            height: auto;
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        body.ward-fullscreen #ward-section,
-        body.ward-fullscreen #clinical-section {
-            position: relative;
-            inset: auto;
-            z-index: 220;
-            background: radial-gradient(circle at top, #f8fbff 0%, #eef2ff 45%, #eef3f8 100%);
+            width: 100%; max-width: 100%;
+            padding: 0;
         }
 
         .immersive-shell {
-            height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-            min-height: 78vh;
-            padding: 10px 10px calc(env(safe-area-inset-bottom) + 10px);
-            box-sizing: border-box;
-        }
-
-        .immersive-frame {
+            height: 100%; /* Fill flex container */
             width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 18px;
-            background: #fff;
-            box-shadow: 0 12px 36px rgba(15, 23, 42, 0.14);
-        }
-
-        body.ward-fullscreen .immersive-shell {
-            height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 84px);
-            min-height: 70vh;
-            padding: 8px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        body.ward-fullscreen .immersive-frame {
-            border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-        }
-
-        body.ward-fullscreen .immersive-back-btn {
-            display: none;
-        }
-
-        .immersive-back-btn {
-            position: fixed;
-            top: calc(env(safe-area-inset-top) + 12px);
-            left: 12px;
-            z-index: 350;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            background: rgba(255, 255, 255, 0.94);
-            color: #1f2937;
-            border-radius: 999px;
-            padding: 10px 14px;
-            font-weight: 700;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.18);
-        }
-
-        /* Cards */
-        .ios-card {
-            background: var(--ios-card); border-radius: var(--radius-card); padding: 20px;
-            box-shadow: var(--shadow-soft); margin-bottom: 20px; position: relative; overflow: hidden;
-            word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;
-        }
-
-        /* Search */
-        .search-wrapper { position: relative; margin-bottom: 15px; }
-        .search-bar {
-            width: 100%; padding: 12px 16px; padding-left: 40px;
-            border-radius: 14px; border: none; background: #E3E3E8;
-            font-size: 17px; color: var(--text-primary); box-sizing: border-box; outline: none;
-        }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ios-gray); font-size: 1.1rem;
-        }
-        
-        .section-header {
-            font-size: 0.8rem; font-weight: 700; color: var(--ios-gray); 
-            margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        /* Daily Recommendations */
-        .daily-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;
-        }
-        .daily-card {
-            background: linear-gradient(145deg, #ffffff, #eef6ff); border-radius: 20px; padding: 15px;
-            box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
-            justify-content: space-between; min-height: 100px; cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(0,0,0,0.05);
-            /* Ensure text stays within card */
-            word-break: break-word; overflow-wrap: break-word; hyphens: auto;
-        }
-        .daily-card:hover { box-shadow: 0 8px 25px rgba(0, 122, 255, 0.18); }
-        .daily-card:active { transform: scale(0.96); }
-        .daily-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-        .daily-icon-pill {
-            width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.9);
-            display:flex; align-items:center; justify-content:center; font-size: 0.95rem;
-        }
-        .daily-label {
-            font-size: 0.68rem; color: #fff; font-weight: 800; text-transform: uppercase;
-            letter-spacing: .6px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 999px;
-        }
-        .daily-name { 
-            font-size: 1.1rem; font-weight: 700; color: var(--text-primary); 
-            line-height: 1.2; margin-top: 5px; margin-bottom: 10px;
-            word-break: break-word;
-        }
-        .daily-sub { font-size: 0.8rem; color: #1f2937; margin-top: auto; opacity: .85; }
-
-        .anki-controls {
-            display: none;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-top: 12px;
-            padding: 0 10px;
-        }
-        .anki-btn {
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: 700;
-            padding: 10px 6px;
-            cursor: pointer;
-        }
-
-        .anki-meta {
-            margin-top: 10px;
-            font-size: 0.72rem;
-            color: var(--ios-gray);
-            text-align: center;
-        }
-
-        .quiz-stats-row {
-            margin: 12px 0;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .quiz-stat-pill {
-            background: #F2F2F7;
-            border-radius: 10px;
-            padding: 8px;
-            text-align: center;
-            font-size: 0.72rem;
-            color: var(--ios-gray);
-        }
-
-        .quiz-stat-pill strong {
-            display: block;
-            color: var(--text-primary);
-            font-size: 1rem;
-            margin-top: 2px;
-        }
-
-
-        .mobile-tab-label { display: none; }
-        .nav-label-mobile { display: none; }
-
-        .app-smooth {
-            contain: content;
-            will-change: transform;
-        }
-
-
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(12px) scale(0.99); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes softPulse {
-            0%, 100% { box-shadow: 0 4px 20px rgba(0, 122, 255, 0.08); }
-            50% { box-shadow: 0 8px 28px rgba(0, 122, 255, 0.18); }
-        }
-
-        .daily-card { animation: fadeSlideUp 0.35s ease both; }
-        .flashcard-wrapper { animation: fadeSlideUp 0.3s ease both; }
-        .glass-nav .nav-btn.active { animation: softPulse 1.8s ease-in-out infinite; }
-
-        /* Explicit dual UI modes */
-        body.mobile-ui .subtitle::after { content: ' • Mobile UI'; }
-
-        body.mobile-ui:not(.ward-fullscreen) {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100dvh;
+            padding: 0;
             overflow: hidden;
-            overscroll-behavior: none;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #app-container {
-            position: fixed;
-            left: 3%;
-            right: 3%;
-            top: calc(env(safe-area-inset-top) + 144px);
-            bottom: calc(env(safe-area-inset-bottom) + 10px);
-            width: auto;
-            max-width: none;
-            padding-bottom: 0;
-            overflow: hidden;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #search-section,
-        body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
-            height: 100%;
-            overflow: hidden;
-            overscroll-behavior: none;
-            -webkit-overflow-scrolling: auto;
-            padding-bottom: 0;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #search-section {
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            gap: 6px;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section .ios-card {
-            height: auto;
-            min-height: 100%;
-            overflow: visible;
-            padding: 10px;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #filter-bar {
-            position: fixed;
-            left: 3%;
-            right: 3%;
-            top: calc(env(safe-area-inset-top) + 144px);
-            width: auto !important;
-            max-width: none;
-            z-index: 210;
-            margin: 0;
-            padding-bottom: 0;
-        }
-
-        body.desktop-ui header {
-            width: 100%;
-            margin-top: 0;
-            padding: 14px 24px;
             border-radius: 0;
-            background: rgba(255,255,255,0.6);
-            backdrop-filter: blur(12px);
-            box-shadow: var(--shadow-soft);
         }
-        body.desktop-ui .glass-nav {
-            width: 100%;
-            max-width: none;
-            position: sticky;
-            top: 0;
-        }
-        body.desktop-ui #app-container {
-            width: 100%;
-            max-width: none;
-            padding: 0 20px 48px;
-        }
-        body.desktop-ui .daily-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-        body.desktop-ui .system-scroll-container {
-            gap: 10px;
-        }
-        body.desktop-ui .flashcard-wrapper {
-            height: 72dvh;
-            max-height: 760px;
-        }
-        body.desktop-ui .subtitle::after { content: ' • Desktop UI'; }
-
-        body.desktop-ui #ward-section,
-        body.desktop-ui #clinical-section {
-            width: 100% !important;
-            max-width: none !important;
-            left: 0;
-            right: 0;
-        }
-
-        .clinical-loading-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 18px;
-            border-radius: 14px;
-            background: rgba(255,255,255,0.86);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.08);
-            backdrop-filter: blur(10px);
-        }
-        .clinical-loading-spinner {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 3px solid rgba(0,122,255,0.2);
-            border-top-color: var(--ios-blue);
-            animation: spin 0.8s linear infinite;
-        }
-
-
-        @media (min-width: 1024px) {
-            .immersive-shell {
-                padding: 16px 20px 18px;
-            }
-            .immersive-frame {
-                border-radius: 24px;
-            }
-            .immersive-back-btn {
-                top: 18px;
-                left: 20px;
-                padding: 10px 16px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .immersive-shell {
-                padding: 8px 8px calc(env(safe-area-inset-bottom) + 8px);
-            }
-            .immersive-frame {
-                border-radius: 14px;
-            }
-            .immersive-back-btn {
-                padding: 9px 12px;
-                font-size: 0.92rem;
-            }
-
-            body.ward-fullscreen #ward-section,
-            body.ward-fullscreen #clinical-section {
-                position: relative;
-                inset: auto;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-                scroll-behavior: auto !important;
-            }
-        }
-
-        @media (max-width: 768px) {
-            header { padding: 10px 14px 8px; }
-            h1 { font-size: 1.35rem; }
-            .subtitle { font-size: 0.74rem; }
-            .top-back-btn,
-        .settings-btn-top, .top-back-btn { right: 14px; top: 10px; width: 34px; height: 34px; }
-            .top-back-btn { left: 14px; right: auto; }
-
-            .glass-nav {
-                position: sticky;
-                top: calc(env(safe-area-inset-top) + 2px);
-                width: 94%;
-                max-width: 600px;
-                margin-bottom: 8px;
-                z-index: 700;
-                border-radius: 14px;
-                padding: 4px 6px;
-                box-shadow: 0 3px 16px rgba(0,0,0,0.08);
-                background: rgba(255,255,255,0.95);
-            }
-
-            .nav-btn {
-                height: 34px;
-                font-size: 0.72rem;
-                display: flex;
-                flex-direction: row;
-                gap: 4px;
-                align-items: center;
-                justify-content: center;
-            }
-            .nav-ico { font-size: 0.86rem; }
-            .nav-label { display: block; font-size: 0.68rem; }
-            .nav-label-mobile { display: none; }
-
-            #app-container { width: 94%; padding-bottom: 16px; }
-            #filter-bar { width: 94% !important; }
-
-            .flashcard-wrapper {
-                height: 43dvh;
-                min-height: 250px;
-                max-height: 360px;
-            }
-
-            .card-face { padding: 8px; }
-            .card-back { padding-top: 6px; overflow: hidden; }
-            .drug-title { font-size: 0.96rem; margin: 2px 0; line-height: 1.15; }
-            .detail-row { margin-bottom: 4px; padding-bottom: 3px; }
-            .detail-label { font-size: 0.56rem; margin-bottom: 0; }
-            .detail-content { font-size: 0.66rem; line-height: 1.12; }
-            #fc-nursing { font-size: 0.64rem !important; line-height: 1.18 !important; }
-            .action-btn { min-height: 28px; padding: 4px 7px; font-size: 0.68rem; }
-            #flashcard-section { gap: 4px; }
-            #flashcard-section > div[style*='margin-top:20px'] { margin-top: 4px !important; }
-            #counter { font-size: 0.72rem !important; }
-            #show-answer-btn { margin-top: 6px !important; }
-            .anki-btn { padding: 7px 4px; font-size: 0.66rem; }
-
-            #quiz-section .ios-card { padding: 8px !important; }
-            #quiz-section h3 { font-size: 0.95rem; margin-bottom: 6px !important; }
-            #quiz-round-progress { font-size: 0.78rem; margin-bottom: 4px; }
-            #quiz-question {
-                font-size: 0.95rem !important;
-                line-height: 1.2;
-                min-height: 38px !important;
-                margin: 4px 0 6px 0 !important;
-            }
-            .quiz-stats-row { gap: 6px; margin-bottom: 6px; }
-            .quiz-stat-pill { padding: 4px 6px; font-size: 0.66rem; }
-            .quiz-stat-pill strong { font-size: 0.82rem; }
-            .quiz-option-btn {
-                font-size: 0.88rem;
-                min-height: 40px;
-                padding: 9px 10px;
-                line-height: 1.25;
-            }
-            #quiz-options { gap: 6px !important; }
-            .quiz-controls-grid {
-                grid-template-columns: 1fr;
-                gap: 6px;
-                margin-bottom: 6px;
-                padding: 6px;
-            }
-            .quiz-controls-grid .ios-select,
-            #quiz-section .action-btn { font-size: 0.7rem; min-height: 30px; padding: 6px 8px; }
-            .quiz-controls-grid .ios-select {
-                width: 100%;
-            }
-            .result-card { padding: 13px; }
-            .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-            #clinical-back-btn {
-                top: calc(env(safe-area-inset-top) + 8px) !important;
-                left: 10px !important;
-                padding: 7px 11px !important;
-                border-radius: 999px !important;
-                font-size: 0.86rem;
-            }
-            #clinical-loading {
-                align-items: flex-start !important;
-                justify-content: flex-start !important;
-                padding-top: calc(env(safe-area-inset-top) + 56px);
-                padding-left: 14px;
-                padding-right: 14px;
-            }
-            #clinical-loading .clinical-loading-box {
-                width: 100%;
-                max-width: 320px;
-            }
-        }
-
-        /* System Scroll */
-        .system-scroll-container {
-            display: flex; overflow-x: auto; gap: 8px; padding-bottom: 5px;
-            margin-bottom: 15px; scrollbar-width: none; flex-wrap: nowrap;
-        }
-        .system-scroll-container::-webkit-scrollbar { display: none; }
-
-        /* Multi-Drug Select Dropdown */
-        .drug-selector-wrapper {
-            margin: 10px 0; padding: 8px; background: #F2F2F7; border-radius: 12px;
-        }
-        .drug-select-label {
-            font-size: 0.7rem; color: var(--ios-gray); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; display: block;
-        }
-        .drug-select {
-            width: 100%; padding: 6px; border-radius: 8px; border: 1px solid #d1d1d6;
-            background: white; font-size: 0.9rem; color: var(--ios-blue); font-weight: 600;
-            appearance: none; -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007AFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat; background-position: right 10px top 50%; background-size: 10px auto;
-        }
-
-        /* Flashcard */
-        .flashcard-wrapper { height: 600px; cursor: pointer; }
-        .flashcard-inner {
-            position: relative; width: 100%; height: 100%; text-align: center;
-        }
-        .card-face {
-            position: absolute; width: 100%; height: 100%;
-            border-radius: var(--radius-card); background: var(--ios-card);
-            box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
-        }
-        .card-front { display: flex; }
-        .card-back { display: none; justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
-        .flashcard-wrapper.flipped .card-front { display: none; }
-        .flashcard-wrapper.flipped .card-back { display: flex; }
-
-        .drug-title {
-            font-size: 1.6rem; font-weight: 800;
-            background: linear-gradient(135deg, var(--ios-blue), var(--ios-indigo));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin: 15px 0; line-height: 1.2;
-            word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;
-        }
-        .detail-row { width: 100%; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F2F2F7; }
-        .detail-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ios-gray); font-weight: 600; margin-bottom: 4px; }
-        .detail-content { 
-            font-size: 0.88rem; font-weight: 500; color: var(--text-primary); line-height: 1.28;
-            word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;
-        }
-        #fc-nursing { font-size: 0.8rem !important; line-height: 1.3 !important; }
-
-        .action-btn {
-            background: var(--ios-bg); color: var(--ios-blue); border: none;
-            padding: 12px 20px; border-radius: 12px; font-weight: 600;
-            font-size: 0.95rem; width: 100%; margin-top: 10px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s;
-        }
-        .action-btn:active { background: #d1d1d6; }
-        .btn-primary { background: var(--ios-blue); color: white; }
-        .btn-green { background: var(--ios-green); color: white; }
-
-        .external-links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
-
-        #flashcard-section {
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            overflow-x: hidden;
-        }
-        #flashcard-section > * { max-width: 100%; min-width: 0; }
-        .flashcard-wrapper, .flashcard-inner, .card-face {
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            overflow-x: hidden;
-        }
-        .card-back { padding-right: 14px; }
-        .detail-row, .detail-content, .action-btn, .external-links-grid {
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            word-break: break-word;
-        }
-
-        /* Modals & Misc */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
-            z-index: 1000; display: none; justify-content: center; align-items: flex-end;
-        }
-        .modal-card {
-            background: var(--ios-card); width: 100%; max-width: 600px; height: 85vh;
-            border-radius: 24px 24px 0 0; padding: 25px; box-sizing: border-box;
-            overflow-y: auto; animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        .chip {
-            display: inline-flex; padding: 8px 14px; background: #E3E3E8;
-            border-radius: 20px; font-size: 0.85rem; font-weight: 600;
-            color: var(--text-primary); margin: 0; cursor: pointer; white-space: nowrap;
-        }
-        
-        .filter-scroller {
-            display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; margin-bottom: 10px; scrollbar-width: none;
-        }
-        .filter-scroller::-webkit-scrollbar { display: none; }
-        select.ios-select {
-            appearance: none; background: var(--ios-bg); border: none; padding: 10px 16px;
-            border-radius: 10px; font-size: 0.9rem; font-weight: 600; color: var(--ios-blue);
-        }
-
-        .result-card {
-            background: white; padding: 16px; border-radius: 20px; margin-bottom: 12px;
-            border: 1px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: all 0.2s; cursor: pointer;
-            /* Text wrapping safety */
-            word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;
-        }
-        .result-card:active { transform: scale(0.98); }
-        .result-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-        .result-name { 
-            font-weight: 700; font-size: 1.1rem; color: var(--ios-blue); 
-            word-break: break-word; flex: 1;
-        }
-        .result-class { 
-            font-size: 0.85rem; color: var(--ios-gray); text-align: right; 
-            max-width: 40%; word-break: break-word;
-        }
-        .name-with-speak { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
-        .speak-icon-btn {
-            border:none; background:#eef2ff; color:var(--ios-blue); width:30px; height:30px;
-            border-radius:50%; font-size:0.95rem; cursor:pointer; flex-shrink:0;
-        }
-        .quiz-mini-explainer {
-            display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
-            background:#eff6ff; color:#1e3a8a; font-size:0.82rem; line-height:1.45;
-        }
-
-        .quiz-hint-box {
-            display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
-            background:#fffbeb; color:#92400e; font-size:0.83rem; line-height:1.45;
-            border:1px solid #fde68a;
-        }
-        .quiz-hint-actions {
-            display:none; margin-top:10px; gap:8px;
-        }
-
-        .quiz-option-btn {
-            text-align: left;
-            justify-content: flex-start;
-            background: #F2F2F7;
-            white-space: normal;
-            line-height: 1.45;
-            padding: 14px 16px;
-            font-size: 0.98rem;
-        }
-
-        .quiz-controls-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 10px;
-        }
-
-        .quiz-start-btn {
-            grid-column: 1 / -1;
-            margin: 0;
-            width: 100%;
-        }
-
-        .quiz-topbar {
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom: 10px;
-        }
-
-        .quiz-progress-pill {
-            font-size:0.85rem;
-            color:var(--ios-gray);
-            margin-bottom:8px;
-            background:#f1f5f9;
-            border:1px solid #e2e8f0;
-            border-radius:999px;
-            padding:6px 10px;
-            display:inline-block;
-        }
-
-
-        .quiz-generating-wrap {
-            display: none;
-            margin: 8px 0 12px;
-        }
-        .quiz-generating-track {
-            width: 100%;
-            height: 10px;
-            border-radius: 999px;
-            background: #e5e7eb;
-            overflow: hidden;
-            border: 1px solid #d1d5db;
-        }
-        .quiz-generating-bar {
+        .immersive-frame {
+            border-radius: 0;
             height: 100%;
-            width: 0%;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #60a5fa, #2563eb);
-            transition: width 160ms linear;
-        }
-        .quiz-generating-meta {
-            margin-top: 5px;
-            font-size: 0.76rem;
-            color: #475569;
-            text-align: right;
+            box-shadow: none;
         }
 
-        .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
-        .multi-chip {
-            background:#eef2ff; color:#3730a3; border-radius:999px; padding:4px 10px; font-size:0.75rem; font-weight:600;
-            border: 1px solid transparent; transition: all 0.2s ease;
-        }
-        .multi-chip.selectable { cursor: pointer; }
-        .multi-chip.selectable:hover { transform: translateY(-1px); }
-        .multi-chip.is-active { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
-
-        body { animation: appEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
-        .ios-card, .daily-card, .result-card { animation: cardPop 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
-        .app-smooth.mode-transition { animation: sectionSlideIn 0.24s ease-out; }
-        .action-btn, .chip, .nav-btn { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
-        .action-btn:active, .chip:active, .nav-btn:active { transform: scale(0.97); }
-
-        @keyframes appEnter {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes sectionSlideIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes cardPop {
-            from { opacity: 0; transform: translateY(8px) scale(0.99); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        /* --- CARDS & ELEMENTS --- */
+        .ios-card {
+            background: var(--ios-card); border-radius: 22px; padding: 20px;
+            box-shadow: var(--shadow-soft); margin-bottom: 16px;
+            border: 1px solid rgba(0,0,0,0.02);
         }
 
-        .ai-output {
-            background: #F0F9FF; border-left: 4px solid var(--ios-blue);
-            padding: 15px; border-radius: 12px; margin-top: 15px;
-            font-size: 0.95rem; line-height: 1.6; display: none;
-            word-wrap: break-word; overflow-wrap: break-word;
+        .daily-card {
+            background: linear-gradient(160deg, #ffffff 40%, #f0f7ff 100%);
+            border-radius: 20px; padding: 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+            border: 1px solid rgba(255,255,255,0.8);
+            display: flex; flex-direction: column;
+            justify-content: space-between; min-height: 110px; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .daily-card:active { transform: scale(0.97); }
+
+        .search-bar {
+            width: 100%; padding: 14px 16px; padding-left: 42px;
+            border-radius: 16px; border: none; background: #Eaeaec;
+            font-size: 1rem; color: var(--text-primary); outline: none;
+            transition: background 0.2s;
+        }
+        .search-bar:focus { background: #fff; box-shadow: 0 0 0 2px var(--ios-blue); }
+
+        /* Other Preserved Styles */
+        .top-back-btn, .settings-btn-top {
+            position: absolute; right: 20px; top: 16px;
+            background: rgba(255,255,255,0.8);
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.05);
+            font-size: 1.1rem;
+        }
+        .top-back-btn { left: 20px; right: auto; }
+
+        .app-smooth { animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            header { padding: 8px 16px 4px; }
+            h1 { font-size: 1.3rem; }
+            .glass-nav { width: 96%; padding: 5px; margin-bottom: 8px; }
+            .nav-btn { height: 36px; font-size: 0.75rem; }
+            #app-container { padding-bottom: 100px; }
+            .immersive-back-btn { top: 60px; left: 15px; }
         }
 
-        .settings-input {
-            width: 100%; padding: 12px; border: 1px solid #d1d1d6;
-            border-radius: 10px; margin-bottom: 15px; box-sizing: border-box;
-            background: #F2F2F7; font-size: 16px;
-        }
-        .config-section { margin-bottom: 15px; }
-
-        .loading-spinner {
-            display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(0,0,0,0.1);
-            border-radius: 50%; border-top-color: var(--ios-blue); animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Hidden Details in Search */
-        .extra-details { display: none; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.9rem; line-height: 1.4; color: #333; }
-        .expanded .extra-details { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
+        /* Ensure inputs don't zoom on mobile */
+        input, select, textarea { font-size: 16px !important; }
     </style>
 </head>
 <body>
