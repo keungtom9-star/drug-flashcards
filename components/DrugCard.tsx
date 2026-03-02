@@ -48,16 +48,7 @@ const DrugCard: React.FC<DrugCardProps> = ({ drug, settings, isNew }) => {
     const openGoogleDeepLink = (e: React.MouseEvent) => {
         e.stopPropagation();
         const q = encodeURIComponent(`${drug.name} nursing considerations`);
-        const appLink = `google://search?q=${q}`;
-        const webLink = `https://www.google.com/search?igu=1&q=${q}`;
-
-        const now = Date.now();
-        window.location.href = appLink;
-        setTimeout(() => {
-            if (Date.now() - now < 1600) {
-                window.open(webLink, '_blank', 'noopener');
-            }
-        }, 700);
+        window.open(`https://www.google.com/search?q=${q}`, '_blank');
     };
 
     const triggerAI = async (e: React.MouseEvent, type: 'isbar' | 'explain' | 'cheat' | 'mix') => {
