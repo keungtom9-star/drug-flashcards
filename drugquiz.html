@@ -366,9 +366,8 @@
     <script type="module">
         // Basic config
         const DEFAULT_SHEET = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3fHW561ZytpwsS-aFRm3T-71oUgs_EhCgnI0KrJlALra1SfusPiMgUNAC0HpauzgkJXQgGGqgQmU1/pub?output=csv";
-        // --- UPDATED: Your specific Apps Script URL is now hardcoded here ---
-        const DEFAULT_SCRIPT = "https://script.google.com/macros/s/AKfycbyeuVCaJl6qt_WbGPS1SldfOg-kP-8RrX-zzlao8k2wbxcT_AUuXKo3OJv6y5MHxAFkPQ/exec";
-        const PRELOADED_KEY = "sk-92db3cf721454bd7b351ca6ef40eaaf7"; // Default DeepSeek key
+        const DEFAULT_SCRIPT = "";
+        const PRELOADED_KEY = "";
 
         // State
         let dbQuestions = [], uniqueTopics = {}, quizQueue = [], currentQIndex = 0;
@@ -380,7 +379,6 @@
         window.onload = () => {
             document.getElementById('api-key').value = localStorage.getItem('api_key') || PRELOADED_KEY;
             document.getElementById('sheet-url').value = localStorage.getItem('sheet_url') || DEFAULT_SHEET;
-            // Load the default script URL if not already saved by the user
             document.getElementById('script-url').value = localStorage.getItem('script_url') || DEFAULT_SCRIPT;
 
             audioEnabled = localStorage.getItem('audio_enabled') === 'true';
