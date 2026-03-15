@@ -1194,6 +1194,7 @@
              <div class="import-wrapper" style="margin-top:10px;">
                 <input type="text" id="sheet-url" class="settings-input" placeholder="Google Sheet CSV URL" style="margin-bottom:5px;" />
                 <button onclick="fetchSheetData()" class="action-btn">Load Sheet Data</button>
+                <input type="text" id="script-url" class="settings-input" placeholder="Google Script Web App URL (save target)" style="margin-top:8px; margin-bottom:5px;" />
                 <input type="text" id="quiz-sheet-url" class="settings-input" placeholder="Quiz bank Google Sheet CSV URL" style="margin-top:8px; margin-bottom:5px;" />
                 <button onclick="fetchQuizSheetData()" class="action-btn" style="background:#eef6ff; color:#1d4ed8;">Load Quiz Database</button>
                 <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
@@ -2589,6 +2590,7 @@ Language: ${langInstruction}.`;
         document.getElementById('openrouter-key').value = openRouterKey;
         document.getElementById('yinli-key').value = yinliKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
+        document.getElementById('script-url').value = googleScriptURL;
         document.getElementById('quiz-sheet-url').value = quizSheetURL;
         document.getElementById('quiz-engine').value = 'deepseek';
         document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
@@ -3386,6 +3388,8 @@ Language: ${langInstruction}.`;
                     <button onclick="triggerAISearch('${query.replace(/'/g, "\\'")}')" class="action-btn btn-primary" style="margin-top:15px;">
                         ✨ Ask AI to Find & Add "${query}"
                     </button>
+                    <div style="margin-top:12px; font-size:0.85rem; color:#6b7280;">or upload infusion chart photos (Yinli Gemini)</div>
+                    <input type="file" id="ai-image-upload" accept="image/*" multiple onchange="triggerAISearchFromImages(this, '${query.replace(/'/g, "\\'")}')" style="margin-top:8px; width:100%; max-width:360px;" />
                     <div id="ai-search-output"></div>
                 </div>
             `;
@@ -3527,6 +3531,11 @@ Rules:
             let fullText = "";
             await streamAIResponse([{role: "user", content: prompt}], (text) => { fullText = text; });
             fullText = fullText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const jsonStart = fullText.indexOf('{');
+            const jsonEnd = fullText.lastIndexOf('}');
+            if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                fullText = fullText.slice(jsonStart, jsonEnd + 1);
+            }
             const drugData = JSON.parse(fullText);
 
             container.innerHTML = `
@@ -3540,30 +3549,192 @@ Rules:
                     <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${drugData.indication}</div></div>
                     <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" style="color:#d32f2f;">${drugData.side_effects}</div></div>
                     <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content" style="font-size:0.9rem;">${drugData.nursing}</div></div>
-                    <button id="btn-save-sheet" onclick='saveToGoogleSheet(${JSON.stringify(drugData)})' class="action-btn btn-green">💾 Save to Database</button>
+                    <button id="btn-save-sheet" class="action-btn btn-green">💾 Save to Database</button>
                     <div id="save-status" style="text-align:center; margin-top:10px; font-size:0.85rem; font-weight:600;"></div>
                 </div>`;
+
+            const saveBtn = document.getElementById('btn-save-sheet');
+            if (saveBtn) {
+                saveBtn.onclick = () => saveToGoogleSheet(drugData);
+            }
         } catch (e) {
             container.innerHTML = `<div style="color:red; margin-top:10px;">Search failed. Please try again.</div>`;
         }
     }
 
-    function saveToGoogleSheet(drugData) {
-        const statusEl = document.getElementById('save-status');
-        const saveBtn = document.getElementById('btn-save-sheet');
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('Failed to read image file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function normalizeAISearchDrugPayload(drugData) {
+        if (!drugData || typeof drugData !== 'object') return null;
+        const normalized = {
+            name: String(drugData.name || '').trim(),
+            class: String(drugData.class || 'IV infusion').trim(),
+            system: String(drugData.system || 'Cardiovascular system').trim(),
+            indication: String(drugData.indication || '').trim(),
+            nursing: String(drugData.nursing || '').trim(),
+            side_effects: String(drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
+            hold_param: String(drugData.hold_param || '').trim(),
+            admin_type: String(drugData.admin_type || 'IV').trim()
+        };
+        if (!normalized.name) return null;
+        if (!systemCategories.includes(normalized.system)) normalized.system = 'Cardiovascular system';
+        return normalized;
+    }
+
+    function renderAIImageSearchResults(drugList) {
+        const container = document.getElementById('ai-search-output');
+        if (!container) return;
+        if (!drugList.length) {
+            container.innerHTML = '<div style="color:#b91c1c; margin-top:10px;">No medication rows detected from images.</div>';
+            return;
+        }
+
+        const cards = drugList.map((drugData, idx) => `
+            <div class="ios-card" style="border:2px solid var(--ios-green); margin-top:14px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <h3 style="margin:0; color:var(--ios-blue);">${drugData.name}</h3>
+                    <span class="chip" style="background:var(--ios-green); color:white;">Image OCR</span>
+                </div>
+                <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content">${drugData.class}</div></div>
+                <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${drugData.system}</div></div>
+                <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${drugData.indication}</div></div>
+                <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content">${drugData.nursing}</div></div>
+                <button id="btn-save-sheet-${idx}" class="action-btn btn-green">💾 Save to Database</button>
+                <div id="save-status-${idx}" style="text-align:center; margin-top:8px; font-size:0.85rem; font-weight:600;"></div>
+            </div>
+        `).join('');
+
+        container.innerHTML = `
+            <div style="margin-top:10px; text-align:left;">
+                <button id="btn-save-sheet-all" class="action-btn btn-green" style="margin-bottom:8px;">💾 Save All (${drugList.length})</button>
+                <div id="save-status-all" style="font-size:0.85rem; font-weight:600;"></div>
+                ${cards}
+            </div>
+        `;
+
+        const saveAllBtn = document.getElementById('btn-save-sheet-all');
+        if (saveAllBtn) {
+            saveAllBtn.onclick = async () => {
+                const status = document.getElementById('save-status-all');
+                saveAllBtn.disabled = true;
+                saveAllBtn.innerText = '⏳ Saving all...';
+                let okCount = 0;
+                for (let i = 0; i < drugList.length; i++) {
+                    const ok = await saveToGoogleSheet(drugList[i], `save-status-${i}`, `btn-save-sheet-${i}`);
+                    if (ok) okCount++;
+                }
+                if (status) {
+                    status.innerText = `Saved ${okCount}/${drugList.length}`;
+                    status.style.color = okCount === drugList.length ? 'var(--ios-green)' : 'var(--ios-red)';
+                }
+                saveAllBtn.innerText = `💾 Save All (${drugList.length})`;
+                saveAllBtn.disabled = false;
+            };
+        }
+
+        drugList.forEach((drugData, idx) => {
+            const saveBtn = document.getElementById(`btn-save-sheet-${idx}`);
+            if (saveBtn) {
+                saveBtn.onclick = () => saveToGoogleSheet(drugData, `save-status-${idx}`, `btn-save-sheet-${idx}`);
+            }
+        });
+    }
+
+    async function triggerAISearchFromImages(inputEl, query) {
+        const container = document.getElementById('ai-search-output');
+        if (!container) return;
+        const files = Array.from((inputEl && inputEl.files) ? inputEl.files : []).slice(0, 6);
+        if (!files.length) return;
+        if (currentProvider !== 'yinli-gemini' || !yinliKey) {
+            container.style.display = 'block';
+            container.innerHTML = `<div style="color:#b45309; margin-top:10px;">Image upload requires provider <strong>Yinli Gemini</strong> with API key in Settings.</div>`;
+            return;
+        }
+
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div style="text-align:center; padding:20px;">
+                <div class="loading-spinner"></div>
+                <div style="margin-top:10px; font-weight:600;">Reading ${files.length} image(s)...</div>
+            </div>`;
+
+        try {
+            const images = await Promise.all(files.map(readFileAsDataURL));
+            const prompt = `Extract medication infusion rows from the uploaded chart images${query ? ` (focus keyword: ${query})` : ''}.
+Return strict JSON only with this shape:
+{"drugs":[{"name":"","class":"","system":"Cardiovascular system","indication":"","nursing":"","side_effects":"","hold_param":"","admin_type":"IV"}]}
+Rules: Use concise English medical terms. If uncertain, keep value short and conservative. No markdown.`;
+
+            const content = [
+                { type: 'text', text: prompt },
+                ...images.map((dataUrl) => ({ type: 'image_url', image_url: { url: dataUrl } }))
+            ];
+
+            const response = await fetch(YINLI_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${yinliKey}`
+                },
+                body: JSON.stringify({
+                    model: YINLI_MODEL_NAME,
+                    stream: false,
+                    temperature: 0.1,
+                    messages: [{ role: 'user', content }]
+                })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Image extraction failed: ${response.status} ${errText || response.statusText}`);
+            }
+
+            const json = await response.json();
+            let fullText = String(json?.choices?.[0]?.message?.content || '').trim();
+            fullText = fullText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const jsonStart = fullText.indexOf('{');
+            const jsonEnd = fullText.lastIndexOf('}');
+            if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                fullText = fullText.slice(jsonStart, jsonEnd + 1);
+            }
+
+            const parsed = JSON.parse(fullText);
+            const sourceList = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.drugs) ? parsed.drugs : []);
+            const normalizedList = sourceList.map(normalizeAISearchDrugPayload).filter(Boolean);
+            renderAIImageSearchResults(normalizedList);
+        } catch (e) {
+            container.innerHTML = `<div style="color:red; margin-top:10px;">Image upload failed: ${(e && e.message) ? e.message : 'Unknown error'}</div>`;
+        }
+    }
+
+    async function saveToGoogleSheet(drugData, statusId = 'save-status', btnId = 'btn-save-sheet') {
+        const statusEl = document.getElementById(statusId);
+        const saveBtn = document.getElementById(btnId);
         
-        if(!googleScriptURL) { alert("Please set the Google Script URL in Settings (⚙️) first."); return; }
+        if(!googleScriptURL) { alert("Please set the Google Script URL in Settings (⚙️) first."); return false; }
+        if (!saveBtn || !statusEl) return false;
 
         saveBtn.disabled = true; saveBtn.innerText = "⏳ Saving..."; statusEl.innerText = "Syncing with cloud...";
 
-        fetch(googleScriptURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(drugData) })
+        const payload = normalizeAISearchDrugPayload(drugData) || drugData;
+
+        return fetch(googleScriptURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         .then(() => { 
             statusEl.innerText = "✅ Saved successfully!"; statusEl.style.color = "var(--ios-green)"; 
             saveBtn.innerText = "💾 Saved"; 
-            activeSourceList.push(normalizeDrugData(drugData)); 
+            activeSourceList.push(normalizeDrugData(payload)); 
+            return true;
         })
         .catch(err => { 
             statusEl.innerText = "❌ Save failed."; statusEl.style.color = "var(--ios-red)"; saveBtn.disabled = false; 
+            return false;
         });
     }
 
@@ -4727,7 +4898,7 @@ ${JSON.stringify(bankHints)}`;
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('openrouter_key', document.getElementById('openrouter-key').value);
         localStorage.setItem('yinli_key', document.getElementById('yinli-key').value);
-        localStorage.setItem('google_script_url', document.getElementById('sheet-url').value);
+        localStorage.setItem('google_script_url', document.getElementById('script-url').value);
         localStorage.setItem('quiz_sheet_url', document.getElementById('quiz-sheet-url').value);
         localStorage.setItem('quiz_engine', 'deepseek');
         localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
@@ -4740,6 +4911,7 @@ ${JSON.stringify(bankHints)}`;
         deepSeekKey = document.getElementById('deepseek-key').value;
         openRouterKey = document.getElementById('openrouter-key').value;
         yinliKey = document.getElementById('yinli-key').value;
+        googleScriptURL = document.getElementById('script-url').value;
         quizSheetURL = document.getElementById('quiz-sheet-url').value;
         quizEngine = 'deepseek';
         ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
