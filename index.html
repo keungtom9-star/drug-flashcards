@@ -3407,6 +3407,9 @@ Language: ${langInstruction}.`;
             const explainId = 'explain-' + index + '-' + Math.floor(Math.random() * 1000);
             const generics = parseDrugGenerics(drug.name);
             const sideEffectsText = drug.side_effects || drug.sideEffects || "Not listed";
+            
+            // Grab the effect data (handling different possible keys from your database)
+            const effectText = drug.effect_of_drug || drug.quiz || drug.effect || drug.effects || "Not specified";
 
             card.innerHTML = `
                 <div class="result-header">
@@ -3417,12 +3420,13 @@ Language: ${langInstruction}.`;
                     <span class="result-class">${drug.class}</span>
                 </div>
                 <div style="font-size:0.9rem; margin-top:5px; color:#555;">${drug.indication}</div>
-                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class=\"multi-chip selectable ${g === generics[0] ? 'is-active' : ''}\" onclick=\"event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')\">💖 ${g}</span>`).join('')}</div>` : ''}
+                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class="multi-chip selectable ${g === generics[0] ? 'is-active' : ''}" onclick="event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')">💖 ${g}</span>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
                     <div style="margin-bottom:5px;"><strong>Side Effects:</strong> <span style="color:#d32f2f;">${sideEffectsText}</span></div>
                     <div style="margin-bottom:5px;"><strong>Nursing:</strong> ${drug.nursing}</div>
                     <div style="margin-bottom:5px;"><strong>System:</strong> ${drug.system}</div>
+                    <div style="margin-bottom:5px;"><strong>Drug Effect:</strong> <span style="color:#7c3aed;">${effectText}</span></div>
                     
                     <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto;">
                          <span class="chip" onclick="event.stopPropagation(); triggerSearchGoogle(this)">🔎 Google</span>
