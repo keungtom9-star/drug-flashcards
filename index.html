@@ -2500,7 +2500,8 @@ Language: ${langInstruction}.`;
     function normalizeDrugData(drug) {
         drug.system = getSystemForDrug(drug);
         drug.side_effects = drug.side_effects || drug.SideEffects || drug.sideEffects || "Refer to nursing guide";
-        drug.__searchBlob = `${drug.name || ''} ${(drug.class || '')} ${(drug.system || '')} ${(drug.indication || '')} ${(drug.side_effects || '')}`.toLowerCase();
+        drug.quiz = drug.quiz || drug.effect || drug.effects || drug.side_effects || drug.SideEffects || "";
+        drug.__searchBlob = `${drug.name || ''} ${(drug.class || '')} ${(drug.system || '')} ${(drug.indication || '')} ${(drug.side_effects || '')} ${(drug.quiz || '')}`.toLowerCase();
         return drug;
     }
 
@@ -3519,24 +3520,20 @@ Language: ${langInstruction}.`;
             </div>`;
 
         const prompt = `You are a nursing tutor. The user searched for "${query}". Return strict JSON only.
-Keys: "name", "class", "system", "indication", "nursing", "side_effects".
+Keys: "name", "class", "system", "indication", "nursing", "side_effects", "quiz", "effect_of_drug".
 Rules:
 1) Use English only with clear medical terminology.
 2) Keep content short for fast mobile reading.
 3) "system" must be exactly one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
-4) "nursing" and "side_effects" should be short bullet-like strings.
+4) "nursing", "side_effects", "quiz", and "effect_of_drug" should be short bullet-like strings.
 5) Output JSON only, no markdown.`;
 
         try {
             let fullText = "";
             await streamAIResponse([{role: "user", content: prompt}], (text) => { fullText = text; });
-            fullText = fullText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const jsonStart = fullText.indexOf('{');
-            const jsonEnd = fullText.lastIndexOf('}');
-            if (jsonStart !== -1 && jsonEnd > jsonStart) {
-                fullText = fullText.slice(jsonStart, jsonEnd + 1);
-            }
-            const drugData = JSON.parse(fullText);
+            const parsed = parseAISearchPayload(fullText);
+            const drugData = extractSingleDrugPayload(parsed, query);
+            if (!drugData || !drugData.name) throw new Error('AI result missing drug name');
 
             container.innerHTML = `
                 <div class="ios-card" style="border:2px solid var(--ios-green); margin-top:20px; text-align:left;">
@@ -3549,13 +3546,36 @@ Rules:
                     <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${drugData.indication}</div></div>
                     <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" style="color:#d32f2f;">${drugData.side_effects}</div></div>
                     <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content" style="font-size:0.9rem;">${drugData.nursing}</div></div>
-                    <button id="btn-save-sheet" class="action-btn btn-green">💾 Save to Database</button>
+                    <div class="detail-row"><div class="detail-label">Drug Effect (Quiz)</div><div class="detail-content" style="color:#7c3aed;">${drugData.effect_of_drug || drugData.quiz || drugData.side_effects}</div></div>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button id="btn-add-local" class="action-btn" style="flex:1; background:#ecfdf5; color:#047857;">➕ Add to App</button>
+                        <button id="btn-save-sheet" class="action-btn btn-green" style="flex:1;">💾 Save to Database</button>
+                    </div>
                     <div id="save-status" style="text-align:center; margin-top:10px; font-size:0.85rem; font-weight:600;"></div>
                 </div>`;
 
+            const addLocalBtn = document.getElementById('btn-add-local');
+            if (addLocalBtn) {
+                addLocalBtn.onclick = () => {
+                    const statusEl = document.getElementById('save-status');
+                    const ok = upsertDrugToLocalList(drugData);
+                    if (statusEl) {
+                        statusEl.innerText = ok ? '✅ Added locally and visible in search.' : '❌ Unable to add locally.';
+                        statusEl.style.color = ok ? 'var(--ios-green)' : 'var(--ios-red)';
+                    }
+                    if (ok) {
+                        addLocalBtn.disabled = true;
+                        addLocalBtn.innerText = '✅ Added';
+                    }
+                };
+            }
+
             const saveBtn = document.getElementById('btn-save-sheet');
             if (saveBtn) {
-                saveBtn.onclick = () => saveToGoogleSheet(drugData);
+                saveBtn.onclick = async () => {
+                    const ok = await saveToGoogleSheet(drugData);
+                    if (ok) upsertDrugToLocalList(drugData);
+                };
             }
         } catch (e) {
             container.innerHTML = `<div style="color:red; margin-top:10px;">Search failed. Please try again.</div>`;
@@ -3580,12 +3600,77 @@ Rules:
             indication: String(drugData.indication || '').trim(),
             nursing: String(drugData.nursing || '').trim(),
             side_effects: String(drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
+            quiz: String(drugData.quiz || drugData.effect || drugData.effects || drugData.effect_of_drug || drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
+            effect_of_drug: String(drugData.effect_of_drug || drugData.quiz || drugData.effect || drugData.effects || drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
             hold_param: String(drugData.hold_param || '').trim(),
             admin_type: String(drugData.admin_type || 'IV').trim()
         };
         if (!normalized.name) return null;
         if (!systemCategories.includes(normalized.system)) normalized.system = 'Cardiovascular system';
         return normalized;
+    }
+
+    function parseAISearchPayload(rawText) {
+        if (!rawText) return null;
+        const cleaned = String(rawText).replace(/```json/gi, '').replace(/```/g, '').trim();
+        const starts = ['{', '['];
+        for (const startChar of starts) {
+            const start = cleaned.indexOf(startChar);
+            const endChar = startChar === '{' ? '}' : ']';
+            const end = cleaned.lastIndexOf(endChar);
+            if (start === -1 || end <= start) continue;
+            try {
+                return JSON.parse(cleaned.slice(start, end + 1));
+            } catch (_) {}
+        }
+        return null;
+    }
+
+    function extractSingleDrugPayload(parsed, fallbackQuery = '') {
+        let candidate = parsed;
+        if (Array.isArray(candidate)) candidate = candidate[0] || null;
+        if (candidate && Array.isArray(candidate.drugs)) candidate = candidate.drugs[0] || null;
+        if (candidate && candidate.drug && typeof candidate.drug === 'object') candidate = candidate.drug;
+        const normalized = normalizeAISearchDrugPayload(candidate || {});
+        if (normalized) return normalized;
+        return normalizeAISearchDrugPayload({ name: fallbackQuery, class: 'AI generated', indication: '', nursing: '', side_effects: 'Not specified' });
+    }
+
+    function buildDatabaseSavePayload(drugData) {
+        const normalized = normalizeAISearchDrugPayload(drugData) || drugData || {};
+        const effect = String(normalized.effect_of_drug || normalized.quiz || normalized.effect || normalized.effects || normalized.side_effects || 'Not specified').trim();
+        return {
+            ...normalized,
+            quiz: String(normalized.quiz || effect || 'Not specified').trim(),
+            effect_of_drug: effect,
+            effect: effect,
+            effects: effect,
+            side_effects: String(normalized.side_effects || effect || 'Not specified').trim()
+        };
+    }
+
+    function upsertDrugToLocalList(drugData) {
+        const normalizedPayload = normalizeAISearchDrugPayload(drugData);
+        if (!normalizedPayload) return false;
+        const normalizedDrug = normalizeDrugData({ ...normalizedPayload });
+        const targetName = (normalizedDrug.name || '').trim().toLowerCase();
+        const existingIdx = activeSourceList.findIndex((d) => String(d.name || '').trim().toLowerCase() === targetName);
+        if (existingIdx >= 0) {
+            activeSourceList[existingIdx] = normalizedDrug;
+        } else {
+            activeSourceList.unshift(normalizedDrug);
+        }
+        saveLocalDrugCache(activeSourceList);
+        const currentQuery = (document.getElementById('search-input')?.value || '').trim();
+        if (currentQuery) {
+            runSearch();
+        } else {
+            filteredList = [...activeSourceList];
+            flashcardList = [...filteredList];
+            quizList = [...filteredList];
+            updateQueueStats(filteredList);
+        }
+        return true;
     }
 
     function renderAIImageSearchResults(drugList) {
@@ -3669,7 +3754,7 @@ Rules:
             const images = await Promise.all(files.map(readFileAsDataURL));
             const prompt = `Extract medication infusion rows from the uploaded chart images${query ? ` (focus keyword: ${query})` : ''}.
 Return strict JSON only with this shape:
-{"drugs":[{"name":"","class":"","system":"Cardiovascular system","indication":"","nursing":"","side_effects":"","hold_param":"","admin_type":"IV"}]}
+{"drugs":[{"name":"","class":"","system":"Cardiovascular system","indication":"","nursing":"","side_effects":"","quiz":"","effect_of_drug":"","hold_param":"","admin_type":"IV"}]}
 Rules: Use concise English medical terms. If uncertain, keep value short and conservative. No markdown.`;
 
             const content = [
@@ -3705,7 +3790,7 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
                 fullText = fullText.slice(jsonStart, jsonEnd + 1);
             }
 
-            const parsed = JSON.parse(fullText);
+            const parsed = parseAISearchPayload(fullText);
             const sourceList = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.drugs) ? parsed.drugs : []);
             const normalizedList = sourceList.map(normalizeAISearchDrugPayload).filter(Boolean);
             renderAIImageSearchResults(normalizedList);
@@ -3717,25 +3802,69 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
     async function saveToGoogleSheet(drugData, statusId = 'save-status', btnId = 'btn-save-sheet') {
         const statusEl = document.getElementById(statusId);
         const saveBtn = document.getElementById(btnId);
-        
-        if(!googleScriptURL) { alert("Please set the Google Script URL in Settings (⚙️) first."); return false; }
-        if (!saveBtn || !statusEl) return false;
+        const scriptURL = String(googleScriptURL || '').trim();
 
-        saveBtn.disabled = true; saveBtn.innerText = "⏳ Saving..."; statusEl.innerText = "Syncing with cloud...";
-
-        const payload = normalizeAISearchDrugPayload(drugData) || drugData;
-
-        return fetch(googleScriptURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-        .then(() => { 
-            statusEl.innerText = "✅ Saved successfully!"; statusEl.style.color = "var(--ios-green)"; 
-            saveBtn.innerText = "💾 Saved"; 
-            activeSourceList.push(normalizeDrugData(payload)); 
-            return true;
-        })
-        .catch(err => { 
-            statusEl.innerText = "❌ Save failed."; statusEl.style.color = "var(--ios-red)"; saveBtn.disabled = false; 
+        if(!scriptURL) {
+            if (statusEl) {
+                statusEl.innerText = "❌ Missing Google Script URL. Set it in Settings (⚙️).";
+                statusEl.style.color = "var(--ios-red)";
+            }
+            alert("Please set the Google Script URL in Settings (⚙️) first.");
             return false;
-        });
+        }
+
+        const setStatus = (msg, color) => {
+            if (!statusEl) return;
+            statusEl.innerText = msg;
+            statusEl.style.color = color;
+        };
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = "⏳ Saving...";
+        }
+        setStatus("Syncing with cloud...", "var(--ios-blue)");
+
+        const payload = buildDatabaseSavePayload(drugData);
+
+        try {
+            const response = await fetch(scriptURL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                throw new Error(errText || `HTTP ${response.status}`);
+            }
+
+            setStatus("✅ Saved successfully!", "var(--ios-green)");
+            if (saveBtn) saveBtn.innerText = "💾 Saved";
+            upsertDrugToLocalList(payload);
+            return true;
+        } catch (err) {
+            try {
+                await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                setStatus("✅ Sent (no-cors mode). Please verify in sheet.", "var(--ios-green)");
+                if (saveBtn) saveBtn.innerText = "💾 Sent";
+                upsertDrugToLocalList(payload);
+                return true;
+            } catch (_) {
+                setStatus("❌ Save failed.", "var(--ios-red)");
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = "💾 Save to Database";
+                }
+                return false;
+            }
+        }
     }
 
     function openGoogleDeepLink(queryText) {
@@ -4804,7 +4933,7 @@ ${JSON.stringify(bankHints)}`;
         try {
             const payload = (list || []).map(d => ({
                 name: d.name || '', class: d.class || '', indication: d.indication || '',
-                side_effects: d.side_effects || d.sideEffects || '', nursing: d.nursing || '',
+                side_effects: d.side_effects || d.sideEffects || '', quiz: d.quiz || d.effect || d.effects || '', nursing: d.nursing || '',
                 system: d.system || ''
             }));
             localStorage.setItem(LOCAL_DRUG_CACHE_KEY, JSON.stringify(payload));
