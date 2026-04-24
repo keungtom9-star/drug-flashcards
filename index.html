@@ -1166,6 +1166,8 @@
             <select id="provider-select" onchange="updateProviderDisplay()" class="ios-select" style="width:100%; margin-top:5px; background:white;">
                 <option value="deepseek">DeepSeek V3 (Fast)</option>
                 <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
+                <option value="deepseek-v4-pro">DeepSeek V4 Pro (Flagship)</option>
+                <option value="deepseek-v4-flash">DeepSeek V4 Flash (Fast)</option>
                 <option value="openrouter-trinity">OpenRouter Trinity (Free)</option>
                 <option value="yinli-gemini">Yinli Gemini 3.1 Pro Preview</option>
             </select>
@@ -1174,7 +1176,7 @@
         <div id="deepseek-config" class="config-section">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">DeepSeek API Key</label>
             <input type="password" id="deepseek-key" class="settings-input" placeholder="sk-...">
-            <div style="font-size:0.75rem; color:var(--ios-gray);">Works with both V3 and R1.</div>
+            <div style="font-size:0.75rem; color:var(--ios-gray);">Works with V3, R1, V4 Pro, and V4 Flash.</div>
         </div>
 
         <div id="openrouter-config" class="config-section" style="display:none;">
@@ -4474,7 +4476,7 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
 
             const modelName = currentProvider === 'openrouter-trinity'
                 ? 'arcee-ai/trinity-large-preview:free'
-                : (currentProvider === 'yinli-gemini' ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'));
+                : (currentProvider === 'yinli-gemini' ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : (currentProvider === 'deepseek-v4-flash' ? 'deepseek-v4-flash' : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'))));
             const aiApiUrl = currentProvider === 'openrouter-trinity'
                 ? 'https://openrouter.ai/api/v1/chat/completions'
                 : (currentProvider === 'yinli-gemini' ? YINLI_API_URL : 'https://api.deepseek.com/chat/completions');
@@ -4843,7 +4845,7 @@ ${JSON.stringify(bankHints)}`;
             : (usingYinli ? YINLI_API_URL : "https://api.deepseek.com/chat/completions");
         const modelName = usingOpenRouter
             ? 'arcee-ai/trinity-large-preview:free'
-            : (usingYinli ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'));
+            : (usingYinli ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : (currentProvider === 'deepseek-v4-flash' ? 'deepseek-v4-flash' : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'))));
 
         const headers = {
             "Authorization": `Bearer ${usingOpenRouter ? openRouterKey : (usingYinli ? yinliKey : deepSeekKey)}`,
@@ -5055,6 +5057,10 @@ ${JSON.stringify(bankHints)}`;
         document.getElementById('yinli-config').style.display = val === 'yinli-gemini' ? 'block' : 'none';
         if (val === 'deepseek-r1') {
             document.getElementById('provider-display').innerText = 'DeepSeek R1';
+        } else if (val === 'deepseek-v4-pro') {
+            document.getElementById('provider-display').innerText = 'DeepSeek V4 Pro';
+        } else if (val === 'deepseek-v4-flash') {
+            document.getElementById('provider-display').innerText = 'DeepSeek V4 Flash';
         } else if (val === 'openrouter-trinity') {
             document.getElementById('provider-display').innerText = 'OpenRouter Trinity';
         } else if (val === 'yinli-gemini') {
