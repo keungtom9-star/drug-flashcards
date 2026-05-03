@@ -3532,6 +3532,18 @@ Language: ${langInstruction}.`;
         runSearch();
     }
 
+
+    async function recoverAISearchPayload(rawText, query) {
+        const repairPrompt = `Convert the following medication answer into strict JSON only with keys: name, class, system, indication, side_effects, nursing, effect_of_drug.
+If a value is missing, infer concise clinical text when possible (do not leave empty).
+Use name format Generic (Brand).
+Use system from: ${systemCategories.join(', ')}.
+Original text:
+${rawText}`;
+        let repairedText = '';
+        await streamAIResponse([{ role: 'user', content: repairPrompt }], (text) => { repairedText = text; });
+        return parseAISearchPayload(repairedText);
+    }
     // --- AI & DATA FUNCTIONS ---
     async function triggerAISearch(query) {
         const container = document.getElementById('ai-search-output');
@@ -3555,7 +3567,10 @@ Rules:
         try {
             let fullText = "";
             await streamAIResponse([{role: "user", content: prompt}], (text) => { fullText = text; });
-            const parsed = parseAISearchPayload(fullText);
+            let parsed = parseAISearchPayload(fullText);
+            if (!parsed) {
+                parsed = await recoverAISearchPayload(fullText, query);
+            }
             const drugData = extractSingleDrugPayload(parsed, query);
             if (!drugData || !drugData.name) throw new Error('AI result missing drug name');
 
@@ -3667,7 +3682,7 @@ Rules:
         if (candidate && candidate.drug && typeof candidate.drug === 'object') candidate = candidate.drug;
         const normalized = normalizeAISearchDrugPayload(candidate || {});
         if (normalized) return normalized;
-        return normalizeAISearchDrugPayload({ name: `${fallbackQuery} (N/A)`, class: 'AI generated', indication: '', nursing: 'Not specified', side_effects: 'Not specified', effect_of_drug: 'Not specified' });
+        return normalizeAISearchDrugPayload({ name: String(fallbackQuery || 'Unknown drug').trim(), class: 'AI generated', indication: '', nursing: 'Not specified', side_effects: 'Not specified', effect_of_drug: 'Not specified' });
     }
 
     function buildDatabaseSavePayload(drugData) {
