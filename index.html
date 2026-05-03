@@ -1164,10 +1164,8 @@
         <div style="margin-bottom:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">AI Model</label>
             <select id="provider-select" onchange="updateProviderDisplay()" class="ios-select" style="width:100%; margin-top:5px; background:white;">
-                <option value="deepseek">DeepSeek V3 (Fast)</option>
-                <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
-                <option value="deepseek-v4-pro">DeepSeek V4 Pro (Flagship)</option>
                 <option value="deepseek-v4-flash">DeepSeek V4 Flash (Fast)</option>
+                <option value="deepseek-v4-pro">DeepSeek V4 Pro (Flagship)</option>
                 <option value="openrouter-trinity">OpenRouter Trinity (Free)</option>
                 <option value="yinli-gemini">Yinli Gemini 3.1 Pro Preview</option>
             </select>
@@ -1176,7 +1174,7 @@
         <div id="deepseek-config" class="config-section">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">DeepSeek API Key</label>
             <input type="password" id="deepseek-key" class="settings-input" placeholder="sk-...">
-            <div style="font-size:0.75rem; color:var(--ios-gray);">Works with V3, R1, V4 Pro, and V4 Flash.</div>
+            <div style="font-size:0.75rem; color:var(--ios-gray);">Works with DeepSeek V4 Flash and V4 Pro.</div>
         </div>
 
         <div id="openrouter-config" class="config-section" style="display:none;">
@@ -2468,11 +2466,12 @@ Language: ${langInstruction}.`;
     const LOCAL_QUIZ_BANK_KEY = 'drug_tutor_quiz_bank_v1';
     
     // API & Keys
-    let currentProvider = localStorage.getItem('active_provider') || 'deepseek';
-    let deepSeekKey = localStorage.getItem('ds_key') || "sk-92db3cf721454bd7b351ca6ef40eaaf7";
+    let currentProvider = localStorage.getItem('active_provider') || 'deepseek-v4-flash';
+    let deepSeekKey = localStorage.getItem('ds_key') || "sk-301f6f940e5743659ceaf0cbd86d2193";
     let openRouterKey = localStorage.getItem('openrouter_key') || '';
     let yinliKey = localStorage.getItem('yinli_key') || '';
-    let googleScriptURL = localStorage.getItem('google_script_url') || "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
+    const REQUIRED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
+    let googleScriptURL = REQUIRED_SCRIPT_URL;
     let quizSheetURL = localStorage.getItem('quiz_sheet_url') || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
     const YINLI_API_URL = 'https://yinli.one/v1/chat/completions';
     const YINLI_MODEL_NAME = 'gemini-3.1-pro-preview';
@@ -2594,7 +2593,7 @@ Language: ${langInstruction}.`;
         document.getElementById('openrouter-key').value = openRouterKey;
         document.getElementById('yinli-key').value = yinliKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
-        document.getElementById('script-url').value = googleScriptURL;
+        document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
         document.getElementById('quiz-sheet-url').value = quizSheetURL;
         document.getElementById('quiz-engine').value = 'deepseek';
         document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
@@ -4476,7 +4475,7 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
 
             const modelName = currentProvider === 'openrouter-trinity'
                 ? 'arcee-ai/trinity-large-preview:free'
-                : (currentProvider === 'yinli-gemini' ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : (currentProvider === 'deepseek-v4-flash' ? 'deepseek-v4-flash' : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'))));
+                : (currentProvider === 'yinli-gemini' ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash'));
             const aiApiUrl = currentProvider === 'openrouter-trinity'
                 ? 'https://openrouter.ai/api/v1/chat/completions'
                 : (currentProvider === 'yinli-gemini' ? YINLI_API_URL : 'https://api.deepseek.com/chat/completions');
@@ -4845,7 +4844,7 @@ ${JSON.stringify(bankHints)}`;
             : (usingYinli ? YINLI_API_URL : "https://api.deepseek.com/chat/completions");
         const modelName = usingOpenRouter
             ? 'arcee-ai/trinity-large-preview:free'
-            : (usingYinli ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : (currentProvider === 'deepseek-v4-flash' ? 'deepseek-v4-flash' : (currentProvider === 'deepseek-r1' ? 'deepseek-reasoner' : 'deepseek-chat'))));
+            : (usingYinli ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash'));
 
         const headers = {
             "Authorization": `Bearer ${usingOpenRouter ? openRouterKey : (usingYinli ? yinliKey : deepSeekKey)}`,
@@ -5022,7 +5021,7 @@ ${JSON.stringify(bankHints)}`;
         localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
         localStorage.setItem('openrouter_key', document.getElementById('openrouter-key').value);
         localStorage.setItem('yinli_key', document.getElementById('yinli-key').value);
-        localStorage.setItem('google_script_url', document.getElementById('script-url').value);
+        localStorage.setItem('google_script_url', REQUIRED_SCRIPT_URL);
         localStorage.setItem('quiz_sheet_url', document.getElementById('quiz-sheet-url').value);
         localStorage.setItem('quiz_engine', 'deepseek');
         localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
@@ -5035,7 +5034,8 @@ ${JSON.stringify(bankHints)}`;
         deepSeekKey = document.getElementById('deepseek-key').value;
         openRouterKey = document.getElementById('openrouter-key').value;
         yinliKey = document.getElementById('yinli-key').value;
-        googleScriptURL = document.getElementById('script-url').value;
+        googleScriptURL = REQUIRED_SCRIPT_URL;
+        document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
         quizSheetURL = document.getElementById('quiz-sheet-url').value;
         quizEngine = 'deepseek';
         ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
@@ -5055,9 +5055,7 @@ ${JSON.stringify(bankHints)}`;
         document.getElementById('deepseek-config').style.display = (val === 'openrouter-trinity' || val === 'yinli-gemini') ? 'none' : 'block';
         document.getElementById('openrouter-config').style.display = val === 'openrouter-trinity' ? 'block' : 'none';
         document.getElementById('yinli-config').style.display = val === 'yinli-gemini' ? 'block' : 'none';
-        if (val === 'deepseek-r1') {
-            document.getElementById('provider-display').innerText = 'DeepSeek R1';
-        } else if (val === 'deepseek-v4-pro') {
+        if (val === 'deepseek-v4-pro') {
             document.getElementById('provider-display').innerText = 'DeepSeek V4 Pro';
         } else if (val === 'deepseek-v4-flash') {
             document.getElementById('provider-display').innerText = 'DeepSeek V4 Flash';
@@ -5066,7 +5064,7 @@ ${JSON.stringify(bankHints)}`;
         } else if (val === 'yinli-gemini') {
             document.getElementById('provider-display').innerText = 'Yinli Gemini 3.1 Pro';
         } else {
-            document.getElementById('provider-display').innerText = 'DeepSeek V3';
+            document.getElementById('provider-display').innerText = 'DeepSeek V4 Flash';
         }
     }
 
