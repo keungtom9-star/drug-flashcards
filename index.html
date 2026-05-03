@@ -3533,6 +3533,19 @@ Language: ${langInstruction}.`;
     }
 
 
+
+    const brandFallbackProfiles = {
+        firmagon: {
+            name: 'Degarelix (Firmagon)',
+            class: 'GnRH receptor antagonist',
+            system: '🎗️ Oncology',
+            indication: 'Advanced hormone-sensitive prostate cancer',
+            side_effects: 'Injection-site pain, hot flushes, liver enzyme elevation',
+            nursing: 'Monitor testosterone/PSA response, rotate injection site, monitor LFTs',
+            effect_of_drug: 'Rapid testosterone suppression without initial flare'
+        }
+    };
+
     async function recoverAISearchPayload(rawText, query) {
         const repairPrompt = `Convert the following medication answer into strict JSON only with keys: name, class, system, indication, side_effects, nursing, effect_of_drug.
 If a value is missing, infer concise clinical text when possible (do not leave empty).
@@ -3682,6 +3695,8 @@ Rules:
         if (candidate && candidate.drug && typeof candidate.drug === 'object') candidate = candidate.drug;
         const normalized = normalizeAISearchDrugPayload(candidate || {});
         if (normalized) return normalized;
+        const key = String(fallbackQuery || '').trim().toLowerCase();
+        if (brandFallbackProfiles[key]) return normalizeAISearchDrugPayload(brandFallbackProfiles[key]);
         return normalizeAISearchDrugPayload({ name: String(fallbackQuery || 'Unknown drug').trim(), class: 'AI generated', indication: '', nursing: 'Not specified', side_effects: 'Not specified', effect_of_drug: 'Not specified' });
     }
 
