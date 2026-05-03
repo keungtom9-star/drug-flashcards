@@ -431,8 +431,8 @@
         // Basic config
         const DEFAULT_SHEET = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3fHW561ZytpwsS-aFRm3T-71oUgs_EhCgnI0KrJlALra1SfusPiMgUNAC0HpauzgkJXQgGGqgQmU1/pub?output=csv";
         // --- UPDATED: Your specific Apps Script URL is now hardcoded here ---
-        const DEFAULT_SCRIPT = "https://script.google.com/macros/s/AKfycbyeuVCaJl6qt_WbGPS1SldfOg-kP-8RrX-zzlao8k2wbxcT_AUuXKo3OJv6y5MHxAFkPQ/exec";
-        const PRELOADED_KEY = "sk-92db3cf721454bd7b351ca6ef40eaaf7"; // Default DeepSeek key
+        const DEFAULT_SCRIPT = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
+        const PRELOADED_KEY = "sk-301f6f940e5743659ceaf0cbd86d2193"; // Default DeepSeek key
 
         // State
         let dbQuestions = [], uniqueTopics = {}, quizQueue = [], currentQIndex = 0;
@@ -876,7 +876,7 @@
                     method:"POST", 
                     headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`}, 
                     body:JSON.stringify({
-                        model:"deepseek-chat",
+                        model:"deepseek-v4-flash",
                         messages:[{role:"user",content: prompt}],
                         temperature: 0.7
                     }) 
