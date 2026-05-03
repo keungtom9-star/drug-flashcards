@@ -2353,7 +2353,7 @@ Rules:
 2. Keep all values short for fast mobile reading.
 3. "nursing" must be a single string with short bullet lines separated by \n.
 4. "system" must be exactly one of:
-[Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].`;
+[🍔 GI System, 🫀 Cardio, 🫁 Respiratory, 🧠 CNS / Neuro, 🦠 Infections, 🦋 Endocrine, 🤰 ObGyn / GU, 🎗️ Oncology, 🍎 Nutrition / Blood, 🦴 MSK / Bone, 👁️ Eye, 👂 ENT, 🧴 Skin, 🛡️ Immune / Vax, 💉 Anaesthesia].`;
 }
 
 function getCaseStudyPrompt(drug, language) {
@@ -2482,27 +2482,44 @@ Language: ${langInstruction}.`;
 
     // System Data
     const systemCategories = [
-        "Gastro-intestinal system", "Cardiovascular system", "Respiratory system", "Central nervous system", "Infections", "Endocrine system",
-        "Obstetrics, gynaecology, and urinary-tract disorders", "Malignant disease and immunosuppression", "Nutrition and blood",
-        "Musculoskeletal and joint disease", "Eye", "Ear, nose, and oropharynx", "Skin", "Immunological products and vaccines", "Anaesthesia"
+        "🍔 GI System", "🫀 Cardio", "🫁 Respiratory", "🧠 CNS / Neuro", "🦠 Infections", "🦋 Endocrine",
+        "🤰 ObGyn / GU", "🎗️ Oncology", "🍎 Nutrition / Blood", "🦴 MSK / Bone", "👁️ Eye", "👂 ENT", "🧴 Skin", "🛡️ Immune / Vax", "💉 Anaesthesia"
     ];
-    const systemShortNames = {
-        "Gastro-intestinal system": "GI System", "Cardiovascular system": "Cardio", "Respiratory system": "Respiratory",
-        "Central nervous system": "CNS / Neuro", "Infections": "Infections", "Endocrine system": "Endocrine",
-        "Obstetrics, gynaecology, and urinary-tract disorders": "ObGyn / GU", "Malignant disease and immunosuppression": "Oncology",
-        "Nutrition and blood": "Nutrition / Blood", "Musculoskeletal and joint disease": "MSK / Bone",
-        "Eye": "Eye", "Ear, nose, and oropharynx": "ENT", "Skin": "Skin", "Immunological products and vaccines": "Immune / Vax", "Anaesthesia": "Anaesthesia"
-    };
-    const systemIcons = {
-        "Gastro-intestinal": "🍔", "Cardiovascular": "🫀", "Respiratory": "🫁", "Central nervous": "🧠", 
-        "Infections": "🦠", "Endocrine": "🦋", "Obstetrics": "🤰", "Malignant": "🎗️", "Nutrition": "🍎",
-        "Musculoskeletal": "🦴", "Eye": "👁️", "Ear": "👂", "Skin": "🧴", "Immunological": "🛡️", "Anaesthesia": "💉"
+    const legacySystemMap = {
+        "Gastro-intestinal system": "🍔 GI System",
+        "Cardiovascular system": "🫀 Cardio",
+        "Respiratory system": "🫁 Respiratory",
+        "Central nervous system": "🧠 CNS / Neuro",
+        "Infections": "🦠 Infections",
+        "Endocrine system": "🦋 Endocrine",
+        "Obstetrics, gynaecology, and urinary-tract disorders": "🤰 ObGyn / GU",
+        "Malignant disease and immunosuppression": "🎗️ Oncology",
+        "Nutrition and blood": "🍎 Nutrition / Blood",
+        "Musculoskeletal and joint disease": "🦴 MSK / Bone",
+        "Eye": "👁️ Eye",
+        "Ear, nose, and oropharynx": "👂 ENT",
+        "Skin": "🧴 Skin",
+        "Immunological products and vaccines": "🛡️ Immune / Vax",
+        "Anaesthesia": "💉 Anaesthesia"
     };
 
+    function normalizeSystemLabel(systemValue) {
+        const raw = String(systemValue || '').trim();
+        if (!raw) return "🫀 Cardio";
+        return legacySystemMap[raw] || raw;
+    }
+    const systemShortNames = Object.fromEntries(systemCategories.map(s => [s, s]));
+    const systemIcons = {
+        "GI System": "🍔", "Cardio": "🫀", "Respiratory": "🫁", "CNS / Neuro": "🧠", "Infections": "🦠",
+        "Endocrine": "🦋", "ObGyn / GU": "🤰", "Oncology": "🎗️", "Nutrition / Blood": "🍎", "MSK / Bone": "🦴",
+        "Eye": "👁️", "ENT": "👂", "Skin": "🧴", "Immune / Vax": "🛡️", "Anaesthesia": "💉"
+    };
+
+
     function normalizeDrugData(drug) {
-        drug.system = getSystemForDrug(drug);
-        drug.side_effects = drug.side_effects || drug.SideEffects || drug.sideEffects || "Refer to nursing guide";
-        drug.quiz = drug.quiz || drug.effect || drug.effects || drug.side_effects || drug.SideEffects || "";
+        drug.system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
+        drug.side_effects = drug.side_effects || drug.SideEffects || drug.sideEffects || "Not specified";
+        drug.quiz = drug.quiz || drug.effect_of_drug || drug.effect || drug.effects || drug.side_effects || drug.SideEffects || "Not specified";
         drug.__searchBlob = `${drug.name || ''} ${(drug.class || '')} ${(drug.system || '')} ${(drug.indication || '')} ${(drug.side_effects || '')} ${(drug.quiz || '')}`.toLowerCase();
         return drug;
     }
@@ -3531,7 +3548,7 @@ Rules:
 1) Use English only with clear medical terminology.
 2) Keep content short for fast mobile reading.
 3) "name" must use this exact format: GenericName (BrandName). Example: "Paracetamol (Panadol)".
-4) "system" must be exactly one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
+4) "system" must be exactly one of: [🍔 GI System, 🫀 Cardio, 🫁 Respiratory, 🧠 CNS / Neuro, 🦠 Infections, 🦋 Endocrine, 🤰 ObGyn / GU, 🎗️ Oncology, 🍎 Nutrition / Blood, 🦴 MSK / Bone, 👁️ Eye, 👂 ENT, 🧴 Skin, 🛡️ Immune / Vax, 💉 Anaesthesia].
 5) "class", "indication", "side_effects", "nursing", and "effect_of_drug" should be concise.
 6) Output JSON only, no markdown.`;
 
@@ -3607,12 +3624,12 @@ Rules:
             generic_name: String(drugData.generic_name || drugData.generic || '').trim(),
             brand_name: String(drugData.brand_name || drugData.brand || '').trim(),
             class: String(drugData.class || 'IV infusion').trim(),
-            system: String(drugData.system || 'Cardiovascular system').trim(),
+            system: normalizeSystemLabel(drugData.system || '🫀 Cardio'),
             indication: String(drugData.indication || '').trim(),
             nursing: String(drugData.nursing || '').trim(),
-            side_effects: String(drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
+            side_effects: String(drugData.side_effects || drugData.SideEffects || drugData.sideEffects || drugData['side effects'] || drugData['Side Effects'] || 'Not specified').trim(),
             quiz: String(drugData.quiz || drugData.effect || drugData.effects || drugData.effect_of_drug || drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
-            effect_of_drug: String(drugData.effect_of_drug || drugData.quiz || drugData.effect || drugData.effects || drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
+            effect_of_drug: String(drugData.effect_of_drug || drugData.drug_effect || drugData['effect of drug'] || drugData['Drug Effect'] || drugData.quiz || drugData.effect || drugData.effects || drugData.side_effects || drugData.SideEffects || drugData['side effects'] || 'Not specified').trim(),
             hold_param: String(drugData.hold_param || '').trim(),
             admin_type: String(drugData.admin_type || 'IV').trim()
         };
@@ -3623,7 +3640,7 @@ Rules:
             const brand = normalized.brand_name || 'N/A';
             normalized.name = `${generic} (${brand})`.trim();
         }
-        if (!systemCategories.includes(normalized.system)) normalized.system = 'Cardiovascular system';
+        if (!systemCategories.includes(normalized.system)) normalized.system = '🫀 Cardio';
         return normalized;
     }
 
@@ -3655,8 +3672,8 @@ Rules:
 
     function buildDatabaseSavePayload(drugData) {
         const normalized = normalizeAISearchDrugPayload(drugData) || drugData || {};
-        const effect = String(normalized.effect_of_drug || normalized.quiz || normalized.effect || normalized.effects || normalized.side_effects || 'Not specified').trim();
-        const sideEffects = String(normalized.side_effects || normalized.SideEffects || effect || 'Not specified').trim();
+        const effect = String(normalized.effect_of_drug || normalized.quiz || normalized.effect || normalized.effects || normalized.side_effects || 'Not specified').trim() || 'Not specified';
+        const sideEffects = String(normalized.side_effects || normalized.SideEffects || effect || 'Not specified').trim() || 'Not specified';
         return {
             ...normalized,
             name: String(normalized.name || '').trim(),
@@ -3783,7 +3800,7 @@ Rules:
             const images = await Promise.all(files.map(readFileAsDataURL));
             const prompt = `Extract medication infusion rows from the uploaded chart images${query ? ` (focus keyword: ${query})` : ''}.
 Return strict JSON only with this shape:
-{"drugs":[{"name":"","class":"","system":"Cardiovascular system","indication":"","nursing":"","side_effects":"","quiz":"","effect_of_drug":"","hold_param":"","admin_type":"IV"}]}
+{"drugs":[{"name":"","class":"","system":"🫀 Cardio","indication":"","nursing":"","side_effects":"","quiz":"","effect_of_drug":"","hold_param":"","admin_type":"IV"}]}
 Rules: Use concise English medical terms. If uncertain, keep value short and conservative. No markdown.`;
 
             const content = [
@@ -3897,8 +3914,14 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
     }
 
     function openGoogleDeepLink(queryText) {
-        const q = encodeURIComponent(queryText || '');
-        window.open(`https://www.google.com/search?q=${q}`, '_blank');
+        const cleaned = String(queryText || '').trim();
+        if (!cleaned) return;
+        const q = encodeURIComponent(cleaned);
+        const url = `https://www.google.com/search?q=${q}`;
+        const popup = window.open(url, '_blank');
+        if (!popup) {
+            window.location.href = url;
+        }
     }
 
     function openDrugsCom(drug) {
