@@ -3656,13 +3656,20 @@ Rules:
     function buildDatabaseSavePayload(drugData) {
         const normalized = normalizeAISearchDrugPayload(drugData) || drugData || {};
         const effect = String(normalized.effect_of_drug || normalized.quiz || normalized.effect || normalized.effects || normalized.side_effects || 'Not specified').trim();
+        const sideEffects = String(normalized.side_effects || normalized.SideEffects || effect || 'Not specified').trim();
         return {
             ...normalized,
-            quiz: String(normalized.quiz || effect || 'Not specified').trim(),
+            name: String(normalized.name || '').trim(),
+            class: String(normalized.class || '').trim(),
+            system: String(normalized.system || '').trim(),
+            indication: String(normalized.indication || '').trim(),
+            SideEffects: sideEffects,
+            side_effects: sideEffects,
+            nursing: String(normalized.nursing || '').trim(),
             effect_of_drug: effect,
+            quiz: String(normalized.quiz || effect || 'Not specified').trim(),
             effect: effect,
-            effects: effect,
-            side_effects: String(normalized.side_effects || effect || 'Not specified').trim()
+            effects: effect
         };
     }
 
