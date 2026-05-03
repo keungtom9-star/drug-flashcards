@@ -3526,13 +3526,14 @@ Language: ${langInstruction}.`;
             </div>`;
 
         const prompt = `You are a nursing tutor. The user searched for "${query}". Return strict JSON only.
-Keys: "name", "class", "system", "indication", "nursing", "side_effects", "quiz", "effect_of_drug".
+Keys: "name", "class", "system", "indication", "side_effects", "nursing", "effect_of_drug".
 Rules:
 1) Use English only with clear medical terminology.
 2) Keep content short for fast mobile reading.
-3) "system" must be exactly one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
-4) "nursing", "side_effects", "quiz", and "effect_of_drug" should be short bullet-like strings.
-5) Output JSON only, no markdown.`;
+3) "name" must use this exact format: GenericName (BrandName). Example: "Paracetamol (Panadol)".
+4) "system" must be exactly one of: [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].
+5) "class", "indication", "side_effects", "nursing", and "effect_of_drug" should be concise.
+6) Output JSON only, no markdown.`;
 
         try {
             let fullText = "";
@@ -3582,6 +3583,9 @@ Rules:
                     await saveToGoogleSheet(drugData);
                 };
             }
+
+            // Auto-save AI search result to Google Sheet immediately
+            await saveToGoogleSheet(drugData);
         } catch (e) {
             container.innerHTML = `<div style="color:red; margin-top:10px;">Search failed. Please try again.</div>`;
         }
@@ -3600,6 +3604,8 @@ Rules:
         if (!drugData || typeof drugData !== 'object') return null;
         const normalized = {
             name: String(drugData.name || '').trim(),
+            generic_name: String(drugData.generic_name || drugData.generic || '').trim(),
+            brand_name: String(drugData.brand_name || drugData.brand || '').trim(),
             class: String(drugData.class || 'IV infusion').trim(),
             system: String(drugData.system || 'Cardiovascular system').trim(),
             indication: String(drugData.indication || '').trim(),
@@ -3611,6 +3617,12 @@ Rules:
             admin_type: String(drugData.admin_type || 'IV').trim()
         };
         if (!normalized.name) return null;
+        const hasParen = /.+\(.+\)/.test(normalized.name);
+        if (!hasParen) {
+            const generic = normalized.generic_name || normalized.name;
+            const brand = normalized.brand_name || 'N/A';
+            normalized.name = `${generic} (${brand})`.trim();
+        }
         if (!systemCategories.includes(normalized.system)) normalized.system = 'Cardiovascular system';
         return normalized;
     }
@@ -3638,7 +3650,7 @@ Rules:
         if (candidate && candidate.drug && typeof candidate.drug === 'object') candidate = candidate.drug;
         const normalized = normalizeAISearchDrugPayload(candidate || {});
         if (normalized) return normalized;
-        return normalizeAISearchDrugPayload({ name: fallbackQuery, class: 'AI generated', indication: '', nursing: '', side_effects: 'Not specified' });
+        return normalizeAISearchDrugPayload({ name: `${fallbackQuery} (N/A)`, class: 'AI generated', indication: '', nursing: 'Not specified', side_effects: 'Not specified', effect_of_drug: 'Not specified' });
     }
 
     function buildDatabaseSavePayload(drugData) {
@@ -3735,6 +3747,11 @@ Rules:
                 saveBtn.onclick = () => saveToGoogleSheet(drugData, `save-status-${idx}`, `btn-save-sheet-${idx}`);
             }
         });
+
+        // Auto-save all AI image search results to Google Sheet
+        if (saveAllBtn) {
+            saveAllBtn.click();
+        }
     }
 
     async function triggerAISearchFromImages(inputEl, query) {
