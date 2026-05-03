@@ -8,7 +8,7 @@ export const streamAI = async (
 ): Promise<void> => {
   let url = "https://api.deepseek.com/chat/completions";
   let headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
-  let body: any = { model: "deepseek-chat", messages: [{ role: "user", content: prompt }], stream: true };
+  let body: any = { model: "deepseek-v4-flash", messages: [{ role: "user", content: prompt }], stream: true };
 
   if (settings.provider === 'yinli') {
     url = YINLI_URL;
@@ -52,7 +52,7 @@ export const streamAI = async (
 export const getFullAIResponse = async (prompt: string, settings: Settings): Promise<string> => {
   let url = "https://api.deepseek.com/chat/completions";
   let headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
-  let body: any = { model: "deepseek-chat", messages: [{ role: "user", content: prompt }], stream: false };
+  let body: any = { model: "deepseek-v4-flash", messages: [{ role: "user", content: prompt }], stream: false };
 
   if (settings.provider === 'yinli') {
     url = YINLI_URL;
