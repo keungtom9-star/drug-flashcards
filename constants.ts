@@ -21,5 +21,5 @@ export const SYSTEMS: System[] = [
     {id: "Anaes", name: "💤 Anaes", full: "Anaesthesia"},
 ];
 
-export const DEFAULT_DEEPSEEK_KEY = "sk-92db3cf721454bd7b351ca6ef40eaaf7";
+export const DEFAULT_DEEPSEEK_KEY = "";
 export const YINLI_URL = "https://yinli.one/v1/chat/completions";

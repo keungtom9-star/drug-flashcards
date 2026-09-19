@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Clinical Bank</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <script src="app-ui.js"></script>
     <style>
         :root {
             /* Modern Palette */
@@ -278,6 +279,35 @@
         .btn-play-new { background: var(--primary-dim); color: var(--primary); }
         .btn-play-wrong { background: #fff1f2; color: var(--danger); }
         .btn-play-wrong:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+        body { min-height: 0; }
+        .app-container { height: var(--app-height, 100dvh); overflow: hidden; }
+        .sticky-header, .view-header, .quiz-nav { flex-shrink: 0; }
+        .sticky-header, .view-header { padding-top: max(12px, env(safe-area-inset-top)); }
+        .grid-area, #quiz-container, #gen-container { min-height: 0; overscroll-behavior-y: contain; }
+        .grid-area { grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr)); gap: 12px; padding: 12px; }
+        .modal-box { max-height: 100%; overflow-y: auto; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+        .overlay-bg { top: var(--viewport-top, 0px); height: var(--app-height, 100dvh); }
+        .icon-btn, .back-btn { min-width: 44px; min-height: 44px; }
+        .header-top h1 { font-size: clamp(1.1rem, 5vw, 1.5rem); }
+        .option { width: 100%; text-align: left; font-family: inherit; overflow-wrap: anywhere; }
+        .option:disabled { opacity: 1; color: inherit; cursor: default; }
+        .q-text, .explanation { overflow-wrap: anywhere; white-space: pre-wrap; }
+        button { touch-action: manipulation; font-family: inherit; }
+        :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+        @media (max-width: 600px) {
+            .q-card { padding: 20px 16px; }
+            .q-text { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; }
+            #quiz-container, #gen-container { padding: 12px; }
+            .option { padding: 14px 12px; gap: 10px; }
+            .explanation { padding: 16px; }
+            .quiz-nav { padding: 12px 12px max(12px, env(safe-area-inset-bottom)); gap: 10px; }
+            .nav-btn { padding: 12px; min-height: 48px; }
+            .modal-box { padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
+            input:not([type=checkbox]), select, textarea { font-size: 16px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -285,6 +315,14 @@
     <div class="app-container">
         
         <div class="sticky-header">
+            <div class="header-top">
+                <h1>Clinical Bank</h1>
+                <div style="display:flex; gap:8px;">
+                    <button class="icon-btn gen-btn" onclick="openGenerator()" aria-label="Generate question">＋</button>
+                    <button class="icon-btn" onclick="openSettings()" aria-label="Clinical settings">⚙️</button>
+                </div>
+            </div>
+            <input id="topic-search" type="search" class="main-input" placeholder="Search topics…" aria-label="Search topics" oninput="filterTopics()">
             <div id="db-status" style="font-size:0.7rem; color:var(--text-muted); margin-top:8px; text-align:center; font-weight:500;">
                 Connecting...
             </div>
@@ -432,17 +470,17 @@
         const DEFAULT_SHEET = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3fHW561ZytpwsS-aFRm3T-71oUgs_EhCgnI0KrJlALra1SfusPiMgUNAC0HpauzgkJXQgGGqgQmU1/pub?output=csv";
         // --- UPDATED: Your specific Apps Script URL is now hardcoded here ---
         const DEFAULT_SCRIPT = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
-        const PRELOADED_KEY = "sk-301f6f940e5743659ceaf0cbd86d2193"; // Default DeepSeek key
 
         // State
         let dbQuestions = [], uniqueTopics = {}, quizQueue = [], currentQIndex = 0;
         let sessionCorrect = 0, sessionAttempted = 0, activeTopicName = "", audioEnabled = false;
-        let userProgress = JSON.parse(localStorage.getItem('quiz_progress')) || {};
+        let sessionAnswers = new Map();
+        let userProgress = DrugTutorUI.readStoredJSON('quiz_progress', {});
         let currentSelectionRows = [];
         let generatedQTemp = null; // Temp holder for generated question
 
         window.onload = () => {
-            document.getElementById('api-key').value = localStorage.getItem('api_key') || PRELOADED_KEY;
+            document.getElementById('api-key').value = localStorage.getItem('api_key') || '';
             document.getElementById('sheet-url').value = localStorage.getItem('sheet_url') || DEFAULT_SHEET;
             // Load the default script URL if not already saved by the user
             document.getElementById('script-url').value = localStorage.getItem('script_url') || DEFAULT_SCRIPT;
@@ -608,7 +646,7 @@
                 el.innerHTML = `
                     <div class="card-info" style="width:100%">
                         <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                             <span class="card-name">${t}</span>
+                             <span class="card-name">${escapeHTML(t)}</span>
                              <span style="font-size:0.8rem; font-weight:600; color:${pct===100?'var(--success)':'var(--text-muted)'}">${pct}%</span>
                         </div>
                         <div class="card-progress-track"><div class="card-progress-fill" style="width:${pct}%"></div></div>
@@ -625,7 +663,7 @@
                         <span id="e${uid2}" class="card-icon-fallback">${v.emoji}</span>
                     </div>
                     <div class="card-info">
-                        <span class="card-name">${t}</span>
+                        <span class="card-name">${escapeHTML(t)}</span>
                         <div class="card-progress-track"><div class="card-progress-fill" style="width:${pct}%"></div></div>
                         <div class="card-stats">${s.correct} / ${s.total} Done</div>
                     </div>
@@ -647,7 +685,9 @@
         // --- QUIZ LOGIC ---
         function startQuiz(q) { 
             stopAudio(); 
-            quizQueue = q.sort(()=>Math.random()-0.5); 
+            quizQueue = [...q].sort(()=>Math.random()-0.5);
+            sessionAnswers = new Map();
+            document.getElementById('accuracy-display').innerText = '🎯 0%';
             currentQIndex=0; sessionCorrect=0; sessionAttempted=0; 
             document.getElementById('quiz-view').style.display='flex'; 
             renderCurrentQuestion(); 
@@ -660,7 +700,7 @@
             document.getElementById('subtopic-view').style.display = 'none';
             currentSelectionRows = [];
             activeTopicName = "";
-            loadSheet();
+            renderTopics();
         };
 
         window.nextQuestion = () => {
@@ -693,15 +733,28 @@
             document.getElementById('btn-next').disabled=false; 
             document.getElementById('btn-next').innerText=(currentQIndex===quizQueue.length-1)?"Finish":"Next";
 
-            document.getElementById('quiz-container').innerHTML = buildCardHTML(q, uid, true);
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = buildCardHTML(q, uid, true);
+            container.scrollTop = 0;
+            const previousAnswer = sessionAnswers.get(getQID(q));
+            if (previousAnswer) {
+                const option = container.querySelector(`[data-option="${previousAnswer}"]`);
+                if (option) check(option, previousAnswer, q.Correct, `exp-${uid}`, q);
+            }
         }
 
         // --- SHARED CARD HTML ---
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
         function buildCardHTML(q, uid, enableInteraction) {
             return `
                 <div class="q-card">
-                    <span class="q-badge">${q.Level||'Recall'}</span>
-                    <div class="q-text">${q.Question}</div>
+                    <span class="q-badge">${escapeHTML(q.Level||'Recall')}</span>
+                    <div class="q-text">${escapeHTML(q.Question)}</div>
                     <div class="options-group">
                         ${renderOption(q,'A',q.OptionA,uid,enableInteraction)}
                         ${renderOption(q,'B',q.OptionB,uid,enableInteraction)}
@@ -710,7 +763,7 @@
                     </div>
                     <div id="exp-${uid}" class="explanation">
                         <div style="font-weight:700; margin-bottom:8px;">💡 Rationale</div>
-                        ${q.Explanation}
+                        ${escapeHTML(q.Explanation)}
                     </div>
                 </div>
             `;
@@ -718,38 +771,42 @@
 
         function renderOption(q,l,t,id,enable) { 
             if(!t)return''; 
-            const safeQ = JSON.stringify(q).replace(/"/g, '&quot;');
-            const onclick = enable ? `onclick="check(this,'${l}','${q.Correct}','exp-${id}',${safeQ})"` : "";
-            return `<div class="option" ${onclick}>
-                        <div class="option-letter">${l}</div>
-                        <div style="flex:1">${t}</div>
-                    </div>`; 
+            const safeQ = escapeHTML(JSON.stringify(q));
+            const safeCorrect = escapeHTML(JSON.stringify(String(q.Correct || '').trim().toUpperCase()));
+            const onclick = enable ? `onclick="check(this,'${l}',${safeCorrect},'exp-${id}',${safeQ})"` : "";
+            return `<button type="button" class="option" data-option="${l}" ${onclick}>
+                        <span class="option-letter">${l}</span>
+                        <span style="flex:1">${escapeHTML(t)}</span>
+                    </button>`;
         }
 
-        window.check = (el,s,c,eid,q) => {
-            if(el.parentElement.getAttribute('data-done'))return; 
-            el.parentElement.setAttribute('data-done','true'); 
-            sessionAttempted++;
-            
-            const corr = (s===c.trim().toUpperCase());
-            if(corr) { el.classList.add('correct'); sessionCorrect++; } 
-            else { el.classList.add('wrong'); }
-            
-            if(!corr) {
-                const map = {'A':0,'B':1,'C':2,'D':3};
-                const idx = map[c.trim().toUpperCase()];
-                const opts = el.parentElement.querySelectorAll('.option');
-                if(opts[idx]) opts[idx].classList.add('correct');
-            }
+        window.check = (el, selected, correct, explanationId, q) => {
+            const group = el.parentElement;
+            if (group.getAttribute('data-done')) return;
+            group.setAttribute('data-done', 'true');
+            const answer = String(correct || '').trim().toUpperCase();
+            const isCorrect = selected === answer;
+            el.classList.add(isCorrect ? 'correct' : 'wrong');
+            group.querySelectorAll('.option').forEach(option => {
+                option.disabled = true;
+                if (option.dataset.option === answer) option.classList.add('correct');
+            });
 
-            saveProgress(q, corr);
-            if(document.getElementById('accuracy-display')) {
-                document.getElementById('accuracy-display').innerText = `🎯 ${Math.round((sessionCorrect/sessionAttempted)*100)}%`;
+            // Generated previews must not change the score of a library session.
+            const isSession = !!el.closest('#quiz-container');
+            const id = getQID(q);
+            const alreadyAnswered = isSession && sessionAnswers.has(id);
+            if (isSession && !alreadyAnswered) {
+                sessionAnswers.set(id, selected);
+                sessionAttempted++;
+                if (isCorrect) sessionCorrect++;
+                saveProgress(q, isCorrect);
+                document.getElementById('accuracy-display').innerText =
+                    `🎯 ${Math.round((sessionCorrect / sessionAttempted) * 100)}%`;
             }
-            
-            const expDiv = document.getElementById(eid);
-            expDiv.style.display='block';
-            speakText("Rationale: " + expDiv.innerText.replace("💡 Rationale",""));
+            const explanation = document.getElementById(explanationId);
+            explanation.style.display = 'block';
+            if (!alreadyAnswered) speakText('Rationale: ' + explanation.innerText.replace('💡 Rationale', ''));
         };
 
         // --- AI GENERATOR ---
@@ -758,9 +815,13 @@
         window.closeGenView = () => document.getElementById('gen-view').style.display='none';
 
         window.goBack = () => {
-            const genOpen = document.getElementById('gen-view')?.style.display !== 'none';
-            const quizOpen = document.getElementById('quiz-view')?.style.display !== 'none';
-            const subtopicOpen = document.getElementById('subtopic-view')?.style.display !== 'none';
+            const isOpen = id => {
+                const view = document.getElementById(id);
+                return view && getComputedStyle(view).display !== 'none';
+            };
+            const genOpen = isOpen('gen-view');
+            const quizOpen = isOpen('quiz-view');
+            const subtopicOpen = isOpen('subtopic-view');
 
             if (genOpen) {
                 closeGenView();
@@ -940,20 +1001,47 @@
             loadSheet(); closeSettings();
         };
 
-        window.loadSheet=()=>{
+        window.loadSheet = () => {
             const status = document.getElementById('db-status');
-            status.innerText="Updating Library...";
-            Papa.parse(document.getElementById('sheet-url').value,{
-                download:true, header:true, skipEmptyLines:true,
-                complete:r=>{
-                    dbQuestions=r.data; uniqueTopics={};
-                    dbQuestions.forEach(row=>{if(row.Topic)uniqueTopics[row.Topic.trim()]=1;});
-                    renderTopics();
-                    status.innerText=`${dbQuestions.length} Questions Loaded`;
+            const url = document.getElementById('sheet-url').value.trim();
+            // Keep question sets separate when the user changes their CSV URL.
+            const cacheKey = 'clinical_question_bank:' + url;
+            const cached = DrugTutorUI.readStoredJSON(cacheKey, []);
+            const applyRows = rows => {
+                dbQuestions = rows;
+                uniqueTopics = {};
+                rows.forEach(row => { if (row.Topic) uniqueTopics[row.Topic.trim()] = 1; });
+                renderTopics();
+                filterTopics();
+            };
+            const offlineStatus = () => {
+                status.innerText = cached.length
+                    ? `${cached.length} saved questions · offline`
+                    : 'Unable to load questions. Check your connection and CSV URL in Settings.';
+            };
+            applyRows(cached);
+            status.innerText = cached.length ? `${cached.length} saved questions · updating…` : 'Updating Library…';
+            if (!url || typeof Papa === 'undefined') { offlineStatus(); return; }
+            Papa.parse(url, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: result => {
+                    // Ignore an older response if Settings now points at another sheet.
+                    if (document.getElementById('sheet-url').value.trim() !== url) return;
+                    const rows = result.data.filter(row => {
+                        const answer = String(row.Correct || '').trim().toUpperCase();
+                        return row.Topic && row.Question && /^[ABCD]$/.test(answer) && row['Option' + answer];
+                    });
+                    if (!rows.length) { offlineStatus(); return; }
+                    applyRows(rows);
+                    try { localStorage.setItem(cacheKey, JSON.stringify(rows)); } catch (_) {}
+                    status.innerText = `${rows.length} Questions Loaded`;
                 },
-                error: (e) => { status.innerText = "Connection Error"; }
+                error: () => {
+                    if (document.getElementById('sheet-url').value.trim() === url) offlineStatus();
+                }
             });
         };
+
     </script>
 </body>
 </html>
