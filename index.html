@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#F2F2F7">
@@ -14,6 +14,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     
+    <script src="app-ui.js"></script>
     <style>
         :root {
             /* iOS 17/Modern Palette */
@@ -341,79 +342,80 @@
         .glass-nav .nav-btn.active { animation: softPulse 1.8s ease-in-out infinite; }
 
         /* Explicit dual UI modes */
-        body.mobile-ui .subtitle::after { content: ' • Mobile UI'; }
+        body.mobile-ui .subtitle::after { content: ''; }
 
-        body.mobile-ui:not(.ward-fullscreen) {
+        /* Mobile shell: each page scrolls above the persistent tab bar. */
+        body.mobile-ui {
             position: fixed;
             inset: 0;
             width: 100%;
-            height: 100dvh;
-            overflow: hidden;
-            overscroll-behavior: none;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #app-container {
-            position: fixed;
-            left: 3%;
-            right: 3%;
-            top: calc(env(safe-area-inset-top) + 110px);
-            bottom: calc(env(safe-area-inset-bottom) + 10px);
-            width: auto;
-            max-width: none;
-            padding-bottom: 0;
+            height: var(--app-height, 100dvh);
+            min-height: 0;
+            box-sizing: border-box;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
             overflow: hidden;
         }
-
-        body.mobile-ui:not(.ward-fullscreen) #search-section,
-        body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
-            height: 100%;
-            overflow: hidden;
-            overscroll-behavior: none;
-            -webkit-overflow-scrolling: auto;
-            padding-bottom: 0;
+        body.mobile-ui header { flex: 0 0 auto; }
+        body.mobile-ui .glass-nav {
+            order: 3;
+            position: relative;
+            top: auto;
+            flex: 0 0 auto;
+            width: calc(100% - 24px);
+            box-sizing: border-box;
+            margin: 8px 12px;
+            padding: 4px;
+            gap: 2px;
         }
-
-        body.mobile-ui:not(.ward-fullscreen) #search-section {
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #flashcard-section,
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section {
-            display: flex;
+        body.mobile-ui .nav-btn {
+            height: 52px;
+            min-width: 0;
             flex-direction: column;
-            justify-content: flex-start;
-            gap: 6px;
+            gap: 4px;
+            animation: none;
         }
-
-        body.mobile-ui:not(.ward-fullscreen) #quiz-section .ios-card {
-            height: auto;
-            min-height: 100%;
-            overflow: visible;
-            padding: 10px;
-        }
-
-        body.mobile-ui:not(.ward-fullscreen) #filter-bar {
-            position: fixed;
-            left: 3%;
-            right: 3%;
-            top: calc(env(safe-area-inset-top) + 110px);
-            width: auto !important;
+        body.mobile-ui .nav-ico { font-size: 1.2rem; }
+        body.mobile-ui .nav-label { display: none; }
+        body.mobile-ui .nav-label-mobile { display: block; font-size: .7rem; }
+        body.mobile-ui #app-container {
+            order: 2;
+            position: relative;
+            inset: auto;
+            width: calc(100% - 24px);
             max-width: none;
-            z-index: 210;
-            margin: 0;
-            padding-bottom: 0;
+            flex: 1 1 0;
+            min-height: 0;
+            padding: 0;
+            overflow: hidden;
         }
+        body.mobile-ui #search-section,
+        body.mobile-ui #flashcard-section,
+        body.mobile-ui #quiz-section {
+            height: 100%;
+            box-sizing: border-box;
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 16px;
+        }
+        body.mobile-ui #filter-bar {
+            order: 1;
+            position: relative;
+            inset: auto;
+            flex: 0 0 auto;
+            width: calc(100% - 24px) !important;
+            margin: 4px 0 8px;
+        }
+        body.mobile-ui #ward-section,
+        body.mobile-ui #clinical-section { height: 100%; }
+        body.mobile-ui.ward-fullscreen .immersive-shell {
+            height: 100%;
+            min-height: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body.mobile-ui .immersive-frame { display: block; }
 
         body.desktop-ui header {
             width: 100%;
@@ -515,117 +517,6 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
                 scroll-behavior: auto !important;
-            }
-        }
-
-        @media (max-width: 768px) {
-            header { padding: 10px 14px 8px; }
-            h1 { font-size: 1.35rem; }
-            .subtitle { font-size: 0.74rem; }
-
-            /* Fixed duplicated buttons and aligned positioning */
-            .settings-btn-top { right: 14px; top: 10px; width: 34px; height: 34px; }
-            .top-back-btn { left: 14px; right: auto; top: 10px; width: 34px; height: 34px; }
-
-            .glass-nav {
-                position: sticky;
-                top: calc(env(safe-area-inset-top) + 2px);
-                width: 94%;
-                max-width: 600px;
-                margin-bottom: 8px;
-                z-index: 700;
-                border-radius: 14px;
-                padding: 4px 6px;
-                box-shadow: 0 3px 16px rgba(0,0,0,0.08);
-                background: rgba(255,255,255,0.95);
-            }
-
-            .nav-btn {
-                height: 34px;
-                font-size: 0.72rem;
-                display: flex;
-                flex-direction: row;
-                gap: 4px;
-                align-items: center;
-                justify-content: center;
-            }
-            .nav-ico { font-size: 0.86rem; }
-            .nav-label { display: block; font-size: 0.68rem; }
-            .nav-label-mobile { display: none; }
-
-            #app-container { width: 94%; padding-bottom: 16px; }
-            #filter-bar { width: 94% !important; }
-
-            .flashcard-wrapper {
-                height: 43dvh;
-                min-height: 250px;
-                max-height: 360px;
-            }
-
-            .card-face { padding: 8px; }
-            .card-back { padding-top: 6px; overflow: hidden; }
-            .drug-title { font-size: 0.96rem; margin: 2px 0; line-height: 1.15; }
-            .detail-row { margin-bottom: 4px; padding-bottom: 3px; }
-            .detail-label { font-size: 0.56rem; margin-bottom: 0; }
-            .detail-content { font-size: 0.66rem; line-height: 1.12; }
-            #fc-nursing { font-size: 0.64rem !important; line-height: 1.18 !important; }
-            .action-btn { min-height: 28px; padding: 4px 7px; font-size: 0.68rem; }
-            #flashcard-section { gap: 4px; }
-            #flashcard-section > div[style*='margin-top:20px'] { margin-top: 4px !important; }
-            #counter { font-size: 0.72rem !important; }
-            #show-answer-btn { margin-top: 6px !important; }
-            .anki-btn { padding: 7px 4px; font-size: 0.66rem; }
-
-            #quiz-section .ios-card { padding: 8px !important; }
-            #quiz-section h3 { font-size: 0.95rem; margin-bottom: 6px !important; }
-            #quiz-round-progress { font-size: 0.78rem; margin-bottom: 4px; }
-            #quiz-question {
-                font-size: 0.95rem !important;
-                line-height: 1.2;
-                min-height: 38px !important;
-                margin: 4px 0 6px 0 !important;
-            }
-            .quiz-stats-row { gap: 6px; margin-bottom: 6px; }
-            .quiz-stat-pill { padding: 4px 6px; font-size: 0.66rem; }
-            .quiz-stat-pill strong { font-size: 0.82rem; }
-            .quiz-option-btn {
-                font-size: 0.88rem;
-                min-height: 40px;
-                padding: 9px 10px;
-                line-height: 1.25;
-            }
-            #quiz-options { gap: 6px !important; }
-            .quiz-controls-grid {
-                grid-template-columns: 1fr;
-                gap: 6px;
-                margin-bottom: 6px;
-                padding: 6px;
-            }
-            .quiz-controls-grid .ios-select,
-            #quiz-section .action-btn { font-size: 0.7rem; min-height: 30px; padding: 6px 8px; }
-            .quiz-controls-grid .ios-select {
-                width: 100%;
-            }
-            .result-card { padding: 13px; }
-            .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-            #clinical-back-btn {
-                top: calc(env(safe-area-inset-top) + 8px) !important;
-                left: 10px !important;
-                padding: 7px 11px !important;
-                border-radius: 999px !important;
-                font-size: 0.86rem;
-            }
-            #clinical-loading {
-                align-items: flex-start !important;
-                justify-content: flex-start !important;
-                padding-top: calc(env(safe-area-inset-top) + 56px);
-                padding-left: 14px;
-                padding-right: 14px;
-            }
-            #clinical-loading .clinical-loading-box {
-                width: 100%;
-                max-width: 320px;
             }
         }
 
@@ -903,6 +794,42 @@
         .expanded .extra-details { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+
+        @media (max-width: 768px), (hover: none) and (pointer: coarse) and (max-height: 500px) {
+            header { padding: 10px 56px 8px; }
+            h1 { font-size: clamp(1rem, 4.5vw, 1.35rem); gap: 8px; }
+            .app-icon-img { width: 30px; height: 30px; }
+            .subtitle { font-size: .75rem; text-align: center; }
+            .top-back-btn, .settings-btn-top { top: 8px; width: 44px; height: 44px; }
+            .top-back-btn { left: 6px; }
+            .settings-btn-top { right: 6px; }
+            .glass-nav { border-radius: 18px; }
+            .flashcard-wrapper { height: clamp(320px, 52dvh, 480px); }
+            .card-face { padding: 20px 16px; }
+            .card-back { justify-content: flex-start; overflow-y: auto; }
+            .card-back > * { flex-shrink: 0; }
+            .drug-title { font-size: 1.4rem; }
+            .detail-label { font-size: .75rem; }
+            .detail-content, #fc-nursing { font-size: .95rem !important; line-height: 1.5 !important; }
+            .action-btn, .anki-btn, .ios-select, .chip, .speak-icon-btn { min-height: 44px; box-sizing: border-box; }
+            .action-btn { padding: 12px; font-size: .95rem; }
+            .anki-controls { padding: 0; gap: 6px; }
+            .anki-btn { font-size: .85rem; }
+            #quiz-section .ios-card { padding: 16px; }
+            #quiz-question { font-size: 1.05rem !important; line-height: 1.5; }
+            .quiz-controls-grid { grid-template-columns: 1fr; }
+            .quiz-option-btn { min-height: 48px; font-size: 1rem; line-height: 1.4; }
+            input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
+            .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .result-header { flex-wrap: wrap; gap: 8px; }
+            .name-with-speak { min-width: 0; flex: 1 1 180px; }
+            .modal-overlay { top: var(--viewport-top, 0px); bottom: auto; height: var(--app-height, 100dvh); }
+            .modal-card { max-height: 100%; height: 90%; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
+            .modal-card button { min-height: 44px; }
+        }
+        button, input, select, textarea { font-family: inherit; }
+        button { touch-action: manipulation; }
+        :focus-visible { outline: 3px solid var(--ios-blue); outline-offset: 3px; }
     </style>
 </head>
 <body>
@@ -912,18 +839,18 @@
         <img src="apple-touch-icon.png" class="app-icon-img" alt="App Icon">
         AI Drug Tutor
     </h1>
-    <button onclick="handleTopBack()" class="top-back-btn">←</button>
-    <button onclick="toggleSettings()" class="settings-btn-top">⚙️</button>
+    <button onclick="handleTopBack()" class="top-back-btn" aria-label="Back">←</button>
+    <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="subtitle" id="provider-display">DeepSeek</div>
 </header>
 
-<div class="glass-nav">
+<nav class="glass-nav" aria-label="Main navigation">
     <button class="nav-btn active" id="nav-search" onclick="switchMode('search')"><span class="nav-ico">🧸</span><span class="nav-label">Search</span><span class="nav-label-mobile">Search</span></button>
     <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')"><span class="nav-ico">🗂️</span><span class="nav-label">Flashcard</span><span class="nav-label-mobile">Flash</span></button>
     <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')"><span class="nav-ico">🧩</span><span class="nav-label">Quiz</span><span class="nav-label-mobile">Quiz</span></button>
     <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')"><span class="nav-ico">🩺</span><span class="nav-label">Ward</span><span class="nav-label-mobile">Ward</span></button>
     <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')"><span class="nav-ico">🏥</span><span class="nav-label">Clinical</span><span class="nav-label-mobile">Clinical</span></button>
-</div>
+</nav>
 
 <div id="filter-bar" class="filter-scroller" style="display:none; width: 92%; max-width:600px;">
     <select id="system-filter" onchange="applyFilter()" class="ios-select">
@@ -2455,7 +2382,7 @@ Language: ${langInstruction}.`;
     let iosGestureState = { tracking: false, startX: 0, startY: 0, mode: null };
     let fcSelectedDrug = ""; 
     let quizEngine = 'deepseek';
-    let ankiStats = JSON.parse(localStorage.getItem('drug_tutor_anki') || '{}');
+    let ankiStats = DrugTutorUI.readStoredJSON('drug_tutor_anki', {});
     let ankiDailyLimit = parseInt(localStorage.getItem('anki_daily_limit') || '20', 10);
     let ankiNewLimit = parseInt(localStorage.getItem('anki_new_limit') || '20', 10);
     let ankiLearnLimit = parseInt(localStorage.getItem('anki_learn_limit') || '20', 10);
@@ -2467,7 +2394,7 @@ Language: ${langInstruction}.`;
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek-v4-flash';
-    let deepSeekKey = localStorage.getItem('ds_key') || "sk-301f6f940e5743659ceaf0cbd86d2193";
+    let deepSeekKey = localStorage.getItem('ds_key') || '';
     let openRouterKey = localStorage.getItem('openrouter_key') || '';
     let yinliKey = localStorage.getItem('yinli_key') || '';
     const REQUIRED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
@@ -2564,17 +2491,18 @@ Language: ${langInstruction}.`;
         }
     }
 
+    const MOBILE_LAYOUT_QUERY = '(max-width: 768px), (hover: none) and (pointer: coarse) and (max-height: 500px)';
     let deviceLayoutMedia = null;
 
     function applyDeviceUILayout() {
-        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const isMobile = window.matchMedia(MOBILE_LAYOUT_QUERY).matches;
         document.body.classList.toggle('mobile-ui', isMobile);
         document.body.classList.toggle('desktop-ui', !isMobile);
     }
 
     function setupDeviceUILayoutWatcher() {
         applyDeviceUILayout();
-        deviceLayoutMedia = window.matchMedia('(max-width: 768px)');
+        deviceLayoutMedia = window.matchMedia(MOBILE_LAYOUT_QUERY);
         const listener = () => applyDeviceUILayout();
         if (deviceLayoutMedia.addEventListener) deviceLayoutMedia.addEventListener('change', listener);
         else if (deviceLayoutMedia.addListener) deviceLayoutMedia.addListener(listener);
@@ -2598,10 +2526,8 @@ Language: ${langInstruction}.`;
         }
         
         // Restore Data
-        const savedHist = localStorage.getItem('drug_tutor_search_history');
-        if(savedHist) searchHistory = JSON.parse(savedHist);
-        const savedStats = localStorage.getItem('drug_tutor_quiz_stats');
-        if(savedStats) quizStats = JSON.parse(savedStats);
+        searchHistory = DrugTutorUI.readStoredJSON('drug_tutor_search_history', []);
+        quizStats = DrugTutorUI.readStoredJSON('drug_tutor_quiz_stats', {});
         quizQuestionBank = loadLocalQuizBank();
 
         // Init UI
@@ -2988,7 +2914,10 @@ Language: ${langInstruction}.`;
             toggleSettings();
             return;
         }
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => {
+            b.classList.remove('active');
+            b.removeAttribute('aria-current');
+        });
         document.getElementById('flashcard-section').style.display = 'none';
         document.getElementById('quiz-section').style.display = 'none';
         document.getElementById('search-section').style.display = 'none';
@@ -3050,6 +2979,7 @@ Language: ${langInstruction}.`;
             setClinicalReadyState(clinicalFrameReady);
             beginClinicalBackSync();
         }
+        document.querySelector('.nav-btn.active')?.setAttribute('aria-current', 'page');
     }
 
     function openToolMode(mode) {
@@ -3404,15 +3334,17 @@ Language: ${langInstruction}.`;
         if(results.length === 0) {
             container.innerHTML = `
                 <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
-                    <p>No local drugs found for "${query}".</p>
-                    <button onclick="triggerAISearch('${query.replace(/'/g, "\\'")}')" class="action-btn btn-primary" style="margin-top:15px;">
-                        ✨ Ask AI to Find & Add "${query}"
+                    <p>No local drugs found for "${escapeHtml(query)}".</p>
+                    <button id="ask-ai-search" class="action-btn btn-primary" style="margin-top:15px;">
+                        ✨ Ask AI to Find & Add "${escapeHtml(query)}"
                     </button>
                     <div style="margin-top:12px; font-size:0.85rem; color:#6b7280;">or upload infusion chart photos (Yinli Gemini)</div>
-                    <input type="file" id="ai-image-upload" accept="image/*" multiple onchange="triggerAISearchFromImages(this, '${query.replace(/'/g, "\\'")}')" style="margin-top:8px; width:100%; max-width:360px;" />
+                    <input type="file" id="ai-image-upload" accept="image/*" multiple style="margin-top:8px; width:100%; max-width:360px;" />
                     <div id="ai-search-output"></div>
                 </div>
             `;
+            document.getElementById('ask-ai-search').onclick = () => triggerAISearch(query);
+            document.getElementById('ai-image-upload').onchange = event => triggerAISearchFromImages(event.target, query);
             return;
         }
 
@@ -3459,7 +3391,7 @@ Language: ${langInstruction}.`;
             card.dataset.generics = JSON.stringify(generics);
             
             card.onclick = (e) => {
-                if(['SELECT', 'A', 'BUTTON', 'SPAN', 'INPUT'].includes(e.target.tagName)) return;
+                if (e.target.closest('button, a, input, select, .chip, .multi-chip')) return;
                 card.classList.toggle('expanded');
             };
             

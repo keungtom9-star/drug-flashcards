@@ -1,7 +1,7 @@
 {
   "name": "Drug Tutor Local",
   "short_name": "DrugTutor",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#F2F2F7",
   "theme_color": "#007AFF",
@@ -17,6 +17,6 @@
       "type": "image/png"
     }
   ],
-  "scope": "/",
-  "id": "/index.html"
+  "scope": "./",
+  "id": "./index.html"
 }
