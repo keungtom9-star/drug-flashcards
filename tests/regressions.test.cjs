@@ -182,7 +182,7 @@ test('imported question text and quotation marks cannot break the option handler
     assert.doesNotThrow(() => new vm.Script(decoded));
 });
 
-test('unknown search text is rendered as text and passed through a bound handler', async () => {
+test('unknown search text is safe and offers text lookup without an infusion upload', async () => {
     const { context, document } = browserContext({ ds_key: 'test-key' });
     for (const source of inlineScripts('index.html')) vm.runInContext(source, context);
     const query = '<img src=x onerror=alert(1)> "quote"';
@@ -192,6 +192,7 @@ test('unknown search text is rendered as text and passed through a bound handler
     context.triggerAISearch = q => { passed = q; };
     context.runSearch();
     assert.ok(!document.getElementById('search-results').innerHTML.includes('<img src=x'));
+    assert.doesNotMatch(document.getElementById('search-results').innerHTML, /upload an infusion chart|ai-image-upload/i);
     await document.getElementById('ask-ai-search').onclick();
     assert.equal(passed, query);
 });
@@ -262,7 +263,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -334,6 +335,7 @@ test('search pagination exposes every match and clear restores useful guidance',
     vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows)', context);
     document.getElementById('search-input').value = 'example';
     context.runSearch();
+    assert.equal(document.body.classList.contains('search-results-active'), true);
     assert.equal(document.getElementById('search-status').textContent, '30 of 45 matching drugs');
     assert.equal(document.getElementById('more-search-results').hidden, false);
     context.showMoreSearchResults();
@@ -341,6 +343,7 @@ test('search pagination exposes every match and clear restores useful guidance',
     assert.equal(document.getElementById('more-search-results').hidden, true);
     context.clearSearch();
     assert.equal(document.getElementById('search-input').value, '');
+    assert.equal(document.body.classList.contains('search-results-active'), false);
     assert.match(document.getElementById('search-results').innerHTML, /What are you looking for/);
     assert.equal(document.getElementById('clear-search').hidden, true);
 });

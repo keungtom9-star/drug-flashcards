@@ -311,6 +311,25 @@
             margin: 8px 12px;
             padding: 4px;
             gap: 2px;
+            max-height: 64px;
+            overflow: hidden;
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+            transition: opacity .2s ease, transform .24s cubic-bezier(.2,.8,.2,1), max-height .24s ease, margin .24s ease, padding .24s ease, border-width .24s ease, visibility 0s linear;
+        }
+        body.mobile-ui.search-results-active .glass-nav {
+            max-height: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0;
+            opacity: 0;
+            transform: translateY(18px);
+            visibility: hidden;
+            pointer-events: none;
+            transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, .24s;
         }
         body.mobile-ui .nav-btn {
             height: 52px;
@@ -800,7 +819,6 @@
         .search-empty { padding: 16px 0; color: #475569; }
         .search-examples { display: flex; flex-wrap: wrap; gap: 8px; }
         button.chip { border: 0; min-height: 44px; }
-        #ai-image-upload { max-width: 100%; margin: 8px 0; }
         .settings-help { margin-top: 16px; border-radius: 12px; padding: 12px; background: #eff6ff; color: #1e3a8a; line-height: 1.5; font-size: .9rem; }
 
         /* Modern interaction layer */
@@ -2774,6 +2792,15 @@ Language: ${langInstruction}.`;
     }
 
     // --- NAVIGATION MODES ---
+    let activeAppMode = 'search';
+
+    function updateSearchNavigationVisibility() {
+        const input = document.getElementById('search-input');
+        const searchIsActive = activeAppMode === 'search'
+            && (!!input?.value.trim() || searchSystem !== 'All');
+        document.body.classList.toggle('search-results-active', searchIsActive);
+    }
+
     function handleTopBack() {
         const active = document.querySelector('.nav-btn.active')?.id;
         if (active === 'nav-clinical') {
@@ -2791,6 +2818,7 @@ Language: ${langInstruction}.`;
     function switchMode(mode) {
         if (mode === 'settings') { toggleSettings(); return; }
         if (!['search', 'quiz', 'ward', 'clinical'].includes(mode)) mode = 'search';
+        activeAppMode = mode;
         document.querySelectorAll('.glass-nav .nav-btn').forEach(button => {
             button.classList.remove('active');
             button.removeAttribute('aria-current');
@@ -2809,6 +2837,7 @@ Language: ${langInstruction}.`;
         const tab = document.getElementById(`nav-${mode}`);
         tab.classList.add('active');
         tab.setAttribute('aria-current', 'page');
+        updateSearchNavigationVisibility();
         if (mode === 'quiz') {
             const inProgress = currentRoundTotal > 0 && currentRoundAnswered < currentRoundTotal;
             setQuizSetupControlsVisible(!inProgress);
@@ -2977,6 +3006,7 @@ Language: ${langInstruction}.`;
     // --- SEARCH LOGIC ---
     function handleSearch() {
         clearTimeout(searchDebounceTimer);
+        updateSearchNavigationVisibility();
         searchDebounceTimer = setTimeout(() => runSearch(), SEARCH_DEBOUNCE_MS);
     }
 
@@ -2986,6 +3016,7 @@ Language: ${langInstruction}.`;
         const container = document.getElementById('search-results');
         const status = document.getElementById('search-status');
         const more = document.getElementById('more-search-results');
+        updateSearchNavigationVisibility();
         const queryKey = `${query}|${searchSystem}`;
         if (queryKey !== lastSearchKey) searchLimit = SEARCH_PAGE_SIZE;
         lastSearchKey = queryKey;
@@ -3014,15 +3045,12 @@ Language: ${langInstruction}.`;
                     <p>No saved drugs found for "${escapeHtml(rawQuery)}".</p>
                     <button type="button" id="ask-ai-search" class="action-btn btn-primary">${needsKey ? 'Check Google Sheet' : 'Search Google Sheet & AI'}</button>
                     <p class="search-hint">Checks the latest Google Sheet first.${needsKey ? ' If it is still missing, add an API key for AI search.' : ' Review and edit any result, then choose whether to add it.'}</p>
-                    <label for="ai-image-upload" class="search-hint">Or upload an infusion chart (requires a Yinli Gemini key).</label>
-                    <input type="file" id="ai-image-upload" accept="image/*" multiple />
                     <div id="ai-search-output"></div>
                 </div>`;
             document.getElementById('ask-ai-search').onclick = () => {
                 rememberSearch(rawQuery);
                 resolveMissingDrug(rawQuery);
             };
-            document.getElementById('ai-image-upload').onchange = event => triggerAISearchFromImages(event.target, rawQuery);
             return;
         }
 
