@@ -221,7 +221,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -262,7 +262,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -272,6 +272,20 @@ function loadMain(records = {}) {
     const state = browserContext({ auto_sync_startup: '0', ...records });
     for (const source of inlineScripts('index.html')) vm.runInContext(source, state.context);
     return state;
+}
+
+function fillAIEditor(document, overrides = {}) {
+    const values = {
+        'ai-edit-name': 'Novelmed (Nova)',
+        'ai-edit-class': 'Edited class',
+        'ai-edit-system': '🫀 Cardio',
+        'ai-edit-indication': 'Edited indication',
+        'ai-edit-side-effects': 'Nausea, dizziness, hypotension',
+        'ai-edit-nursing': 'Monitor blood pressure and response',
+        'ai-edit-effect': 'Edited drug action',
+        ...overrides,
+    };
+    for (const [id, value] of Object.entries(values)) document.getElementById(id).value = value;
 }
 
 test('startup and all navigation tabs work after removing the old study controls', () => {
@@ -353,7 +367,7 @@ test('external drug searches use a real secure link instead of window.open', () 
     assert.ok(opened.every(link => link.target === '_blank' && link.rel.includes('noopener')));
 });
 
-test('a missing local drug checks Google Sheet before using AI', async () => {
+test('a Google Sheet result waits for review and explicit local add', async () => {
     const { context, document } = loadMain({ ds_key: 'test-key' });
     document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
     document.getElementById('search-input').value = 'Cloud medicine';
@@ -363,19 +377,25 @@ test('a missing local drug checks Google Sheet before using AI', async () => {
     context.triggerAISearch = async () => { aiCalls++; };
     await context.resolveMissingDrug('Cloud medicine');
     assert.equal(aiCalls, 0);
-    assert.equal(context.findLocalDrugs('Cloud medicine')[0].name, 'Cloud medicine (Sheetbrand)');
+    assert.equal(context.findLocalDrugs('Cloud medicine').length, 0);
     assert.match(document.getElementById('search-status').textContent, /Found in Google Sheet/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Nothing has been added yet/);
+    fillAIEditor(document, { 'ai-edit-name': 'Cloud medicine (Edited brand)', 'ai-edit-side-effects': 'Headache, nausea' });
+    document.getElementById('btn-add-local').onclick();
+    assert.equal(context.findLocalDrugs('Cloud medicine')[0].name, 'Cloud medicine (Edited brand)');
 });
 
-test('a drug absent from Google Sheet is found by AI, added once to Sheet and made searchable', async () => {
+test('an AI-found drug waits for edited approval before Sheet and local add', async () => {
     const { context, document } = loadMain({ ds_key: 'test-key' });
     document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
     document.getElementById('search-input').value = 'Novelmed';
     context.Papa = { parse: () => ({ data: [] }) };
     let sheetWrites = 0;
+    let writtenPayload;
     context.fetch = async (_url, options = {}) => {
         if (options.method === 'POST') {
             sheetWrites++;
+            writtenPayload = JSON.parse(options.body);
             return { ok: true, text: async () => '' };
         }
         return { ok: true, text: async () => 'name,class' };
@@ -385,9 +405,22 @@ test('a drug absent from Google Sheet is found by AI, added once to Sheet and ma
         side_effects: 'Example effect', nursing: 'Monitor response', effect_of_drug: 'Example action'
     }));
     await context.resolveMissingDrug('Novelmed');
+    assert.equal(sheetWrites, 0);
+    assert.equal(context.findLocalDrugs('Novelmed').length, 0);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
+
+    fillAIEditor(document, {
+        'ai-edit-name': 'Novelmed (Edited brand)',
+        'ai-edit-indication': 'Edited indication for testing',
+        'ai-edit-side-effects': 'Edited nausea, rash, dizziness'
+    });
+    await document.getElementById('btn-save-sheet').onclick();
     assert.equal(sheetWrites, 1);
-    assert.equal(context.findLocalDrugs('Novelmed')[0].name, 'Novelmed (Nova)');
-    await context.saveToGoogleSheet({ name: 'Novelmed (Another brand)', class: 'Test class', system: '🫀 Cardio' });
+    assert.equal(writtenPayload.name, 'Novelmed (Edited brand)');
+    assert.equal(writtenPayload.indication, 'Edited indication for testing');
+    assert.equal(writtenPayload.side_effects, 'Edited nausea, rash, dizziness');
+    assert.equal(context.findLocalDrugs('Novelmed')[0].name, 'Novelmed (Edited brand)');
+    await document.getElementById('btn-save-sheet').onclick();
     assert.equal(sheetWrites, 1);
 });
 
@@ -404,18 +437,31 @@ test('AI drug search repairs placeholder side effects before display or Sheet sa
             side_effects: 'Nausea, dizziness, hypotension', nursing: 'Monitor the patient', effect_of_drug: 'Example action'
         }));
     };
-    context.saveToGoogleSheet = async drug => {
-        const payload = context.buildDatabaseSavePayload(drug);
-        assert.doesNotMatch(payload.side_effects, /not specified/i);
-        return true;
-    };
+    let saveCalls = 0;
+    context.saveToGoogleSheet = async () => { saveCalls++; return true; };
     await context.triggerAISearch('Examplemed');
     assert.equal(aiCalls, 2);
+    assert.equal(saveCalls, 0);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Nausea, dizziness, hypotension/);
     assert.doesNotMatch(document.getElementById('ai-search-output').innerHTML, /Side Effects<\/div><div[^>]*>Not specified/i);
 
     const fallback = context.normalizeAISearchDrugPayload({ name: 'Fallbackmed', side_effects: 'Not listed', nursing: 'N/A', effect_of_drug: 'Unknown' });
     assert.doesNotMatch([fallback.side_effects, fallback.nursing, fallback.effect_of_drug].join(' '), /not specified|not listed|unknown|n\/a/i);
+    assert.throws(() => context.validateEditedAISearchDrug({ name: 'Fallbackmed', side_effects: 'Not specified' }), /useful.*side effects/i);
+});
+
+test('image search results also require an explicit Add action', async () => {
+    const { context, document } = loadMain({ ds_key: 'test-key' });
+    let saves = 0;
+    context.saveToGoogleSheet = async () => { saves++; return true; };
+    context.renderAIImageSearchResults([context.normalizeAISearchDrugPayload({
+        name: 'Imagemed (Image)', class: 'Test', system: '🫀 Cardio', indication: 'Testing',
+        side_effects: 'Nausea', nursing: 'Monitor', effect_of_drug: 'Test action'
+    })]);
+    assert.equal(saves, 0);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Nothing has been added yet/);
+    await document.getElementById('btn-save-sheet-0').onclick();
+    assert.equal(saves, 1);
 });
 
 test('drug Explain enforces readable Cantonese and retries an English response', async () => {

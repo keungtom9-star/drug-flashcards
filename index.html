@@ -700,6 +700,38 @@
             line-height: 1.45;
         }
         .drug-explain-output li::before { content: '•'; position: absolute; left: 12px; color: var(--ios-indigo); font-weight: 900; }
+        .ai-review-note {
+            margin: 10px 0 14px;
+            padding: 10px 12px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-size: .82rem;
+            line-height: 1.45;
+        }
+        .ai-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+        .ai-edit-field { display: grid; gap: 5px; min-width: 0; }
+        .ai-edit-field.full { grid-column: 1 / -1; }
+        .ai-edit-label { color: #475569; font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+        .ai-edit-input {
+            width: 100%;
+            min-height: 44px;
+            padding: 10px 11px;
+            border: 1px solid #dbe3ef;
+            border-radius: 11px;
+            background: #fff;
+            color: #111827;
+            font: inherit;
+            line-height: 1.4;
+            resize: vertical;
+            box-sizing: border-box;
+            transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+        .ai-edit-input:focus { border-color: var(--ios-blue); box-shadow: 0 0 0 4px rgba(0,122,255,.1); background: #fff; outline: none; }
+        .ai-review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+        .ai-review-actions.one-action { grid-template-columns: 1fr; }
+        .ai-save-status { min-height: 20px; margin-top: 9px; text-align: center; font-size: .82rem; font-weight: 700; line-height: 1.4; }
 
         .settings-input {
             width: 100%; padding: 12px; border: 1px solid #d1d1d6;
@@ -741,6 +773,7 @@
             input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
             .result-header { flex-wrap: wrap; gap: 8px; }
             .name-with-speak { min-width: 0; flex: 1 1 180px; }
+            .ai-edit-grid, .ai-review-actions { grid-template-columns: 1fr; }
             .modal-overlay { top: var(--viewport-top, 0px); bottom: auto; height: var(--app-height, 100dvh); }
             .modal-card { max-height: 100%; height: 90%; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
             .modal-card button { min-height: 44px; }
@@ -1114,7 +1147,7 @@
         </div>
 
         <div class="settings-help">
-            Search saved drugs by name, brand or condition. When a drug is missing, the app checks Google Sheet, uses AI if needed, then adds the result back to Google Sheet automatically. Add your own API key to enable AI search, explanations and quiz generation.
+            Search saved drugs by name, brand or condition. When a drug is missing, the app checks Google Sheet and uses AI if needed. Review and edit the result before choosing whether to add it. Add your own API key to enable AI search, explanations and quiz generation.
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Settings</button>
@@ -2979,8 +3012,8 @@ Language: ${langInstruction}.`;
             container.innerHTML = `
                 <div class="search-empty">
                     <p>No saved drugs found for "${escapeHtml(rawQuery)}".</p>
-                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">${needsKey ? 'Check Google Sheet' : 'Search AI & add to Google Sheet'}</button>
-                    <p class="search-hint">Checks the latest Google Sheet first.${needsKey ? ' If it is still missing, add an API key for AI search.' : ' If missing, AI will find it and add it automatically.'}</p>
+                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">${needsKey ? 'Check Google Sheet' : 'Search Google Sheet & AI'}</button>
+                    <p class="search-hint">Checks the latest Google Sheet first.${needsKey ? ' If it is still missing, add an API key for AI search.' : ' Review and edit any result, then choose whether to add it.'}</p>
                     <label for="ai-image-upload" class="search-hint">Or upload an infusion chart (requires a Yinli Gemini key).</label>
                     <input type="file" id="ai-image-upload" accept="image/*" multiple />
                     <div id="ai-search-output"></div>
@@ -3197,9 +3230,9 @@ Language: ${langInstruction}.`;
         try {
             const sheetDrug = await findDrugInGoogleSheet(query);
             if (sheetDrug) {
-                upsertDrugToLocalList(sheetDrug);
                 const status = document.getElementById('search-status');
-                if (status) status.textContent = 'Found in Google Sheet and added to this device.';
+                if (status) status.textContent = 'Found in Google Sheet. Review it before adding.';
+                renderEditableDrugReview(sheetDrug, { sourceLabel: 'Google Sheet result', allowSheetSave: false });
                 return;
             }
         } catch (_) {
@@ -3244,6 +3277,102 @@ ${rawText}`;
         await streamAIResponse([{ role: 'user', content: repairPrompt }], (text) => { repairedText = text; });
         return parseAISearchPayload(repairedText);
     }
+
+    function validateEditedAISearchDrug(drugData) {
+        const name = String(drugData?.name || '').trim();
+        const sideEffects = String(drugData?.side_effects || '').trim();
+        if (!name) throw new Error('Add a drug name before saving.');
+        if (isMissingDrugText(sideEffects) || sideEffects === DRUG_TEXT_FALLBACKS.sideEffects) {
+            throw new Error('Add useful common or serious side effects before saving.');
+        }
+        return normalizeAISearchDrugPayload({ ...drugData, name, side_effects: sideEffects });
+    }
+
+    function readEditableAISearchDrug() {
+        const value = id => String(document.getElementById(id)?.value || '').trim();
+        return validateEditedAISearchDrug({
+            name: value('ai-edit-name'),
+            class: value('ai-edit-class'),
+            system: value('ai-edit-system'),
+            indication: value('ai-edit-indication'),
+            side_effects: value('ai-edit-side-effects'),
+            nursing: value('ai-edit-nursing'),
+            effect_of_drug: value('ai-edit-effect')
+        });
+    }
+
+    function setAIReviewStatus(message, color = 'var(--ios-gray)') {
+        const status = document.getElementById('save-status');
+        if (!status) return;
+        status.innerText = message;
+        status.style.color = color;
+    }
+
+    function renderEditableDrugReview(drugData, { sourceLabel = 'AI result', allowSheetSave = true } = {}) {
+        const container = document.getElementById('ai-search-output');
+        if (!container) return;
+        const systemOptions = systemCategories.map(system =>
+            `<option value="${escapeHtml(system)}" ${system === drugData.system ? 'selected' : ''}>${escapeHtml(system)}</option>`
+        ).join('');
+
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="ios-card" style="border:2px solid var(--ios-green); margin-top:20px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
+                    <h3 style="margin:0; color:var(--ios-blue);">Review drug details</h3>
+                    <span class="chip" style="background:var(--ios-green); color:white;">${escapeHtml(sourceLabel)}</span>
+                </div>
+                <div class="ai-review-note"><strong>Nothing has been added yet.</strong> Edit any field below, then choose an Add button.</div>
+                <div class="ai-edit-grid">
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name)}" autocomplete="off"></label>
+                    <label class="ai-edit-field"><span class="ai-edit-label">Class</span><input id="ai-edit-class" class="ai-edit-input" value="${escapeHtml(drugData.class)}" autocomplete="off"></label>
+                    <label class="ai-edit-field"><span class="ai-edit-label">System</span><select id="ai-edit-system" class="ai-edit-input">${systemOptions}</select></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Indication</span><textarea id="ai-edit-indication" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication)}</textarea></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects)}</textarea></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Nursing</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="3">${escapeHtml(drugData.nursing)}</textarea></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Drug effect</span><textarea id="ai-edit-effect" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug || drugData.quiz)}</textarea></label>
+                </div>
+                <div class="ai-review-actions ${allowSheetSave ? '' : 'one-action'}">
+                    <button id="btn-add-local" class="action-btn" style="margin:0; background:#ecfdf5; color:#047857;">📱 Add to this device</button>
+                    ${allowSheetSave ? '<button id="btn-save-sheet" class="action-btn btn-green" style="margin:0;">☁️ Add to Google Sheet + device</button>' : ''}
+                </div>
+                <div id="save-status" class="ai-save-status" aria-live="polite"></div>
+            </div>`;
+
+        const addLocalBtn = document.getElementById('btn-add-local');
+        if (addLocalBtn) {
+            addLocalBtn.onclick = () => {
+                try {
+                    const editedDrug = readEditableAISearchDrug();
+                    const ok = upsertDrugToLocalList(editedDrug);
+                    setAIReviewStatus(ok ? '✅ Added to this device with your edits.' : '❌ Unable to add this drug.', ok ? 'var(--ios-green)' : 'var(--ios-red)');
+                    if (ok) {
+                        addLocalBtn.disabled = true;
+                        addLocalBtn.innerText = '✅ Added to this device';
+                    }
+                } catch (error) {
+                    setAIReviewStatus(error.message, 'var(--ios-red)');
+                    const focusId = /name/i.test(error.message) ? 'ai-edit-name' : 'ai-edit-side-effects';
+                    document.getElementById(focusId)?.focus();
+                }
+            };
+        }
+
+        const saveBtn = document.getElementById('btn-save-sheet');
+        if (saveBtn) {
+            saveBtn.onclick = async () => {
+                try {
+                    const editedDrug = readEditableAISearchDrug();
+                    await saveToGoogleSheet(editedDrug);
+                } catch (error) {
+                    setAIReviewStatus(error.message, 'var(--ios-red)');
+                    const focusId = /name/i.test(error.message) ? 'ai-edit-name' : 'ai-edit-side-effects';
+                    document.getElementById(focusId)?.focus();
+                }
+            };
+        }
+    }
+
     // --- AI & DATA FUNCTIONS ---
     async function triggerAISearch(query) {
         if (!requireApiKey()) return;
@@ -3282,50 +3411,7 @@ Rules:
             }
             if (!drugData || !drugData.name) throw new Error('AI result missing drug name');
 
-            container.innerHTML = `
-                <div class="ios-card" style="border:2px solid var(--ios-green); margin-top:20px; text-align:left;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h3 style="margin:0; color:var(--ios-blue);">${escapeHtml(drugData.name)}</h3>
-                        <span class="chip" style="background:var(--ios-green); color:white;">AI Found</span>
-                    </div>
-                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content">${escapeHtml(drugData.class)}</div></div>
-                    <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${escapeHtml(drugData.system)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${escapeHtml(drugData.indication)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" style="color:#d32f2f;">${escapeHtml(drugData.side_effects)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content" style="font-size:0.9rem;">${escapeHtml(drugData.nursing)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Drug Effect (Quiz)</div><div class="detail-content" style="color:#7c3aed;">${escapeHtml(drugData.effect_of_drug || drugData.quiz || drugData.side_effects)}</div></div>
-                    <div style="display:flex; gap:8px; margin-top:10px;">
-                        <button id="btn-add-local" class="action-btn" style="flex:1; background:#ecfdf5; color:#047857;">📱 Add to this device</button>
-                        <button id="btn-save-sheet" class="action-btn btn-green" style="flex:1;">☁️ Add to Google Sheet</button>
-                    </div>
-                    <div id="save-status" style="text-align:center; margin-top:10px; font-size:0.85rem; font-weight:600;"></div>
-                </div>`;
-
-            const addLocalBtn = document.getElementById('btn-add-local');
-            if (addLocalBtn) {
-                addLocalBtn.onclick = () => {
-                    const statusEl = document.getElementById('save-status');
-                    const ok = upsertDrugToLocalList(drugData);
-                    if (statusEl) {
-                        statusEl.innerText = ok ? '✅ Added locally and visible in search.' : '❌ Unable to add locally.';
-                        statusEl.style.color = ok ? 'var(--ios-green)' : 'var(--ios-red)';
-                    }
-                    if (ok) {
-                        addLocalBtn.disabled = true;
-                        addLocalBtn.innerText = '✅ Added';
-                    }
-                };
-            }
-
-            const saveBtn = document.getElementById('btn-save-sheet');
-            if (saveBtn) {
-                saveBtn.onclick = async () => {
-                    await saveToGoogleSheet(drugData);
-                };
-            }
-
-            // A missing Sheet result is added automatically after AI finds it.
-            await saveToGoogleSheet(drugData);
+            renderEditableDrugReview(drugData, { sourceLabel: 'AI result', allowSheetSave: true });
         } catch (e) {
             container.innerHTML = `<div style="color:red; margin-top:10px;">Search failed. Please try again.</div>`;
         }
@@ -3455,13 +3541,14 @@ Rules:
                 <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${escapeHtml(drugData.system)}</div></div>
                 <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${escapeHtml(drugData.indication)}</div></div>
                 <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content">${escapeHtml(drugData.nursing)}</div></div>
-                <button id="btn-save-sheet-${idx}" class="action-btn btn-green">☁️ Add to Google Sheet</button>
+                <button id="btn-save-sheet-${idx}" class="action-btn btn-green">☁️ Add this row to Google Sheet</button>
                 <div id="save-status-${idx}" style="text-align:center; margin-top:8px; font-size:0.85rem; font-weight:600;"></div>
             </div>
         `).join('');
 
         container.innerHTML = `
             <div style="margin-top:10px; text-align:left;">
+                <div class="ai-review-note"><strong>Nothing has been added yet.</strong> Review the extracted rows and choose what to add.</div>
                 <button id="btn-save-sheet-all" class="action-btn btn-green" style="margin-bottom:8px;">☁️ Add All to Google Sheet (${drugList.length})</button>
                 <div id="save-status-all" style="font-size:0.85rem; font-weight:600;"></div>
                 ${cards}
@@ -3495,10 +3582,6 @@ Rules:
             }
         });
 
-        // Auto-save all AI image search results to Google Sheet
-        if (saveAllBtn) {
-            saveAllBtn.click();
-        }
     }
 
     async function triggerAISearchFromImages(inputEl, query) {
