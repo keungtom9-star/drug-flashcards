@@ -1,6 +1,6 @@
 import path from 'path';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const staticAppFiles = [
@@ -13,6 +13,15 @@ const staticAppFiles = [
   'icon.png',
 ];
 
+const requiredBuildFiles = [
+  'index.html',
+  'ward.html',
+  'drugquiz.html',
+  'app-ui.js',
+  'service-worker.js',
+  'manifest.json',
+];
+
 const copyStaticAppFiles = () => ({
   name: 'copy-static-app-files',
   closeBundle() {
@@ -22,11 +31,12 @@ const copyStaticAppFiles = () => ({
       const source = path.resolve(__dirname, file);
       if (existsSync(source)) copyFileSync(source, path.resolve(outputDir, file));
     }
+    const missing = requiredBuildFiles.filter(file => !existsSync(path.resolve(outputDir, file)));
+    if (missing.length) throw new Error(`Incomplete production build. Missing: ${missing.join(', ')}`);
   },
 });
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
+export default defineConfig(() => {
     return {
       server: {
         port: 3000,
@@ -41,10 +51,6 @@ export default defineConfig(({ mode }) => {
             clinical: path.resolve(__dirname, 'drugquiz.html'),
           },
         },
-      },
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
       resolve: {
         alias: {
