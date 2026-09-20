@@ -241,59 +241,6 @@
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* Daily Recommendations */
-        .daily-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;
-        }
-        .daily-card {
-            background: linear-gradient(145deg, #ffffff, #eef6ff); border-radius: 20px; padding: 15px;
-            box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
-            justify-content: space-between; min-height: 100px; cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(0,0,0,0.05);
-            /* Ensure text stays within card */
-            word-break: break-word; overflow-wrap: break-word; hyphens: auto;
-        }
-        .daily-card:hover { box-shadow: 0 8px 25px rgba(0, 122, 255, 0.18); }
-        .daily-card:active { transform: scale(0.96); }
-        .daily-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-        .daily-icon-pill {
-            width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.9);
-            display:flex; align-items:center; justify-content:center; font-size: 0.95rem;
-        }
-        .daily-label {
-            font-size: 0.68rem; color: #fff; font-weight: 800; text-transform: uppercase;
-            letter-spacing: .6px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 999px;
-        }
-        .daily-name { 
-            font-size: 1.1rem; font-weight: 700; color: var(--text-primary); 
-            line-height: 1.2; margin-top: 5px; margin-bottom: 10px;
-            word-break: break-word;
-        }
-        .daily-sub { font-size: 0.8rem; color: #1f2937; margin-top: auto; opacity: .85; }
-
-        .anki-controls {
-            display: none;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-top: 12px;
-            padding: 0 10px;
-        }
-        .anki-btn {
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: 700;
-            padding: 10px 6px;
-            cursor: pointer;
-        }
-
-        .anki-meta {
-            margin-top: 10px;
-            font-size: 0.72rem;
-            color: var(--ios-gray);
-            text-align: center;
-        }
-
         .quiz-stats-row {
             margin: 12px 0;
             display: grid;
@@ -336,9 +283,6 @@
             0%, 100% { box-shadow: 0 4px 20px rgba(0, 122, 255, 0.08); }
             50% { box-shadow: 0 8px 28px rgba(0, 122, 255, 0.18); }
         }
-
-        .daily-card { animation: fadeSlideUp 0.35s ease both; }
-        .flashcard-wrapper { animation: fadeSlideUp 0.3s ease both; }
         .glass-nav .nav-btn.active { animation: softPulse 1.8s ease-in-out infinite; }
 
         /* Explicit dual UI modes */
@@ -390,7 +334,6 @@
             overflow: hidden;
         }
         body.mobile-ui #search-section,
-        body.mobile-ui #flashcard-section,
         body.mobile-ui #quiz-section {
             height: 100%;
             box-sizing: border-box;
@@ -398,14 +341,6 @@
             overscroll-behavior-y: contain;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 16px;
-        }
-        body.mobile-ui #filter-bar {
-            order: 1;
-            position: relative;
-            inset: auto;
-            flex: 0 0 auto;
-            width: calc(100% - 24px) !important;
-            margin: 4px 0 8px;
         }
         body.mobile-ui #ward-section,
         body.mobile-ui #clinical-section { height: 100%; }
@@ -437,15 +372,8 @@
             max-width: none;
             padding: 0 20px 48px;
         }
-        body.desktop-ui .daily-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
         body.desktop-ui .system-scroll-container {
             gap: 10px;
-        }
-        body.desktop-ui .flashcard-wrapper {
-            height: 72dvh;
-            max-height: 760px;
         }
         body.desktop-ui .subtitle::after { content: ' • Desktop UI'; }
 
@@ -542,22 +470,6 @@
             background-repeat: no-repeat; background-position: right 10px top 50%; background-size: 10px auto;
         }
 
-        /* Flashcard */
-        .flashcard-wrapper { height: 600px; cursor: pointer; }
-        .flashcard-inner {
-            position: relative; width: 100%; height: 100%; text-align: center;
-        }
-        .card-face {
-            position: absolute; width: 100%; height: 100%;
-            border-radius: var(--radius-card); background: var(--ios-card);
-            box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
-        }
-        .card-front { display: flex; }
-        .card-back { display: none; justify-content: flex-start; text-align: left; padding-top: 25px; overflow-y: auto; }
-        .flashcard-wrapper.flipped .card-front { display: none; }
-        .flashcard-wrapper.flipped .card-back { display: flex; }
-
         .drug-title {
             font-size: 1.6rem; font-weight: 800;
             background: linear-gradient(135deg, var(--ios-blue), var(--ios-indigo));
@@ -571,7 +483,6 @@
             font-size: 0.88rem; font-weight: 500; color: var(--text-primary); line-height: 1.28;
             word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;
         }
-        #fc-nursing { font-size: 0.8rem !important; line-height: 1.3 !important; }
 
         .action-btn {
             background: var(--ios-bg); color: var(--ios-blue); border: none;
@@ -585,20 +496,6 @@
 
         .external-links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
 
-        #flashcard-section {
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            overflow-x: hidden;
-        }
-        #flashcard-section > * { max-width: 100%; min-width: 0; }
-        .flashcard-wrapper, .flashcard-inner, .card-face {
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            overflow-x: hidden;
-        }
-        .card-back { padding-right: 14px; }
         .detail-row, .detail-content, .action-btn, .external-links-grid {
             width: 100%;
             max-width: 100%;
@@ -751,7 +648,7 @@
         .multi-chip.is-active { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
 
         body { animation: appEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
-        .ios-card, .daily-card, .result-card { animation: cardPop 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+        .ios-card, .result-card { animation: cardPop 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
         .app-smooth.mode-transition { animation: sectionSlideIn 0.24s ease-out; }
         .action-btn, .chip, .nav-btn { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
         .action-btn:active, .chip:active, .nav-btn:active { transform: scale(0.97); }
@@ -804,23 +701,16 @@
             .top-back-btn { left: 6px; }
             .settings-btn-top { right: 6px; }
             .glass-nav { border-radius: 18px; }
-            .flashcard-wrapper { height: clamp(320px, 52dvh, 480px); }
-            .card-face { padding: 20px 16px; }
-            .card-back { justify-content: flex-start; overflow-y: auto; }
-            .card-back > * { flex-shrink: 0; }
             .drug-title { font-size: 1.4rem; }
             .detail-label { font-size: .75rem; }
-            .detail-content, #fc-nursing { font-size: .95rem !important; line-height: 1.5 !important; }
-            .action-btn, .anki-btn, .ios-select, .chip, .speak-icon-btn { min-height: 44px; box-sizing: border-box; }
+            .detail-content { font-size: .95rem !important; line-height: 1.5 !important; }
+            .action-btn, .ios-select, .chip, .speak-icon-btn { min-height: 44px; box-sizing: border-box; }
             .action-btn { padding: 12px; font-size: .95rem; }
-            .anki-controls { padding: 0; gap: 6px; }
-            .anki-btn { font-size: .85rem; }
             #quiz-section .ios-card { padding: 16px; }
             #quiz-question { font-size: 1.05rem !important; line-height: 1.5; }
             .quiz-controls-grid { grid-template-columns: 1fr; }
             .quiz-option-btn { min-height: 48px; font-size: 1rem; line-height: 1.4; }
             input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
-            .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .result-header { flex-wrap: wrap; gap: 8px; }
             .name-with-speak { min-width: 0; flex: 1 1 180px; }
             .modal-overlay { top: var(--viewport-top, 0px); bottom: auto; height: var(--app-height, 100dvh); }
@@ -830,6 +720,158 @@
         button, input, select, textarea { font-family: inherit; }
         button { touch-action: manipulation; }
         :focus-visible { outline: 3px solid var(--ios-blue); outline-offset: 3px; }
+        [hidden] { display: none !important; }
+        .search-toolbar { position: sticky; top: 0; z-index: 5; background: #f2f6fc; padding: 12px 0 8px; }
+        .search-label { display: block; font-size: 1.15rem; font-weight: 750; margin-bottom: 10px; }
+        .search-toolbar .search-wrapper { margin-bottom: 0; }
+        .search-bar { padding-right: 52px; min-height: 50px; }
+        .search-bar::-webkit-search-cancel-button { -webkit-appearance: none; }
+        .clear-search { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #475569; font-size: 1.5rem; cursor: pointer; }
+        .search-status, .search-hint { font-size: .85rem; line-height: 1.45; color: #475569; }
+        .search-status { margin: 8px 0 0; }
+        .api-notice { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin: 8px 0 16px; padding: 12px; border: 1px solid #bfdbfe; border-radius: 14px; background: #eff6ff; color: #1e3a8a; font-size: .85rem; line-height: 1.4; }
+        .api-notice span { flex: 1 1 170px; }
+        .api-notice button { min-height: 44px; border: 0; border-radius: 10px; padding: 10px 12px; background: #007aff; color: white; font-weight: 650; cursor: pointer; }
+        .search-browse { margin-bottom: 12px; }
+        .search-browse summary { min-height: 44px; align-content: center; color: #334155; font-weight: 600; cursor: pointer; }
+        .system-filter-chip { border: 1px solid #dbeafe; }
+        .system-filter-chip[aria-pressed="true"] { background: #007aff; color: white; }
+        .search-empty { padding: 16px 0; color: #475569; }
+        .search-examples { display: flex; flex-wrap: wrap; gap: 8px; }
+        button.chip { border: 0; min-height: 44px; }
+        #ai-image-upload { max-width: 100%; margin: 8px 0; }
+        .settings-help { margin-top: 16px; border-radius: 12px; padding: 12px; background: #eff6ff; color: #1e3a8a; line-height: 1.5; font-size: .9rem; }
+
+        /* Modern interaction layer */
+        button, [role="button"] {
+            -webkit-appearance: none;
+            -webkit-user-select: none;
+            user-select: none;
+            transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease, background-color .22s ease, border-color .22s ease, color .22s ease, opacity .22s ease;
+        }
+        button:disabled { cursor: not-allowed; opacity: .5; box-shadow: none !important; transform: none !important; }
+        .glass-nav {
+            border: 1px solid rgba(255,255,255,.72);
+            box-shadow: 0 14px 34px rgba(15,23,42,.10), inset 0 1px 0 rgba(255,255,255,.8);
+        }
+        .nav-btn { position: relative; overflow: hidden; min-height: 42px; }
+        .nav-btn.active {
+            background: linear-gradient(145deg, #ffffff, #f3f7ff);
+            box-shadow: 0 7px 18px rgba(0,122,255,.16), inset 0 1px 0 #fff;
+        }
+        .top-back-btn, .settings-btn-top, .speak-icon-btn {
+            border: 1px solid rgba(148,163,184,.22);
+            box-shadow: 0 8px 20px rgba(15,23,42,.10), inset 0 1px 0 rgba(255,255,255,.9);
+        }
+        .action-btn {
+            min-height: 46px;
+            border: 1px solid rgba(148,163,184,.20);
+            background: linear-gradient(145deg, #ffffff, #edf3fb);
+            box-shadow: 0 7px 18px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.9);
+        }
+        .action-btn.btn-primary {
+            border-color: transparent;
+            background: linear-gradient(135deg, #0a84ff, #2563eb);
+            box-shadow: 0 10px 22px rgba(0,122,255,.25), inset 0 1px 0 rgba(255,255,255,.22);
+        }
+        .action-btn.btn-green {
+            border-color: transparent;
+            background: linear-gradient(135deg, #34c759, #16a34a);
+            box-shadow: 0 10px 22px rgba(22,163,74,.22), inset 0 1px 0 rgba(255,255,255,.22);
+        }
+        .chip {
+            border: 1px solid rgba(148,163,184,.22) !important;
+            background: rgba(255,255,255,.82);
+            box-shadow: 0 5px 14px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.9);
+        }
+        .system-filter-chip[aria-pressed="true"] {
+            border-color: transparent !important;
+            background: linear-gradient(135deg, #0a84ff, #2563eb);
+            box-shadow: 0 7px 16px rgba(0,122,255,.22);
+        }
+        .result-card {
+            border-color: rgba(148,163,184,.18);
+            box-shadow: 0 10px 28px rgba(15,23,42,.07), inset 0 1px 0 rgba(255,255,255,.9);
+            transition: transform .24s cubic-bezier(.2,.8,.2,1), box-shadow .24s ease, border-color .24s ease;
+        }
+        .result-card.expanded {
+            border-color: rgba(0,122,255,.25);
+            box-shadow: 0 16px 38px rgba(37,99,235,.13), inset 0 1px 0 rgba(255,255,255,.95);
+        }
+        .extra-details {
+            display: block;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin-top: 0;
+            padding-top: 0;
+            border-top-color: transparent;
+            transform: translateY(-6px);
+            transition: max-height .44s cubic-bezier(.2,.8,.2,1), opacity .22s ease, transform .32s cubic-bezier(.2,.8,.2,1), margin .32s ease, padding .32s ease, border-color .32s ease;
+        }
+        .expanded .extra-details {
+            display: block;
+            max-height: 2200px;
+            opacity: 1;
+            margin-top: 12px;
+            padding-top: 14px;
+            border-top-color: #e2e8f0;
+            transform: translateY(0);
+            animation: none;
+        }
+        .modal-overlay { animation: modalBackdropIn .22s ease both; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .modal-card {
+            border: 1px solid rgba(255,255,255,.78);
+            box-shadow: 0 -20px 55px rgba(15,23,42,.20), inset 0 1px 0 rgba(255,255,255,.9);
+            animation: modernSheetIn .4s cubic-bezier(.16,1,.3,1);
+        }
+        .modal-card::before {
+            content: '';
+            display: block;
+            width: 42px;
+            height: 5px;
+            margin: -12px auto 14px;
+            border-radius: 999px;
+            background: #d1d5db;
+        }
+        .modal-close-btn {
+            min-width: 58px;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid #dbeafe !important;
+            border-radius: 999px;
+            background: #eff6ff !important;
+            color: #0066d6 !important;
+            font-weight: 700 !important;
+        }
+        .settings-input, select.ios-select, .search-bar {
+            border: 1px solid rgba(148,163,184,.26);
+            box-shadow: inset 0 1px 2px rgba(15,23,42,.04), 0 1px 0 rgba(255,255,255,.9);
+            transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+        .settings-input:focus, select.ios-select:focus, .search-bar:focus {
+            outline: none;
+            border-color: rgba(0,122,255,.62);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(0,122,255,.12), 0 8px 22px rgba(37,99,235,.08);
+        }
+        .clear-search { background: rgba(226,232,240,.72); border-radius: 50%; width: 36px; height: 36px; right: 7px; }
+        .api-notice {
+            border-color: rgba(59,130,246,.24);
+            background: linear-gradient(145deg, rgba(239,246,255,.96), rgba(238,242,255,.92));
+            box-shadow: 0 8px 24px rgba(37,99,235,.08);
+        }
+        .api-notice button {
+            background: linear-gradient(135deg, #0a84ff, #2563eb);
+            box-shadow: 0 7px 16px rgba(0,122,255,.22);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .action-btn:hover, .chip:hover, .modal-close-btn:hover, .top-back-btn:hover, .settings-btn-top:hover, .speak-icon-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(15,23,42,.13); }
+            .nav-btn:hover:not(.active) { background: rgba(0,122,255,.07); color: var(--ios-blue); }
+            .result-card:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(15,23,42,.10); }
+        }
+        @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modernSheetIn { from { opacity: 0; transform: translateY(34px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
     </style>
 </head>
 <body>
@@ -845,136 +887,47 @@
 </header>
 
 <nav class="glass-nav" aria-label="Main navigation">
-    <button class="nav-btn active" id="nav-search" onclick="switchMode('search')"><span class="nav-ico">🧸</span><span class="nav-label">Search</span><span class="nav-label-mobile">Search</span></button>
-    <button class="nav-btn" id="nav-flash" onclick="switchMode('flashcard')"><span class="nav-ico">🗂️</span><span class="nav-label">Flashcard</span><span class="nav-label-mobile">Flash</span></button>
+    <button class="nav-btn active" id="nav-search" onclick="switchMode('search'); focusSearch()"><span class="nav-ico">🧸</span><span class="nav-label">Search</span><span class="nav-label-mobile">Search</span></button>
     <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')"><span class="nav-ico">🧩</span><span class="nav-label">Quiz</span><span class="nav-label-mobile">Quiz</span></button>
     <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')"><span class="nav-ico">🩺</span><span class="nav-label">Ward</span><span class="nav-label-mobile">Ward</span></button>
     <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')"><span class="nav-ico">🏥</span><span class="nav-label">Clinical</span><span class="nav-label-mobile">Clinical</span></button>
 </nav>
 
-<div id="filter-bar" class="filter-scroller" style="display:none; width: 92%; max-width:600px;">
-    <select id="system-filter" onchange="applyFilter()" class="ios-select">
-        <option value="All">All Systems</option>
-    </select>
-    <select id="mastery-filter" onchange="applyFilter()" class="ios-select">
-        <option value="All">All Mastery</option>
-        <option value="Focus">⚠️ Focus</option>
-        <option value="Learning">🟡 Learning</option>
-        <option value="Mastered">✅ Mastered</option>
-    </select>
-</div>
-
 <div id="app-container">
     
-    <div id="search-section" class="app-smooth">
-        <div class="section-header">
-            <span id="daily-title">📅 Daily Study Picks</span>
-            <span style="font-size:0.7rem; font-weight:400; color:var(--ios-blue);" onclick="refreshDailyPicks()">Refresh</span>
-        </div>
-        <div id="daily-container" class="daily-grid">
-            <div class="daily-card" style="justify-content:center; align-items:center;">
-                <div class="loading-spinner"></div>
-            </div>
-        </div>
-
-        <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" class="search-bar" placeholder="Search drugs, class, indication, side effects..." oninput="handleSearch()">
-        </div>
-
-        <div id="history-section" style="margin-bottom:20px; display:none;">
-            <div class="section-header">Recent Searches</div>
-            <div id="history-container" style="overflow-x:auto; white-space:nowrap; padding-bottom:5px;"></div>
-        </div>
-        
-        <div class="section-header">Browse by System</div>
-        <div id="recommend-container" class="system-scroll-container"></div>
-
-        <div id="search-results">
-            <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
-                <p>Type at least 2 letters to search the database.</p>
-                <div style="display:flex; justify-content:center; gap:10px;">
-                     <span class="chip" onclick="quickSearch('Cardio')">🫀 Cardio</span>
-                     <span class="chip" onclick="quickSearch('Respiratory')">🫁 Resp</span>
+    <section id="search-section" class="app-smooth" aria-label="Drug search">
+        <div class="search-toolbar">
+            <form role="search" onsubmit="submitSearch(event)">
+                <label class="search-label" for="search-input">Find a drug</label>
+                <div class="search-wrapper">
+                    <span class="search-icon" aria-hidden="true">🔍</span>
+                    <input type="search" id="search-input" class="search-bar" placeholder="Drug name, brand or condition" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" oninput="handleSearch()">
+                    <button type="button" id="clear-search" class="clear-search" aria-label="Clear search" onclick="clearSearch()" hidden>×</button>
                 </div>
-            </div>
+            </form>
+            <p id="search-status" class="search-status" role="status" aria-live="polite">Search your saved drug database.</p>
         </div>
-    </div>
-
-    <div id="flashcard-section" class="app-smooth" style="display:none;">
-        <div id="flashcard-queue-stats" style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:12px;"></div>
-        <div class="flashcard-wrapper" id="flashcard" onclick="flipCard(event)">
-            <div class="flashcard-inner">
-                
-                <div class="card-face card-front">
-                    <h2 id="fc-name" class="drug-title">Drug Name</h2>
-                    <p style="color:var(--ios-gray); margin-top:0; font-size:0.8rem;">Tap the card to flip</p>
-                    
-                    <button onclick="event.stopPropagation(); triggerFcAction('speak')" class="action-btn" style="width:auto; margin-top:12px; background: #F2F2F7;">
-                        🗣️ Speak name
-                    </button>
-                </div>
-
-                <div class="card-face card-back">
-                    <div class="detail-row">
-                        <div class="detail-label">Class</div>
-                        <div class="detail-content" id="fc-class">...</div>
-                    </div>
-                    <div class="detail-row">
-                        <div class="detail-label">System</div>
-                        <div class="detail-content" id="fc-system">...</div>
-                    </div>
-                    <div class="detail-row">
-                        <div class="detail-label">Indication</div>
-                        <div class="detail-content" id="fc-indication">...</div>
-                    </div>
-                    <div class="detail-row">
-                        <div class="detail-label" style="color:var(--ios-red);">Side Effects</div>
-                        <div class="detail-content" id="fc-side-effects">...</div>
-                    </div>
-                    <div class="detail-row">
-                        <div class="detail-label">中文 香港</div>
-                        <div class="detail-content" id="fc-nursing" style="font-size:0.9rem; line-height:1.5;">...</div>
-                    </div>
-
-                    <div id="fc-multi-chip-wrap" style="display:none; margin-top:4px; margin-bottom:10px;"></div>
-
-                    <div class="external-links-grid">
-                        <button id="fc-google-link" onclick="event.stopPropagation(); triggerFcAction('google')" class="action-btn" style="margin:0; text-decoration:none; font-size:0.85rem;">
-                            🔎 Google
-                        </button>
-                        <button id="fc-drugs-btn" onclick="event.stopPropagation(); triggerFcAction('drugs')" class="action-btn" style="margin:0; font-size:0.85rem; color:#0051ff;">
-                            🧴 Drugs.com
-                        </button>
-                        
-                    </div>
-
-                    <button onclick="event.stopPropagation(); triggerFcAction('case')" class="action-btn btn-primary" id="btn-case" style="margin-top:15px;">
-                        🪄 AI Clinical Case
-                    </button>
-                    
-                    <div id="fc-ai-case" class="ai-output" onclick="event.stopPropagation();"></div>
-                    <button id="btn-read-case" onclick="event.stopPropagation(); readAIContent('fc-ai-case')" class="action-btn" style="display:none; margin-top:5px;">🔊 Read</button>
-                </div>
-            </div>
+        <div id="search-api-notice" class="api-notice" hidden>
+            <span>AI needs a <strong data-api-provider>DeepSeek</strong> key. Local search is ready.</span>
+            <button type="button" onclick="openApiSettings()">Add API key</button>
         </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:0 10px; gap:8px; flex-wrap:wrap;">
-            <button onclick="prevCard()" class="action-btn" style="width:auto;">← Previous</button>
-            <span id="counter" style="font-weight:700; color:var(--ios-gray);">1 / 10</span>
-            <button onclick="nextCard()" class="action-btn" style="width:auto;">Next →</button>
+        <div id="history-section" style="margin-bottom:16px; display:none;">
+            <div class="section-header">Recent searches</div>
+            <div id="history-container" class="system-scroll-container"></div>
         </div>
-        <button id="show-answer-btn" onclick="showAnswer()" class="action-btn btn-primary" style="margin-top:12px;">Show Answer</button>
-        <div id="anki-controls" class="anki-controls">
-            <button class="anki-btn" style="background:#ef4444;" onclick="rateCurrentCard('again')">Again</button>
-            <button class="anki-btn" style="background:#f59e0b;" onclick="rateCurrentCard('hard')">Hard</button>
-            <button class="anki-btn" style="background:#3b82f6;" onclick="rateCurrentCard('good')">Good</button>
-            <button class="anki-btn" style="background:#10b981;" onclick="rateCurrentCard('easy')">Easy</button>
-        </div>
-        <div id="anki-meta" class="anki-meta"></div>
-    </div>
+        <details id="search-browse" class="search-browse">
+            <summary id="search-browse-label">Browse by system</summary>
+            <div id="recommend-container" class="system-scroll-container"></div>
+        </details>
+        <div id="search-results"></div>
+        <button type="button" id="more-search-results" class="action-btn" onclick="showMoreSearchResults()" hidden>Show more results</button>
+    </section>
 
     <div id="quiz-section" class="app-smooth" style="display:none;">
+        <div id="quiz-api-notice" class="api-notice" hidden>
+            <span>Add a <strong data-api-provider>DeepSeek</strong> key to generate quiz questions.</span>
+            <button type="button" onclick="openApiSettings()">Add API key</button>
+        </div>
         <div class="ios-card">
             <div class="quiz-topbar">
                 <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
@@ -1063,13 +1016,13 @@
 
 </div>
 
-<div id="fc-drug-picker" class="modal-overlay" onclick="if(event.target===this) closeFcDrugPicker()">
+<div id="drug-picker" class="modal-overlay" onclick="if(event.target===this) closeDrugPicker()">
     <div class="modal-card" style="height:auto; max-height:70vh; border-radius:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <h3 style="margin:0;">Pick a Drug</h3>
-            <button onclick="closeFcDrugPicker()" style="background:none; border:none; color:var(--ios-blue); font-weight:600;">Close</button>
+            <button onclick="closeDrugPicker()" class="modal-close-btn">Close</button>
         </div>
-        <div id="fc-picker-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <div id="drug-picker-list" style="display:flex; flex-direction:column; gap:8px;"></div>
     </div>
 </div>
 
@@ -1077,7 +1030,7 @@
     <div class="modal-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h3 style="margin:0;">Settings</h3>
-            <button onclick="toggleSettings()" style="background:none; border:none; color:var(--ios-blue); font-weight:600; font-size:1rem;">Done</button>
+            <button onclick="toggleSettings()" class="modal-close-btn">Done</button>
         </div>
 
         <div style="margin-bottom:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
@@ -1100,19 +1053,19 @@
 
         <div id="deepseek-config" class="config-section">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">DeepSeek API Key</label>
-            <input type="password" id="deepseek-key" class="settings-input" placeholder="sk-...">
+            <input type="password" id="deepseek-key" aria-label="DeepSeek API key" autocomplete="off" spellcheck="false" class="settings-input" placeholder="sk-...">
             <div style="font-size:0.75rem; color:var(--ios-gray);">Works with DeepSeek V4 Flash and V4 Pro.</div>
         </div>
 
         <div id="openrouter-config" class="config-section" style="display:none;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">OpenRouter API Key</label>
-            <input type="password" id="openrouter-key" class="settings-input" placeholder="sk-or-v1-...">
+            <input type="password" id="openrouter-key" aria-label="OpenRouter API key" autocomplete="off" spellcheck="false" class="settings-input" placeholder="sk-or-v1-...">
             <div style="font-size:0.75rem; color:var(--ios-gray);">Model: arcee-ai/trinity-large-preview:free</div>
         </div>
 
         <div id="yinli-config" class="config-section" style="display:none;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Yinli API Key</label>
-            <input type="password" id="yinli-key" class="settings-input" placeholder="sk-...">
+            <input type="password" id="yinli-key" aria-label="Yinli API key" autocomplete="off" spellcheck="false" class="settings-input" placeholder="sk-...">
             <div style="font-size:0.75rem; color:var(--ios-gray);">Endpoint: https://yinli.one/v1/chat/completions · Model: gemini-3.1-pro-preview</div>
         </div>
         
@@ -1132,40 +1085,8 @@
             </div>
         </div>
 
-        <div style="margin-top:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
-            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Study Mode</label>
-            <div style="margin-top:8px; padding:12px; border-radius:10px; background:white; border:1px solid #e5e7eb; color:#111827; font-size:0.9rem; line-height:1.4;">
-                ✅ <strong>Flashcard (Anki-style)</strong> enabled<br>
-                • Uses Again / Hard / Good / Easy scheduling<br>
-                • Daily picks show only cards due today
-            </div>
-            <label style="display:block; margin-top:10px; font-size:0.8rem; color:var(--ios-gray);">Daily card limit</label>
-            <input id="anki-daily-limit" type="number" min="5" max="200" step="1" class="settings-input" style="margin-top:6px; margin-bottom:0; background:white;" placeholder="e.g. 20">
-            <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:8px;">
-                <div>
-                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">Due limit</label>
-                    <input id="anki-due-limit" type="number" min="1" max="200" step="1" class="settings-input" style="margin:4px 0 0; background:white;" placeholder="50">
-                </div>
-                <div>
-                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">Learn limit</label>
-                    <input id="anki-learn-limit" type="number" min="1" max="100" step="1" class="settings-input" style="margin:4px 0 0; background:white;" placeholder="20">
-                </div>
-                <div>
-                    <label style="display:block; font-size:0.75rem; color:var(--ios-gray);">New limit</label>
-                    <input id="anki-new-limit" type="number" min="1" max="100" step="1" class="settings-input" style="margin:4px 0 0; background:white;" placeholder="20">
-                </div>
-            </div>
-            <select id="quiz-engine" class="ios-select" style="width:100%; margin-top:8px; background:white;">
-                <option value="deepseek">Quiz engine: DeepSeek AI (required)</option>
-            </select>
-        </div>
-
-        <div style="margin-top:12px; font-size:0.82rem; color:#4b5563; background:#eef6ff; border:1px solid #dbeafe; border-radius:12px; padding:12px; line-height:1.45;">
-            <div style="font-weight:700; color:#1d4ed8; margin-bottom:4px;">How to use</div>
-            <div>1) Flashcard mode uses Anki-style spaced repetition.</div>
-            <div>2) Set your <strong>daily card limit</strong> (e.g. 20).</div>
-            <div>3) Set separate limits for <strong>Due / Learn / New</strong>.</div>
-            <div>4) In Flashcard mode, rate cards with <strong>Again / Hard / Good / Easy</strong>.</div>
+        <div class="settings-help">
+            Search saved drugs by name, brand or condition. Add your own API key to enable AI search, explanations and quiz generation.
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Settings</button>
@@ -1176,7 +1097,7 @@
     <div class="modal-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:15px;">
             <h3 style="margin:0;">📊 Knowledge Base</h3>
-            <button onclick="closeProgressModal()" style="background:none; border:none; color:var(--ios-blue);">Close</button>
+            <button onclick="closeProgressModal()" class="modal-close-btn">Close</button>
         </div>
         <div id="progress-list-content" style="overflow-y:auto; flex-grow:1;"></div>
     </div>
@@ -1186,7 +1107,7 @@
     <div class="modal-card" style="width:96vw; max-width:none; height:92vh; max-height:92vh;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:12px;">
             <h3 style="margin:0;">🧠 Round Review</h3>
-            <button onclick="closeQuizReviewModal()" style="background:none; border:none; color:var(--ios-blue);">Close</button>
+            <button onclick="closeQuizReviewModal()" class="modal-close-btn">Close</button>
         </div>
         <div id="quiz-review-summary" style="margin-bottom:12px; padding:10px; border-radius:10px; background:#eef6ff; color:#1e3a8a; font-size:0.9rem;">Preparing review...</div>
         <div id="quiz-review-actions" style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -2340,12 +2261,9 @@ Language: ${langInstruction}.`;
     // --- STATE VARIABLES ---
     let extendedDrugs = []; 
     let activeSourceList = []; 
-    let filteredList = [];     
-    let flashcardList = []; 
     let quizList = [];      
     let searchHistory = []; 
     let quizStats = {}; 
-    let fcCurrentIndex = 0;
     let quizCurrentIndex = 0;
     let currentQuizData = null;
     let currentQuizQuestion = null;
@@ -2375,18 +2293,10 @@ Language: ${langInstruction}.`;
     let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
-    const DAILY_RECOMMENDATION_LIMIT = 8;
     const IOS_EDGE_SWIPE_MAX_START_X = 28;
     const IOS_EDGE_SWIPE_TRIGGER_X = 72;
     const IOS_EDGE_SWIPE_MAX_VERTICAL_DRIFT = 90;
     let iosGestureState = { tracking: false, startX: 0, startY: 0, mode: null };
-    let fcSelectedDrug = ""; 
-    let quizEngine = 'deepseek';
-    let ankiStats = DrugTutorUI.readStoredJSON('drug_tutor_anki', {});
-    let ankiDailyLimit = parseInt(localStorage.getItem('anki_daily_limit') || '20', 10);
-    let ankiNewLimit = parseInt(localStorage.getItem('anki_new_limit') || '20', 10);
-    let ankiLearnLimit = parseInt(localStorage.getItem('anki_learn_limit') || '20', 10);
-    let ankiDueLimit = parseInt(localStorage.getItem('anki_due_limit') || '50', 10);
     let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') !== '0';
 
     const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
@@ -2394,9 +2304,9 @@ Language: ${langInstruction}.`;
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'deepseek-v4-flash';
-    let deepSeekKey = localStorage.getItem('ds_key') || '';
-    let openRouterKey = localStorage.getItem('openrouter_key') || '';
-    let yinliKey = localStorage.getItem('yinli_key') || '';
+    let deepSeekKey = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
+    let openRouterKey = (localStorage.getItem('openrouter_key') || '').trim();
+    let yinliKey = (localStorage.getItem('yinli_key') || '').trim();
     const REQUIRED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
     let googleScriptURL = REQUIRED_SCRIPT_URL;
     let quizSheetURL = localStorage.getItem('quiz_sheet_url') || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
@@ -2441,7 +2351,6 @@ Language: ${langInstruction}.`;
         "Endocrine": "🦋", "ObGyn / GU": "🤰", "Oncology": "🎗️", "Nutrition / Blood": "🍎", "MSK / Bone": "🦴",
         "Eye": "👁️", "ENT": "👂", "Skin": "🧴", "Immune / Vax": "🛡️", "Anaesthesia": "💉"
     };
-
 
     function normalizeDrugData(drug) {
         drug.system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
@@ -2514,19 +2423,19 @@ Language: ${langInstruction}.`;
 
         if(typeof commonDrugs !== 'undefined') {
             activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
-            flashcardList = [...activeSourceList];
+
         }
 
         // Load locally cached data first for faster startup on iPhone.
         const cachedData = loadLocalDrugCache();
         if (cachedData.length > 0) {
             activeSourceList = prepareDrugListForFastSearch(cachedData);
-            flashcardList = [...activeSourceList];
+
             document.getElementById('set-btn').innerText = '📚 Source: Local cache';
         }
         
         // Restore Data
-        searchHistory = DrugTutorUI.readStoredJSON('drug_tutor_search_history', []);
+        searchHistory = DrugTutorUI.readStoredJSON('drug_tutor_search_history', []).filter(term => typeof term === 'string' && term.trim()).slice(0, 6);
         quizStats = DrugTutorUI.readStoredJSON('drug_tutor_quiz_stats', {});
         quizQuestionBank = loadLocalQuizBank();
 
@@ -2538,27 +2447,15 @@ Language: ${langInstruction}.`;
         document.getElementById('sheet-url').value = defaultSheetUrl;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
         document.getElementById('quiz-sheet-url').value = quizSheetURL;
-        document.getElementById('quiz-engine').value = 'deepseek';
-        document.getElementById('anki-daily-limit').value = getAnkiDailyLimit();
-        document.getElementById('anki-new-limit').value = getAnkiLimit(ankiNewLimit, 20, 1, 100);
-        document.getElementById('anki-learn-limit').value = getAnkiLimit(ankiLearnLimit, 20, 1, 100);
-        document.getElementById('anki-due-limit').value = getAnkiLimit(ankiDueLimit, 50, 1, 200);
+
         document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
 
-        initSystemDropdown();
         initQuizSystemDropdown();
-        applyFilter(false);
+        refreshDrugViews();
         renderHistory();
         updateProviderDisplay();
+        updateApiNotices();
 
-        const runNonCriticalInit = () => {
-            renderAllSystems();
-            generateDailyPicks();
-            updateQueueStats(filteredList.length ? filteredList : activeSourceList);
-        };
-        if (window.requestIdleCallback) window.requestIdleCallback(runNonCriticalInit, { timeout: 600 });
-        else setTimeout(runNonCriticalInit, 0);
-        
         // Optional online sync (can be disabled for faster launch).
         if (autoSyncOnStartup) {
             fetchSheetData(true);
@@ -2573,105 +2470,6 @@ Language: ${langInstruction}.`;
         setupIOSBackGesture();
         switchMode('search');
     });
-
-
-    function getAnkiDailyLimit() {
-        const raw = Number(ankiDailyLimit);
-        if (!Number.isFinite(raw)) return 20;
-        return Math.min(200, Math.max(5, Math.round(raw)));
-    }
-
-    function getAnkiLimit(rawValue, fallback, minVal, maxVal) {
-        const raw = Number(rawValue);
-        if (!Number.isFinite(raw)) return fallback;
-        return Math.min(maxVal, Math.max(minVal, Math.round(raw)));
-    }
-
-    function getAnkiQueueConfig() {
-        const due = getAnkiLimit(ankiDueLimit, 50, 1, 200);
-        const learn = getAnkiLimit(ankiLearnLimit, 20, 1, 100);
-        const news = getAnkiLimit(ankiNewLimit, 20, 1, 100);
-        return { due, learn, new: news };
-    }
-
-    function getTodaySeed() {
-        const today = new Date().toISOString().slice(0, 10);
-        return today.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    }
-
-    function deterministicShuffle(list, seedBase = 1) {
-        const arr = [...list];
-        let seed = seedBase;
-        const rand = () => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(rand() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-    }
-
-    function updateDailyTitle(count) {
-        const titleEl = document.getElementById('daily-title');
-        if (titleEl) titleEl.innerText = `📅 Daily Study Picks (${count}/8)`;
-    }
-
-    // --- DAILY RECOMMENDATIONS ---
-    function generateDailyPicks() {
-        if(!activeSourceList || activeSourceList.length === 0) return;
-        const picks = getTodayStudyQueue(activeSourceList, DAILY_RECOMMENDATION_LIMIT);
-        renderDailyPicks(picks);
-    }
-
-    function refreshDailyPicks() {
-        const due = getTodayStudyQueue(activeSourceList, DAILY_RECOMMENDATION_LIMIT);
-        renderDailyPicks(due);
-    }
-
-    function renderDailyPicks(picks) {
-        const container = document.getElementById('daily-container');
-        container.innerHTML = '';
-        updateDailyTitle(picks.length);
-        if (!picks.length) {
-            container.innerHTML = `
-                <div class="daily-card" style="grid-column: 1 / -1; justify-content:center; align-items:center; text-align:center;">
-                    <div class="daily-name" style="font-size:1rem; margin:0;">✅ No cards due today</div>
-                    <div class="daily-sub" style="margin-top:6px;">You have finished today’s study queue.</div>
-                </div>
-            `;
-            return;
-        }
-        const gradients = [
-            'linear-gradient(140deg, #bfdbfe 0%, #93c5fd 50%, #dbeafe 100%)',
-            'linear-gradient(140deg, #fde68a 0%, #fca5a5 55%, #fecaca 100%)',
-            'linear-gradient(140deg, #bbf7d0 0%, #86efac 55%, #dcfce7 100%)',
-            'linear-gradient(140deg, #ddd6fe 0%, #c4b5fd 50%, #ede9fe 100%)'
-        ];
-        
-        picks.forEach((drug, idx) => {
-            const div = document.createElement('div');
-            div.className = 'daily-card';
-            div.style.background = gradients[idx % gradients.length];
-            const icon = getSystemIcon(drug.system || getSystemForDrug(drug));
-            div.innerHTML = `
-                <div>
-                    <div class="daily-header">
-                        <div class="daily-label">Due Today</div>
-                        <div class="daily-icon-pill">${icon}</div>
-                    </div>
-                    <div class="daily-name">${drug.name.split('(')[0]}</div>
-                </div>
-                <div class="daily-sub">${drug.class}</div>
-            `;
-            div.onclick = () => {
-                document.getElementById('search-input').value = drug.name;
-                runSearch();
-            };
-            container.appendChild(div);
-        });
-    }
 
     // --- HELPER: DRUG NAME PARSING ---
     function parseDrugNamePairs(fullString) {
@@ -2757,7 +2555,6 @@ Language: ${langInstruction}.`;
             if (isAlreadyLoaded() && !clinicalFrameReady) markReady();
         }, 1200);
     }
-
 
     function clearClinicalBackSync() {
         if (clinicalBackSyncTimer) {
@@ -2910,76 +2707,37 @@ Language: ${langInstruction}.`;
     }
 
     function switchMode(mode) {
-        if (mode === 'settings') {
-            toggleSettings();
-            return;
-        }
-        document.querySelectorAll('.nav-btn').forEach(b => {
-            b.classList.remove('active');
-            b.removeAttribute('aria-current');
+        if (mode === 'settings') { toggleSettings(); return; }
+        if (!['search', 'quiz', 'ward', 'clinical'].includes(mode)) mode = 'search';
+        document.querySelectorAll('.glass-nav .nav-btn').forEach(button => {
+            button.classList.remove('active');
+            button.removeAttribute('aria-current');
         });
-        document.getElementById('flashcard-section').style.display = 'none';
-        document.getElementById('quiz-section').style.display = 'none';
-        document.getElementById('search-section').style.display = 'none';
-        document.getElementById('ward-section').style.display = 'none';
-        document.getElementById('clinical-section').style.display = 'none';
-        document.getElementById('filter-bar').style.display = 'none';
-
-        const sectionToShow = mode === 'quiz'
-            ? document.getElementById('quiz-section')
-            : (mode === 'search'
-                ? document.getElementById('search-section')
-                : (mode === 'ward'
-                    ? document.getElementById('ward-section')
-                    : (mode === 'clinical' ? document.getElementById('clinical-section') : document.getElementById('flashcard-section'))));
-        sectionToShow.classList.remove('mode-transition');
-        void sectionToShow.offsetWidth;
-        sectionToShow.classList.add('mode-transition');
-        sectionToShow.style.animation = 'fadeSlideUp .24s ease-out';
-
-        if(mode === 'search') {
-            clearClinicalBackSync();
-            document.body.classList.remove('ward-fullscreen');
-            document.getElementById('search-section').style.display = 'block';
-            document.getElementById('nav-search').classList.add('active');
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) searchInput.blur();
-        } else if (mode === 'anki' || mode === 'flashcard') {
-            clearClinicalBackSync();
-            document.body.classList.remove('ward-fullscreen');
-            document.getElementById('flashcard-section').style.display = 'block';
-            document.getElementById('nav-flash').classList.add('active');
-            const source = [...activeSourceList];
-            filteredList = [...activeSourceList];
-            hydrateAnkiForList(source);
-            flashcardList = getTodayStudyQueue(source, getAnkiDailyLimit());
-            updateQueueStats(source);
-            fcCurrentIndex = 0;
-            renderCard();
-        } else if (mode === 'quiz') {
-            clearClinicalBackSync();
-            document.body.classList.remove('ward-fullscreen');
-            document.getElementById('quiz-section').style.display = 'block';
-            document.getElementById('nav-quiz').classList.add('active');
-            const roundInProgress = currentRoundTotal > 0 && currentRoundAnswered < currentRoundTotal;
-            setQuizSetupControlsVisible(!roundInProgress);
-            const qEl = document.getElementById('quiz-question');
-            if (qEl && !roundInProgress) qEl.innerText = 'Select level, system, and question count. Then tap Start.';
+        ['search', 'quiz', 'ward', 'clinical'].forEach(name => {
+            const section = document.getElementById(`${name}-section`);
+            section.classList.remove('mode-transition');
+            section.style.display = name === mode ? 'block' : 'none';
+            if (name === mode) {
+                void section.offsetWidth;
+                section.classList.add('mode-transition');
+            }
+        });
+        clearClinicalBackSync();
+        document.body.classList.toggle('ward-fullscreen', mode === 'ward' || mode === 'clinical');
+        const tab = document.getElementById(`nav-${mode}`);
+        tab.classList.add('active');
+        tab.setAttribute('aria-current', 'page');
+        if (mode === 'quiz') {
+            const inProgress = currentRoundTotal > 0 && currentRoundAnswered < currentRoundTotal;
+            setQuizSetupControlsVisible(!inProgress);
+            if (!inProgress) document.getElementById('quiz-question').innerText = 'Select level, system, and question count. Then tap Start.';
         } else if (mode === 'ward') {
             setupWardPreload();
-            clearClinicalBackSync();
-            document.body.classList.add('ward-fullscreen');
-            document.getElementById('ward-section').style.display = 'block';
-            document.getElementById('nav-ward').classList.add('active');
         } else if (mode === 'clinical') {
             setupClinicalPreload();
-            document.body.classList.add('ward-fullscreen');
-            document.getElementById('clinical-section').style.display = 'block';
-            document.getElementById('nav-clinical').classList.add('active');
             setClinicalReadyState(clinicalFrameReady);
             beginClinicalBackSync();
         }
-        document.querySelector('.nav-btn.active')?.setAttribute('aria-current', 'page');
     }
 
     function openToolMode(mode) {
@@ -2987,114 +2745,19 @@ Language: ${langInstruction}.`;
         switchMode(mode);
     }
 
-    // --- ANKI CARD LOGIC ---
-    function formatRelativeDue(dueTs) {
-        const delta = dueTs - Date.now();
-        const hours = Math.round(delta / (1000 * 60 * 60));
-        if (Math.abs(hours) < 24) return hours <= 0 ? 'due now' : `due in ${hours}h`;
-        const days = Math.round(hours / 24);
-        return days <= 0 ? 'due now' : `due in ${days}d`;
+    // --- SHARED DRUG PICKER ---
+
+    function openDrugPicker() {
+        document.getElementById('drug-picker').style.display = 'flex';
     }
 
-    function updateAnkiMeta(drug) {
-        const metaEl = document.getElementById('anki-meta');
-        if (!drug) {
-            metaEl.innerText = 'No cards due right now. Great work.';
-            return;
-        }
-        const stat = ankiStats[drug.name] || { ease: 2.3, reps: 0, lapses: 0, due: Date.now(), lastReviewed: 0 };
-        const reps = stat.reps || 0;
-        const learning = reps === 0 && (stat.lastReviewed || 0) > 0 ? 'Learn' : (reps > 0 ? 'Due' : 'New');
-        metaEl.innerText = `${learning} • Ease ${Number(stat.ease || 2.3).toFixed(2)} • Reps ${reps} • Lapses ${stat.lapses || 0} • ${formatRelativeDue(stat.due || Date.now())}`;
-    }
-
-    function getQueueBucketCounts(list) {
-        const now = Date.now();
-        const counts = { due: 0, learn: 0, new: 0 };
-        (list || []).forEach(drug => {
-            const stat = ankiStats[drug.name] || {};
-            const reps = stat.reps || 0;
-            const due = stat.due || 0;
-            const lastReviewed = stat.lastReviewed || 0;
-            if (reps > 0 && due <= now) counts.due++;
-            else if (reps === 0 && lastReviewed > 0 && due <= now) counts.learn++;
-            else if (reps === 0 && !lastReviewed) counts.new++;
-        });
-        return counts;
-    }
-
-    function updateQueueStats(list) {
-        const statsEl = document.getElementById('flashcard-queue-stats');
-        if (!statsEl) return;
-        const c = getQueueBucketCounts(list || []);
-        const cfg = getAnkiQueueConfig();
-        const item = (label, value, cap, color) => `<div style="background:white; border:1px solid #e5e7eb; border-radius:10px; padding:8px; text-align:center;"><div style="font-size:0.72rem; color:${color}; font-weight:700;">${label}</div><div style="font-size:1.1rem; font-weight:800; color:#111827;">${value}</div><div style="font-size:0.68rem; color:#6b7280;">limit ${cap}</div></div>`;
-        statsEl.innerHTML = item('Due', c.due, cfg.due, '#dc2626') + item('Learn', c.learn, cfg.learn, '#d97706') + item('New', c.new, cfg.new, '#2563eb');
-    }
-
-    function renderCard() {
-        if(flashcardList.length === 0) {
-            document.getElementById('fc-name').innerText = 'No cards due 📚';
-            document.getElementById('fc-class').innerText = 'Great job. You have no due cards right now.';
-            document.getElementById('fc-system').innerText = 'Flashcard review queue is empty.';
-            document.getElementById('fc-indication').innerText = 'Try again later, or learn in Search mode first.';
-            document.getElementById('fc-side-effects').innerText = '-';
-            document.getElementById('fc-nursing').innerText = '-';
-            document.getElementById('counter').innerText = '0 / 0';
-            document.getElementById('btn-case').disabled = true;
-            document.getElementById('btn-case').innerHTML = '🪄 AI Clinical Case';
-            document.getElementById('fc-ai-case').style.display = 'none';
-            document.getElementById('btn-read-case').style.display = 'none';
-            document.getElementById('show-answer-btn').style.display = 'none';
-            document.getElementById('anki-controls').style.display = 'none';
-            updateAnkiMeta(null);
-            return;
-        }
-        const drug = flashcardList[fcCurrentIndex];
-        
-        document.getElementById('fc-name').innerText = drug.name;
-        document.getElementById('fc-class').innerText = drug.class;
-        document.getElementById('fc-system').innerText = drug.system || getSystemForDrug(drug);
-        document.getElementById('fc-indication').innerText = drug.indication;
-        document.getElementById('fc-side-effects').innerText = drug.side_effects || drug.sideEffects || "Not listed";
-        
-        document.getElementById('fc-nursing').innerText = drug.nursing;
-        document.getElementById('counter').innerText = `${fcCurrentIndex + 1} / ${flashcardList.length}`;
-        document.getElementById('fc-ai-case').style.display = 'none';
-        document.getElementById('btn-read-case').style.display = 'none';
-        document.getElementById('flashcard').classList.remove('flipped');
-        document.getElementById('show-answer-btn').style.display = 'flex';
-        document.getElementById('anki-controls').style.display = 'none';
-
-        document.getElementById('btn-case').innerHTML = '🪄 AI Clinical Case';
-        document.getElementById('btn-case').disabled = false;
-        updateAnkiMeta(drug);
-
-        const generics = parseDrugGenerics(drug.name);
-        const chipWrap = document.getElementById('fc-multi-chip-wrap');
-        if (generics.length > 1) {
-            chipWrap.style.display = 'block';
-            chipWrap.innerHTML = `<div class="multi-chip-wrap">${generics.map(g => `<span class="multi-chip selectable ${g === fcSelectedDrug ? 'is-active' : ''}" onclick="event.stopPropagation(); selectFlashcardGeneric('${g.replace(/'/g, "\\'")}')">💖 ${g}</span>`).join('')}</div>`;
-        } else {
-            chipWrap.style.display = 'none';
-            chipWrap.innerHTML = '';
-        }
-
-        closeFcDrugPicker();
-        selectFlashcardGeneric(generics.includes(fcSelectedDrug) ? fcSelectedDrug : generics[0]);
-    }
-
-    function openFcDrugPicker() {
-        document.getElementById('fc-drug-picker').style.display = 'flex';
-    }
-
-    function closeFcDrugPicker() {
-        document.getElementById('fc-drug-picker').style.display = 'none';
+    function closeDrugPicker() {
+        document.getElementById('drug-picker').style.display = 'none';
     }
 
     function pickDrugFromList(generics, title, onPick) {
-        const pickerList = document.getElementById('fc-picker-list');
-        const titleEl = document.querySelector('#fc-drug-picker h3');
+        const pickerList = document.getElementById('drug-picker-list');
+        const titleEl = document.querySelector('#drug-picker h3');
         titleEl.innerText = title;
         pickerList.innerHTML = '';
         generics.forEach(gen => {
@@ -3103,218 +2766,129 @@ Language: ${langInstruction}.`;
             btn.style.margin = '0';
             btn.style.justifyContent = 'flex-start';
             btn.innerText = `💖 ${gen}`;
-            btn.onclick = () => { closeFcDrugPicker(); onPick(gen); };
+            btn.onclick = () => { closeDrugPicker(); onPick(gen); };
             pickerList.appendChild(btn);
         });
-        openFcDrugPicker();
+        openDrugPicker();
     }
 
-    function updateFlashcardLinks(genericName) {
-        fcSelectedDrug = genericName;
-        // Google deep link handled in triggerFcAction('google').
+    const SEARCH_PAGE_SIZE = 30;
+    let searchLimit = SEARCH_PAGE_SIZE;
+    let searchSystem = 'All';
+    let lastSearchKey = '';
+
+    function normalizeSearchText(value) {
+        return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-_/(),.]+/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    function selectFlashcardGeneric(genericName) {
-        updateFlashcardLinks(genericName);
-        const chipWrap = document.getElementById('fc-multi-chip-wrap');
-        chipWrap.querySelectorAll('.multi-chip.selectable').forEach((chip) => {
-            chip.classList.toggle('is-active', chip.innerText.includes(genericName));
+    function findLocalDrugs(query, system = 'All') {
+        const normalized = normalizeSearchText(query);
+        const tokens = normalized.split(' ').filter(Boolean);
+        return activeSourceList.filter(drug => system === 'All' || (drug.system || getSystemForDrug(drug)) === system)
+            .map(drug => {
+                const name = normalizeSearchText(drug.name);
+                const drugClass = normalizeSearchText(drug.class);
+                const text = normalizeSearchText([drug.__searchBlob, drug.name, drug.class, drug.system, drug.indication, drug.nursing, drug.side_effects, drug.SideEffects, drug.effect_of_drug].filter(Boolean).join(' '));
+                const matches = tokens.every(token => text.includes(token));
+                const rank = !normalized || name === normalized ? 0 : name.startsWith(normalized) ? 1 : tokens.every(token => name.includes(token)) ? 2 : tokens.every(token => drugClass.includes(token)) ? 3 : 4;
+                return { drug, matches, rank };
+            })
+            .filter(result => result.matches)
+            .sort((a, b) => a.rank - b.rank || String(a.drug.name).localeCompare(String(b.drug.name)))
+            .map(result => result.drug);
+    }
+
+    function refreshDrugViews() {
+        quizList = [...activeSourceList];
+        renderAllSystems();
+        runSearch();
+    }
+
+    function focusSearch() {
+        const input = document.getElementById('search-input');
+        input.focus({ preventScroll: true });
+    }
+
+    function clearSearch() {
+        clearTimeout(searchDebounceTimer);
+        document.getElementById('search-input').value = '';
+        searchSystem = 'All';
+        renderAllSystems();
+        runSearch();
+        focusSearch();
+    }
+
+    function rememberSearch(term) {
+        const value = String(term || '').trim();
+        if (!value) return;
+        searchHistory = [value, ...searchHistory.filter(item => item.toLowerCase() !== value.toLowerCase())].slice(0, 6);
+        try { localStorage.setItem('drug_tutor_search_history', JSON.stringify(searchHistory)); } catch (_) {}
+    }
+
+    function submitSearch(event) {
+        event.preventDefault();
+        clearTimeout(searchDebounceTimer);
+        rememberSearch(document.getElementById('search-input').value);
+        runSearch();
+        document.getElementById('search-input').blur();
+    }
+
+    function showMoreSearchResults() {
+        searchLimit += SEARCH_PAGE_SIZE;
+        runSearch();
+    }
+
+    function getApiConfiguration(provider = currentProvider) {
+        if (provider === 'openrouter-trinity') return { label: 'OpenRouter', inputId: 'openrouter-key', key: openRouterKey.trim() };
+        if (provider === 'yinli-gemini') return { label: 'Yinli Gemini', inputId: 'yinli-key', key: yinliKey.trim() };
+        return { label: 'DeepSeek', inputId: 'deepseek-key', key: deepSeekKey.trim() };
+    }
+
+    function hasApiKey() {
+        return !!getApiConfiguration().key;
+    }
+
+    function updateApiNotices() {
+        const config = getApiConfiguration();
+        ['search-api-notice', 'quiz-api-notice'].forEach(id => {
+            const notice = document.getElementById(id);
+            if (notice) notice.hidden = !!config.key;
         });
+        document.querySelectorAll('[data-api-provider]').forEach(label => { label.textContent = config.label; });
     }
 
-    function triggerFcAction(action) {
-        if (!flashcardList.length) return;
-        const drug = flashcardList[fcCurrentIndex];
-        const generics = parseDrugGenerics(drug.name);
-        const run = (pickedDrug) => runFcAction(action, pickedDrug);
-        if (generics.length > 1) {
-            pickDrugFromList(generics, 'Pick a drug for this action', run);
-            return;
+    function openApiSettings(provider = currentProvider) {
+        document.getElementById('settings-panel').style.display = 'flex';
+        document.getElementById('provider-select').value = provider;
+        updateProviderDisplay();
+        const input = document.getElementById(getApiConfiguration(provider).inputId);
+        input.focus({ preventScroll: true });
+        input.scrollIntoView({ block: 'center' });
+    }
+
+    function requireApiKey() {
+        if (hasApiKey()) return true;
+        updateApiNotices();
+        openApiSettings();
+        return false;
+    }
+
+    window.addEventListener('storage', event => {
+        if (!['ds_key', 'api_key', 'openrouter_key', 'yinli_key', 'active_provider'].includes(event.key)) return;
+        currentProvider = localStorage.getItem('active_provider') || 'deepseek-v4-flash';
+        deepSeekKey = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
+        openRouterKey = (localStorage.getItem('openrouter_key') || '').trim();
+        yinliKey = (localStorage.getItem('yinli_key') || '').trim();
+        if (document.getElementById('settings-panel').style.display !== 'flex') {
+            document.getElementById('provider-select').value = currentProvider;
+            document.getElementById('deepseek-key').value = deepSeekKey;
+            document.getElementById('openrouter-key').value = openRouterKey;
+            document.getElementById('yinli-key').value = yinliKey;
+            updateProviderDisplay();
         }
-        run(generics[0]);
-    }
-
-    function runFcAction(action, selectedDrugName) {
-        const selected = selectedDrugName || fcSelectedDrug;
-        const currentDrug = flashcardList[fcCurrentIndex];
-        updateFlashcardLinks(selected);
-        if (action === 'google') {
-            const googleQuery = `${selected} 中文 香港`;
-            openGoogleDeepLink(googleQuery);
-        } else if (action === 'drugs') {
-            openDrugsCom({name: selected});
-        } else if (action === 'case') {
-            const d = {...flashcardList[fcCurrentIndex], name: selected};
-            getIntegratedCaseStudy(d, 'fc-ai-case', 'btn-case', 'btn-read-case');
-        } else if (action === 'speak') {
-            const spoken = buildSpeakLabel(selected, currentDrug?.name || selected);
-            speakText(spoken || selected);
-        }
-    }
-
-    function showAnswer() {
-        document.getElementById('flashcard').classList.add('flipped');
-        document.getElementById('show-answer-btn').style.display = 'none';
-        document.getElementById('anki-controls').style.display = 'grid';
-    }
-
-    function flipCard(e) {
-        const blocked = ['BUTTON', 'A', 'SELECT', 'INPUT', 'TEXTAREA', 'LABEL'];
-        if (blocked.includes(e.target.tagName) || e.target.closest('.action-btn, .external-links-grid, .multi-chip-wrap, .ai-output')) return;
-
-        const card = document.getElementById('flashcard');
-        const isFlipped = card.classList.contains('flipped');
-
-        // Prevent accidental flip-back while reading/scrolling back content.
-        if (isFlipped) return;
-
-        card.classList.add('flipped');
-        document.getElementById('show-answer-btn').style.display = 'none';
-        document.getElementById('anki-controls').style.display = 'grid';
-    }
-
-    function nextCard() {
-        if(fcCurrentIndex < flashcardList.length - 1) {
-            fcCurrentIndex++;
-            renderCard();
-            return;
-        }
-        // End of today's queue: do not auto-load another full batch.
-        flashcardList = [];
-        fcCurrentIndex = 0;
-        renderCard();
-    }
-
-    function prevCard() {
-        if(fcCurrentIndex > 0) { fcCurrentIndex--; renderCard(); }
-    }
-
-    function hydrateAnkiForList(list) {
-        list.forEach(drug => {
-            if (!ankiStats[drug.name]) {
-                ankiStats[drug.name] = { ease: 2.3, interval: 0, reps: 0, lapses: 0, due: null, lastReviewed: 0 };
-            }
-        });
-    }
-
-    function getDueCards(list) {
-        hydrateAnkiForList(list);
-        const now = Date.now();
-        const due = list.filter(d => {
-            const stat = ankiStats[d.name] || {};
-            return (stat.reps || 0) > 0 && (stat.due || 0) <= now;
-        });
-        due.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
-        return due;
-    }
-
-    function scheduleCardForRetry(drug, stepsAhead = 2) {
-        if (!drug || !flashcardList.length) return;
-        const tail = flashcardList.slice(fcCurrentIndex + 1).filter(d => d.name !== drug.name);
-        const head = flashcardList.slice(0, fcCurrentIndex + 1);
-        const insertAt = Math.min(tail.length, Math.max(0, Math.round(stepsAhead)));
-        tail.splice(insertAt, 0, drug);
-        flashcardList = [...head, ...tail];
-    }
-
-    function getTodayStudyQueue(list, maxCards = getAnkiDailyLimit()) {
-        hydrateAnkiForList(list);
-        const now = Date.now();
-        const limit = Math.max(1, Math.round(maxCards));
-        const queueCfg = getAnkiQueueConfig();
-
-        const dueReviews = [];
-        const learningDue = [];
-        const newCards = [];
-
-        list.forEach(drug => {
-            const stat = ankiStats[drug.name] || {};
-            const reps = stat.reps || 0;
-            const due = stat.due || 0;
-            const lastReviewed = stat.lastReviewed || 0;
-
-            if (reps > 0 && due <= now) {
-                dueReviews.push(drug);
-            } else if (reps === 0 && lastReviewed > 0 && due <= now) {
-                learningDue.push(drug);
-            } else if (reps === 0 && !lastReviewed) {
-                newCards.push(drug);
-            }
-        });
-
-        dueReviews.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
-        learningDue.sort((a, b) => (ankiStats[a.name].due || 0) - (ankiStats[b.name].due || 0));
-
-        const dueSelected = dueReviews.slice(0, queueCfg.due);
-        const learnSelected = learningDue.slice(0, queueCfg.learn);
-        const remainingSlots = Math.max(0, limit - dueSelected.length - learnSelected.length);
-        const newCap = Math.min(queueCfg.new, remainingSlots);
-        const seededNew = deterministicShuffle(newCards, getTodaySeed()).slice(0, newCap);
-
-        return [...dueSelected, ...learnSelected, ...seededNew].slice(0, limit);
-    }
-
-    function calculateNextReviewSchedule(stat, rating, now = Date.now()) {
-        const qualityMap = { again: 1, hard: 3, good: 4, easy: 5 };
-        const q = qualityMap[rating] || 4;
-
-        let reps = stat.reps || 0;
-        let lapses = stat.lapses || 0;
-        let interval = stat.interval || 0;
-        let ease = stat.ease || 2.3;
-
-        if (q < 3) {
-            reps = 0;
-            lapses += 1;
-            interval = 1;
-        } else {
-            reps += 1;
-            if (reps === 1) interval = 1;
-            else if (reps === 2) interval = 3;
-            else {
-                const mult = rating === 'hard' ? 1.2 : (rating === 'easy' ? (ease + 0.15) : ease);
-                interval = Math.max(1, Math.round(interval * mult));
-            }
-        }
-
-        ease = Math.max(1.3, ease + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
-
-        const minute = 60 * 1000;
-        const day = 24 * 60 * 60 * 1000;
-        let due;
-
-        if (rating === 'again') due = now + 10 * minute;
-        else if (rating === 'hard') due = now + Math.max(1, Math.round(interval * 0.6)) * day;
-        else if (rating === 'easy') due = now + Math.max(2, Math.round(interval * 1.3)) * day;
-        else due = now + interval * day;
-
-        return {
-            reps,
-            lapses,
-            interval,
-            ease,
-            due,
-            lastReviewed: now
-        };
-    }
-
-    function rateCurrentCard(rating) {
-        if (flashcardList.length === 0) return;
-        const drug = flashcardList[fcCurrentIndex];
-        hydrateAnkiForList([drug]);
-        const stat = ankiStats[drug.name];
-
-        const nextSchedule = calculateNextReviewSchedule(stat, rating);
-        Object.assign(stat, nextSchedule);
-
-        // Keep "Again" cards in the same session so failed cards repeat quickly.
-        if (rating === 'again') {
-            scheduleCardForRetry(drug, 2);
-        }
-
-        localStorage.setItem('drug_tutor_anki', JSON.stringify(ankiStats));
-        nextCard();
-    }
+        updateApiNotices();
+        runSearch();
+    });
 
     // --- SEARCH LOGIC ---
     function handleSearch() {
@@ -3323,28 +2897,49 @@ Language: ${langInstruction}.`;
     }
 
     function runSearch() {
-        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        const rawQuery = document.getElementById('search-input').value.trim();
+        const query = normalizeSearchText(rawQuery);
         const container = document.getElementById('search-results');
+        const status = document.getElementById('search-status');
+        const more = document.getElementById('more-search-results');
+        const queryKey = `${query}|${searchSystem}`;
+        if (queryKey !== lastSearchKey) searchLimit = SEARCH_PAGE_SIZE;
+        lastSearchKey = queryKey;
         container.innerHTML = '';
-
-        if(query.length < 2) return;
-
-        const results = activeSourceList.filter(d => (d.__searchBlob || '').includes(query)).slice(0, 20);
-        
-        if(results.length === 0) {
+        more.hidden = true;
+        document.getElementById('clear-search').hidden = !rawQuery && searchSystem === 'All';
+        renderHistory();
+        if (!query && searchSystem === 'All') {
+            status.textContent = 'Search by generic name, brand, drug class or condition.';
+            container.innerHTML = `<div class="search-empty"><p>What are you looking for?</p><div class="search-examples"><button type="button" class="chip" onclick="quickSearch('Panadol')">Panadol</button><button type="button" class="chip" onclick="quickSearch('Metformin')">Metformin</button><button type="button" class="chip" onclick="quickSearch('Salbutamol')">Salbutamol</button></div></div>`;
+            return;
+        }
+        const matches = findLocalDrugs(rawQuery, searchSystem);
+        const results = matches.slice(0, searchLimit);
+        status.textContent = matches.length ? `${results.length} of ${matches.length} matching drugs` : 'No matching drugs in your saved database.';
+        more.hidden = matches.length <= searchLimit;
+        more.textContent = `Show more (${Math.max(0, matches.length - searchLimit)} remaining)`;
+        if (results.length === 0) {
+            if (!query) {
+                container.innerHTML = '<div class="search-empty"><p>No saved drugs in this system yet.</p><button type="button" class="action-btn" onclick="clearSearch()">Search all drugs</button></div>';
+                return;
+            }
+            const needsKey = !hasApiKey();
             container.innerHTML = `
-                <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
-                    <p>No local drugs found for "${escapeHtml(query)}".</p>
-                    <button id="ask-ai-search" class="action-btn btn-primary" style="margin-top:15px;">
-                        ✨ Ask AI to Find & Add "${escapeHtml(query)}"
-                    </button>
-                    <div style="margin-top:12px; font-size:0.85rem; color:#6b7280;">or upload infusion chart photos (Yinli Gemini)</div>
-                    <input type="file" id="ai-image-upload" accept="image/*" multiple style="margin-top:8px; width:100%; max-width:360px;" />
+                <div class="search-empty">
+                    <p>No local drugs found for "${escapeHtml(rawQuery)}".</p>
+                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">${needsKey ? 'Add API key to search with AI' : 'Search with AI'}</button>
+                    <p class="search-hint">${needsKey ? 'Add your key in Settings, then retry this search.' : 'AI can help find a drug outside your saved database.'}</p>
+                    <label for="ai-image-upload" class="search-hint">Or upload an infusion chart (requires a Yinli Gemini key).</label>
+                    <input type="file" id="ai-image-upload" accept="image/*" multiple />
                     <div id="ai-search-output"></div>
-                </div>
-            `;
-            document.getElementById('ask-ai-search').onclick = () => triggerAISearch(query);
-            document.getElementById('ai-image-upload').onchange = event => triggerAISearchFromImages(event.target, query);
+                </div>`;
+            document.getElementById('ask-ai-search').onclick = () => {
+                rememberSearch(rawQuery);
+                if (hasApiKey()) triggerAISearch(rawQuery);
+                else openApiSettings();
+            };
+            document.getElementById('ai-image-upload').onchange = event => triggerAISearchFromImages(event.target, rawQuery);
             return;
         }
 
@@ -3370,7 +2965,7 @@ Language: ${langInstruction}.`;
                     <span class="result-class">${drug.class}</span>
                 </div>
                 <div style="font-size:0.9rem; margin-top:5px; color:#555;">${drug.indication}</div>
-                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<span class="multi-chip selectable ${g === generics[0] ? 'is-active' : ''}" onclick="event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')">💖 ${g}</span>`).join('')}</div>` : ''}
+                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<button type="button" class="multi-chip selectable ${g === generics[0] ? 'is-active' : ''}" onclick="event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')">💖 ${g}</button>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
                     <div style="margin-bottom:5px;"><strong>Side Effects:</strong> <span style="color:#d32f2f;">${sideEffectsText}</span></div>
@@ -3379,9 +2974,9 @@ Language: ${langInstruction}.`;
                     <div style="margin-bottom:5px;"><strong>Drug Effect:</strong> <span style="color:#7c3aed;">${effectText}</span></div>
                     
                     <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto;">
-                         <span class="chip" onclick="event.stopPropagation(); triggerSearchGoogle(this)">🔎 Google</span>
-                         <span class="chip" onclick="event.stopPropagation(); triggerSearchDrugsCom(this)">🧴 Drugs.com</span>
-                         <span class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">🪄 Explain</span>
+                         <button type="button" class="chip" onclick="event.stopPropagation(); triggerSearchGoogle(this)">🔎 Google</button>
+                         <button type="button" class="chip" onclick="event.stopPropagation(); triggerSearchDrugsCom(this)">🧴 Drugs.com</button>
+                         <button type="button" class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">🪄 Explain</button>
                     </div>
                     <div id="${explainId}" class="ai-output"></div>
                 </div>
@@ -3393,6 +2988,7 @@ Language: ${langInstruction}.`;
             card.onclick = (e) => {
                 if (e.target.closest('button, a, input, select, .chip, .multi-chip')) return;
                 card.classList.toggle('expanded');
+                rememberSearch(rawQuery);
             };
             
             fragment.appendChild(card);
@@ -3449,6 +3045,7 @@ Language: ${langInstruction}.`;
     }
     
     window.triggerSearchExplain = function(btn, outputId) {
+        if (!requireApiKey()) return;
         const box = document.getElementById(outputId);
         btn.innerText = "⏳";
         box.style.display = 'block';
@@ -3461,10 +3058,11 @@ Language: ${langInstruction}.`;
 
     function quickSearch(term) {
         document.getElementById('search-input').value = term;
+        searchSystem = 'All';
+        renderAllSystems();
+        rememberSearch(term);
         runSearch();
     }
-
-
 
     const brandFallbackProfiles = {
         firmagon: {
@@ -3491,6 +3089,7 @@ ${rawText}`;
     }
     // --- AI & DATA FUNCTIONS ---
     async function triggerAISearch(query) {
+        if (!requireApiKey()) return;
         const container = document.getElementById('ai-search-output');
         container.style.display = 'block';
         container.innerHTML = `
@@ -3653,26 +3252,15 @@ Rules:
     }
 
     function upsertDrugToLocalList(drugData) {
-        const normalizedPayload = normalizeAISearchDrugPayload(drugData);
-        if (!normalizedPayload) return false;
-        const normalizedDrug = normalizeDrugData({ ...normalizedPayload });
-        const targetName = (normalizedDrug.name || '').trim().toLowerCase();
-        const existingIdx = activeSourceList.findIndex((d) => String(d.name || '').trim().toLowerCase() === targetName);
-        if (existingIdx >= 0) {
-            activeSourceList[existingIdx] = normalizedDrug;
-        } else {
-            activeSourceList.unshift(normalizedDrug);
-        }
+        const payload = normalizeAISearchDrugPayload(drugData);
+        if (!payload) return false;
+        const drug = normalizeDrugData({ ...payload });
+        const name = String(drug.name || '').trim().toLowerCase();
+        const index = activeSourceList.findIndex(item => String(item.name || '').trim().toLowerCase() === name);
+        if (index >= 0) activeSourceList[index] = drug;
+        else activeSourceList.unshift(drug);
         saveLocalDrugCache(activeSourceList);
-        const currentQuery = (document.getElementById('search-input')?.value || '').trim();
-        if (currentQuery) {
-            runSearch();
-        } else {
-            filteredList = [...activeSourceList];
-            flashcardList = [...filteredList];
-            quizList = [...filteredList];
-            updateQueueStats(filteredList);
-        }
+        refreshDrugViews();
         return true;
     }
 
@@ -3747,7 +3335,7 @@ Rules:
         if (!files.length) return;
         if (currentProvider !== 'yinli-gemini' || !yinliKey) {
             container.style.display = 'block';
-            container.innerHTML = `<div style="color:#b45309; margin-top:10px;">Image upload requires provider <strong>Yinli Gemini</strong> with API key in Settings.</div>`;
+            container.innerHTML = `<div class="api-notice">Image upload needs a Yinli Gemini API key. <button type="button" onclick="openApiSettings('yinli-gemini')">Set up image AI</button></div>`;
             return;
         }
 
@@ -3875,21 +3463,29 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
         }
     }
 
+    function openExternalLink(url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer external';
+        link.setAttribute('aria-hidden', 'true');
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    }
+
     function openGoogleDeepLink(queryText) {
         const cleaned = String(queryText || '').trim();
         if (!cleaned) return;
         const q = encodeURIComponent(cleaned);
-        const url = `https://www.google.com/search?q=${q}`;
-        const popup = window.open(url, '_blank');
-        if (!popup) {
-            window.location.href = url;
-        }
+        openExternalLink(`https://www.google.com/search?client=safari&q=${q}`);
     }
 
     function openDrugsCom(drug) {
         let cleanName = drug.name.split('(')[0].trim();
         const query = encodeURIComponent(cleanName);
-        window.open(`https://www.drugs.com/search.php?searchterm=${query}`, '_blank');
+        openExternalLink(`https://www.drugs.com/search.php?searchterm=${query}`);
     }
 
     // --- HELPER FUNCTIONS ---
@@ -3909,15 +3505,6 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
         return "💊";
     }
 
-    function initSystemDropdown() {
-        const select = document.getElementById('system-filter');
-        while (select.options.length > 1) { select.remove(1); }
-        systemCategories.forEach(sys => {
-            const opt = document.createElement('option');
-            opt.value = sys; opt.innerText = sys; select.appendChild(opt);
-        });
-    }
-
     function initQuizSystemDropdown() {
         const select = document.getElementById('quiz-system');
         if (!select) return;
@@ -3929,68 +3516,39 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
             select.appendChild(opt);
         });
     }
-    
-    function applyFilter(shouldReshuffle = true) {
-        const sysCategory = document.getElementById('system-filter').value;
-        const masteryCategory = document.getElementById('mastery-filter').value;
-        
-        filteredList = activeSourceList.filter(drug => {
-            const sys = drug.system || getSystemForDrug(drug);
-            const sysMatch = (sysCategory === "All" || sys === sysCategory);
-            let masteryMatch = true;
-            if (masteryCategory !== "All") {
-                const s = quizStats[drug.name];
-                const pct = s && s.attempts > 0 ? (s.correct/s.attempts)*100 : 0;
-                if(masteryCategory === 'Mastered') masteryMatch = (pct >= 80 && s && s.attempts >= 2);
-                else if(masteryCategory === 'Learning') masteryMatch = (pct >= 50 && pct < 80);
-                else masteryMatch = (pct < 50 || !s);
-            }
-            return sysMatch && masteryMatch;
-        });
-        
-        if (filteredList.length === 0) {
-            alert("No drugs found matching these filters.");
-            document.getElementById('mastery-filter').value = "All";
-            filteredList = [...activeSourceList];
-        }
-        if (shouldReshuffle) reshuffle();
-    }
-    
-    function reshuffle() {
-        flashcardList = [...filteredList];
-        flashcardList.sort(() => Math.random() - 0.5);
-        quizList = [...filteredList];
-        fcCurrentIndex = 0;
-        hydrateAnkiForList(filteredList);
-        flashcardList = getTodayStudyQueue(filteredList, getAnkiDailyLimit());
-        updateQueueStats(filteredList);
-        renderCard();
-    }
-    
+
     function renderAllSystems() {
         const container = document.getElementById('recommend-container');
         container.innerHTML = '';
-        systemCategories.forEach(sys => {
-            const chip = document.createElement('div');
-            chip.className = 'chip';
-            chip.style.background = '#E0E7FF'; chip.style.color = '#4338ca';
-            const shortName = systemShortNames[sys] || sys;
-            chip.innerText = `${getSystemIcon(sys)} ${shortName}`;
-            chip.onclick = () => { document.getElementById('search-input').value = sys; runSearch(); };
+        ['All', ...systemCategories].forEach(system => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip system-filter-chip';
+            chip.textContent = system === 'All' ? 'All systems' : system;
+            chip.setAttribute('aria-pressed', String(searchSystem === system));
+            chip.onclick = () => {
+                searchSystem = system;
+                document.getElementById('search-browse').open = false;
+                renderAllSystems();
+                runSearch();
+            };
             container.appendChild(chip);
         });
+        document.getElementById('search-browse-label').textContent = searchSystem === 'All' ? 'Browse by system' : `System: ${searchSystem}`;
     }
     
     function renderHistory() {
         const container = document.getElementById('history-container');
         const section = document.getElementById('history-section');
         container.innerHTML = '';
-        if(searchHistory.length === 0) { section.style.display = 'none'; return; }
-        section.style.display = 'block';
+        const searching = document.getElementById('search-input').value.trim() || searchSystem !== 'All';
+        section.style.display = !searching && searchHistory.length ? 'block' : 'none';
         searchHistory.forEach(term => {
-            const chip = document.createElement('div');
-            chip.className = 'chip'; chip.innerText = term;
-            chip.onclick = () => { document.getElementById('search-input').value = term; runSearch(); };
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip';
+            chip.textContent = term;
+            chip.onclick = () => quickSearch(term);
             container.appendChild(chip);
         });
     }
@@ -4032,6 +3590,7 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
     }
 
     function startQuizRound() {
+        if (!requireApiKey()) return;
         const levelEl = document.getElementById('quiz-level');
         const systemEl = document.getElementById('quiz-system');
         const countEl = document.getElementById('quiz-count');
@@ -4225,7 +3784,6 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
         }
     }
 
-
     function getQuizHintText(q, hintLevel) {
         const correctText = q?.correctAnswerText || q?.answerLabel?.(q?.correctDrug) || '';
         const correctDrug = q?.correctDrug || findDrugFromOptionText(correctText, quizList);
@@ -4287,7 +3845,6 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
             container.appendChild(btn);
         });
     }
-
 
     function normalizeQuestionKey(questionText, answerText) {
         return `${String(questionText || '').toLowerCase().replace(/\s+/g, ' ').trim()}::${String(answerText || '').toLowerCase().trim()}`;
@@ -4615,7 +4172,6 @@ ${JSON.stringify(bankHints)}`;
         return cleaned.length > 1 ? cleaned[cleaned.length - 1] : cleaned[0];
     }
 
-
     function escapeHtml(text) {
         return String(text || '')
             .replace(/&/g, '&amp;')
@@ -4748,7 +4304,6 @@ ${JSON.stringify(bankHints)}`;
 
     function nextQuestion() { generateQuizQuestion(); }
 
-
     function showQuizReviewModal() {
         const modal = document.getElementById('quiz-review-modal');
         const summary = document.getElementById('quiz-review-summary');
@@ -4846,6 +4401,7 @@ ${JSON.stringify(bankHints)}`;
 
     // --- AI FUNCTIONS ---
     async function streamAIResponse(messages, onUpdate) {
+        if (!requireApiKey()) throw new Error('Add an API key in Settings to use AI features.');
         const usingOpenRouter = currentProvider === 'openrouter-trinity';
         const usingYinli = currentProvider === 'yinli-gemini';
         const apiUrl = usingOpenRouter
@@ -4907,16 +4463,6 @@ ${JSON.stringify(bankHints)}`;
                 onUpdate('No explanation content received. Please try again.');
             }
         } catch (e) { onUpdate("Error: " + e.message); }
-    }
-
-    async function getIntegratedCaseStudy(drug, outputId, btnId, readBtnId) {
-        const btn = document.getElementById(btnId); const box = document.getElementById(outputId);
-        btn.innerHTML = '⏳ Generating...'; btn.disabled = true; box.style.display = 'block'; box.innerHTML = 'Thinking...';
-        
-        const prompt = `Create a nursing case study for ${drug.name} in English. Keep medical terminology accurate. Use Markdown bullet points for fast mobile reading. Include: Patient snapshot, key vitals, medication rationale, 3 nursing checks, and 1 critical-thinking question.`;
-        
-        await streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
-        btn.innerHTML = '✨ Regenerate case'; btn.disabled = false; document.getElementById(readBtnId).style.display = 'block';
     }
 
     // --- UTILS ---
@@ -5027,34 +4573,29 @@ ${JSON.stringify(bankHints)}`;
     
     function saveSettings() {
         localStorage.setItem('active_provider', document.getElementById('provider-select').value);
-        localStorage.setItem('ds_key', document.getElementById('deepseek-key').value);
-        localStorage.setItem('openrouter_key', document.getElementById('openrouter-key').value);
-        localStorage.setItem('yinli_key', document.getElementById('yinli-key').value);
+        localStorage.setItem('ds_key', document.getElementById('deepseek-key').value.trim());
+        localStorage.setItem('api_key', document.getElementById('deepseek-key').value.trim());
+        localStorage.setItem('openrouter_key', document.getElementById('openrouter-key').value.trim());
+        localStorage.setItem('yinli_key', document.getElementById('yinli-key').value.trim());
         localStorage.setItem('google_script_url', REQUIRED_SCRIPT_URL);
         localStorage.setItem('quiz_sheet_url', document.getElementById('quiz-sheet-url').value);
-        localStorage.setItem('quiz_engine', 'deepseek');
-        localStorage.setItem('anki_daily_limit', document.getElementById('anki-daily-limit').value || '20');
-        localStorage.setItem('anki_due_limit', document.getElementById('anki-due-limit').value || '50');
-        localStorage.setItem('anki_learn_limit', document.getElementById('anki-learn-limit').value || '20');
-        localStorage.setItem('anki_new_limit', document.getElementById('anki-new-limit').value || '20');
+
         localStorage.setItem('auto_sync_startup', document.getElementById('auto-sync-startup').checked ? '1' : '0');
         // reload globals
         currentProvider = document.getElementById('provider-select').value;
-        deepSeekKey = document.getElementById('deepseek-key').value;
-        openRouterKey = document.getElementById('openrouter-key').value;
-        yinliKey = document.getElementById('yinli-key').value;
+        deepSeekKey = document.getElementById('deepseek-key').value.trim();
+        openRouterKey = document.getElementById('openrouter-key').value.trim();
+        yinliKey = document.getElementById('yinli-key').value.trim();
         googleScriptURL = REQUIRED_SCRIPT_URL;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
         quizSheetURL = document.getElementById('quiz-sheet-url').value;
-        quizEngine = 'deepseek';
-        ankiDailyLimit = parseInt(document.getElementById('anki-daily-limit').value || '20', 10);
-        ankiDueLimit = parseInt(document.getElementById('anki-due-limit').value || '50', 10);
-        ankiLearnLimit = parseInt(document.getElementById('anki-learn-limit').value || '20', 10);
-        ankiNewLimit = parseInt(document.getElementById('anki-new-limit').value || '20', 10);
+
         autoSyncOnStartup = document.getElementById('auto-sync-startup').checked;
         saveLocalDrugCache(activeSourceList);
-        generateDailyPicks();
-        updateQueueStats(filteredList.length ? filteredList : activeSourceList);
+
+        updateProviderDisplay();
+        updateApiNotices();
+        runSearch();
         toggleSettings();
         alert("Settings saved!");
     }
@@ -5096,9 +4637,8 @@ ${JSON.stringify(bankHints)}`;
                      if(autoSwitch) {
                          activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
                          saveLocalDrugCache(activeSourceList);
-                         applyFilter();
-                         generateDailyPicks();
-                         updateQueueStats(filteredList.length ? filteredList : activeSourceList);
+                         refreshDrugViews();
+
                      }
                  }
             }});
@@ -5106,14 +4646,11 @@ ${JSON.stringify(bankHints)}`;
             status.innerText = "❌ Load failed, switched to local data.";
             if(autoSwitch) {
                 activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
-                applyFilter();
-                generateDailyPicks();
-                updateQueueStats(filteredList.length ? filteredList : activeSourceList);
+                refreshDrugViews();
+
             }
         });
     }
-
-
 
     function fetchQuizSheetData() {
         const url = document.getElementById('quiz-sheet-url').value;
@@ -5145,9 +4682,8 @@ ${JSON.stringify(bankHints)}`;
             document.getElementById('set-btn').innerText = "📚 Source: Online CSV";
         }
         saveLocalDrugCache(activeSourceList);
-        applyFilter();
-        generateDailyPicks();
-        updateQueueStats(filteredList.length ? filteredList : activeSourceList);
+        refreshDrugViews();
+
     }
     
     function speakText(text) {

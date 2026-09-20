@@ -365,10 +365,60 @@
         .container { flex: 1 1 0; min-height: 0; height: auto; width: 100%; box-sizing: border-box; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
         .tab-btn, .intake-btn, .intake-chip { min-height: 44px; }
         .tab-btn { font-size: .85rem; }
-        button { touch-action: manipulation; font-family: inherit; }
+        button {
+            touch-action: manipulation;
+            font-family: inherit;
+            -webkit-appearance: none;
+            -webkit-user-select: none;
+            user-select: none;
+            transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease, background-color .22s ease, border-color .22s ease, color .22s ease, opacity .22s ease;
+        }
+        button:active:not(:disabled) { transform: scale(.96); }
+        button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important; transform: none !important; }
+        .tab-btn {
+            background: rgba(255,255,255,.82);
+            border-color: rgba(148,163,184,.25);
+            box-shadow: 0 6px 16px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.9);
+        }
+        .tab-btn.active {
+            border-color: transparent;
+            background: linear-gradient(135deg, #1f2937, #0f172a);
+            color: #fff;
+            box-shadow: 0 9px 20px rgba(15,23,42,.20), inset 0 1px 0 rgba(255,255,255,.14);
+        }
+        .intake-btn, .intake-chip, .section-action {
+            min-height: 44px;
+            border: 1px solid rgba(148,163,184,.20);
+            border-radius: 12px;
+            background: linear-gradient(145deg, #ffffff, #eef4ff);
+            color: #1d4ed8;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 7px 17px rgba(15,23,42,.07), inset 0 1px 0 rgba(255,255,255,.92);
+        }
+        .section-action { padding: 10px 14px; }
+        .intake-chip { border-radius: 999px; }
+        .intake-chip.active {
+            border-color: transparent;
+            background: linear-gradient(135deg, #0a84ff, #2563eb);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(0,122,255,.22);
+        }
+        .card {
+            border-color: rgba(148,163,184,.18);
+            box-shadow: 0 10px 28px rgba(15,23,42,.07), inset 0 1px 0 rgba(255,255,255,.9);
+        }
+        .container.active { animation: wardSectionIn .3s cubic-bezier(.2,.8,.2,1); }
         :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+        @media (hover: hover) and (pointer: fine) {
+            .tab-btn:hover, .intake-btn:hover, .intake-chip:hover, .section-action:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(15,23,42,.12); }
+        }
+        @keyframes wardSectionIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) {
             input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
         }
     </style>
 </head>
