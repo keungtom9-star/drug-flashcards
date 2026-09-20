@@ -1,4 +1,4 @@
-# iPhone UI and study-flow checks
+# iPhone UI and search-flow checks
 
 Run `npm test` with Node.js 18+ for the dependency-free regression suite. It exercises the application scripts with small browser mocks and the service worker with a simulated cache. It does not replace rendering tests.
 
@@ -6,8 +6,10 @@ Serve the repository as a static site, for example `python3 -m http.server 8000`
 
 ## Device checks before merging
 
-- On a small iPhone and a larger iPhone, check portrait and landscape in Safari and after Add to Home Screen. All five bottom tabs should remain reachable with no horizontal page overflow or overlap with the home indicator.
-- In Flashcard, show a long answer, scroll its content and the study page, then reach Previous, Next, and all four review ratings. In Search, tap a drug name to expand its details.
+- On a small iPhone and a larger iPhone, check portrait and landscape in Safari and after Add to Home Screen. All four navigation tabs should remain reachable with no horizontal page overflow or overlap with the home indicator.
+- In Search, try a generic name, brand, drug class and condition. Check multi-word and mixed-case queries, browse by system, expand a drug result, clear the query, and load more than 30 matches.
+- Submit several searches, return to the empty search screen, and confirm recent searches are de-duplicated, tappable and persist after a reload.
+- With the active provider's API key empty, confirm local search still works and the Add API key action opens Settings at the correct field. Save and clear a key, confirming the reminder updates immediately.
 - Open Settings, focus the last input, and scroll to Save while the keyboard is visible. Check that text inputs do not trigger unwanted zoom and that manual pinch zoom is still possible.
 - In Clinical Bank, open a topic, answer, move forward and back. The original selection and rationale should remain visible, with no extra score. A fresh session starts at 0%; generated previews do not alter a library-session score. Check topic search, Settings, and the generator entrance.
 - Load all three pages online and allow the service worker to activate. Load a clinical question sheet successfully once, then go offline and reopen Home, Ward, and Clinical. Each URL should show its own page; the saved clinical question bank should remain usable. Uncached AI generation, remote images and new CSV downloads require connectivity.

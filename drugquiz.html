@@ -308,6 +308,10 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation: none !important; transition: none !important; }
         }
+        [hidden] { display: none !important; }
+        .clinical-api-notice { display: flex; align-items: center; flex-wrap: wrap; flex-shrink: 0; gap: 8px; padding: 12px; background: #eff6ff; color: #1e3a8a; font-size: .85rem; line-height: 1.4; }
+        .clinical-api-notice span { flex: 1 1 180px; }
+        .clinical-api-notice button { min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px; background: var(--primary); color: white; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -328,6 +332,10 @@
             </div>
         </div>
 
+        <div id="clinical-api-notice" class="clinical-api-notice" hidden>
+            <span>Add a DeepSeek key to generate new questions.</span>
+            <button type="button" onclick="openApiSettings()">Add API key</button>
+        </div>
         <div id="topic-area" class="grid-area"></div>
 
         <div id="mode-overlay" class="overlay-bg" onclick="if(event.target===this) closeModeSelector()">
@@ -458,7 +466,7 @@
             <input type="text" id="script-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." style="margin-bottom:10px;">
             
             <label style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">DeepSeek API Key</label>
-            <input type="password" id="api-key" class="settings-input">
+            <input type="password" id="api-key" aria-label="DeepSeek API key" autocomplete="off" spellcheck="false" class="settings-input">
             
             <button onclick="resetProgress()" style="width:100%; padding:14px; background:#fee2e2; color:var(--danger); border:none; border-radius:12px; font-weight:600; margin-top:20px; cursor:pointer;">⚠ Reset All Progress</button>
             <button class="btn-save-settings" onclick="saveSettings()" style="width:100%; padding:16px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer; margin-top:10px;">Save Changes</button>
@@ -480,7 +488,8 @@
         let generatedQTemp = null; // Temp holder for generated question
 
         window.onload = () => {
-            document.getElementById('api-key').value = localStorage.getItem('api_key') || '';
+            document.getElementById('api-key').value = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
+            updateClinicalApiNotice();
             document.getElementById('sheet-url').value = localStorage.getItem('sheet_url') || DEFAULT_SHEET;
             // Load the default script URL if not already saved by the user
             document.getElementById('script-url').value = localStorage.getItem('script_url') || DEFAULT_SCRIPT;
@@ -898,8 +907,8 @@
         setupIOSPWAGesture();
 
         window.startGeneration = async () => {
-            const apiKey = document.getElementById('api-key').value;
-            if(!apiKey) return alert("Please enter API Key in Settings.");
+            const apiKey = document.getElementById('api-key').value.trim();
+            if (!apiKey) { openApiSettings(); return; }
 
             const topic = document.getElementById('gen-topic').value;
             const sub = document.getElementById('gen-subtopic').value;
@@ -988,6 +997,24 @@
             });
         };
 
+        function updateClinicalApiNotice() {
+            document.getElementById('clinical-api-notice').hidden = !!document.getElementById('api-key').value.trim();
+        }
+
+        window.openApiSettings = () => {
+            document.getElementById('settings-overlay').style.display = 'flex';
+            const input = document.getElementById('api-key');
+            input.focus({ preventScroll: true });
+            input.scrollIntoView({ block: 'center' });
+        };
+
+        window.addEventListener('storage', event => {
+            if (!['ds_key', 'api_key'].includes(event.key)) return;
+            if (document.getElementById('settings-overlay').style.display === 'flex') return;
+            document.getElementById('api-key').value = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
+            updateClinicalApiNotice();
+        });
+
         // --- SETTINGS ---
         window.openSettings=()=>{document.getElementById('settings-overlay').style.display='flex';};
         window.closeSettings=()=>{document.getElementById('settings-overlay').style.display='none';};
@@ -995,7 +1022,10 @@
         window.saveSettings=()=>{
             localStorage.setItem('sheet_url',document.getElementById('sheet-url').value);
             localStorage.setItem('script_url',document.getElementById('script-url').value);
-            localStorage.setItem('api_key',document.getElementById('api-key').value);
+            const key = document.getElementById('api-key').value.trim();
+            localStorage.setItem('api_key', key);
+            localStorage.setItem('ds_key', key);
+            updateClinicalApiNotice();
             localStorage.setItem('audio_enabled',document.getElementById('audio-toggle').checked);
             audioEnabled=document.getElementById('audio-toggle').checked;
             loadSheet(); closeSettings();
