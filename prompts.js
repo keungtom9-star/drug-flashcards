@@ -43,7 +43,9 @@ Rules:
 1. Use English only, with concise medical language.
 2. Keep all values short for fast mobile reading.
 3. "nursing" must be a single string with short bullet lines separated by \n.
-4. "system" must be exactly one of:
+4. "SideEffects" must list 2-5 clinically important common or serious effects.
+5. Never use "Not specified", "Unknown", "N/A", or an empty value.
+6. "system" must be exactly one of:
 [Gastro-intestinal system, Cardiovascular system, Respiratory system, Central nervous system, Infections, Endocrine system, Obstetrics, gynaecology, and urinary-tract disorders, Malignant disease and immunosuppression, Nutrition and blood, Musculoskeletal and joint disease, Eye, Ear, nose, and oropharynx, Skin, Immunological products and vaccines, Anaesthesia].`;
 }
 
