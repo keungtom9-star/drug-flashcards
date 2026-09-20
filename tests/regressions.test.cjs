@@ -221,7 +221,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -262,7 +262,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -389,6 +389,50 @@ test('a drug absent from Google Sheet is found by AI, added once to Sheet and ma
     assert.equal(context.findLocalDrugs('Novelmed')[0].name, 'Novelmed (Nova)');
     await context.saveToGoogleSheet({ name: 'Novelmed (Another brand)', class: 'Test class', system: '🫀 Cardio' });
     assert.equal(sheetWrites, 1);
+});
+
+test('AI drug search repairs placeholder side effects before display or Sheet save', async () => {
+    const { context, document } = loadMain({ ds_key: 'test-key' });
+    let aiCalls = 0;
+    context.streamAIResponse = async (_messages, onUpdate) => {
+        aiCalls++;
+        onUpdate(JSON.stringify(aiCalls === 1 ? {
+            name: 'Examplemed (Example)', class: 'Example class', system: '🫀 Cardio', indication: 'Example indication',
+            side_effects: 'Not specified', nursing: 'Monitor the patient', effect_of_drug: 'Example action'
+        } : {
+            name: 'Examplemed (Example)', class: 'Example class', system: '🫀 Cardio', indication: 'Example indication',
+            side_effects: 'Nausea, dizziness, hypotension', nursing: 'Monitor the patient', effect_of_drug: 'Example action'
+        }));
+    };
+    context.saveToGoogleSheet = async drug => {
+        const payload = context.buildDatabaseSavePayload(drug);
+        assert.doesNotMatch(payload.side_effects, /not specified/i);
+        return true;
+    };
+    await context.triggerAISearch('Examplemed');
+    assert.equal(aiCalls, 2);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Nausea, dizziness, hypotension/);
+    assert.doesNotMatch(document.getElementById('ai-search-output').innerHTML, /Side Effects<\/div><div[^>]*>Not specified/i);
+
+    const fallback = context.normalizeAISearchDrugPayload({ name: 'Fallbackmed', side_effects: 'Not listed', nursing: 'N/A', effect_of_drug: 'Unknown' });
+    assert.doesNotMatch([fallback.side_effects, fallback.nursing, fallback.effect_of_drug].join(' '), /not specified|not listed|unknown|n\/a/i);
+});
+
+test('drug Explain enforces readable Cantonese and retries an English response', async () => {
+    const { context } = loadMain({ ds_key: 'test-key' });
+    const prompts = [];
+    context.streamAIResponse = async (messages, onUpdate) => {
+        prompts.push(messages);
+        onUpdate(prompts.length === 1
+            ? 'This medicine lowers blood glucose and requires renal monitoring.'
+            : '## 💊 點樣起效\n- 幫身體減少製造血糖。\n## 🎯 點解會用\n- 主要用嚟控制糖尿病。\n## 🩺 護士要留意\n- 留意腎功能同食慾變化。\n## ⚠️ 常見／嚴重副作用\n- 常見肚瀉、作嘔同肚痛。\n## 🚨 幾時要即刻報醫生\n- 呼吸急促或極度虛弱要即報。');
+    };
+    const answer = await context.generateCantoneseDrugExplanation('Metformin');
+    assert.equal(prompts.length, 2);
+    assert.match(prompts[0][1].content, /只可以用繁體中文廣東話/);
+    assert.equal(context.isMostlyCantoneseExplanation(answer), true);
+    assert.match(answer, /護士要留意/);
+    assert.doesNotMatch(answer, /This medicine/);
 });
 
 test('search history saves submitted searches once, with a small limit', () => {
