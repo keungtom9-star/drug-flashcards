@@ -314,6 +314,128 @@
             margin-top: 8px;
         }
 
+        /* --- Radiology / Echo quick reference --- */
+        #imaging.container { align-content: start; }
+        .imaging-hero {
+            grid-column: 1 / -1;
+            overflow: hidden;
+            color: white;
+            border: 0;
+            background:
+                radial-gradient(circle at 92% 0%, rgba(96,165,250,.55), transparent 38%),
+                linear-gradient(135deg, #0f172a 0%, #1e3a8a 58%, #0369a1 100%);
+            box-shadow: 0 18px 38px rgba(15,23,42,.22);
+        }
+        .imaging-eyebrow { font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #bae6fd; }
+        .imaging-title { margin: 5px 0 6px; font-size: 1.35rem; letter-spacing: -.025em; }
+        .imaging-subtitle { margin: 0; max-width: 760px; color: rgba(255,255,255,.82); font-size: .84rem; line-height: 1.5; }
+        .imaging-safety-note {
+            margin-top: 12px;
+            padding: 9px 11px;
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 12px;
+            background: rgba(255,255,255,.1);
+            font-size: .75rem;
+            line-height: 1.45;
+        }
+        .imaging-toolbar { grid-column: 1 / -1; padding: 12px; }
+        .imaging-search-row { position: relative; }
+        .imaging-search {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 46px 12px 42px;
+            border: 1px solid rgba(148,163,184,.28);
+            border-radius: 14px;
+            background: #f8fafc;
+            color: var(--text-main);
+            font: inherit;
+            outline: none;
+            transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+        .imaging-search:focus { border-color: var(--blue); background: white; box-shadow: 0 0 0 4px rgba(0,122,255,.11); }
+        .imaging-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        .imaging-clear {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            min-height: 36px;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-sec);
+            cursor: pointer;
+        }
+        .imaging-filter-row { display: flex; gap: 7px; margin-top: 10px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; }
+        .imaging-filter-row::-webkit-scrollbar { display: none; }
+        .imaging-filter {
+            flex: 0 0 auto;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid rgba(148,163,184,.25);
+            border-radius: 999px;
+            background: #fff;
+            color: #475569;
+            font-weight: 750;
+            cursor: pointer;
+        }
+        .imaging-filter.active { border-color: transparent; color: white; background: linear-gradient(135deg, #2563eb, #0284c7); box-shadow: 0 8px 18px rgba(37,99,235,.23); }
+        .imaging-result-meta { margin-top: 7px; color: var(--text-sec); font-size: .72rem; }
+        .imaging-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .imaging-card {
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid rgba(148,163,184,.22);
+            border-radius: 16px;
+            background: rgba(255,255,255,.96);
+            box-shadow: 0 10px 24px rgba(15,23,42,.07);
+            transition: transform .22s cubic-bezier(.2,.8,.2,1), border-color .22s ease, box-shadow .22s ease;
+        }
+        .imaging-card[open] { border-color: rgba(37,99,235,.32); box-shadow: 0 15px 32px rgba(37,99,235,.12); }
+        .imaging-card summary {
+            position: relative;
+            display: grid;
+            grid-template-columns: 42px minmax(0,1fr) 24px;
+            gap: 10px;
+            align-items: center;
+            min-height: 78px;
+            padding: 13px;
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+        }
+        .imaging-card summary::-webkit-details-marker { display: none; }
+        .imaging-card-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: #eff6ff; font-size: 1.25rem; }
+        .imaging-card-title { display: block; font-size: .97rem; font-weight: 800; line-height: 1.25; color: #0f172a; }
+        .imaging-card-category { display: block; margin-top: 3px; color: #64748b; font-size: .68rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+        .imaging-card-chevron { color: #64748b; font-size: 1.15rem; transform: rotate(0); transition: transform .22s ease; }
+        .imaging-card[open] .imaging-card-chevron { transform: rotate(180deg); }
+        .imaging-card-body { padding: 0 14px 14px; animation: imagingReveal .24s ease-out; }
+        .imaging-block { padding: 10px 0; border-top: 1px solid #e2e8f0; }
+        .imaging-label { display: block; margin-bottom: 4px; color: #64748b; font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+        .imaging-copy { margin: 0; color: #334155; font-size: .8rem; line-height: 1.5; }
+        .imaging-red-flag { margin-top: 4px; padding: 10px 11px; border: 1px solid #fecaca; border-radius: 11px; background: #fff1f2; color: #9f1239; }
+        .imaging-empty { grid-column: 1 / -1; padding: 28px 18px; text-align: center; color: var(--text-sec); }
+        .imaging-sources { grid-column: 1 / -1; }
+        .imaging-source-links { display: flex; flex-wrap: wrap; gap: 8px; }
+        .imaging-source-link {
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            padding: 8px 11px;
+            border: 1px solid rgba(37,99,235,.16);
+            border-radius: 11px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: .75rem;
+            font-weight: 750;
+            text-decoration: none;
+            transition: transform .18s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+        .imaging-source-link:active { transform: scale(.97); }
+        @keyframes imagingReveal { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
 
         @media (max-width: 767px) {
             :root { --header-height: 104px; }
@@ -351,6 +473,11 @@
             .intake-io-grid { grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
             .io-display { font-size: 1.8rem; }
             .intake-reset-row .intake-btn { flex: 1 1 calc(50% - 6px); }
+            .imaging-grid { grid-template-columns: 1fr; gap: 9px; }
+            .imaging-hero { padding: 15px; }
+            .imaging-title { font-size: 1.18rem; }
+            .imaging-toolbar { padding: 10px; }
+            .imaging-card summary { min-height: 72px; padding: 11px; }
         }
 
         /* --- Utils --- */
@@ -412,6 +539,8 @@
         :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
         @media (hover: hover) and (pointer: fine) {
             .tab-btn:hover, .intake-btn:hover, .intake-chip:hover, .section-action:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(15,23,42,.12); }
+            .imaging-card:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,.11); }
+            .imaging-source-link:hover { transform: translateY(-2px); background: #dbeafe; box-shadow: 0 8px 18px rgba(37,99,235,.13); }
         }
         @keyframes wardSectionIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) {
@@ -429,6 +558,7 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="labs" onclick="switchTab('labs')">Labs</button>
             <button class="tab-btn" data-tab="ecg" onclick="switchTab('ecg')">ECG</button>
+            <button class="tab-btn" data-tab="imaging" onclick="switchTab('imaging')">Imaging</button>
             <button class="tab-btn" data-tab="tools" onclick="switchTab('tools')">Tools</button>
             <button class="tab-btn" data-tab="meds" onclick="switchTab('meds')">Meds</button>
             <button class="tab-btn" data-tab="intake" onclick="switchTab('intake')">Intake</button>
@@ -1548,6 +1678,49 @@
         </div>
     </div>
 
+    <!-- ================= RADIOLOGY / ECHO TAB ================= -->
+    <div id="imaging" class="container">
+        <section class="card imaging-hero" aria-labelledby="imaging-title">
+            <div class="imaging-eyebrow">Ward quick reference</div>
+            <h1 class="imaging-title" id="imaging-title">Radiology / Echo</h1>
+            <p class="imaging-subtitle">Search common investigation names or report wording, then tap a card for a practical interpretation and bedside actions.</p>
+            <div class="imaging-safety-note"><strong>Report first:</strong> this is an education and handover aid, not a diagnosis. Always use the signed radiology / echo report, the patient's condition, medical orders and local protocol. Escalate a critically unwell patient immediately.</div>
+        </section>
+
+        <section class="card imaging-toolbar" aria-label="Search radiology and echo reference">
+            <div class="imaging-search-row">
+                <span class="imaging-search-icon" aria-hidden="true">⌕</span>
+                <input id="imaging-search" class="imaging-search" type="search" inputmode="search" autocomplete="off" placeholder="Search CT brain, KUB, Doppler, EF…" aria-label="Search investigations" oninput="filterImagingReference()">
+                <button id="imaging-clear" class="imaging-clear" type="button" aria-label="Clear imaging search" onclick="clearImagingSearch()" hidden>✕</button>
+            </div>
+            <div class="imaging-filter-row" role="group" aria-label="Investigation category">
+                <button class="imaging-filter active" type="button" data-imaging-category="All" onclick="setImagingCategory('All', this)">All</button>
+                <button class="imaging-filter" type="button" data-imaging-category="X-ray" onclick="setImagingCategory('X-ray', this)">X-ray</button>
+                <button class="imaging-filter" type="button" data-imaging-category="Ultrasound" onclick="setImagingCategory('Ultrasound', this)">USG / Doppler</button>
+                <button class="imaging-filter" type="button" data-imaging-category="CT" onclick="setImagingCategory('CT', this)">CT</button>
+                <button class="imaging-filter" type="button" data-imaging-category="Echo" onclick="setImagingCategory('Echo', this)">Echo</button>
+                <button class="imaging-filter" type="button" data-imaging-category="Safety" onclick="setImagingCategory('Safety', this)">Safety</button>
+            </div>
+            <div class="imaging-result-meta" id="imaging-result-meta" aria-live="polite">Loading reference…</div>
+        </section>
+
+        <div class="imaging-grid" id="imaging-grid"></div>
+
+        <section class="card imaging-sources">
+            <div class="card-header">Official references & safety</div>
+            <p class="imaging-copy" style="margin-bottom:10px;">Investigation choice and interpretation belong to the treating team and reporting specialist. These links provide patient-facing or professional guidance from ACR / RSNA and ASE.</p>
+            <div class="imaging-source-links">
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/abdominus" target="_blank" rel="noopener noreferrer">Abdominal USG ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/abdominrad" target="_blank" rel="noopener noreferrer">AXR / KUB ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/headct" target="_blank" rel="noopener noreferrer">CT brain ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/chestct" target="_blank" rel="noopener noreferrer">CT thorax ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/venousus" target="_blank" rel="noopener noreferrer">Venous Doppler ↗</a>
+                <a class="imaging-source-link" href="https://www.acr.org/Clinical-Resources/Clinical-Tools-and-Reference/Contrast-Manual" target="_blank" rel="noopener noreferrer">ACR contrast manual ↗</a>
+                <a class="imaging-source-link" href="https://www.asecho.org/guidelines-search/" target="_blank" rel="noopener noreferrer">ASE echo guidelines ↗</a>
+            </div>
+        </section>
+    </div>
+
     <!-- ================= INTAKE TAB ================= -->
     <div id="intake" class="container">
         <div class="card full-width">
@@ -1629,8 +1802,182 @@
         const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
         if(activeBtn) activeBtn.classList.add('active');
 
+        if (tabId === 'imaging') renderImagingReference();
         if (tabId === 'intake') intakeInit();
         window.scrollTo(0,0);
+    }
+
+    const imagingReference = [
+        {
+            title: 'Chest X-ray (CXR)', category: 'X-ray', icon: '🫁',
+            keywords: 'chest xray cxr portable film consolidation pneumonia edema effusion pneumothorax cardiomegaly line tube',
+            why: 'Breathlessness, fever, chest pain, trauma, fluid overload, or checking line / tube position.',
+            wording: '“Air-space opacity / consolidation” may reflect infection, oedema or haemorrhage. “Blunting of costophrenic angle” suggests pleural fluid. “Pleural line with absent peripheral lung markings” suggests pneumothorax. Portable AP films can magnify the heart.',
+            meaning: 'Compare with symptoms, oxygen requirement and older films. “No acute cardiopulmonary abnormality” does not exclude every cause of breathlessness. Check that the report comments on tubes and lines when relevant.',
+            action: 'Escalate sudden hypoxia or hypotension with a new / enlarging pneumothorax, marked mediastinal shift, rapidly increasing effusion, or a dangerously malpositioned tube / line.'
+        },
+        {
+            title: 'AXR / KUB', category: 'X-ray', icon: '🩻',
+            keywords: 'abdominal xray axr kub kidney ureter bladder bowel obstruction ileus perforation stool stone',
+            why: 'Selected cases of abdominal pain or distension, vomiting, bowel obstruction, radiopaque urinary stone, foreign body, or tube position. KUB focuses on kidneys, ureters and bladder.',
+            wording: '“Dilated bowel loops” and “multiple air-fluid levels” support obstruction but are not specific. “Faecal loading” is a description, not automatically the cause of symptoms. Not every urinary calculus is visible on plain film.',
+            meaning: 'AXR is a limited test; a normal or non-specific film does not rule out important abdominal disease. Note the reported bowel pattern, gas distribution, visible calcification and device position.',
+            action: 'Urgently escalate free intraperitoneal air, suspected perforation, closed-loop / high-grade obstruction, toxic appearance, peritonism, persistent vomiting or haemodynamic instability.'
+        },
+        {
+            title: 'USG abdomen / hepatobiliary', category: 'Ultrasound', icon: '◒',
+            keywords: 'usg ultrasound abdomen abdominal liver gallbladder gallstone cholecystitis bile duct cbd ascites pancreas spleen aorta',
+            why: 'Right-upper-quadrant or abdominal pain, abnormal liver tests, jaundice, suspected gallstones, ascites, organ enlargement or abdominal aorta assessment.',
+            wording: 'Gallstones are echogenic foci that may shadow. Wall thickening, pericholecystic fluid and a sonographic Murphy sign can support acute cholecystitis. “Dilated bile ducts / CBD” suggests obstruction requiring clinical correlation. Fatty liver is commonly described as increased echogenicity.',
+            meaning: 'Ultrasound uses no ionising radiation and is good for fluid-filled structures, but bowel gas and body habitus may limit views. “Limited study” means the clinical question may remain unanswered.',
+            action: 'Escalate suspected acute cholecystitis or cholangitis, obstructive jaundice with sepsis, a concerning aortic finding, new large ascites with deterioration, or a report recommending urgent CT / specialist review.'
+        },
+        {
+            title: 'USG KUB / renal / bladder', category: 'Ultrasound', icon: '💧',
+            keywords: 'usg kub renal kidney bladder ultrasound hydronephrosis calculus stone retention post void residual pvr',
+            why: 'AKI, loin pain, haematuria, suspected obstruction or stone, recurrent UTI, urinary retention, and pre- / post-void bladder volume.',
+            wording: '“Hydronephrosis” means dilatation of the renal collecting system and may indicate obstruction. “No hydronephrosis” lowers the likelihood of significant obstruction but does not exclude every ureteric stone. Increased renal echogenicity may accompany chronic medical renal disease.',
+            meaning: 'Interpret with urine output, creatinine trend, pain, infection signs and bladder scan. A full bladder may be required for some studies; follow the imaging department instructions.',
+            action: 'Escalate bilateral hydronephrosis, an obstructed solitary kidney, anuria / worsening AKI, or obstruction plus fever / sepsis. Confirm catheter patency while arranging medical review.'
+        },
+        {
+            title: 'Venous USG Doppler', category: 'Ultrasound', icon: '〰️',
+            keywords: 'venous usg doppler droppler dvt deep vein thrombosis leg swelling compressibility flow clot',
+            why: 'Unilateral swelling, pain, erythema or suspected deep-vein thrombosis (DVT).',
+            wording: 'A vein that is non-compressible, with visible thrombus or abnormal / absent Doppler flow, supports DVT. Reports distinguish proximal from distal (calf) thrombosis because management and follow-up may differ.',
+            meaning: 'A negative scan may not settle the question when symptoms, pre-test probability or the examined segment remain concerning; follow the documented DVT pathway for repeat imaging or other tests.',
+            action: 'Escalate suspected DVT with new chest pain, dyspnoea, syncope, hypoxia or hypotension as possible pulmonary embolism. Follow anticoagulation and mobility orders; do not massage a suspected DVT limb.'
+        },
+        {
+            title: 'Arterial Doppler / vascular USG', category: 'Ultrasound', icon: '🫀',
+            keywords: 'arterial vascular usg doppler droppler stenosis occlusion peripheral artery abi ankle brachial limb ischemia',
+            why: 'Reduced pulses, claudication, non-healing wound, suspected arterial stenosis / occlusion, or vascular graft review.',
+            wording: '“Monophasic / damped waveform”, marked velocity change, reduced distal flow or absent flow can indicate haemodynamically important disease. The report should state location and severity.',
+            meaning: 'Match imaging with limb colour, temperature, capillary refill, motor / sensory function and pulses. Chronic peripheral arterial disease and acute limb ischaemia have very different urgency.',
+            action: 'A suddenly painful, pale / mottled, cold, pulseless, weak or numb limb is a vascular emergency—escalate immediately and document neurovascular observations.'
+        },
+        {
+            title: 'CT brain — non-contrast', category: 'CT', icon: '🧠',
+            keywords: 'ct brain head non contrast plain stroke bleed hemorrhage haemorrhage trauma fracture hydrocephalus mass effect midline shift',
+            why: 'Acute head injury, suspected intracranial haemorrhage, sudden neurological deficit, altered consciousness, severe headache or hydrocephalus assessment.',
+            wording: 'Look for “intracranial haemorrhage”, “loss of grey-white differentiation”, “mass effect”, “midline shift”, “hydrocephalus” and skull fracture. Early ischaemic change may be subtle and an early CT can be normal.',
+            meaning: 'Non-contrast CT is commonly the first rapid study for acute bleeding / head trauma. A negative scan does not cancel ongoing neurological deterioration or replace the stroke / trauma pathway.',
+            action: 'Escalate any acute bleed, mass effect, midline shift, obstructive hydrocephalus, new focal deficit, falling GCS, repeated vomiting, seizure or unequal pupils immediately.'
+        },
+        {
+            title: 'CT brain with contrast / CTA', category: 'CT', icon: '⚡',
+            keywords: 'ct brain contrast enhanced cect cta angiogram vessel occlusion aneurysm tumour tumor infection abscess metastasis',
+            why: 'Contrast-enhanced CT can characterise tumour, infection or inflammation; CT angiography (CTA) evaluates arteries for occlusion, aneurysm or vascular injury.',
+            wording: '“Enhancing lesion” is non-specific and needs the radiologist’s differential and often MRI / specialist follow-up. CTA “large-vessel occlusion”, aneurysm, dissection or active extravasation can be time critical.',
+            meaning: '“With contrast” and “CTA” answer different questions from a plain CT brain. Confirm the ordered protocol and check the contrast-safety requirements before transport.',
+            action: 'Immediately activate the relevant stroke / neurosurgical / vascular escalation pathway for a time-critical vascular finding, acute bleed or neurological deterioration.'
+        },
+        {
+            title: 'CT thorax', category: 'CT', icon: '🫁',
+            keywords: 'ct chest thorax hrct contrast lung consolidation ground glass ggo nodule mass pleura effusion fibrosis lymph node',
+            why: 'Unexplained respiratory symptoms, abnormal CXR, infection complications, malignancy staging, interstitial / pleural disease or thoracic trauma.',
+            wording: 'Common phrases include “consolidation”, “ground-glass opacity”, “interlobular septal thickening”, “pleural effusion”, “pulmonary nodule / mass” and “lymphadenopathy”. These patterns are not diagnoses by themselves.',
+            meaning: 'Check the impression for the leading diagnosis, comparison with old scans and a specific follow-up recommendation. Ensure incidental nodules or suspicious lesions enter a documented follow-up pathway.',
+            action: 'Escalate tension pneumothorax, major airway compromise, active bleeding, aortic emergency, large / rapidly increasing effusion with compromise, or any critical result phoned by radiology.'
+        },
+        {
+            title: 'CT pulmonary angiogram (CTPA)', category: 'CT', icon: '🫀',
+            keywords: 'ctpa ct pulmonary angiogram pulmonary embolism pe contrast filling defect right heart strain rv lv',
+            why: 'Suspected pulmonary embolism after clinical risk assessment and the appropriate local diagnostic pathway.',
+            wording: 'An intraluminal pulmonary-artery “filling defect” supports PE. The report may describe central / lobar / segmental extent and signs of right-heart strain. “No PE” only answers the embolism question and may list another cause for symptoms.',
+            meaning: 'Interpret with haemodynamics, oxygen requirement, ECG / biomarkers and bleeding risk. Imaging clot burden alone does not determine treatment.',
+            action: 'Urgently escalate PE with hypotension, syncope, rising oxygen requirement, severe tachycardia, chest pain, altered mental state or reported right-heart strain.'
+        },
+        {
+            title: 'CT abdomen / pelvis', category: 'CT', icon: '⬡',
+            keywords: 'ct abdomen pelvis contrast appendix diverticulitis obstruction perforation abscess collection ischemia ischaemia trauma renal stone',
+            why: 'Acute or unexplained abdominal pain, sepsis source, obstruction, perforation, inflammatory disease, collection, trauma, malignancy or stone protocol.',
+            wording: 'Read the “Impression” for the main finding and urgency. Terms such as “transition point”, “free gas”, “collection / abscess”, “active extravasation”, “reduced enhancement” or “vascular occlusion” may change management rapidly.',
+            meaning: 'Contrast phase and oral / IV contrast depend on the clinical question. A renal-stone CT is often non-contrast; other abdominal questions may need IV contrast.',
+            action: 'Escalate perforation, bowel ischaemia / closed-loop obstruction, active haemorrhage, ruptured aneurysm, organ injury, obstructed infected system or a drainable septic collection with deterioration.'
+        },
+        {
+            title: 'Echocardiogram (TTE)', category: 'Echo', icon: '♥',
+            keywords: 'echo echocardiogram tte ef ejection fraction lv rv wall motion valve stenosis regurgitation pericardial effusion tamponade vegetation ivc',
+            why: 'Heart failure or shock assessment, murmur / valve disease, regional wall-motion abnormality, right-heart function, pericardial fluid, suspected endocarditis or embolic source.',
+            wording: 'LVEF describes left-ventricular systolic emptying and may be reported as preserved, mildly / moderately / severely reduced. Also read LV size, regional wall motion, RV function, valve stenosis / regurgitation, pulmonary-pressure estimate and pericardial effusion.',
+            meaning: 'Do not reduce the report to EF alone: a patient can have heart failure with preserved EF, important valve disease or RV failure. “Technically difficult / limited views” lowers certainty. Compare with the prior echo.',
+            action: 'Escalate tamponade physiology, a new severely reduced LV / RV function, a critical valve lesion, suspected vegetation with sepsis / emboli, or echo findings that match clinical shock.'
+        },
+        {
+            title: 'Iodinated CT contrast safety', category: 'Safety', icon: '🛡️',
+            keywords: 'iodinated ct contrast allergy reaction kidney renal egfr creatinine metformin extravasation pregnancy fasting hydration',
+            why: 'Contrast can improve visibility of organs, vessels and tissue. The benefit / risk and preparation depend on the scan, renal function, history and local protocol.',
+            wording: 'Before the scan, check identity, pregnancy possibility where relevant, previous contrast reaction, current kidney function when required, diabetes / metformin and other risks under local policy. A previous severe contrast reaction is especially important to report.',
+            meaning: 'Warmth and a metallic taste can occur. Severe allergic-like reactions are uncommon, but airway swelling, breathing difficulty or profound hypotension require emergency treatment. Painful swelling at the cannula may indicate extravasation.',
+            action: 'Stop and call for help for breathing difficulty, throat / facial swelling, severe wheeze, hypotension or collapse. For extravasation, stop injection, assess the limb and follow the radiology protocol. Do not invent an eGFR or metformin rule—use the current local / ACR policy.'
+        },
+        {
+            title: 'MRI safety screen', category: 'Safety', icon: '🧲',
+            keywords: 'mri magnetic resonance safety implant pacemaker metal clip foreign body claustrophobia gadolinium pregnancy',
+            why: 'MRI offers detailed soft-tissue and neurological imaging without ionising radiation, but its magnetic field creates unique implant and projectile hazards.',
+            wording: 'The request and safety questionnaire should identify pacemakers / ICDs, aneurysm clips, pumps, cochlear implants, metallic foreign bodies, recent procedures and pregnancy. “MRI conditional” still requires exact device details and scanning conditions.',
+            meaning: 'Never assume an implant is safe because a patient had MRI before. Remove prohibited metallic items and follow radiology instructions for monitoring, sedation and gadolinium risk assessment.',
+            action: 'Stop transfer into the controlled MRI area if implant identity or metal screening is unresolved. Escalate acute distress, heating / pulling sensation, burns, device concerns or contrast reaction immediately.'
+        }
+    ];
+
+    let activeImagingCategory = 'All';
+
+    function renderImagingReference() {
+        const grid = document.getElementById('imaging-grid');
+        const input = document.getElementById('imaging-search');
+        const meta = document.getElementById('imaging-result-meta');
+        const clear = document.getElementById('imaging-clear');
+        if (!grid || !input || !meta || !clear) return;
+
+        const query = input.value.trim().toLowerCase();
+        const matches = imagingReference.filter(item => {
+            const categoryMatch = activeImagingCategory === 'All' || item.category === activeImagingCategory;
+            const searchable = `${item.title} ${item.category} ${item.keywords} ${item.why} ${item.wording} ${item.meaning}`.toLowerCase();
+            return categoryMatch && (!query || searchable.includes(query));
+        });
+
+        clear.hidden = !query;
+        meta.textContent = query || activeImagingCategory !== 'All'
+            ? `${matches.length} of ${imagingReference.length} investigations shown`
+            : `${imagingReference.length} common investigations — tap a card to interpret`;
+
+        grid.innerHTML = matches.length ? matches.map((item, index) => `
+            <details class="imaging-card" data-title="${item.title}" ${matches.length === 1 ? 'open' : ''}>
+                <summary>
+                    <span class="imaging-card-icon" aria-hidden="true">${item.icon}</span>
+                    <span><span class="imaging-card-title">${item.title}</span><span class="imaging-card-category">${item.category}</span></span>
+                    <span class="imaging-card-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="imaging-card-body">
+                    <div class="imaging-block"><span class="imaging-label">Why ordered</span><p class="imaging-copy">${item.why}</p></div>
+                    <div class="imaging-block"><span class="imaging-label">Common report wording</span><p class="imaging-copy">${item.wording}</p></div>
+                    <div class="imaging-block"><span class="imaging-label">How to read it</span><p class="imaging-copy">${item.meaning}</p></div>
+                    <div class="imaging-block"><span class="imaging-label">Escalate / nursing action</span><p class="imaging-copy imaging-red-flag">${item.action}</p></div>
+                </div>
+            </details>`).join('') : `
+            <div class="card imaging-empty">
+                <div style="font-size:1.4rem; margin-bottom:6px;">⌕</div>
+                <strong>No matching investigation</strong>
+                <div style="margin-top:5px; font-size:.8rem;">Try “CT”, “Doppler”, “effusion”, “EF” or choose All.</div>
+            </div>`;
+    }
+
+    function filterImagingReference() { renderImagingReference(); }
+
+    function setImagingCategory(category, button) {
+        activeImagingCategory = category;
+        document.querySelectorAll('.imaging-filter').forEach(item => item.classList.toggle('active', item === button));
+        renderImagingReference();
+    }
+
+    function clearImagingSearch() {
+        const input = document.getElementById('imaging-search');
+        if (!input) return;
+        input.value = '';
+        renderImagingReference();
+        input.focus();
     }
 
     // Intake Flow Logic (embedded)

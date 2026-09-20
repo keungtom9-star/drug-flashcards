@@ -66,6 +66,31 @@ test('all inline application scripts parse', () => {
     }
 });
 
+test('Ward imaging reference covers and filters common radiology and echo studies', () => {
+    const html = read('ward.html');
+    assert.match(html, /data-tab="imaging"/);
+    assert.match(html, /id="imaging" class="container"/);
+
+    const state = browserContext();
+    for (const source of inlineScripts('ward.html')) vm.runInContext(source, state.context);
+    assert.ok(vm.runInContext('imagingReference.length', state.context) >= 14);
+    for (const term of ['USG abdomen', 'AXR / KUB', 'CT brain', 'CT thorax', 'Venous USG Doppler', 'Echocardiogram', 'contrast safety']) {
+        assert.match(html, new RegExp(term, 'i'));
+    }
+
+    const input = state.document.getElementById('imaging-search');
+    input.value = 'droppler';
+    state.context.renderImagingReference();
+    assert.match(state.document.getElementById('imaging-grid').innerHTML, /Venous USG Doppler/);
+    assert.match(state.document.getElementById('imaging-result-meta').textContent, /2 of 14/);
+
+    state.context.setImagingCategory('Echo', element());
+    input.value = '';
+    state.context.renderImagingReference();
+    assert.match(state.document.getElementById('imaging-grid').innerHTML, /Echocardiogram \(TTE\)/);
+    assert.doesNotMatch(state.document.getElementById('imaging-grid').innerHTML, /CT pulmonary angiogram/);
+});
+
 test('malformed or incompatible saved state does not block startup; valid state survives', () => {
     const { context } = browserContext({ broken: '{', null: 'null', wrongType: '[]', valid: '{"review":3}' });
     for (const key of ['broken', 'null', 'missing', 'wrongType']) assert.deepEqual(context.DrugTutorUI.readStoredJSON(key, {}), {});
@@ -157,16 +182,17 @@ test('imported question text and quotation marks cannot break the option handler
     assert.doesNotThrow(() => new vm.Script(decoded));
 });
 
-test('unknown search text is rendered as text and passed through a bound handler', () => {
+test('unknown search text is rendered as text and passed through a bound handler', async () => {
     const { context, document } = browserContext({ ds_key: 'test-key' });
     for (const source of inlineScripts('index.html')) vm.runInContext(source, context);
     const query = '<img src=x onerror=alert(1)> "quote"';
     document.getElementById('search-input').value = query;
     let passed;
+    context.fetch = async () => { throw new Error('Sheet unavailable'); };
     context.triggerAISearch = q => { passed = q; };
     context.runSearch();
     assert.ok(!document.getElementById('search-results').innerHTML.includes('<img src=x'));
-    document.getElementById('ask-ai-search').onclick();
+    await document.getElementById('ask-ai-search').onclick();
     assert.equal(passed, query);
 });
 
@@ -195,7 +221,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -236,7 +262,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -327,6 +353,44 @@ test('external drug searches use a real secure link instead of window.open', () 
     assert.ok(opened.every(link => link.target === '_blank' && link.rel.includes('noopener')));
 });
 
+test('a missing local drug checks Google Sheet before using AI', async () => {
+    const { context, document } = loadMain({ ds_key: 'test-key' });
+    document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
+    document.getElementById('search-input').value = 'Cloud medicine';
+    context.Papa = { parse: () => ({ data: [{ name: 'Cloud medicine (Sheetbrand)', class: 'Example', indication: 'Testing', system: '🫀 Cardio' }] }) };
+    context.fetch = async () => ({ ok: true, text: async () => 'csv' });
+    let aiCalls = 0;
+    context.triggerAISearch = async () => { aiCalls++; };
+    await context.resolveMissingDrug('Cloud medicine');
+    assert.equal(aiCalls, 0);
+    assert.equal(context.findLocalDrugs('Cloud medicine')[0].name, 'Cloud medicine (Sheetbrand)');
+    assert.match(document.getElementById('search-status').textContent, /Found in Google Sheet/);
+});
+
+test('a drug absent from Google Sheet is found by AI, added once to Sheet and made searchable', async () => {
+    const { context, document } = loadMain({ ds_key: 'test-key' });
+    document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
+    document.getElementById('search-input').value = 'Novelmed';
+    context.Papa = { parse: () => ({ data: [] }) };
+    let sheetWrites = 0;
+    context.fetch = async (_url, options = {}) => {
+        if (options.method === 'POST') {
+            sheetWrites++;
+            return { ok: true, text: async () => '' };
+        }
+        return { ok: true, text: async () => 'name,class' };
+    };
+    context.streamAIResponse = async (_messages, onUpdate) => onUpdate(JSON.stringify({
+        name: 'Novelmed (Nova)', class: 'Test class', system: '🫀 Cardio', indication: 'Testing',
+        side_effects: 'Example effect', nursing: 'Monitor response', effect_of_drug: 'Example action'
+    }));
+    await context.resolveMissingDrug('Novelmed');
+    assert.equal(sheetWrites, 1);
+    assert.equal(context.findLocalDrugs('Novelmed')[0].name, 'Novelmed (Nova)');
+    await context.saveToGoogleSheet({ name: 'Novelmed (Another brand)', class: 'Test class', system: '🫀 Cardio' });
+    assert.equal(sheetWrites, 1);
+});
+
 test('search history saves submitted searches once, with a small limit', () => {
     const { context, storage } = loadMain();
     for (let i = 0; i < 8; i++) context.rememberSearch('Term ' + i);
@@ -339,11 +403,14 @@ test('search history saves submitted searches once, with a small limit', () => {
 
 test('missing or blank API keys open setup without sending AI requests or resetting a quiz', async () => {
     const { context, document } = loadMain({ ds_key: '  ' });
-    let requests = 0;
-    context.fetch = async () => { requests++; throw Error('Unexpected AI request'); };
+    let aiRequests = 0;
+    context.fetch = async url => {
+        if (/api\.(deepseek|openrouter)/.test(String(url))) aiRequests++;
+        throw Error('Sheet unavailable');
+    };
     document.getElementById('search-input').value = 'unknown drug';
     context.runSearch();
-    document.getElementById('ask-ai-search').onclick();
+    await document.getElementById('ask-ai-search').onclick();
     assert.equal(document.getElementById('settings-panel').style.display, 'flex');
     assert.equal(document.getElementById('deepseek-key').focused, true);
     await context.triggerAISearch('unknown drug');
@@ -351,7 +418,7 @@ test('missing or blank API keys open setup without sending AI requests or resett
     vm.runInContext('currentRoundTotal = 5; currentRoundAnswered = 2;', context);
     context.startQuizRound();
     assert.equal(vm.runInContext('currentRoundAnswered', context), 2);
-    assert.equal(requests, 0);
+    assert.equal(aiRequests, 0);
 });
 
 test('API reminders follow the active provider and save/clear updates them immediately', () => {
