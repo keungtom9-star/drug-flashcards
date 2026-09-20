@@ -1086,7 +1086,7 @@
         </div>
 
         <div class="settings-help">
-            Search saved drugs by name, brand or condition. Add your own API key to enable AI search, explanations and quiz generation.
+            Search saved drugs by name, brand or condition. When a drug is missing, the app checks Google Sheet, uses AI if needed, then adds the result back to Google Sheet automatically. Add your own API key to enable AI search, explanations and quiz generation.
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Settings</button>
@@ -2776,15 +2776,17 @@ Language: ${langInstruction}.`;
     let searchLimit = SEARCH_PAGE_SIZE;
     let searchSystem = 'All';
     let lastSearchKey = '';
+    const googleSheetSavePromises = new Map();
+    const googleSheetSavedKeys = new Set();
 
     function normalizeSearchText(value) {
         return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-_/(),.]+/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    function findLocalDrugs(query, system = 'All') {
+    function findLocalDrugs(query, system = 'All', sourceList = activeSourceList) {
         const normalized = normalizeSearchText(query);
         const tokens = normalized.split(' ').filter(Boolean);
-        return activeSourceList.filter(drug => system === 'All' || (drug.system || getSystemForDrug(drug)) === system)
+        return sourceList.filter(drug => system === 'All' || (drug.system || getSystemForDrug(drug)) === system)
             .map(drug => {
                 const name = normalizeSearchText(drug.name);
                 const drugClass = normalizeSearchText(drug.class);
@@ -2927,17 +2929,16 @@ Language: ${langInstruction}.`;
             const needsKey = !hasApiKey();
             container.innerHTML = `
                 <div class="search-empty">
-                    <p>No local drugs found for "${escapeHtml(rawQuery)}".</p>
-                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">${needsKey ? 'Add API key to search with AI' : 'Search with AI'}</button>
-                    <p class="search-hint">${needsKey ? 'Add your key in Settings, then retry this search.' : 'AI can help find a drug outside your saved database.'}</p>
+                    <p>No saved drugs found for "${escapeHtml(rawQuery)}".</p>
+                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">${needsKey ? 'Check Google Sheet' : 'Search AI & add to Google Sheet'}</button>
+                    <p class="search-hint">Checks the latest Google Sheet first.${needsKey ? ' If it is still missing, add an API key for AI search.' : ' If missing, AI will find it and add it automatically.'}</p>
                     <label for="ai-image-upload" class="search-hint">Or upload an infusion chart (requires a Yinli Gemini key).</label>
                     <input type="file" id="ai-image-upload" accept="image/*" multiple />
                     <div id="ai-search-output"></div>
                 </div>`;
             document.getElementById('ask-ai-search').onclick = () => {
                 rememberSearch(rawQuery);
-                if (hasApiKey()) triggerAISearch(rawQuery);
-                else openApiSettings();
+                resolveMissingDrug(rawQuery);
             };
             document.getElementById('ai-image-upload').onchange = event => triggerAISearchFromImages(event.target, rawQuery);
             return;
@@ -3064,6 +3065,56 @@ Language: ${langInstruction}.`;
         runSearch();
     }
 
+    function getConfiguredSheetURL() {
+        const inputValue = String(document.getElementById('sheet-url')?.value || '').trim();
+        const configured = inputValue || defaultSheetUrl;
+        if (configured.includes('docs.google.com/spreadsheets') && configured.includes('/edit')) {
+            return configured.replace(/\/edit.*$/, '/export?format=csv');
+        }
+        return configured;
+    }
+
+    async function findDrugInGoogleSheet(query) {
+        const sheetURL = getConfiguredSheetURL();
+        if (!sheetURL || typeof Papa === 'undefined') return null;
+        const response = await fetch(sheetURL, { cache: 'no-store' });
+        if (response.ok === false) throw new Error(`Google Sheet returned ${response.status}`);
+        const csv = await response.text();
+        const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+        const sheetDrugs = prepareDrugListForFastSearch(parsed.data || []);
+        return findLocalDrugs(query, 'All', sheetDrugs)[0] || null;
+    }
+
+    async function resolveMissingDrug(query) {
+        const button = document.getElementById('ask-ai-search');
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'Checking Google Sheet…';
+        }
+        try {
+            const sheetDrug = await findDrugInGoogleSheet(query);
+            if (sheetDrug) {
+                upsertDrugToLocalList(sheetDrug);
+                const status = document.getElementById('search-status');
+                if (status) status.textContent = 'Found in Google Sheet and added to this device.';
+                return;
+            }
+        } catch (_) {
+            // Continue to AI when the online sheet is unavailable or has no match.
+        }
+
+        if (!hasApiKey()) {
+            if (button) {
+                button.disabled = false;
+                button.innerText = 'Add API key to continue';
+            }
+            openApiSettings();
+            return;
+        }
+        if (button) button.innerText = 'Searching with AI…';
+        await triggerAISearch(query);
+    }
+
     const brandFallbackProfiles = {
         firmagon: {
             name: 'Degarelix (Firmagon)',
@@ -3121,18 +3172,18 @@ Rules:
             container.innerHTML = `
                 <div class="ios-card" style="border:2px solid var(--ios-green); margin-top:20px; text-align:left;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h3 style="margin:0; color:var(--ios-blue);">${drugData.name}</h3>
+                        <h3 style="margin:0; color:var(--ios-blue);">${escapeHtml(drugData.name)}</h3>
                         <span class="chip" style="background:var(--ios-green); color:white;">AI Found</span>
                     </div>
-                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content">${drugData.class}</div></div>
-                    <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${drugData.system}</div></div>
-                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${drugData.indication}</div></div>
-                    <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" style="color:#d32f2f;">${drugData.side_effects}</div></div>
-                    <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content" style="font-size:0.9rem;">${drugData.nursing}</div></div>
-                    <div class="detail-row"><div class="detail-label">Drug Effect (Quiz)</div><div class="detail-content" style="color:#7c3aed;">${drugData.effect_of_drug || drugData.quiz || drugData.side_effects}</div></div>
+                    <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content">${escapeHtml(drugData.class)}</div></div>
+                    <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${escapeHtml(drugData.system)}</div></div>
+                    <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${escapeHtml(drugData.indication)}</div></div>
+                    <div class="detail-row"><div class="detail-label">Side Effects</div><div class="detail-content" style="color:#d32f2f;">${escapeHtml(drugData.side_effects)}</div></div>
+                    <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content" style="font-size:0.9rem;">${escapeHtml(drugData.nursing)}</div></div>
+                    <div class="detail-row"><div class="detail-label">Drug Effect (Quiz)</div><div class="detail-content" style="color:#7c3aed;">${escapeHtml(drugData.effect_of_drug || drugData.quiz || drugData.side_effects)}</div></div>
                     <div style="display:flex; gap:8px; margin-top:10px;">
-                        <button id="btn-add-local" class="action-btn" style="flex:1; background:#ecfdf5; color:#047857;">➕ Add to App</button>
-                        <button id="btn-save-sheet" class="action-btn btn-green" style="flex:1;">💾 Save to Database</button>
+                        <button id="btn-add-local" class="action-btn" style="flex:1; background:#ecfdf5; color:#047857;">📱 Add to this device</button>
+                        <button id="btn-save-sheet" class="action-btn btn-green" style="flex:1;">☁️ Add to Google Sheet</button>
                     </div>
                     <div id="save-status" style="text-align:center; margin-top:10px; font-size:0.85rem; font-weight:600;"></div>
                 </div>`;
@@ -3160,7 +3211,7 @@ Rules:
                 };
             }
 
-            // Auto-save AI search result to Google Sheet immediately
+            // A missing Sheet result is added automatically after AI finds it.
             await saveToGoogleSheet(drugData);
         } catch (e) {
             container.innerHTML = `<div style="color:red; margin-top:10px;">Search failed. Please try again.</div>`;
@@ -3275,21 +3326,21 @@ Rules:
         const cards = drugList.map((drugData, idx) => `
             <div class="ios-card" style="border:2px solid var(--ios-green); margin-top:14px; text-align:left;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <h3 style="margin:0; color:var(--ios-blue);">${drugData.name}</h3>
+                    <h3 style="margin:0; color:var(--ios-blue);">${escapeHtml(drugData.name)}</h3>
                     <span class="chip" style="background:var(--ios-green); color:white;">Image OCR</span>
                 </div>
-                <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content">${drugData.class}</div></div>
-                <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${drugData.system}</div></div>
-                <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${drugData.indication}</div></div>
-                <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content">${drugData.nursing}</div></div>
-                <button id="btn-save-sheet-${idx}" class="action-btn btn-green">💾 Save to Database</button>
+                <div class="detail-row"><div class="detail-label">Class</div><div class="detail-content">${escapeHtml(drugData.class)}</div></div>
+                <div class="detail-row"><div class="detail-label">System</div><div class="detail-content">${escapeHtml(drugData.system)}</div></div>
+                <div class="detail-row"><div class="detail-label">Indication</div><div class="detail-content">${escapeHtml(drugData.indication)}</div></div>
+                <div class="detail-row"><div class="detail-label">Nursing</div><div class="detail-content">${escapeHtml(drugData.nursing)}</div></div>
+                <button id="btn-save-sheet-${idx}" class="action-btn btn-green">☁️ Add to Google Sheet</button>
                 <div id="save-status-${idx}" style="text-align:center; margin-top:8px; font-size:0.85rem; font-weight:600;"></div>
             </div>
         `).join('');
 
         container.innerHTML = `
             <div style="margin-top:10px; text-align:left;">
-                <button id="btn-save-sheet-all" class="action-btn btn-green" style="margin-bottom:8px;">💾 Save All (${drugList.length})</button>
+                <button id="btn-save-sheet-all" class="action-btn btn-green" style="margin-bottom:8px;">☁️ Add All to Google Sheet (${drugList.length})</button>
                 <div id="save-status-all" style="font-size:0.85rem; font-weight:600;"></div>
                 ${cards}
             </div>
@@ -3310,7 +3361,7 @@ Rules:
                     status.innerText = `Saved ${okCount}/${drugList.length}`;
                     status.style.color = okCount === drugList.length ? 'var(--ios-green)' : 'var(--ios-red)';
                 }
-                saveAllBtn.innerText = `💾 Save All (${drugList.length})`;
+                saveAllBtn.innerText = `☁️ Add All to Google Sheet (${drugList.length})`;
                 saveAllBtn.disabled = false;
             };
         }
@@ -3395,34 +3446,14 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
         }
     }
 
-    async function saveToGoogleSheet(drugData, statusId = 'save-status', btnId = 'btn-save-sheet') {
-        const statusEl = document.getElementById(statusId);
-        const saveBtn = document.getElementById(btnId);
-        const scriptURL = String(googleScriptURL || '').trim();
+    function getGoogleSheetSaveKey(drugData) {
+        const normalized = normalizeAISearchDrugPayload(drugData) || drugData || {};
+        const fullName = String(normalized.name || '').trim();
+        const genericName = fullName.replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+        return normalizeSearchText(genericName || fullName);
+    }
 
-        if(!scriptURL) {
-            if (statusEl) {
-                statusEl.innerText = "❌ Missing Google Script URL. Set it in Settings (⚙️).";
-                statusEl.style.color = "var(--ios-red)";
-            }
-            alert("Please set the Google Script URL in Settings (⚙️) first.");
-            return false;
-        }
-
-        const setStatus = (msg, color) => {
-            if (!statusEl) return;
-            statusEl.innerText = msg;
-            statusEl.style.color = color;
-        };
-
-        if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.innerText = "⏳ Saving...";
-        }
-        setStatus("Syncing with cloud...", "var(--ios-blue)");
-
-        const payload = buildDatabaseSavePayload(drugData);
-
+    async function postDrugToGoogleSheet(scriptURL, payload) {
         try {
             const response = await fetch(scriptURL, {
                 method: 'POST',
@@ -3430,17 +3461,12 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
             if (!response.ok) {
                 const errText = await response.text().catch(() => '');
                 throw new Error(errText || `HTTP ${response.status}`);
             }
-
-            setStatus("✅ Saved successfully!", "var(--ios-green)");
-            if (saveBtn) saveBtn.innerText = "💾 Saved";
-            upsertDrugToLocalList(payload);
-            return true;
-        } catch (err) {
+            return { ok: true, verified: true };
+        } catch (corsError) {
             try {
                 await fetch(scriptURL, {
                     method: 'POST',
@@ -3448,19 +3474,74 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                setStatus("✅ Sent (no-cors mode). Please verify in sheet.", "var(--ios-green)");
-                if (saveBtn) saveBtn.innerText = "💾 Sent";
-                upsertDrugToLocalList(payload);
-                return true;
+                return { ok: true, verified: false };
             } catch (_) {
-                setStatus("❌ Save failed.", "var(--ios-red)");
-                if (saveBtn) {
-                    saveBtn.disabled = false;
-                    saveBtn.innerText = "💾 Save to Database";
-                }
-                return false;
+                return { ok: false, verified: false, error: corsError };
             }
         }
+    }
+
+    async function saveToGoogleSheet(drugData, statusId = 'save-status', btnId = 'btn-save-sheet') {
+        const statusEl = document.getElementById(statusId);
+        const saveBtn = document.getElementById(btnId);
+        const scriptURL = String(googleScriptURL || '').trim();
+        const setStatus = (msg, color) => {
+            if (!statusEl) return;
+            statusEl.innerText = msg;
+            statusEl.style.color = color;
+        };
+
+        if (!scriptURL) {
+            setStatus('❌ Missing Google Script URL. Set it in Settings (⚙️).', 'var(--ios-red)');
+            if (saveBtn) saveBtn.innerText = '⚙️ Set up Google Sheet';
+            alert('Please set the Google Script URL in Settings (⚙️) first.');
+            return false;
+        }
+
+        const payload = buildDatabaseSavePayload(drugData);
+        const saveKey = getGoogleSheetSaveKey(payload);
+        if (saveKey && googleSheetSavedKeys.has(saveKey)) {
+            setStatus('✅ Already added during this session.', 'var(--ios-green)');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerText = '✅ Already in Google Sheet';
+            }
+            upsertDrugToLocalList(payload);
+            return true;
+        }
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = '⏳ Adding to Google Sheet…';
+        }
+        setStatus('Adding the AI result to Google Sheet…', 'var(--ios-blue)');
+
+        let pendingSave = saveKey ? googleSheetSavePromises.get(saveKey) : null;
+        const ownsSave = !pendingSave;
+        if (!pendingSave) {
+            pendingSave = postDrugToGoogleSheet(scriptURL, payload);
+            if (saveKey) googleSheetSavePromises.set(saveKey, pendingSave);
+        }
+
+        const outcome = await pendingSave;
+        if (ownsSave && saveKey && googleSheetSavePromises.get(saveKey) === pendingSave) {
+            googleSheetSavePromises.delete(saveKey);
+        }
+
+        if (outcome.ok) {
+            if (saveKey) googleSheetSavedKeys.add(saveKey);
+            setStatus(outcome.verified ? '✅ Added to Google Sheet.' : '✅ Sent to Google Sheet. Please verify the new row.', 'var(--ios-green)');
+            if (saveBtn) saveBtn.innerText = outcome.verified ? '✅ Added to Google Sheet' : '✅ Sent to Google Sheet';
+            upsertDrugToLocalList(payload);
+            return true;
+        }
+
+        setStatus('❌ Could not add to Google Sheet. Try again.', 'var(--ios-red)');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = '☁️ Retry Google Sheet';
+        }
+        return false;
     }
 
     function openExternalLink(url) {
