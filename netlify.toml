@@ -12,6 +12,19 @@
   to = "/drugquiz.html"
   status = 200
 
+# Recover iOS Home Screen installs created while Vite emitted the manifest
+# under /assets; those installs stored /assets/index.html as their start URL.
+[[redirects]]
+  from = "/assets/index.html"
+  to = "/index.html"
+  status = 302
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+    Content-Type = "application/manifest+json"
+
 [[headers]]
   for = "/service-worker.js"
   [headers.values]
