@@ -182,7 +182,7 @@ test('imported question text and quotation marks cannot break the option handler
     assert.doesNotThrow(() => new vm.Script(decoded));
 });
 
-test('unknown search text is rendered as text and passed through a bound handler', async () => {
+test('unknown search text is safe and offers text lookup without an infusion upload', async () => {
     const { context, document } = browserContext({ ds_key: 'test-key' });
     for (const source of inlineScripts('index.html')) vm.runInContext(source, context);
     const query = '<img src=x onerror=alert(1)> "quote"';
@@ -192,6 +192,7 @@ test('unknown search text is rendered as text and passed through a bound handler
     context.triggerAISearch = q => { passed = q; };
     context.runSearch();
     assert.ok(!document.getElementById('search-results').innerHTML.includes('<img src=x'));
+    assert.doesNotMatch(document.getElementById('search-results').innerHTML, /upload an infusion chart|ai-image-upload/i);
     await document.getElementById('ask-ai-search').onclick();
     assert.equal(passed, query);
 });
@@ -221,7 +222,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -248,6 +249,17 @@ test('service worker installs under root and GitHub Pages subpaths', async () =>
     }
 });
 
+test('Netlify build publishes Home, Ward and Clinical as multi-page entries', () => {
+    const viteConfig = read('vite.config.ts');
+    const netlifyConfig = read('netlify.toml');
+    for (const page of ['index.html', 'ward.html', 'drugquiz.html']) assert.match(viteConfig, new RegExp(page.replace('.', '\\.')));
+    assert.match(viteConfig, /rollupOptions[\s\S]*input/);
+    for (const asset of ['app-ui.js', 'service-worker.js', 'manifest.json']) assert.match(viteConfig, new RegExp(asset.replace('.', '\\.')));
+    assert.match(netlifyConfig, /publish\s*=\s*"dist"/);
+    assert.match(netlifyConfig, /from\s*=\s*"\/ward"[\s\S]*to\s*=\s*"\/ward\.html"/);
+    assert.match(netlifyConfig, /from\s*=\s*"\/clinical"[\s\S]*to\s*=\s*"\/drugquiz\.html"/);
+});
+
 test('visiting Ward cannot replace cached home or Clinical pages', async () => {
     const base = 'https://example.test/drug-flashcards/';
     const worker = workerContext(base);
@@ -262,7 +274,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -312,6 +324,26 @@ test('startup and all navigation tabs work after removing the old study controls
     assert.equal(typeof context.generateDailyPicks, 'undefined');
 });
 
+test('fast adaptive quiz creates an instant balanced question and limits AI prefetch', () => {
+    const { context } = loadMain({ ds_key: 'sk-test' });
+    const drugs = context.prepareDrugListForFastSearch([
+        { name: 'Atenolol', class: 'Selective beta blocker', indication: 'Hypertension', nursing: 'Monitor heart rate and blood pressure', system: '🫀 Cardio' },
+        { name: 'Bisoprolol', class: 'Selective beta blocker', indication: 'Heart failure and hypertension', nursing: 'Monitor heart rate and blood pressure', system: '🫀 Cardio' },
+        { name: 'Metoprolol', class: 'Selective beta blocker', indication: 'Post-MI and heart failure', nursing: 'Monitor heart rate and blood pressure', system: '🫀 Cardio' },
+        { name: 'Propranolol', class: 'Non-selective beta blocker', indication: 'Tremor and hypertension', nursing: 'Check for bronchospasm and bradycardia', system: '🫀 Cardio' },
+        { name: 'Labetalol', class: 'Alpha and beta blocker', indication: 'Hypertensive crisis', nursing: 'Monitor blood pressure closely', system: '🫀 Cardio' },
+    ]);
+    const first = context.buildLocalAdaptiveQuizQuestion(drugs, 'applying');
+    const second = context.buildLocalAdaptiveQuizQuestion(drugs, 'applying');
+    assert.equal(first.type, 'local_adaptive');
+    assert.equal(first.options.length, 4);
+    assert.equal(new Set(first.options).size, 4);
+    assert.ok(first.options.includes(first.correctAnswerText));
+    assert.notEqual(second.correctAnswerText, first.correctAnswerText);
+    assert.match(first.aiExplanation, /Nursing focus:/);
+    assert.match(read('index.html'), /Math\.min\(QUIZ_PREFETCH_TARGET, questionsAfterCurrent\)/);
+});
+
 test('local search ranks names before incidental text and supports case, multiple words and systems', () => {
     const { context } = loadMain();
     context.rows = [
@@ -334,6 +366,7 @@ test('search pagination exposes every match and clear restores useful guidance',
     vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows)', context);
     document.getElementById('search-input').value = 'example';
     context.runSearch();
+    assert.equal(document.body.classList.contains('search-results-active'), true);
     assert.equal(document.getElementById('search-status').textContent, '30 of 45 matching drugs');
     assert.equal(document.getElementById('more-search-results').hidden, false);
     context.showMoreSearchResults();
@@ -341,6 +374,7 @@ test('search pagination exposes every match and clear restores useful guidance',
     assert.equal(document.getElementById('more-search-results').hidden, true);
     context.clearSearch();
     assert.equal(document.getElementById('search-input').value, '');
+    assert.equal(document.body.classList.contains('search-results-active'), false);
     assert.match(document.getElementById('search-results').innerHTML, /What are you looking for/);
     assert.equal(document.getElementById('clear-search').hidden, true);
 });
