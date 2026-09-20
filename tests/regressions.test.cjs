@@ -195,7 +195,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -236,7 +236,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -303,6 +303,28 @@ test('search pagination exposes every match and clear restores useful guidance',
     assert.equal(document.getElementById('search-input').value, '');
     assert.match(document.getElementById('search-results').innerHTML, /What are you looking for/);
     assert.equal(document.getElementById('clear-search').hidden, true);
+});
+
+test('external drug searches use a real secure link instead of window.open', () => {
+    const { context, document } = loadMain();
+    const opened = [];
+    document.createElement = tag => {
+        const node = element();
+        node.click = () => opened.push({ tag, href: node.href, target: node.target, rel: node.rel });
+        node.remove = () => {};
+        return node;
+    };
+    context.open = () => { throw new Error('window.open should not be used'); };
+    context.openGoogleDeepLink('Metformin 中文 香港');
+    context.openDrugsCom({ name: 'Metformin (Glucophage)' });
+    assert.equal(opened.length, 2);
+    assert.equal(opened[0].tag, 'a');
+    assert.equal(new URL(opened[0].href).hostname, 'www.google.com');
+    assert.equal(new URL(opened[0].href).searchParams.get('q'), 'Metformin 中文 香港');
+    assert.equal(new URL(opened[0].href).searchParams.get('client'), 'safari');
+    assert.equal(new URL(opened[1].href).hostname, 'www.drugs.com');
+    assert.equal(new URL(opened[1].href).searchParams.get('searchterm'), 'Metformin');
+    assert.ok(opened.every(link => link.target === '_blank' && link.rel.includes('noopener')));
 });
 
 test('search history saves submitted searches once, with a small limit', () => {

@@ -9,6 +9,8 @@ Serve the repository as a static site, for example `python3 -m http.server 8000`
 - On a small iPhone and a larger iPhone, check portrait and landscape in Safari and after Add to Home Screen. All four navigation tabs should remain reachable with no horizontal page overflow or overlap with the home indicator.
 - In Search, try a generic name, brand, drug class and condition. Check multi-word and mixed-case queries, browse by system, expand a drug result, clear the query, and load more than 30 matches.
 - Submit several searches, return to the empty search screen, and confirm recent searches are de-duplicated, tappable and persist after a reload.
+- Expand and collapse results, switch all four tabs, and open/close each modal. Confirm the spring transitions are smooth, controls stay readable, and Reduce Motion disables decorative movement.
+- Open Google and Drugs.com from a drug result. Each should load the intended external result instead of showing an empty in-app browser sheet, and returning to the app should preserve the search.
 - With the active provider's API key empty, confirm local search still works and the Add API key action opens Settings at the correct field. Save and clear a key, confirming the reminder updates immediately.
 - Open Settings, focus the last input, and scroll to Save while the keyboard is visible. Check that text inputs do not trigger unwanted zoom and that manual pinch zoom is still possible.
 - In Clinical Bank, open a topic, answer, move forward and back. The original selection and rationale should remain visible, with no extra score. A fresh session starts at 0%; generated previews do not alter a library-session score. Check topic search, Settings, and the generator entrance.
