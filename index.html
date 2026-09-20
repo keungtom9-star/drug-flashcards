@@ -672,6 +672,34 @@
             font-size: 0.95rem; line-height: 1.6; display: none;
             word-wrap: break-word; overflow-wrap: break-word;
         }
+        .drug-explain-output {
+            padding: 14px;
+            border: 1px solid rgba(88,86,214,.18);
+            border-left: 4px solid var(--ios-indigo);
+            background: linear-gradient(145deg, #f8f7ff, #eef6ff);
+            box-shadow: 0 10px 24px rgba(30,64,175,.08);
+        }
+        .drug-explain-output h2,
+        .drug-explain-output h3 {
+            margin: 14px 0 7px;
+            color: #312e81;
+            font-size: 1rem;
+            line-height: 1.35;
+        }
+        .drug-explain-output h2:first-child,
+        .drug-explain-output h3:first-child { margin-top: 0; }
+        .drug-explain-output ul { margin: 0; padding: 0; list-style: none; }
+        .drug-explain-output li {
+            position: relative;
+            margin: 6px 0;
+            padding: 9px 10px 9px 28px;
+            border: 1px solid rgba(148,163,184,.18);
+            border-radius: 10px;
+            background: rgba(255,255,255,.86);
+            color: #1f2937;
+            line-height: 1.45;
+        }
+        .drug-explain-output li::before { content: '•'; position: absolute; left: 12px; color: var(--ios-indigo); font-weight: 900; }
 
         .settings-input {
             width: 100%; padding: 12px; border: 1px solid #d1d1d6;
@@ -2200,7 +2228,9 @@ Rules:
 1. Use English only, with concise medical language.
 2. Keep all values short for fast mobile reading.
 3. "nursing" must be a single string with short bullet lines separated by \n.
-4. "system" must be exactly one of:
+4. "SideEffects" must list 2-5 clinically important common or serious effects.
+5. Never use "Not specified", "Unknown", "N/A", or an empty value.
+6. "system" must be exactly one of:
 [🍔 GI System, 🫀 Cardio, 🫁 Respiratory, 🧠 CNS / Neuro, 🦠 Infections, 🦋 Endocrine, 🤰 ObGyn / GU, 🎗️ Oncology, 🍎 Nutrition / Blood, 🦴 MSK / Bone, 👁️ Eye, 👂 ENT, 🧴 Skin, 🛡️ Immune / Vax, 💉 Anaesthesia].`;
 }
 
@@ -2345,6 +2375,24 @@ Language: ${langInstruction}.`;
         if (!raw) return "🫀 Cardio";
         return legacySystemMap[raw] || raw;
     }
+
+    const DRUG_TEXT_FALLBACKS = {
+        sideEffects: 'Check common and serious adverse effects in BNF / local drug guide.',
+        nursing: 'Verify administration and monitoring with BNF / local protocol.',
+        effect: 'Check the medicine action in BNF / local formulary.'
+    };
+
+    function isMissingDrugText(value) {
+        const normalized = String(value || '').trim().toLowerCase().replace(/[._-]+/g, ' ').replace(/\s+/g, ' ');
+        return !normalized || [
+            'not specified', 'not listed', 'not provided', 'none provided', 'unknown',
+            'n/a', 'na', 'nil', 'unavailable', 'no information'
+        ].includes(normalized);
+    }
+
+    function usefulDrugText(value, fallback) {
+        return isMissingDrugText(value) ? fallback : String(value).trim();
+    }
     const systemShortNames = Object.fromEntries(systemCategories.map(s => [s, s]));
     const systemIcons = {
         "GI System": "🍔", "Cardio": "🫀", "Respiratory": "🫁", "CNS / Neuro": "🧠", "Infections": "🦠",
@@ -2354,8 +2402,9 @@ Language: ${langInstruction}.`;
 
     function normalizeDrugData(drug) {
         drug.system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
-        drug.side_effects = drug.side_effects || drug.SideEffects || drug.sideEffects || "Not specified";
-        drug.quiz = drug.quiz || drug.effect_of_drug || drug.effect || drug.effects || drug.side_effects || drug.SideEffects || "Not specified";
+        drug.side_effects = usefulDrugText(drug.side_effects || drug.SideEffects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
+        drug.nursing = usefulDrugText(drug.nursing, DRUG_TEXT_FALLBACKS.nursing);
+        drug.quiz = usefulDrugText(drug.quiz || drug.effect_of_drug || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
         drug.__searchBlob = `${drug.name || ''} ${(drug.class || '')} ${(drug.system || '')} ${(drug.indication || '')} ${(drug.side_effects || '')} ${(drug.quiz || '')}`.toLowerCase();
         return drug;
     }
@@ -2952,10 +3001,10 @@ Language: ${langInstruction}.`;
             
             const explainId = 'explain-' + index + '-' + Math.floor(Math.random() * 1000);
             const generics = parseDrugGenerics(drug.name);
-            const sideEffectsText = drug.side_effects || drug.sideEffects || "Not listed";
+            const sideEffectsText = usefulDrugText(drug.side_effects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
             
             // Grab the effect data (handling different possible keys from your database)
-            const effectText = drug.effect_of_drug || drug.quiz || drug.effect || drug.effects || "Not specified";
+            const effectText = usefulDrugText(drug.effect_of_drug || drug.quiz || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
 
             card.innerHTML = `
                 <div class="result-header">
@@ -2977,9 +3026,9 @@ Language: ${langInstruction}.`;
                     <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto;">
                          <button type="button" class="chip" onclick="event.stopPropagation(); triggerSearchGoogle(this)">🔎 Google</button>
                          <button type="button" class="chip" onclick="event.stopPropagation(); triggerSearchDrugsCom(this)">🧴 Drugs.com</button>
-                         <button type="button" class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">🪄 Explain</button>
+                         <button type="button" class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">✨ 廣東話解釋</button>
                     </div>
-                    <div id="${explainId}" class="ai-output"></div>
+                    <div id="${explainId}" class="ai-output drug-explain-output" aria-live="polite"></div>
                 </div>
             `;
             
@@ -3045,16 +3094,70 @@ Language: ${langInstruction}.`;
         });
     }
     
+    function getCantoneseDrugExplainPrompt(drugName) {
+        return `你係香港病房臨床導師。請解釋藥物「${drugName}」。
+
+輸出規則：
+- 只可以用繁體中文廣東話書面語，唔可以寫英文句子。
+- 藥名、醫學名詞或縮寫可以保留英文，但要放喺中文解釋入面。
+- 用日常字眼，避免艱深長句；每點只講一件事。
+- 使用 Markdown，完全依照以下五個標題。
+- 每個標題最多兩點，每點最多一行。
+- 資料唔確定就叫使用者核對藥物參考，唔好作答案。
+
+## 💊 點樣起效
+## 🎯 點解會用
+## 🩺 護士要留意
+## ⚠️ 常見／嚴重副作用
+## 🚨 幾時要即刻報醫生`;
+    }
+
+    function isMostlyCantoneseExplanation(text) {
+        const value = String(text || '');
+        const hanCount = (value.match(/[\u3400-\u9fff]/g) || []).length;
+        const latinCount = (value.match(/[A-Za-z]/g) || []).length;
+        return hanCount >= 30 && hanCount >= latinCount;
+    }
+
+    async function generateCantoneseDrugExplanation(drugName) {
+        let answer = '';
+        const messages = [
+            { role: 'system', content: '所有回覆必須係清楚易明嘅繁體中文廣東話。只可保留必要藥名、醫學名詞同縮寫。' },
+            { role: 'user', content: getCantoneseDrugExplainPrompt(drugName) }
+        ];
+        await streamAIResponse(messages, (text) => { answer = text; });
+        if (isMostlyCantoneseExplanation(answer)) return answer;
+
+        let rewritten = '';
+        const rewritePrompt = `將以下內容完全改寫成繁體中文廣東話。唔可以保留英文句子，只可保留必要藥名、醫學名詞同縮寫。用五個短標題、短句同項目符號，俾新手護士一眼睇明。\n\n${answer}`;
+        await streamAIResponse([
+            { role: 'system', content: '你只可以輸出繁體中文廣東話。' },
+            { role: 'user', content: rewritePrompt }
+        ], (text) => { rewritten = text; });
+        if (isMostlyCantoneseExplanation(rewritten)) return rewritten;
+        return '## ⚠️ 暫時未能產生廣東話解釋\n- 請再試一次。\n- 用藥前請核對正式藥物參考同病房指引。';
+    }
+
     window.triggerSearchExplain = function(btn, outputId) {
         if (!requireApiKey()) return;
         const box = document.getElementById(outputId);
-        btn.innerText = "⏳";
+        if (!box) return;
+        btn.disabled = true;
+        btn.innerText = '⏳ 解釋緊…';
         box.style.display = 'block';
-        withSearchDrugSelection(btn, 'Pick a drug for explanation', (pickedName) => {
-            const prompt = `Explain ${pickedName} in English with standard medical terminology. Use short Markdown bullet points for fast mobile reading. Format: 1) MOA 2) Key Indication 3) Monitoring 4) Safety Warning. Keep each point under 12 words.`;
-            streamAIResponse([{role: "user", content: prompt}], (text) => box.innerHTML = marked.parse(text));
+        box.innerHTML = '<div style="padding:4px 0; color:#4f46e5; font-weight:700;">整理緊廣東話重點…</div>';
+        withSearchDrugSelection(btn, '揀一隻藥物解釋', async (pickedName) => {
+            try {
+                const explanation = await generateCantoneseDrugExplanation(pickedName);
+                box.innerHTML = marked.parse(explanation);
+                btn.innerText = '✅ 廣東話解釋';
+            } catch (_) {
+                box.innerHTML = marked.parse('## ⚠️ 解釋失敗\n- 請檢查網絡後再試。');
+                btn.innerText = '↻ 再試解釋';
+            } finally {
+                btn.disabled = false;
+            }
         });
-        btn.innerText = "✅";
     }
 
     function quickSearch(term) {
@@ -3129,7 +3232,10 @@ Language: ${langInstruction}.`;
 
     async function recoverAISearchPayload(rawText, query) {
         const repairPrompt = `Convert the following medication answer into strict JSON only with keys: name, class, system, indication, side_effects, nursing, effect_of_drug.
-If a value is missing, infer concise clinical text when possible (do not leave empty).
+The searched medicine is "${query}".
+If a value is missing, supply concise clinically useful text; never leave it empty.
+"side_effects" is required and must list 2-5 important common or serious adverse effects.
+Never output "Not specified", "Not listed", "Unknown", "N/A", or similar placeholders.
 Use name format Generic (Brand).
 Use system from: ${systemCategories.join(', ')}.
 Original text:
@@ -3157,7 +3263,9 @@ Rules:
 3) "name" must use this exact format: GenericName (BrandName). Example: "Paracetamol (Panadol)".
 4) "system" must be exactly one of: [🍔 GI System, 🫀 Cardio, 🫁 Respiratory, 🧠 CNS / Neuro, 🦠 Infections, 🦋 Endocrine, 🤰 ObGyn / GU, 🎗️ Oncology, 🍎 Nutrition / Blood, 🦴 MSK / Bone, 👁️ Eye, 👂 ENT, 🧴 Skin, 🛡️ Immune / Vax, 💉 Anaesthesia].
 5) "class", "indication", "side_effects", "nursing", and "effect_of_drug" should be concise.
-6) Output JSON only, no markdown.`;
+6) "side_effects" must contain 2-5 clinically important common or serious adverse effects.
+7) Never use "Not specified", "Not listed", "Unknown", "N/A", or an empty value for any field.
+8) Output JSON only, no markdown.`;
 
         try {
             let fullText = "";
@@ -3166,7 +3274,12 @@ Rules:
             if (!parsed) {
                 parsed = await recoverAISearchPayload(fullText, query);
             }
-            const drugData = extractSingleDrugPayload(parsed, query);
+            let drugData = extractSingleDrugPayload(parsed, query);
+            if (drugData && drugData.side_effects === DRUG_TEXT_FALLBACKS.sideEffects) {
+                const repaired = await recoverAISearchPayload(fullText || JSON.stringify(parsed), query);
+                const repairedDrug = extractSingleDrugPayload(repaired, query);
+                if (repairedDrug && repairedDrug.side_effects !== DRUG_TEXT_FALLBACKS.sideEffects) drugData = repairedDrug;
+            }
             if (!drugData || !drugData.name) throw new Error('AI result missing drug name');
 
             container.innerHTML = `
@@ -3229,6 +3342,8 @@ Rules:
 
     function normalizeAISearchDrugPayload(drugData) {
         if (!drugData || typeof drugData !== 'object') return null;
+        const rawSideEffects = drugData.side_effects || drugData.SideEffects || drugData.sideEffects || drugData['side effects'] || drugData['Side Effects'];
+        const rawEffect = drugData.effect_of_drug || drugData.drug_effect || drugData['effect of drug'] || drugData['Drug Effect'] || drugData.quiz || drugData.effect || drugData.effects;
         const normalized = {
             name: String(drugData.name || '').trim(),
             generic_name: String(drugData.generic_name || drugData.generic || '').trim(),
@@ -3236,10 +3351,10 @@ Rules:
             class: String(drugData.class || 'IV infusion').trim(),
             system: normalizeSystemLabel(drugData.system || '🫀 Cardio'),
             indication: String(drugData.indication || '').trim(),
-            nursing: String(drugData.nursing || '').trim(),
-            side_effects: String(drugData.side_effects || drugData.SideEffects || drugData.sideEffects || drugData['side effects'] || drugData['Side Effects'] || 'Not specified').trim(),
-            quiz: String(drugData.quiz || drugData.effect || drugData.effects || drugData.effect_of_drug || drugData.side_effects || drugData.SideEffects || 'Not specified').trim(),
-            effect_of_drug: String(drugData.effect_of_drug || drugData.drug_effect || drugData['effect of drug'] || drugData['Drug Effect'] || drugData.quiz || drugData.effect || drugData.effects || drugData.side_effects || drugData.SideEffects || drugData['side effects'] || 'Not specified').trim(),
+            nursing: usefulDrugText(drugData.nursing, DRUG_TEXT_FALLBACKS.nursing),
+            side_effects: usefulDrugText(rawSideEffects, DRUG_TEXT_FALLBACKS.sideEffects),
+            quiz: usefulDrugText(rawEffect, DRUG_TEXT_FALLBACKS.effect),
+            effect_of_drug: usefulDrugText(rawEffect, DRUG_TEXT_FALLBACKS.effect),
             hold_param: String(drugData.hold_param || '').trim(),
             admin_type: String(drugData.admin_type || 'IV').trim()
         };
@@ -3279,13 +3394,20 @@ Rules:
         if (normalized) return normalized;
         const key = String(fallbackQuery || '').trim().toLowerCase();
         if (brandFallbackProfiles[key]) return normalizeAISearchDrugPayload(brandFallbackProfiles[key]);
-        return normalizeAISearchDrugPayload({ name: String(fallbackQuery || 'Unknown drug').trim(), class: 'AI generated', indication: '', nursing: 'Not specified', side_effects: 'Not specified', effect_of_drug: 'Not specified' });
+        return normalizeAISearchDrugPayload({
+            name: String(fallbackQuery || 'Unknown drug').trim(),
+            class: 'AI generated',
+            indication: '',
+            nursing: DRUG_TEXT_FALLBACKS.nursing,
+            side_effects: DRUG_TEXT_FALLBACKS.sideEffects,
+            effect_of_drug: DRUG_TEXT_FALLBACKS.effect
+        });
     }
 
     function buildDatabaseSavePayload(drugData) {
         const normalized = normalizeAISearchDrugPayload(drugData) || drugData || {};
-        const effect = String(normalized.effect_of_drug || normalized.quiz || normalized.effect || normalized.effects || normalized.side_effects || 'Not specified').trim() || 'Not specified';
-        const sideEffects = String(normalized.side_effects || normalized.SideEffects || effect || 'Not specified').trim() || 'Not specified';
+        const effect = usefulDrugText(normalized.effect_of_drug || normalized.quiz || normalized.effect || normalized.effects, DRUG_TEXT_FALLBACKS.effect);
+        const sideEffects = usefulDrugText(normalized.side_effects || normalized.SideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
         return {
             ...normalized,
             name: String(normalized.name || '').trim(),
@@ -3296,7 +3418,7 @@ Rules:
             side_effects: sideEffects,
             nursing: String(normalized.nursing || '').trim(),
             effect_of_drug: effect,
-            quiz: String(normalized.quiz || effect || 'Not specified').trim(),
+            quiz: usefulDrugText(normalized.quiz || effect, DRUG_TEXT_FALLBACKS.effect),
             effect: effect,
             effects: effect
         };
