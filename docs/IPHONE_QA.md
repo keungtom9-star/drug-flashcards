@@ -7,7 +7,7 @@ Serve the repository as a static site, for example `python3 -m http.server 8000`
 ## Device checks before merging
 
 - On a small iPhone and a larger iPhone, check portrait and landscape in Safari and after Add to Home Screen. All four navigation tabs should remain reachable with no horizontal page overflow or overlap with the home indicator.
-- In Search, try a generic name, brand, drug class and condition. Check multi-word and mixed-case queries, browse by system, expand a drug result, clear the query, and load more than 30 matches.
+- In Search, focus the empty input with the keyboard visible. The API reminder, history, system browser and bottom tabs should move out of the way. Type a generic name, brand, drug class or condition and confirm results stay visible; the top Back button should clear the search and restore the normal screen. Also check multi-word and mixed-case queries, browse by system, expand a drug result, and load more than 30 matches.
 - Submit several searches, return to the empty search screen, and confirm recent searches are de-duplicated, tappable and persist after a reload.
 - Expand and collapse results, switch all four tabs, and open/close each modal. Confirm the spring transitions are smooth, controls stay readable, and Reduce Motion disables decorative movement.
 - Open Google and Drugs.com from a drug result. Each should load the intended external result instead of showing an empty in-app browser sheet, and returning to the app should preserve the search.
