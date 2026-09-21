@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="color-scheme" content="light">
     <title>Ward Cheatsheet Pro</title>
-    
+
+    <script>
+        // The parent app already owns the iPhone safe area. Applying it again
+        // inside this iframe creates a large empty strip above the Ward tabs.
+        if (window.parent !== window) document.documentElement.classList.add('embedded');
+    </script>
     <script src="app-ui.js" defer></script>
     <style>
         :root {
@@ -33,7 +38,12 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        html, body { height: 100dvh; }
+        html, body {
+            height: 100dvh;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: radial-gradient(circle at top, #f8fbff 0%, var(--bg-color) 60%, #edf4ff 100%);
@@ -46,6 +56,9 @@
         /* --- Header & Tabs --- */
         .sticky-header {
             position: sticky; top: 0; z-index: 1000;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
             background: rgba(var(--card-bg), 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -73,6 +86,9 @@
 
         .tabs {
             display: flex;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
             gap: 8px;
             padding: 0 10px 10px;
             overflow-x: auto;
@@ -101,13 +117,18 @@
         .container {
             display: none; /* Hidden by default */
             padding: 12px 16px 14px;
-            max-width: 1000px; margin: 0 auto;
+            width: 100%;
+            max-width: 1000px;
+            min-width: 0;
+            margin: 0 auto;
             grid-template-columns: 1fr; gap: 12px;
             height: calc(100dvh - var(--header-height));
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
         .container.active { display: grid; }
+        .container > * { min-width: 0; max-width: 100%; }
         
         @media (min-width: 768px) {
             .container.active { grid-template-columns: 1fr 1fr; }
@@ -194,7 +215,7 @@
             width: 36px; min-height: 36px; border: 0; border-radius: 10px;
             background: transparent; color: var(--text-sec); cursor: pointer;
         }
-        .lab-filter-row { display: flex; gap: 7px; margin-top: 9px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .lab-filter-row { display: flex; width: 100%; max-width: 100%; min-width: 0; gap: 7px; margin-top: 9px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .lab-filter-row::-webkit-scrollbar { display: none; }
         .lab-filter {
             flex: 0 0 auto; min-height: 40px; padding: 8px 12px;
@@ -218,6 +239,7 @@
             cursor: pointer; list-style: none; user-select: none;
         }
         .lab-item summary::-webkit-details-marker { display: none; }
+        .lab-item summary > :first-child { min-width: 0; }
         .lab-name { display: block; color: #0f172a; font-size: .91rem; font-weight: 800; line-height: 1.25; }
         .lab-category { display: block; margin-top: 3px; color: #64748b; font-size: .64rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
         .lab-range { max-width: 145px; color: #0f766e; font-size: .73rem; font-weight: 800; line-height: 1.3; text-align: right; font-variant-numeric: tabular-nums; }
@@ -454,7 +476,7 @@
             color: var(--text-sec);
             cursor: pointer;
         }
-        .imaging-filter-row { display: flex; gap: 7px; margin-top: 10px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; }
+        .imaging-filter-row { display: flex; width: 100%; max-width: 100%; min-width: 0; gap: 7px; margin-top: 10px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; }
         .imaging-filter-row::-webkit-scrollbar { display: none; }
         .imaging-filter {
             flex: 0 0 auto;
@@ -493,8 +515,9 @@
             user-select: none;
         }
         .imaging-card summary::-webkit-details-marker { display: none; }
+        .imaging-card summary > :nth-child(2) { min-width: 0; }
         .imaging-card-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: #eff6ff; font-size: 1.25rem; }
-        .imaging-card-title { display: block; font-size: .97rem; font-weight: 800; line-height: 1.25; color: #0f172a; }
+        .imaging-card-title { display: block; overflow-wrap: anywhere; font-size: .97rem; font-weight: 800; line-height: 1.25; color: #0f172a; }
         .imaging-card-category { display: block; margin-top: 3px; color: #64748b; font-size: .68rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
         .imaging-card-chevron { color: #64748b; font-size: 1.15rem; transform: rotate(0); transition: transform .22s ease; }
         .imaging-card[open] .imaging-card-chevron { transform: rotate(180deg); }
@@ -579,7 +602,15 @@
             .lab-hero { padding: 14px; }
             .lab-hero h1 { font-size: 1.16rem; }
             .lab-toolbar { padding: 10px; }
-            .lab-range { max-width: 125px; }
+            .lab-item summary { grid-template-columns: minmax(0, 1fr) 20px; }
+            .lab-range {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                max-width: none;
+                text-align: left;
+                overflow-wrap: anywhere;
+            }
+            .lab-chevron { grid-column: 2; grid-row: 1; }
             .gas-steps { grid-template-columns: 1fr 1fr; }
             .gas-step:last-child { grid-column: 1 / -1; }
             .gas-compare { font-size: .7rem; }
@@ -595,6 +626,8 @@
         body { display: flex; flex-direction: column; height: var(--app-height, 100dvh); }
         .sticky-header { flex: 0 0 auto; }
         .container { flex: 1 1 0; min-height: 0; height: auto; width: 100%; box-sizing: border-box; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+        html.embedded .sticky-header { padding-top: 4px; }
+        html.embedded .container { max-width: 100%; padding-bottom: 16px; }
         .tab-btn, .intake-btn, .intake-chip { min-height: 44px; }
         .tab-btn { font-size: .85rem; }
         button {
