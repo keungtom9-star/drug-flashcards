@@ -31,7 +31,7 @@ function browserContext(records = {}) {
         createElement: () => element(), createDocumentFragment: () => element(),
     };
     const context = vm.createContext({
-        document, navigator: { userAgent: 'test' }, console, URL, Response,
+        document, navigator: { userAgent: 'test' }, console, URL, Response, TextDecoder,
         localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
         addEventListener(name, callback) { (events[name] ||= []).push(callback); }, innerHeight: 844,
         matchMedia: () => ({ matches: false, addEventListener() {} }),
@@ -559,18 +559,58 @@ test('image search results also require an explicit Add action', async () => {
 test('drug Explain enforces readable Cantonese and retries an English response', async () => {
     const { context } = loadMain({ ds_key: 'test-key' });
     const prompts = [];
+    const liveUpdates = [];
     context.streamAIResponse = async (messages, onUpdate) => {
         prompts.push(messages);
         onUpdate(prompts.length === 1
             ? 'This medicine lowers blood glucose and requires renal monitoring.'
             : '## 💊 點樣起效\n- 幫身體減少製造血糖。\n## 🎯 點解會用\n- 主要用嚟控制糖尿病。\n## 🩺 護士要留意\n- 留意腎功能同食慾變化。\n## ⚠️ 常見／嚴重副作用\n- 常見肚瀉、作嘔同肚痛。\n## 🚨 幾時要即刻報醫生\n- 呼吸急促或極度虛弱要即報。');
     };
-    const answer = await context.generateCantoneseDrugExplanation('Metformin');
+    const answer = await context.generateCantoneseDrugExplanation('Metformin', text => liveUpdates.push(text));
     assert.equal(prompts.length, 2);
     assert.match(prompts[0][1].content, /只可以用繁體中文廣東話/);
     assert.equal(context.isMostlyCantoneseExplanation(answer), true);
     assert.match(answer, /護士要留意/);
     assert.doesNotMatch(answer, /This medicine/);
+    assert.ok(liveUpdates.length > 0);
+    assert.ok(liveUpdates.every(text => !text.includes('This medicine')));
+    assert.match(liveUpdates.at(-1), /護士要留意/);
+});
+
+test('AI text streams across split server-sent event chunks', async () => {
+    const { context } = loadMain({ ds_key: 'test-key' });
+    const encoder = new TextEncoder();
+    const payload = 'data: {"choices":[{"delta":{"content":"廣東話"}}]}\n\ndata: {"choices":[{"delta":{"content":"逐段出"}}]}\n\ndata: [DONE]\n\n';
+    context.fetch = async () => new Response(new ReadableStream({
+        start(controller) {
+            controller.enqueue(encoder.encode(payload.slice(0, 19)));
+            controller.enqueue(encoder.encode(payload.slice(19, 57)));
+            controller.enqueue(encoder.encode(payload.slice(57)));
+            controller.close();
+        }
+    }), { status: 200 });
+    const updates = [];
+    await context.streamAIResponse([], text => updates.push(text));
+    assert.deepEqual(updates, ['廣東話', '廣東話逐段出']);
+});
+
+test('AI drug search exposes partial text before the editable result', async () => {
+    const { context, document } = loadMain({ ds_key: 'test-key' });
+    const streamedFrames = [];
+    const finalJson = JSON.stringify({
+        name: 'Streammed (Live)', class: 'Example class', system: '🫀 Cardio', indication: 'Testing',
+        side_effects: 'Nausea, dizziness', nursing: 'Monitor response', effect_of_drug: 'Example action'
+    });
+    context.streamAIResponse = async (_messages, onUpdate) => {
+        onUpdate('{"name":"Stream');
+        streamedFrames.push(document.getElementById('ai-search-stream').textContent);
+        onUpdate(finalJson);
+        streamedFrames.push(document.getElementById('ai-search-stream').textContent);
+    };
+    await context.triggerAISearch('Streammed');
+    assert.equal(streamedFrames[0], '{"name":"Stream');
+    assert.equal(streamedFrames[1], finalJson);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
 });
 
 test('search history saves submitted searches once, with a small limit', () => {
