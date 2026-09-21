@@ -152,6 +152,93 @@
         .val-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
         .unit { font-size: 0.7rem; color: var(--text-sec); font-weight: 400; margin-left: 2px; }
 
+        /* --- Searchable laboratory / blood-gas reference --- */
+        #labs.container { align-content: start; }
+        .lab-hero, .lab-toolbar, .lab-guide, .lab-sources { grid-column: 1 / -1; }
+        .lab-hero {
+            color: white;
+            border: 0;
+            background:
+                radial-gradient(circle at 92% 0%, rgba(45,212,191,.42), transparent 38%),
+                linear-gradient(135deg, #0f172a 0%, #164e63 58%, #0f766e 100%);
+            box-shadow: 0 18px 38px rgba(15,23,42,.20);
+        }
+        .lab-hero h1 { margin: 4px 0 6px; font-size: 1.35rem; letter-spacing: -.025em; }
+        .lab-hero p { margin: 0; color: rgba(255,255,255,.84); font-size: .82rem; line-height: 1.5; }
+        .lab-warning {
+            margin-top: 11px;
+            padding: 9px 11px;
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 12px;
+            background: rgba(255,255,255,.1);
+            font-size: .74rem;
+            line-height: 1.45;
+        }
+        .lab-toolbar { padding: 11px; }
+        .lab-search-row { position: relative; }
+        .lab-search {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 45px 12px 42px;
+            border: 1px solid rgba(148,163,184,.28);
+            border-radius: 14px;
+            background: #f8fafc;
+            color: var(--text-main);
+            font: inherit;
+            outline: none;
+        }
+        .lab-search:focus { border-color: #0f766e; background: white; box-shadow: 0 0 0 4px rgba(13,148,136,.12); }
+        .lab-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        .lab-clear {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+            width: 36px; min-height: 36px; border: 0; border-radius: 10px;
+            background: transparent; color: var(--text-sec); cursor: pointer;
+        }
+        .lab-filter-row { display: flex; gap: 7px; margin-top: 9px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .lab-filter-row::-webkit-scrollbar { display: none; }
+        .lab-filter {
+            flex: 0 0 auto; min-height: 40px; padding: 8px 12px;
+            border: 1px solid rgba(148,163,184,.25); border-radius: 999px;
+            background: white; color: #475569; font-weight: 750; cursor: pointer;
+        }
+        .lab-filter.active { border-color: transparent; color: white; background: linear-gradient(135deg, #0f766e, #0891b2); box-shadow: 0 8px 18px rgba(13,148,136,.22); }
+        .lab-result-meta { margin-top: 6px; color: var(--text-sec); font-size: .72rem; }
+        .lab-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .lab-item {
+            overflow: hidden;
+            border: 1px solid rgba(148,163,184,.22);
+            border-radius: 15px;
+            background: rgba(255,255,255,.97);
+            box-shadow: 0 8px 22px rgba(15,23,42,.06);
+        }
+        .lab-item[open] { border-color: rgba(13,148,136,.34); box-shadow: 0 13px 28px rgba(13,148,136,.12); }
+        .lab-item summary {
+            display: grid; grid-template-columns: minmax(0,1fr) auto 20px; gap: 8px;
+            align-items: center; min-height: 72px; padding: 11px 12px;
+            cursor: pointer; list-style: none; user-select: none;
+        }
+        .lab-item summary::-webkit-details-marker { display: none; }
+        .lab-name { display: block; color: #0f172a; font-size: .91rem; font-weight: 800; line-height: 1.25; }
+        .lab-category { display: block; margin-top: 3px; color: #64748b; font-size: .64rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+        .lab-range { max-width: 145px; color: #0f766e; font-size: .73rem; font-weight: 800; line-height: 1.3; text-align: right; font-variant-numeric: tabular-nums; }
+        .lab-chevron { color: #64748b; transition: transform .2s ease; }
+        .lab-item[open] .lab-chevron { transform: rotate(180deg); }
+        .lab-body { padding: 0 12px 12px; animation: imagingReveal .22s ease-out; }
+        .lab-block { padding: 9px 0; border-top: 1px solid #e2e8f0; }
+        .lab-label { display: block; margin-bottom: 3px; color: #64748b; font-size: .65rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+        .lab-copy { margin: 0; color: #334155; font-size: .77rem; line-height: 1.48; }
+        .lab-watch { margin-top: 3px; padding: 9px 10px; border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; color: #9a3412; }
+        .lab-empty { grid-column: 1 / -1; padding: 28px 18px; text-align: center; color: var(--text-sec); }
+        .gas-steps { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 7px; }
+        .gas-step { padding: 9px; border-radius: 11px; background: #ecfeff; color: #164e63; font-size: .72rem; line-height: 1.4; }
+        .gas-step strong { display: block; margin-bottom: 2px; color: #0f766e; }
+        .gas-compare { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: .74rem; }
+        .gas-compare th, .gas-compare td { padding: 8px 7px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+        .gas-compare th { color: #475569; font-size: .66rem; text-transform: uppercase; letter-spacing: .04em; }
+        .lab-source-links { display: flex; gap: 8px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; }
+        .lab-source-links::-webkit-scrollbar { display: none; }
+        .lab-source-link { flex: 0 0 auto; min-height: 40px; display: inline-flex; align-items: center; padding: 8px 11px; border: 1px solid rgba(13,148,136,.18); border-radius: 11px; background: #ecfeff; color: #0f766e; font-size: .73rem; font-weight: 750; text-decoration: none; }
+
         /* --- ECG Specific Styles --- */
         .ecg-grid-box {
             background: color-mix(in srgb, var(--red) 8%, var(--card-bg));
@@ -418,9 +505,19 @@
         .imaging-red-flag { margin-top: 4px; padding: 10px 11px; border: 1px solid #fecaca; border-radius: 11px; background: #fff1f2; color: #9f1239; }
         .imaging-empty { grid-column: 1 / -1; padding: 28px 18px; text-align: center; color: var(--text-sec); }
         .imaging-sources { grid-column: 1 / -1; }
-        .imaging-source-links { display: flex; flex-wrap: wrap; gap: 8px; }
+        .imaging-source-links {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 2px 1px 5px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .imaging-source-links::-webkit-scrollbar { display: none; }
         .imaging-source-link {
             display: inline-flex;
+            flex: 0 0 auto;
             align-items: center;
             min-height: 40px;
             padding: 8px 11px;
@@ -478,6 +575,14 @@
             .imaging-title { font-size: 1.18rem; }
             .imaging-toolbar { padding: 10px; }
             .imaging-card summary { min-height: 72px; padding: 11px; }
+            .lab-grid { grid-template-columns: 1fr; gap: 8px; }
+            .lab-hero { padding: 14px; }
+            .lab-hero h1 { font-size: 1.16rem; }
+            .lab-toolbar { padding: 10px; }
+            .lab-range { max-width: 125px; }
+            .gas-steps { grid-template-columns: 1fr 1fr; }
+            .gas-step:last-child { grid-column: 1 / -1; }
+            .gas-compare { font-size: .7rem; }
         }
 
         /* --- Utils --- */
@@ -567,64 +672,67 @@
 
     <!-- ================= LABS TAB ================= -->
     <div id="labs" class="container active">
-        
-        <div class="card">
-            <div class="card-header"><span style="color:var(--red)">🩸</span> Haematology</div>
-            <table class="val-table">
-                <tr><td>Hb (Male) <span class="unit">(oxygen-carrying capacity)</span></td><td class="val-val">13.0 - 18.0 <span class="unit">g/dL</span></td></tr>
-                <tr><td>Hb (Female) <span class="unit">(oxygen-carrying capacity)</span></td><td class="val-val">11.5 - 16.5 <span class="unit">g/dL</span></td></tr>
-                <tr><td>WBC <span class="unit">(infection / inflammation)</span></td><td class="val-val">4.0 - 11.0 <span class="unit">x10⁹</span></td></tr>
-                <tr><td>Platelets <span class="unit">(clotting cells)</span></td><td class="val-val">150 - 450 <span class="unit">x10⁹</span></td></tr>
-                <tr><td>INR <span class="unit">(extrinsic coagulation)</span></td><td class="val-val">0.8 - 1.2</td></tr>
-                <tr><td>APTT <span class="unit">(intrinsic coagulation)</span></td><td class="val-val">24 - 36 <span class="unit">sec</span></td></tr>
-            </table>
-        </div>
+        <section class="card lab-hero" aria-labelledby="lab-title">
+            <div class="imaging-eyebrow">Medical ward quick reference</div>
+            <h1 id="lab-title">Laboratory values + ABG / VBG</h1>
+            <p>Search a test, tap the result card, then connect the value with the patient, previous results and the clinical question.</p>
+            <div class="lab-warning"><strong>Use the local result screen first:</strong> adult ranges below are approximate learning aids. Assay, age, sex, pregnancy, altitude and hospital method can change the interval. Never delay escalation because a value is “near normal”; trends and the patient's condition matter more.</div>
+        </section>
 
-        <div class="card">
-            <div class="card-header"><span style="color:var(--blue)">🧪</span> Renal & Lytes</div>
-            <table class="val-table">
-                <tr><td>Sodium (Na) <span class="unit">(water balance)</span></td><td class="val-val">135 - 145 <span class="unit">mmol/L</span></td></tr>
-                <tr><td>Potassium (K) <span class="unit">(cardiac / muscle conduction)</span></td><td class="val-val">3.5 - 5.0 <span class="unit">mmol/L</span></td></tr>
-                <tr><td>Urea <span class="unit">(renal perfusion / protein metabolism)</span></td><td class="val-val">2.5 - 7.8 <span class="unit">mmol/L</span></td></tr>
-                <tr><td>Creatinine <span class="unit">(kidney filtration)</span></td><td class="val-val">45 - 120 <span class="unit">µmol/L</span></td></tr>
-                <tr><td>Calcium <span class="unit">(muscle, nerve, bone)</span></td><td class="val-val">8.5 - 10.5 <span class="unit">mg/dL</span></td></tr>
-                <tr><td>Magnesium <span class="unit">(arrhythmia risk)</span></td><td class="val-val">0.7 - 1.0 <span class="unit">mmol/L</span></td></tr>
-            </table>
-        </div>
+        <section class="card lab-toolbar" aria-label="Search laboratory reference">
+            <div class="lab-search-row">
+                <span class="lab-search-icon" aria-hidden="true">⌕</span>
+                <input id="lab-search" class="lab-search" type="search" inputmode="search" autocomplete="off" placeholder="Search sodium, INR, troponin, pH, lactate…" aria-label="Search laboratory values" oninput="filterLabReference()">
+                <button id="lab-clear" class="lab-clear" type="button" aria-label="Clear laboratory search" onclick="clearLabSearch()" hidden>✕</button>
+            </div>
+            <div class="lab-filter-row" role="group" aria-label="Laboratory category">
+                <button class="lab-filter active" type="button" onclick="setLabCategory('All', this)">All</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('FBC / Coag', this)">FBC / Coag</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('Renal / Lytes', this)">Renal / Lytes</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('Liver / GI', this)">Liver / GI</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('Infection', this)">Infection</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('Cardiac', this)">Cardiac</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('Endocrine', this)">Endocrine</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('Urine', this)">Urine</button>
+                <button class="lab-filter" type="button" onclick="setLabCategory('ABG / VBG', this)">ABG / VBG</button>
+            </div>
+            <div class="lab-result-meta" id="lab-result-meta" aria-live="polite">Loading reference…</div>
+        </section>
 
-        <div class="card">
-            <div class="card-header"><span style="color:var(--orange)">🧬</span> Liver Function</div>
-            <table class="val-table">
-                <tr><td>ALT <span class="unit">(hepatocellular injury)</span></td><td class="val-val">&lt; 50 <span class="unit">U/L</span></td></tr>
-                <tr><td>AST <span class="unit">(liver / muscle injury)</span></td><td class="val-val">&lt; 50 <span class="unit">U/L</span></td></tr>
-                <tr><td>ALP <span class="unit">(cholestasis / bone)</span></td><td class="val-val">30 - 120 <span class="unit">U/L</span></td></tr>
-                <tr><td>Bilirubin (T) <span class="unit">(jaundice marker)</span></td><td class="val-val">&lt; 20 <span class="unit">µmol/L</span></td></tr>
-                <tr><td>Albumin <span class="unit">(synthetic function / nutrition)</span></td><td class="val-val">35 - 50 <span class="unit">g/L</span></td></tr>
-                <tr><td>Protein <span class="unit">(total serum protein)</span></td><td class="val-val">60 - 80 <span class="unit">g/L</span></td></tr>
-            </table>
-        </div>
+        <div class="lab-grid" id="lab-grid"></div>
 
-        <div class="card">
-            <div class="card-header"><span style="color:var(--purple)">🔬</span> Endo / Inflam</div>
-            <table class="val-table">
-                <tr><td>TSH <span class="unit">(thyroid drive)</span></td><td class="val-val">0.4 - 4.0 <span class="unit">mIU/L</span></td></tr>
-                <tr><td>fT4 <span class="unit">(active thyroid hormone)</span></td><td class="val-val">9.0 - 19.0 <span class="unit">pmol/L</span></td></tr>
-                <tr><td>HbA1c <span class="unit">(3-month glucose control)</span></td><td class="val-val">&lt; 6.5 <span class="unit">%</span></td></tr>
-                <tr><td>CRP <span class="unit">(acute inflammation)</span></td><td class="val-val">&lt; 5.0 <span class="unit">mg/L</span></td></tr>
-                <tr><td>ESR <span class="unit">(chronic inflammation)</span></td><td class="val-val">&lt; 20 <span class="unit">mm/hr</span></td></tr>
-                <tr><td>Chol (T) <span class="unit">(cardiovascular risk)</span></td><td class="val-val">&lt; 5.2 <span class="unit">mmol/L</span></td></tr>
+        <section class="card lab-guide" aria-labelledby="gas-guide-title">
+            <div class="card-header" id="gas-guide-title">🫁 ABG / VBG: read in five steps</div>
+            <div class="gas-steps">
+                <div class="gas-step"><strong>1 · pH</strong>&lt;7.35 acidemia; &gt;7.45 alkalemia.</div>
+                <div class="gas-step"><strong>2 · CO₂</strong>Respiratory component: CO₂ moves opposite to pH.</div>
+                <div class="gas-step"><strong>3 · HCO₃⁻</strong>Metabolic component: bicarbonate moves with pH.</div>
+                <div class="gas-step"><strong>4 · Compensation</strong>Check whether the other component fits; mismatch suggests a mixed disorder.</div>
+                <div class="gas-step"><strong>5 · Oxygen + lactate</strong>Use ABG for PaO₂; relate lactate to perfusion and repeat the clinical assessment.</div>
+            </div>
+            <table class="gas-compare">
+                <thead><tr><th>Question</th><th>ABG</th><th>VBG</th></tr></thead>
+                <tbody>
+                    <tr><td>Acid–base screen</td><td>Reference standard; gives pH, PaCO₂ and HCO₃⁻.</td><td>Often suitable for pH / bicarbonate trending when the patient is perfusing and the result fits clinically.</td></tr>
+                    <tr><td>Ventilation / CO₂</td><td>Use when an accurate PaCO₂ is required, especially respiratory failure or NIV decisions.</td><td>PvCO₂ may screen for hypercapnia but is not an exact substitute for PaCO₂; do not apply a fixed correction.</td></tr>
+                    <tr><td>Oxygenation</td><td>PaO₂ and calculated oxygen indices require arterial blood and the recorded FiO₂.</td><td><strong>Never use PvO₂ to judge oxygenation.</strong> Use SpO₂ and obtain ABG when accurate arterial oxygenation is needed.</td></tr>
+                    <tr><td>When to prefer ABG</td><td colspan="2">Severe respiratory distress, suspected hypercapnic failure, shock / poor peripheral perfusion, unreliable SpO₂, NIV / ventilator assessment, or a VBG that does not fit the patient.</td></tr>
+                </tbody>
             </table>
-        </div>
-        
-        <div class="card full-width">
-            <div class="card-header"><span style="color:var(--red)">🫀</span> Cardiac Markers</div>
-            <table class="val-table">
-                <tr><td>Troponin I (hs-cTnI) <span class="unit">(myocardial injury)</span></td><td class="val-val">&lt; 0.04 <span class="unit">ng/mL</span></td></tr>
-                <tr><td>Troponin T (hs-cTnT) <span class="unit">(myocardial injury)</span></td><td class="val-val">&lt; 0.014 <span class="unit">ng/mL</span></td></tr>
-                <tr><td>CK-MB <span class="unit">(cardiac muscle enzyme)</span></td><td class="val-val">&lt; 5 <span class="unit">ng/mL</span> <span class="unit">(or &lt; 6% total CK)</span></td></tr>
-                <tr><td>Total CK <span class="unit">(overall muscle injury)</span></td><td class="val-val">M: 40-320 / F: 25-200 <span class="unit">U/L</span></td></tr>
-            </table>
-        </div>
+            <p class="lab-copy" style="margin-top:9px;"><strong>Mixed-disorder clue:</strong> in metabolic acidosis, expected PaCO₂ ≈ 1.5 × HCO₃⁻ + 8 (±2 mmHg). A measured PaCO₂ outside that range suggests an additional respiratory disorder. Use the treating team's interpretation and local protocol.</p>
+        </section>
+
+        <section class="card lab-sources">
+            <div class="card-header">Official guidance</div>
+            <p class="lab-copy" style="margin-bottom:9px;">Reference intervals come from the reporting laboratory. These links support the clinical principles; they do not replace local critical-value and escalation policies.</p>
+            <div class="lab-source-links">
+                <a class="lab-source-link" href="https://kdigo.org/guidelines/acute-kidney-injury/" target="_blank" rel="noopener noreferrer">KDIGO AKI ↗</a>
+                <a class="lab-source-link" href="https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Acute-Coronary-Syndromes-ACS-Guidelines" target="_blank" rel="noopener noreferrer">ESC ACS / troponin ↗</a>
+                <a class="lab-source-link" href="https://www.diabetes.org.uk/for-professionals/improving-care/clinical-guidance/joint-british-diabetes-societies-jbds-inpatient-care-group" target="_blank" rel="noopener noreferrer">JBDS inpatient diabetes ↗</a>
+                <a class="lab-source-link" href="https://sccm.org/clinical-resources/guidelines/guidelines/surviving-sepsis-campaign-international-guidelines-for-management-of-sepsis-and-septic-shock-2026" target="_blank" rel="noopener noreferrer">SCCM sepsis 2026 ↗</a>
+                <a class="lab-source-link" href="https://www.hematology.org/education/patients/blood-basics" target="_blank" rel="noopener noreferrer">ASH blood basics ↗</a>
+            </div>
+        </section>
 
     </div>
 
@@ -1684,7 +1792,7 @@
             <div class="imaging-eyebrow">Ward quick reference</div>
             <h1 class="imaging-title" id="imaging-title">Radiology / Echo</h1>
             <p class="imaging-subtitle">Search common investigation names or report wording, then tap a card for a practical interpretation and bedside actions.</p>
-            <div class="imaging-safety-note"><strong>Report first:</strong> this is an education and handover aid, not a diagnosis. Always use the signed radiology / echo report, the patient's condition, medical orders and local protocol. Escalate a critically unwell patient immediately.</div>
+            <div class="imaging-safety-note"><strong>Report first:</strong> this is an education and handover aid, not a diagnosis. Read in this order: <strong>Impression → new / changed finding → urgent wording → documented plan.</strong> Always use the signed report, the patient's condition, medical orders and local protocol. Escalate a critically unwell patient immediately.</div>
         </section>
 
         <section class="card imaging-toolbar" aria-label="Search radiology and echo reference">
@@ -1698,7 +1806,10 @@
                 <button class="imaging-filter" type="button" data-imaging-category="X-ray" onclick="setImagingCategory('X-ray', this)">X-ray</button>
                 <button class="imaging-filter" type="button" data-imaging-category="Ultrasound" onclick="setImagingCategory('Ultrasound', this)">USG / Doppler</button>
                 <button class="imaging-filter" type="button" data-imaging-category="CT" onclick="setImagingCategory('CT', this)">CT</button>
+                <button class="imaging-filter" type="button" data-imaging-category="MRI" onclick="setImagingCategory('MRI', this)">MRI</button>
                 <button class="imaging-filter" type="button" data-imaging-category="Echo" onclick="setImagingCategory('Echo', this)">Echo</button>
+                <button class="imaging-filter" type="button" data-imaging-category="Fluoroscopy" onclick="setImagingCategory('Fluoroscopy', this)">Fluoro</button>
+                <button class="imaging-filter" type="button" data-imaging-category="Nuclear" onclick="setImagingCategory('Nuclear', this)">Nuclear</button>
                 <button class="imaging-filter" type="button" data-imaging-category="Safety" onclick="setImagingCategory('Safety', this)">Safety</button>
             </div>
             <div class="imaging-result-meta" id="imaging-result-meta" aria-live="polite">Loading reference…</div>
@@ -1708,13 +1819,22 @@
 
         <section class="card imaging-sources">
             <div class="card-header">Official references & safety</div>
-            <p class="imaging-copy" style="margin-bottom:10px;">Investigation choice and interpretation belong to the treating team and reporting specialist. These links provide patient-facing or professional guidance from ACR / RSNA and ASE.</p>
+            <p class="imaging-copy" style="margin-bottom:10px;">Investigation choice and interpretation belong to the treating team and reporting specialist. These links provide patient-facing or professional guidance from ACR / RSNA, AHA and ASE.</p>
             <div class="imaging-source-links">
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/chestrad" target="_blank" rel="noopener noreferrer">Chest X-ray ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/bonerad" target="_blank" rel="noopener noreferrer">Bone X-ray ↗</a>
                 <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/abdominus" target="_blank" rel="noopener noreferrer">Abdominal USG ↗</a>
                 <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/abdominrad" target="_blank" rel="noopener noreferrer">AXR / KUB ↗</a>
                 <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/headct" target="_blank" rel="noopener noreferrer">CT brain ↗</a>
                 <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/chestct" target="_blank" rel="noopener noreferrer">CT thorax ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/angioct" target="_blank" rel="noopener noreferrer">CT angiography ↗</a>
                 <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/venousus" target="_blank" rel="noopener noreferrer">Venous Doppler ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/us-carotid" target="_blank" rel="noopener noreferrer">Carotid Doppler ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/mri-brain" target="_blank" rel="noopener noreferrer">Brain MRI ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/spinemr" target="_blank" rel="noopener noreferrer">Spine MRI ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/modbariumswallow" target="_blank" rel="noopener noreferrer">VFSS ↗</a>
+                <a class="imaging-source-link" href="https://www.radiologyinfo.org/en/info/pulmonary-embolism" target="_blank" rel="noopener noreferrer">V/Q scan / PE ↗</a>
+                <a class="imaging-source-link" href="https://www.heart.org/en/health-topics/heart-attack/diagnosing-a-heart-attack/transesophageal-echocardiography" target="_blank" rel="noopener noreferrer">TEE ↗</a>
                 <a class="imaging-source-link" href="https://www.acr.org/Clinical-Resources/Clinical-Tools-and-Reference/Contrast-Manual" target="_blank" rel="noopener noreferrer">ACR contrast manual ↗</a>
                 <a class="imaging-source-link" href="https://www.asecho.org/guidelines-search/" target="_blank" rel="noopener noreferrer">ASE echo guidelines ↗</a>
             </div>
@@ -1802,9 +1922,511 @@
         const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
         if(activeBtn) activeBtn.classList.add('active');
 
+        if (tabId === 'labs') renderLabReference();
         if (tabId === 'imaging') renderImagingReference();
         if (tabId === 'intake') intakeInit();
         window.scrollTo(0,0);
+    }
+
+    const labReference = [
+        {
+            name: 'Haemoglobin (Hb)', category: 'FBC / Coag', range: 'M ~130–180 · F ~115–165 g/L',
+            keywords: 'hemoglobin anaemia anemia bleeding oxygen transfusion polycythaemia',
+            use: 'Measures the oxygen-carrying red-cell protein. Use it to assess anaemia, bleeding, haemoconcentration and response to transfusion or treatment.',
+            meaning: 'Low Hb may reflect blood loss, iron / B12 / folate deficiency, renal disease, haemolysis or marrow disease. High Hb may reflect dehydration, chronic hypoxia or polycythaemia. The speed of change and symptoms matter more than one number.',
+            watch: 'Escalate a rapid fall, active bleeding, chest pain, syncope, dyspnoea, hypotension or poor perfusion. Transfusion decisions use symptoms, comorbidity and the prescribed threshold—not Hb alone.'
+        },
+        {
+            name: 'White cell count (WBC)', category: 'FBC / Coag', range: '~4.0–11.0 ×10⁹/L',
+            keywords: 'white blood cell infection inflammation leukocytosis leukopenia sepsis steroid marrow',
+            use: 'Screens the overall white-cell response to infection, inflammation, stress, medicines and marrow disease.',
+            meaning: 'High WBC is non-specific and can occur with infection, steroids, stress or malignancy. Low WBC can occur with viral illness, chemotherapy, medicines or marrow failure. Always read the differential count.',
+            watch: 'Escalate suspected infection despite a normal WBC. Fever or deterioration with leucopenia / neutropenia can be time critical.'
+        },
+        {
+            name: 'Neutrophils / ANC', category: 'FBC / Coag', range: '~2.0–7.5 ×10⁹/L',
+            keywords: 'anc absolute neutrophil count neutropenia febrile chemotherapy infection sepsis',
+            use: 'Estimates antibacterial innate defence. ANC is more useful than total WBC when assessing neutropenia and infection risk.',
+            meaning: 'Neutropenia is commonly ANC <1.5 ×10⁹/L and severe below 0.5, but local definitions apply. A raised neutrophil count can reflect bacterial infection, steroids, stress or inflammation.',
+            watch: 'Fever or sepsis features with neutropenia require immediate febrile-neutropenia escalation and cultures / antibiotics under the local pathway. Do not wait for the next count.'
+        },
+        {
+            name: 'Lymphocytes', category: 'FBC / Coag', range: '~1.0–4.0 ×10⁹/L',
+            keywords: 'lymphocyte viral infection immunosuppression lymphoma lymphopenia lymphocytosis',
+            use: 'Supports assessment of viral illness, immune status and selected haematological disorders.',
+            meaning: 'Lymphocytosis may accompany viral infection or lymphoproliferative disease. Lymphopenia may occur with acute illness, steroids, HIV, chemotherapy or other immunosuppression.',
+            watch: 'Interpret with symptoms, trend and blood film. Escalate severe or unexplained abnormalities, recurrent infection, lymphadenopathy or systemic deterioration.'
+        },
+        {
+            name: 'Platelets', category: 'FBC / Coag', range: '~150–450 ×10⁹/L',
+            keywords: 'platelet thrombocytopenia thrombocytosis bleeding clot hit dic marrow',
+            use: 'Assesses primary haemostasis and helps estimate bleeding / thrombosis risk before procedures or antithrombotic treatment.',
+            meaning: 'Low platelets may result from sepsis / DIC, medicines, immune destruction, liver disease, dilution or marrow failure. High platelets may be reactive or clonal. A clotted sample can cause a falsely low result.',
+            watch: 'Escalate active bleeding, a rapid fall, neurological symptoms or suspected HIT / DIC. Check the local procedure and transfusion thresholds.'
+        },
+        {
+            name: 'Mean cell volume (MCV)', category: 'FBC / Coag', range: '~80–100 fL',
+            keywords: 'mcv microcytic macrocytic anaemia iron b12 folate alcohol',
+            use: 'Classifies anaemia by average red-cell size and guides the next tests.',
+            meaning: 'Low MCV suggests iron deficiency or thalassaemia among other causes. High MCV may reflect B12 / folate deficiency, alcohol, liver disease, hypothyroidism, reticulocytosis or medicines. A normal MCV does not exclude mixed deficiency.',
+            watch: 'Review Hb, RDW, reticulocytes, ferritin / iron profile, B12 / folate and blood film rather than acting on MCV alone.'
+        },
+        {
+            name: 'Reticulocyte count', category: 'FBC / Coag', range: '~0.5–2.5% (lab-specific)',
+            keywords: 'reticulocyte marrow response haemolysis bleeding anaemia production',
+            use: 'Shows whether bone marrow is responding to anaemia by releasing young red cells.',
+            meaning: 'An appropriately high count supports blood loss or haemolysis; an inappropriately low count suggests under-production. The absolute count or corrected reticulocyte index is more useful in significant anaemia.',
+            watch: 'Interpret with Hb trend, bilirubin, LDH, haptoglobin and film. Escalate suspected brisk haemolysis, ongoing bleeding or marrow failure.'
+        },
+        {
+            name: 'PT / INR', category: 'FBC / Coag', range: 'INR ~0.8–1.2 if not anticoagulated',
+            keywords: 'pt prothrombin inr warfarin liver vitamin k coagulation bleeding',
+            use: 'Assesses the extrinsic / common coagulation pathway; INR standardises PT mainly for warfarin monitoring.',
+            meaning: 'A raised INR may reflect warfarin effect, liver dysfunction, vitamin-K deficiency, DIC or factor deficiency. The therapeutic INR target depends on the indication; INR is not used to monitor DOAC effect reliably.',
+            watch: 'Escalate active bleeding, head injury, a very high or rapidly rising INR, or an urgent procedure. Follow the prescribed reversal and warfarin protocol.'
+        },
+        {
+            name: 'aPTT', category: 'FBC / Coag', range: '~24–36 s (reagent-specific)',
+            keywords: 'aptt heparin intrinsic pathway coagulation bleeding lupus anticoagulant factor',
+            use: 'Assesses intrinsic / common coagulation pathways and may monitor unfractionated heparin when the local protocol uses aPTT.',
+            meaning: 'Prolongation can reflect heparin, factor deficiency, lupus anticoagulant, DIC or severe liver disease. The therapeutic range is reagent and protocol specific; anti-Xa may be used instead.',
+            watch: 'Check the sample timing, infusion rate and contamination from heparinised lines. Escalate bleeding or a result outside the prescribed heparin protocol.'
+        },
+        {
+            name: 'Fibrinogen', category: 'FBC / Coag', range: '~2.0–4.0 g/L',
+            keywords: 'fibrinogen dic bleeding obstetric trauma liver clotting',
+            use: 'Measures a key clot-forming protein; useful in major bleeding, DIC, liver failure and selected obstetric / trauma pathways.',
+            meaning: 'Low fibrinogen can indicate consumption, severe liver dysfunction or massive haemorrhage. It can rise as an acute-phase reactant, so a “normal” level may still be inappropriate during major inflammation.',
+            watch: 'Escalate active bleeding with falling fibrinogen, platelets or prolonged PT / aPTT. Replacement follows the major-haemorrhage or specialist protocol.'
+        },
+        {
+            name: 'D-dimer', category: 'FBC / Coag', range: 'Assay cut-off; often <0.5 mg/L FEU',
+            keywords: 'd dimer vte dvt pe clot thrombosis age adjusted rule out',
+            use: 'Helps rule out venous thromboembolism only when combined with an appropriate clinical-probability pathway.',
+            meaning: 'A negative result can be useful in selected low / intermediate-risk patients. A positive result is non-specific and can occur with age, infection, cancer, pregnancy, trauma or recent surgery. Units and age-adjusted cut-offs vary.',
+            watch: 'Do not use a positive D-dimer to diagnose PE / DVT, and do not let a test delay urgent imaging or escalation in a high-risk or unstable patient.'
+        },
+        {
+            name: 'Ferritin + iron profile', category: 'FBC / Coag', range: 'Sex / assay / inflammation dependent',
+            keywords: 'ferritin iron transferrin saturation tsat tibc deficiency anaemia inflammation',
+            use: 'Assesses iron stores and availability. Ferritin is interpreted with transferrin saturation, Hb / MCV and inflammation.',
+            meaning: 'Low ferritin strongly supports iron deficiency. Ferritin can be normal or high during inflammation, liver disease or malignancy despite functional iron deficiency; TSAT may remain low.',
+            watch: 'Look for the cause of iron deficiency, including blood loss. Do not label a high ferritin as iron overload without the full iron profile and clinical assessment.'
+        },
+
+        {
+            name: 'Sodium (Na⁺)', category: 'Renal / Lytes', range: '~135–145 mmol/L',
+            keywords: 'sodium hyponatraemia hypernatraemia water balance osmolality seizure correction',
+            use: 'Reflects water balance relative to body sodium, not simply total body salt. It guides assessment of fluid status and neurological risk.',
+            meaning: 'Low sodium can result from excess water, hypovolaemia, SIADH, heart / liver / renal failure or medicines. High sodium usually reflects water deficit or impaired access to water. Glucose and osmolality affect interpretation.',
+            watch: 'Escalate seizure, reduced GCS or severe / rapidly changing sodium. Correction must be prescribed and controlled; overly rapid correction can cause major neurological injury.'
+        },
+        {
+            name: 'Potassium (K⁺)', category: 'Renal / Lytes', range: '~3.5–5.0 mmol/L',
+            keywords: 'potassium hyperkalaemia hypokalaemia ecg arrhythmia haemolysis insulin renal',
+            use: 'Essential for cardiac conduction and neuromuscular function; closely monitored in renal failure, DKA, diuretic use and arrhythmia.',
+            meaning: 'High potassium may reflect renal failure, acidosis, tissue breakdown or medicines; haemolysed samples can be falsely high. Low potassium may follow GI loss, diuretics, insulin or alkalosis. Magnesium depletion can make replacement difficult.',
+            watch: 'Escalate marked abnormality, ECG change, weakness, arrhythmia or a rapid rise. Repeat a suspected haemolysed result promptly without delaying emergency treatment when the clinical picture fits.'
+        },
+        {
+            name: 'Urea', category: 'Renal / Lytes', range: '~2.5–7.8 mmol/L',
+            keywords: 'urea bun dehydration renal perfusion gi bleed catabolism aki',
+            use: 'Supports assessment of kidney function, renal perfusion, hydration and protein breakdown.',
+            meaning: 'Urea may rise with renal dysfunction, dehydration, GI bleeding, catabolism or steroids. A low value can occur with low protein intake, overhydration or severe liver dysfunction. It is less specific than the creatinine trend.',
+            watch: 'Interpret with creatinine, urine output, fluid status and symptoms of uraemia. Escalate oliguria, worsening AKI, confusion, pericarditic pain, severe vomiting or overload.'
+        },
+        {
+            name: 'Creatinine', category: 'Renal / Lytes', range: '~45–120 µmol/L (body-size dependent)',
+            keywords: 'creatinine kidney renal aki egfr filtration baseline nephrotoxic',
+            use: 'A practical marker of filtration used to detect AKI and calculate eGFR, but it lags behind acute injury and depends on muscle mass.',
+            meaning: 'Compare with baseline and timing. A “normal” creatinine may still represent AKI in a small or low-muscle patient; a stable high value may reflect CKD. Medicines, hydration and laboratory factors can affect it.',
+            watch: 'Escalate a significant rise from baseline, falling urine output, hyperkalaemia, acidosis, pulmonary oedema or nephrotoxin exposure. Review dose adjustment and fluid balance.'
+        },
+        {
+            name: 'eGFR', category: 'Renal / Lytes', range: '≥90 mL/min/1.73m² = G1 only if no other damage',
+            keywords: 'egfr ckd stage renal function medication dose contrast dialysis',
+            use: 'Stages chronic kidney function and supports medication / contrast planning. It is an estimate, not a direct measurement.',
+            meaning: 'CKD requires persistence or other kidney-damage evidence; one low eGFR does not by itself prove CKD. eGFR is unreliable during rapidly changing creatinine, extremes of muscle mass and some other situations.',
+            watch: 'For AKI, follow creatinine change and urine output rather than eGFR alone. Check the drug-specific renal dosing method and current local contrast policy.'
+        },
+        {
+            name: 'Chloride (Cl⁻)', category: 'Renal / Lytes', range: '~98–107 mmol/L',
+            keywords: 'chloride saline hyperchloraemic metabolic acidosis vomiting alkalosis anion gap',
+            use: 'Helps assess fluid therapy and acid–base status, especially non-anion-gap metabolic acidosis or vomiting-related alkalosis.',
+            meaning: 'High chloride can follow large-volume 0.9% saline or bicarbonate loss and may accompany metabolic acidosis. Low chloride can occur with vomiting, diuretics or metabolic alkalosis.',
+            watch: 'Review IV fluid type / volume, bicarbonate, sodium and anion gap. Treat the clinical cause rather than chloride in isolation.'
+        },
+        {
+            name: 'Serum bicarbonate / total CO₂', category: 'Renal / Lytes', range: '~22–29 mmol/L',
+            keywords: 'bicarbonate hco3 total co2 metabolic acidosis alkalosis renal dka diarrhoea',
+            use: 'Screens the metabolic component of acid–base balance on the chemistry panel.',
+            meaning: 'Low bicarbonate suggests metabolic acidosis or respiratory compensation; high bicarbonate suggests metabolic alkalosis or compensation for chronic hypercapnia. A blood gas may be needed to define the disorder.',
+            watch: 'Escalate severe acidosis, shock, DKA, toxic ingestion, renal failure or respiratory compromise. Calculate the anion gap when bicarbonate is low.'
+        },
+        {
+            name: 'Adjusted calcium (Ca²⁺)', category: 'Renal / Lytes', range: '~2.10–2.60 mmol/L',
+            keywords: 'calcium corrected adjusted ionised tetany qt malignancy parathyroid albumin',
+            use: 'Assesses calcium physiology for neuromuscular, cardiac, bone and endocrine problems. Total calcium is influenced by albumin.',
+            meaning: 'Adjusted calcium estimates albumin effect but can be unreliable in critical illness; ionised calcium is preferred when precision matters. Low calcium may prolong QT / cause tetany; high calcium may cause dehydration, constipation, confusion or arrhythmia.',
+            watch: 'Escalate symptoms, ECG changes or marked abnormality. Review magnesium, phosphate, renal function, albumin and medicines.'
+        },
+        {
+            name: 'Magnesium (Mg²⁺)', category: 'Renal / Lytes', range: '~0.70–1.00 mmol/L',
+            keywords: 'magnesium torsades arrhythmia refractory potassium diarrhoea ppi renal',
+            use: 'Supports cardiac rhythm, neuromuscular function and potassium / calcium balance.',
+            meaning: 'Low magnesium can promote torsades and make hypokalaemia refractory. High magnesium usually occurs with renal impairment or excess administration and can depress reflexes, respiration and conduction.',
+            watch: 'Escalate arrhythmia, prolonged QT, weakness, reduced reflexes or respiratory depression. Check renal function before and during replacement.'
+        },
+        {
+            name: 'Phosphate (PO₄³⁻)', category: 'Renal / Lytes', range: '~0.80–1.50 mmol/L',
+            keywords: 'phosphate refeeding weakness respiratory failure dka renal tumour lysis',
+            use: 'Important for ATP, muscle / respiratory function, red-cell metabolism and bone; useful in refeeding, DKA and renal disease.',
+            meaning: 'Low phosphate may follow refeeding, insulin, alcohol use or poor intake and can cause weakness. High phosphate is common in renal failure, cell breakdown or tumour lysis and interacts with calcium.',
+            watch: 'Escalate severe weakness, respiratory failure, haemolysis, arrhythmia or suspected refeeding / tumour-lysis syndrome. Replace only under the prescribed protocol.'
+        },
+        {
+            name: 'Serum osmolality', category: 'Renal / Lytes', range: '~275–295 mOsm/kg',
+            keywords: 'osmolality osmolarity sodium glucose urea hyponatraemia hhs toxic alcohol gap',
+            use: 'Defines tonicity in sodium disorders and supports assessment of HHS, water balance and an osmolar gap.',
+            meaning: 'Measured osmolality is compared with a calculated value. Low osmolality supports hypotonic hyponatraemia; high values can reflect sodium, glucose, urea or exogenous osmoles. Urea raises measured osmolality but contributes little to effective tonicity.',
+            watch: 'Escalate neurological change, severe sodium / glucose disturbance or a large unexplained osmolar gap suggesting toxic alcohol exposure.'
+        },
+
+        {
+            name: 'ALT', category: 'Liver / GI', range: 'Often <50 U/L; lab-specific',
+            keywords: 'alt liver hepatocellular injury hepatitis drug transaminase',
+            use: 'A relatively liver-focused marker of hepatocyte injury; useful for pattern and trend, not direct liver function.',
+            meaning: 'Elevation may reflect viral, metabolic, ischaemic, obstructive or drug-related injury. The height of ALT does not by itself measure remaining liver function.',
+            watch: 'Escalate a rapid rise with jaundice, coagulopathy, hypoglycaemia, encephalopathy, hypotension or suspected toxic overdose.'
+        },
+        {
+            name: 'AST', category: 'Liver / GI', range: 'Often <50 U/L; lab-specific',
+            keywords: 'ast liver muscle cardiac injury hepatitis rhabdomyolysis',
+            use: 'Supports hepatocellular-pattern assessment but is also released from muscle and other tissues.',
+            meaning: 'AST elevation may come from liver injury, muscle damage or haemolysis. Interpret with ALT, CK, bilirubin and the clinical context; an AST:ALT ratio is not diagnostic by itself.',
+            watch: 'Consider muscle injury / rhabdomyolysis when AST and CK rise together, especially with dark urine or AKI risk.'
+        },
+        {
+            name: 'ALP', category: 'Liver / GI', range: '~30–120 U/L',
+            keywords: 'alp cholestasis bile duct obstruction bone liver ggt',
+            use: 'Helps identify a cholestatic liver pattern but also originates from bone and placenta.',
+            meaning: 'High ALP with high GGT supports hepatobiliary origin; isolated ALP can reflect bone turnover or other sources. The pattern and imaging matter.',
+            watch: 'Escalate jaundice with fever, RUQ pain, sepsis, rising bilirubin or suspected biliary obstruction / cholangitis.'
+        },
+        {
+            name: 'GGT', category: 'Liver / GI', range: 'Sex / assay-specific',
+            keywords: 'ggt gamma glutamyl transferase cholestasis alcohol enzyme induction alp',
+            use: 'Helps decide whether a raised ALP is likely hepatobiliary rather than bone in origin.',
+            meaning: 'GGT can rise with cholestasis, alcohol exposure and enzyme-inducing medicines, but it is non-specific and should not be used alone to diagnose alcohol-related disease.',
+            watch: 'Read with ALP, bilirubin, medication / alcohol history and imaging rather than acting on an isolated GGT.'
+        },
+        {
+            name: 'Total bilirubin', category: 'Liver / GI', range: 'Usually <20 µmol/L',
+            keywords: 'bilirubin jaundice haemolysis conjugated unconjugated obstruction liver',
+            use: 'Assesses bilirubin production, conjugation and excretion in jaundice.',
+            meaning: 'Unconjugated elevation can reflect haemolysis or impaired conjugation; conjugated elevation suggests hepatocellular dysfunction or cholestasis. Fractionation and the rest of the LFT pattern help.',
+            watch: 'Escalate jaundice with sepsis, RUQ pain, hypotension, bleeding / raised INR, confusion or rapidly worsening liver tests.'
+        },
+        {
+            name: 'Albumin', category: 'Liver / GI', range: '~35–50 g/L',
+            keywords: 'albumin liver synthetic nutrition inflammation oedema nephrotic ascites',
+            use: 'Reflects chronic synthetic / inflammatory and loss states; contributes to oncotic pressure and drug binding.',
+            meaning: 'Low albumin can reflect inflammation, liver disease, renal / GI loss or dilution and is not a stand-alone nutrition test. Because its half-life is long, it is not a sensitive marker of acute liver failure.',
+            watch: 'Assess oedema / ascites, urine protein, fluid balance and underlying disease. Do not give albumin solely to normalise a number without a specific indication.'
+        },
+        {
+            name: 'Total protein', category: 'Liver / GI', range: '~60–80 g/L',
+            keywords: 'total protein albumin globulin myeloma dehydration liver immune',
+            use: 'Represents albumin plus globulins and can suggest dehydration, inflammation, immune or plasma-cell disorders.',
+            meaning: 'A high protein / globulin gap may prompt immunoglobulin or electrophoresis testing; low levels can reflect reduced production, loss or dilution.',
+            watch: 'Interpret with albumin and globulin, renal function, calcium, blood count and symptoms rather than the total alone.'
+        },
+        {
+            name: 'LDH', category: 'Liver / GI', range: 'Assay-specific',
+            keywords: 'ldh haemolysis tissue injury tumour lysis liver lung lymphoma',
+            use: 'A non-specific marker of cell injury / turnover used with other tests in haemolysis, tissue ischaemia and selected malignancies.',
+            meaning: 'LDH can rise in many illnesses and with sample haemolysis. It does not locate the source by itself.',
+            watch: 'Check the sample quality and interpret with Hb, bilirubin, haptoglobin, CK, urate, potassium, phosphate and the clinical problem.'
+        },
+        {
+            name: 'Amylase', category: 'Liver / GI', range: '~30–110 U/L; assay-specific',
+            keywords: 'amylase pancreatitis salivary abdominal pain lipase',
+            use: 'Supports assessment of suspected acute pancreatitis when lipase is unavailable or according to local practice.',
+            meaning: 'Amylase can rise from pancreatic and non-pancreatic causes and may normalise early. A normal result does not always exclude pancreatitis; diagnosis uses symptoms and imaging / enzyme criteria.',
+            watch: 'Escalate severe epigastric pain, shock, hypoxia, oliguria or systemic deterioration. Trend fluid status and organ function, not amylase alone.'
+        },
+        {
+            name: 'Lipase', category: 'Liver / GI', range: 'Assay-specific; use local upper limit',
+            keywords: 'lipase pancreatitis pancreatic abdominal pain enzyme',
+            use: 'More pancreas-focused than amylase and commonly used to support acute pancreatitis diagnosis.',
+            meaning: 'A level ≥3 times the local upper limit can support pancreatitis when the clinical picture fits, but elevation also occurs in renal and other abdominal disease. The height does not grade severity.',
+            watch: 'Use observations, organ function, fluid balance and severity assessment to detect deterioration; do not serially chase lipase to judge recovery.'
+        },
+        {
+            name: 'Ammonia', category: 'Liver / GI', range: 'Method + handling dependent',
+            keywords: 'ammonia hepatic encephalopathy liver failure confusion sample ice',
+            use: 'May support selected assessments of hyperammonaemia, but hepatic encephalopathy remains a clinical diagnosis.',
+            meaning: 'The number correlates imperfectly with encephalopathy severity and is highly affected by collection / transport. A normal result should prompt reconsideration; an elevated result does not prove the cause of confusion.',
+            watch: 'Escalate reduced GCS, asterixis, seizures or airway risk. Check glucose, infection, bleeding, constipation, medicines and other causes while following the prescribed encephalopathy plan.'
+        },
+
+        {
+            name: 'C-reactive protein (CRP)', category: 'Infection', range: 'Usually <5 mg/L; lab-specific',
+            keywords: 'crp inflammation infection trend antibiotic sepsis',
+            use: 'A non-specific acute-phase marker used with the clinical picture to follow inflammation or infection over time.',
+            meaning: 'CRP can rise in infection, tissue injury, inflammatory disease and malignancy. It may lag behind symptoms, and immunosuppressed patients may have a muted response.',
+            watch: 'Do not use a low CRP to dismiss a clinically septic patient or a high CRP to prove bacterial infection. Review the trend, source, observations and cultures.'
+        },
+        {
+            name: 'Erythrocyte sedimentation rate (ESR)', category: 'Infection', range: 'Age / sex / method dependent',
+            keywords: 'esr chronic inflammation autoimmune temporal arteritis anaemia',
+            use: 'A slow-changing, non-specific inflammation marker used mainly for selected inflammatory or autoimmune conditions.',
+            meaning: 'ESR is influenced by age, anaemia, pregnancy, renal disease and plasma proteins. It rises and falls more slowly than CRP.',
+            watch: 'Use only in the relevant clinical pathway and follow the trend. It is not a screening test for all infection or a stand-alone emergency marker.'
+        },
+        {
+            name: 'Procalcitonin (PCT)', category: 'Infection', range: 'Use assay + local antibiotic protocol',
+            keywords: 'procalcitonin pct bacterial infection antibiotic sepsis stewardship',
+            use: 'May support antibiotic stewardship or bacterial-infection assessment in selected pathways.',
+            meaning: 'PCT can be low early and may rise for non-infectious reasons such as major trauma or surgery. Renal dysfunction can affect interpretation. It never replaces clinical assessment, cultures or source control.',
+            watch: 'Do not delay antibiotics in suspected sepsis while waiting for PCT, and do not start / stop treatment from one value outside the local protocol.'
+        },
+        {
+            name: 'Blood cultures', category: 'Infection', range: 'Expected: no growth',
+            keywords: 'blood culture bacteraemia bacteremia sepsis contamination antibiotics source',
+            use: 'Identifies bloodstream organisms and susceptibilities. Ideally collect the prescribed sets from separate sites before antibiotics if this causes no harmful delay.',
+            meaning: 'A positive result may be a pathogen or contaminant depending on organism, number of bottles, collection sites, timing and clinical picture. A negative result does not exclude infection.',
+            watch: 'Use aseptic technique, record site / time, send promptly and act immediately on critical Gram-stain calls or a deteriorating patient.'
+        },
+
+        {
+            name: 'High-sensitivity troponin I / T', category: 'Cardiac', range: 'Assay-specific 99th percentile + serial change',
+            keywords: 'troponin hs ctni ctnt myocardial injury mi acs serial delta chest pain',
+            use: 'Detects myocardial injury and supports ACS diagnosis when combined with symptoms, ECG and a validated serial-testing pathway.',
+            meaning: 'A value above the assay 99th percentile means myocardial injury, not automatically type-1 MI. Sepsis, tachyarrhythmia, renal disease, PE and heart failure can also elevate it. Rise / fall and clinical evidence of ischaemia are essential.',
+            watch: 'Escalate ongoing chest pain, ischaemic ECG change, haemodynamic instability or a significant serial change. Use the hospital assay and algorithm—do not apply a cutoff copied from another laboratory.'
+        },
+        {
+            name: 'BNP / NT-proBNP', category: 'Cardiac', range: 'Age / assay / renal / rhythm dependent',
+            keywords: 'bnp ntprobnp heart failure dyspnoea fluid overload renal af',
+            use: 'Supports assessment of heart failure in a breathless patient and may help with prognosis or follow-up in selected settings.',
+            meaning: 'A low value can make heart failure less likely in the right setting. Levels rise with age, renal dysfunction, atrial fibrillation, PE and critical illness, and can be lower in obesity.',
+            watch: 'Treat the patient and congestion, not the peptide alone. Escalate pulmonary oedema, hypoxia, hypotension or poor perfusion.'
+        },
+        {
+            name: 'Creatine kinase (CK)', category: 'Cardiac', range: 'Sex / muscle mass / assay dependent',
+            keywords: 'ck creatine kinase rhabdomyolysis muscle injury statin seizure urine aki',
+            use: 'Measures skeletal-muscle injury and is central to suspected rhabdomyolysis; troponin is preferred for myocardial injury.',
+            meaning: 'CK rises after muscle trauma, prolonged immobilisation, seizures, exertion, myositis or medicines. The trend, renal function, potassium and urine findings guide risk assessment.',
+            watch: 'Escalate suspected rhabdomyolysis with AKI, hyperkalaemia, compartment syndrome, oliguria or marked / rising CK. Monitor fluid plan and urine output.'
+        },
+        {
+            name: 'CK-MB', category: 'Cardiac', range: 'Assay-specific; not first-line when hs-troponin available',
+            keywords: 'ckmb myocardial injury reinfarction cardiac enzyme',
+            use: 'An older cardiac marker that may have a limited role when troponin is unavailable or in specific specialist questions.',
+            meaning: 'CK-MB can rise with skeletal-muscle injury and is less cardiac-specific than modern troponin. Local cardiology / laboratory practice determines whether it adds value.',
+            watch: 'Do not use CK-MB instead of the current ACS troponin pathway. Escalate symptoms and ECG findings regardless of the marker.'
+        },
+
+        {
+            name: 'Blood glucose', category: 'Endocrine', range: 'Fasting ~3.9–5.5 mmol/L; diagnostic limits differ',
+            keywords: 'glucose blood sugar hypoglycaemia hyperglycaemia diabetes hhs dka fasting random',
+            use: 'Immediate assessment of hypo- / hyperglycaemia and monitoring of diabetes, steroids, nutrition, DKA or HHS.',
+            meaning: 'Interpret whether the sample is fasting or random and whether the patient is acutely ill. Capillary results can be unreliable in shock / poor perfusion; confirm with laboratory or blood-gas glucose when needed.',
+            watch: 'Treat hypoglycaemia immediately under protocol. Escalate hyperglycaemia with ketones, acidosis, dehydration, altered GCS or high osmolality.'
+        },
+        {
+            name: 'HbA1c', category: 'Endocrine', range: 'Diagnosis ≥6.5% (48 mmol/mol), usually confirm if asymptomatic',
+            keywords: 'hba1c glycated haemoglobin diabetes three month target diagnosis',
+            use: 'Estimates average glycaemia over roughly 2–3 months and helps diagnose / monitor diabetes.',
+            meaning: 'The treatment target is individualised; 6.5% is a diagnostic threshold, not a universal goal. Anaemia, haemoglobin variants, transfusion, pregnancy, CKD and altered red-cell lifespan can distort the result.',
+            watch: 'Do not use HbA1c to assess an acute glucose emergency. Check capillary / plasma glucose and ketones when the patient is unwell.'
+        },
+        {
+            name: 'Blood ketones (β-hydroxybutyrate)', category: 'Endocrine', range: '<0.6 mmol/L commonly expected',
+            keywords: 'ketone beta hydroxybutyrate dka diabetes sglt2 euglycaemic starvation',
+            use: 'Detects and tracks clinically important ketosis, especially DKA and SGLT2-inhibitor-associated euglycaemic DKA.',
+            meaning: 'Raised ketones require interpretation with pH / bicarbonate, glucose and illness. Starvation can cause ketosis, while DKA can occur without marked hyperglycaemia.',
+            watch: 'Escalate ketones with acidosis, vomiting, dehydration, tachypnoea, abdominal pain or altered GCS. Follow the DKA pathway; do not stop insulin solely because glucose has fallen.'
+        },
+        {
+            name: 'TSH', category: 'Endocrine', range: '~0.4–4.0 mIU/L',
+            keywords: 'tsh thyroid hypothyroid hyperthyroid pituitary sick euthyroid',
+            use: 'First-line thyroid-axis test in many stable patients, interpreted with free T4 and clinical context.',
+            meaning: 'High TSH with low fT4 suggests primary hypothyroidism; low TSH with high fT4 suggests thyrotoxicosis. Acute illness, pregnancy and medicines can alter results; pituitary disease can make TSH misleading.',
+            watch: 'Escalate suspected thyroid storm or myxoedema coma from the clinical syndrome, not from TSH alone.'
+        },
+        {
+            name: 'Free T4 (fT4)', category: 'Endocrine', range: '~9–19 pmol/L',
+            keywords: 'ft4 free thyroxine thyroid tsh hypo hyper pituitary',
+            use: 'Shows circulating free thyroxine and clarifies abnormal TSH or suspected pituitary / severe thyroid disease.',
+            meaning: 'Always pair it with TSH unless a specialist pathway says otherwise. Discordant results may reflect acute illness, assay interference, pregnancy, medicines or central thyroid disease.',
+            watch: 'Prioritise observations, ECG, temperature, GCS and cardiovascular instability in suspected severe thyroid disease.'
+        },
+        {
+            name: 'Cortisol', category: 'Endocrine', range: 'Time / stress / assay dependent',
+            keywords: 'cortisol adrenal insufficiency addison crisis morning steroid synacthen',
+            use: 'Supports assessment of adrenal insufficiency; timing and recent steroid exposure are crucial.',
+            meaning: 'A random result during illness is difficult to interpret. Morning cortisol or a stimulation test may be required. Exogenous steroids and altered binding proteins affect results.',
+            watch: 'If adrenal crisis is suspected—shock, vomiting, abdominal pain, hyponatraemia, hyperkalaemia or hypoglycaemia—draw cortisol if feasible but do not delay prescribed emergency steroids and fluids.'
+        },
+        {
+            name: 'Lipid profile', category: 'Endocrine', range: 'LDL target is cardiovascular-risk based',
+            keywords: 'cholesterol ldl hdl triglyceride lipid cardiovascular risk pancreatitis',
+            use: 'Estimates cardiovascular risk and monitors lipid-lowering therapy; very high triglycerides can be relevant to pancreatitis.',
+            meaning: 'There is no single LDL target for everyone. Interpretation depends on established CVD, diabetes, CKD and overall risk. Acute illness can alter the profile.',
+            watch: 'Use the prescribed risk-based target and medication plan. Escalate severe abdominal pain with markedly raised triglycerides as possible pancreatitis.'
+        },
+
+        {
+            name: 'Urinalysis / dipstick', category: 'Urine', range: 'Expected: no blood, protein, glucose, ketone, nitrite or leukocyte esterase',
+            keywords: 'urine dipstick nitrite leukocyte esterase blood protein glucose ketone uti haematuria',
+            use: 'Rapid bedside screen for blood, protein, glucose, ketones and inflammatory markers.',
+            meaning: 'Dipstick findings are not diagnoses: menstrual contamination, concentration, collection quality and medicines can affect them. Nitrite can be negative despite UTI; pyuria alone does not prove symptomatic infection.',
+            watch: 'Send microscopy / culture only when clinically indicated and collect correctly. Escalate visible haematuria with clots / retention, sepsis, severe pain or AKI.'
+        },
+        {
+            name: 'Urine albumin:creatinine ratio (ACR)', category: 'Urine', range: 'A1 <3 · A2 3–30 · A3 >30 mg/mmol',
+            keywords: 'acr albumin creatinine proteinuria diabetic kidney disease ckd',
+            use: 'Quantifies albuminuria for CKD risk classification and diabetic / hypertensive kidney assessment.',
+            meaning: 'Exercise, fever, UTI, menstruation and severe hyperglycaemia can transiently increase ACR. Persistent abnormality usually requires repeat confirmation unless clinically urgent.',
+            watch: 'Interpret with eGFR, BP, diabetes control and urine sediment. Escalate nephrotic-range proteinuria, oedema, hypoalbuminaemia or rapidly worsening renal function.'
+        },
+        {
+            name: 'Urine sodium', category: 'Urine', range: 'No universal normal; depends on intake and physiology',
+            keywords: 'urine sodium hyponatraemia aki siadh hypovolaemia diuretic fena',
+            use: 'Supports selected assessment of hyponatraemia, volume physiology and AKI when collected and interpreted correctly.',
+            meaning: 'Diuretics, CKD, IV fluids and timing can make urine sodium misleading. It must be paired with serum / urine osmolality, clinical volume status and the specific question.',
+            watch: 'Do not diagnose SIADH or “pre-renal AKI” from urine sodium alone. Review medicines, timing and fluid therapy.'
+        },
+        {
+            name: 'Urine osmolality', category: 'Urine', range: 'Wide physiologic range; interpret with serum osmolality',
+            keywords: 'urine osmolality hyponatraemia siadh diabetes insipidus concentrating ability',
+            use: 'Shows how concentrated the urine is and supports water-balance, hyponatraemia and diabetes-insipidus assessment.',
+            meaning: 'Dilute urine suggests water excretion; concentrated urine shows ADH effect or other concentrating drive. There is no useful single normal without the serum result and clinical situation.',
+            watch: 'Escalate severe sodium disturbance or neurological symptoms. Accurate fluid input / output and paired sample timing are essential.'
+        },
+
+        {
+            name: 'pH', category: 'ABG / VBG', range: 'ABG 7.35–7.45',
+            keywords: 'blood gas ph acidemia alkalemia abg vbg acid base',
+            use: 'States whether blood is acidemic or alkalemic; it is the first step in blood-gas interpretation.',
+            meaning: 'A near-normal pH does not exclude a mixed disorder because opposing processes can cancel each other. VBG pH is often slightly lower than arterial pH, but use the measured sample and do not apply a fixed correction.',
+            watch: 'Escalate severe pH disturbance or any abnormal gas with shock, arrhythmia, respiratory fatigue, reduced GCS or rapid deterioration.'
+        },
+        {
+            name: 'PaCO₂', category: 'ABG / VBG', range: 'ABG ~4.7–6.0 kPa (35–45 mmHg)',
+            keywords: 'paco2 carbon dioxide ventilation respiratory acidosis alkalosis hypercapnia abg vbg',
+            use: 'Measures the respiratory component and adequacy of alveolar ventilation.',
+            meaning: 'Raised PaCO₂ drives respiratory acidosis; low PaCO₂ drives respiratory alkalosis. Decide whether it is the primary disorder or appropriate compensation. PvCO₂ is normally higher and cannot precisely replace PaCO₂.',
+            watch: 'Escalate rising CO₂, drowsiness, headache, exhaustion, asterixis or acidosis—especially during oxygen therapy, NIV or sedative / opioid use.'
+        },
+        {
+            name: 'HCO₃⁻', category: 'ABG / VBG', range: '~22–26 mmol/L',
+            keywords: 'hco3 bicarbonate metabolic acidosis alkalosis compensation blood gas',
+            use: 'Represents the metabolic component of the blood gas, usually calculated from pH and CO₂.',
+            meaning: 'Low HCO₃⁻ supports metabolic acidosis or renal compensation for respiratory alkalosis. High HCO₃⁻ supports metabolic alkalosis or compensation for chronic respiratory acidosis.',
+            watch: 'When low, calculate anion gap and look for lactate, ketones, renal failure, diarrhoea or toxins. When high, review vomiting, diuretics, chloride and chronic hypercapnia.'
+        },
+        {
+            name: 'Base excess (BE)', category: 'ABG / VBG', range: '~−2 to +2 mmol/L',
+            keywords: 'base excess deficit metabolic acid base abg vbg resuscitation',
+            use: 'Summarises the metabolic contribution after accounting for CO₂.',
+            meaning: 'A negative BE (base deficit) supports metabolic acidosis; a positive BE supports metabolic alkalosis. It does not identify the cause and can conceal mixed disorders.',
+            watch: 'Trend BE with pH, HCO₃⁻, lactate, chloride, anion gap and perfusion rather than treating the number alone.'
+        },
+        {
+            name: 'PaO₂', category: 'ABG / VBG', range: 'ABG ~10.7–13.3 kPa on room air; age / FiO₂ dependent',
+            keywords: 'pao2 oxygenation hypoxaemia fio2 abg arterial venous po2',
+            use: 'Measures arterial oxygen tension and supports evaluation of hypoxaemia, oxygen delivery and respiratory failure.',
+            meaning: 'Interpret only with the recorded FiO₂ / oxygen device, age and clinical situation. A “normal” PaO₂ on high FiO₂ may represent severe gas-exchange failure. Venous PO₂ must not be used to judge oxygenation.',
+            watch: 'Escalate hypoxaemia, increasing oxygen requirement or a PaO₂ that is inappropriate for the FiO₂. Check the sample is arterial and correlate with SpO₂.'
+        },
+        {
+            name: 'SaO₂ / co-oximetry', category: 'ABG / VBG', range: 'Usually ~95–100% on room air; target may differ',
+            keywords: 'sao2 oxygen saturation cooximetry carboxyhaemoglobin methaemoglobin spo2',
+            use: 'Assesses haemoglobin oxygen saturation; co-oximetry can directly identify carboxyhaemoglobin or methaemoglobin.',
+            meaning: 'The prescribed target may be lower in patients at risk of hypercapnic respiratory failure. Standard pulse oximetry can look reassuring in carbon-monoxide poisoning and may be inaccurate with poor perfusion or dyshemoglobinaemia.',
+            watch: 'Use the ordered oxygen target. Escalate unexplained symptoms or saturation mismatch and obtain co-oximetry when CO / methemoglobin exposure is suspected.'
+        },
+        {
+            name: 'Lactate', category: 'ABG / VBG', range: '~0.5–2.0 mmol/L; sample dependent',
+            keywords: 'lactate sepsis shock hypoperfusion seizure liver metformin trend',
+            use: 'Signals increased production or reduced clearance and helps assess severity / response in shock, sepsis and other acute illness.',
+            meaning: 'Raised lactate is not synonymous with sepsis or tissue hypoxia. It can rise with seizures, beta-agonists, liver dysfunction, drugs or sampling factors. A normal lactate does not exclude serious infection or shock.',
+            watch: 'Escalate a raised or rising lactate with deterioration and reassess perfusion, source, medicines and clearance. Trend it only alongside the patient and treatment response.'
+        },
+        {
+            name: 'Anion gap (AG)', category: 'ABG / VBG', range: '~8–12 mmol/L without K⁺; lab-specific',
+            keywords: 'anion gap metabolic acidosis dka lactate renal toxins albumin mudpiles goldmark',
+            use: 'Separates high-anion-gap from normal-anion-gap metabolic acidosis: AG = Na⁺ − (Cl⁻ + HCO₃⁻).',
+            meaning: 'High AG suggests unmeasured acids such as lactate, ketones, renal failure or toxins. Normal-AG acidosis suggests bicarbonate loss or impaired renal acid excretion. Low albumin lowers the expected AG.',
+            watch: 'Escalate unexplained high-gap acidosis, suspected toxic ingestion, DKA, shock or renal failure. Use local albumin correction and toxicology advice where relevant.'
+        },
+        {
+            name: 'VBG: what it can and cannot answer', category: 'ABG / VBG', range: 'Use local venous reference + sample type',
+            keywords: 'vbg venous blood gas abg comparison pH pco2 po2 oxygenation screening',
+            use: 'VBG is less invasive and often useful for acid–base screening / trending when perfusion is adequate and accurate arterial oxygenation is not required.',
+            meaning: 'Venous pH is often slightly lower and PvCO₂ higher than arterial values, but differences vary. VBG cannot provide PaO₂, and severe shock can widen arterial–venous differences.',
+            watch: 'Obtain ABG for accurate oxygenation / PaCO₂, severe respiratory failure, NIV decisions, poor perfusion, unreliable SpO₂ or a VBG that does not fit the patient.'
+        }
+    ];
+
+    let activeLabCategory = 'All';
+
+    function renderLabReference() {
+        const grid = document.getElementById('lab-grid');
+        const input = document.getElementById('lab-search');
+        const meta = document.getElementById('lab-result-meta');
+        const clear = document.getElementById('lab-clear');
+        if (!grid || !input || !meta || !clear) return;
+
+        const query = input.value.trim().toLowerCase();
+        const matches = labReference.filter(item => {
+            const categoryMatch = activeLabCategory === 'All' || item.category === activeLabCategory;
+            const searchable = `${item.name} ${item.category} ${item.range} ${item.keywords} ${item.use} ${item.meaning} ${item.watch}`.toLowerCase();
+            return categoryMatch && (!query || searchable.includes(query));
+        });
+
+        clear.hidden = !query;
+        meta.textContent = query || activeLabCategory !== 'All'
+            ? `${matches.length} of ${labReference.length} values shown`
+            : `${labReference.length} common values — tap a card for interpretation`;
+
+        grid.innerHTML = matches.length ? matches.map(item => `
+            <details class="lab-item" data-name="${item.name}" ${matches.length === 1 ? 'open' : ''}>
+                <summary>
+                    <span><span class="lab-name">${item.name}</span><span class="lab-category">${item.category}</span></span>
+                    <span class="lab-range">${item.range}</span>
+                    <span class="lab-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="lab-body">
+                    <div class="lab-block"><span class="lab-label">Why it is checked</span><p class="lab-copy">${item.use}</p></div>
+                    <div class="lab-block"><span class="lab-label">How to interpret</span><p class="lab-copy">${item.meaning}</p></div>
+                    <div class="lab-block"><span class="lab-label">Nursing watch / escalation</span><p class="lab-copy lab-watch">${item.watch}</p></div>
+                </div>
+            </details>`).join('') : `
+            <div class="card lab-empty">
+                <div style="font-size:1.4rem; margin-bottom:6px;">⌕</div>
+                <strong>No matching laboratory value</strong>
+                <div style="margin-top:5px; font-size:.8rem;">Try “sodium”, “INR”, “ketone”, “troponin”, “pH” or choose All.</div>
+            </div>`;
+    }
+
+    function filterLabReference() { renderLabReference(); }
+
+    function setLabCategory(category, button) {
+        activeLabCategory = category;
+        document.querySelectorAll('.lab-filter').forEach(item => item.classList.toggle('active', item === button));
+        renderLabReference();
+    }
+
+    function clearLabSearch() {
+        const input = document.getElementById('lab-search');
+        if (!input) return;
+        input.value = '';
+        renderLabReference();
+        input.focus();
     }
 
     const imagingReference = [
@@ -1813,16 +2435,32 @@
             keywords: 'chest xray cxr portable film consolidation pneumonia edema effusion pneumothorax cardiomegaly line tube',
             why: 'Breathlessness, fever, chest pain, trauma, fluid overload, or checking line / tube position.',
             wording: '“Air-space opacity / consolidation” may reflect infection, oedema or haemorrhage. “Blunting of costophrenic angle” suggests pleural fluid. “Pleural line with absent peripheral lung markings” suggests pneumothorax. Portable AP films can magnify the heart.',
-            meaning: 'Compare with symptoms, oxygen requirement and older films. “No acute cardiopulmonary abnormality” does not exclude every cause of breathlessness. Check that the report comments on tubes and lines when relevant.',
+            meaning: 'Compare with symptoms, oxygen requirement and older films. “No acute cardiopulmonary abnormality” does not exclude every cause of breathlessness; a pulmonary embolism is not ruled out by a normal CXR. Check that the report comments on tubes and lines when relevant.',
             action: 'Escalate sudden hypoxia or hypotension with a new / enlarging pneumothorax, marked mediastinal shift, rapidly increasing effusion, or a dangerously malpositioned tube / line.'
+        },
+        {
+            title: 'CXR — lines and tubes', category: 'X-ray', icon: '↘',
+            keywords: 'portable cxr chest xray line tube ett endotracheal ngt nasogastric central venous catheter cvc picc chest drain position carina tip side port',
+            why: 'Confirm position after endotracheal / enteric tube, central line, PICC or chest-drain insertion, and look for insertion complications.',
+            wording: 'Reports may describe the endotracheal tube relative to the carina, an enteric tube passing below the diaphragm, a central-line tip location, chest-drain side holes, pneumothorax or new subcutaneous emphysema.',
+            meaning: 'Use the signed report and local device-position policy before using a newly inserted line or tube. Projection, rotation and patient position can make a portable film difficult to interpret; do not independently “clear” a device from this guide.',
+            action: 'If the report says malpositioned, coiled, intrapulmonary, outside the stomach / vessel, or associated with pneumothorax, stop non-essential use and escalate immediately. For airway or ventilation compromise, call emergency help.'
         },
         {
             title: 'AXR / KUB', category: 'X-ray', icon: '🩻',
             keywords: 'abdominal xray axr kub kidney ureter bladder bowel obstruction ileus perforation stool stone',
             why: 'Selected cases of abdominal pain or distension, vomiting, bowel obstruction, radiopaque urinary stone, foreign body, or tube position. KUB focuses on kidneys, ureters and bladder.',
             wording: '“Dilated bowel loops” and “multiple air-fluid levels” support obstruction but are not specific. “Faecal loading” is a description, not automatically the cause of symptoms. Not every urinary calculus is visible on plain film.',
-            meaning: 'AXR is a limited test; a normal or non-specific film does not rule out important abdominal disease. Note the reported bowel pattern, gas distribution, visible calcification and device position.',
+            meaning: 'AXR is a limited test; a normal or non-specific film does not rule out obstruction or perforation, and free gas may not be visible. Note the reported bowel pattern, gas distribution, visible calcification and device position.',
             action: 'Urgently escalate free intraperitoneal air, suspected perforation, closed-loop / high-grade obstruction, toxic appearance, peritonism, persistent vomiting or haemodynamic instability.'
+        },
+        {
+            title: 'Bone / limb X-ray', category: 'X-ray', icon: '🦴',
+            keywords: 'bone limb xray fracture dislocation alignment displacement angulation joint foreign body infection osteomyelitis occult hip wrist ankle',
+            why: 'Trauma, focal bony pain, reduced movement, suspected fracture / dislocation, foreign body, infection or post-reduction alignment.',
+            wording: 'Read the named bone and side, fracture site, displacement / angulation, joint involvement and whether alignment is maintained. “No acute osseous abnormality” does not exclude every subtle or occult fracture.',
+            meaning: 'Match the report with pain, swelling and distal neurovascular observations. Persistent inability to weight-bear or marked focal tenderness can still need immobilisation and repeat or advanced imaging despite an initially negative X-ray.',
+            action: 'Escalate an open fracture, dislocation, threatened skin, uncontrolled pain, or a pale / cold / pulseless / numb limb. Recheck and document circulation, sensation and movement after splinting or reduction.'
         },
         {
             title: 'USG abdomen / hepatobiliary', category: 'Ultrasound', icon: '◒',
@@ -1846,7 +2484,7 @@
             why: 'Unilateral swelling, pain, erythema or suspected deep-vein thrombosis (DVT).',
             wording: 'A vein that is non-compressible, with visible thrombus or abnormal / absent Doppler flow, supports DVT. Reports distinguish proximal from distal (calf) thrombosis because management and follow-up may differ.',
             meaning: 'A negative scan may not settle the question when symptoms, pre-test probability or the examined segment remain concerning; follow the documented DVT pathway for repeat imaging or other tests.',
-            action: 'Escalate suspected DVT with new chest pain, dyspnoea, syncope, hypoxia or hypotension as possible pulmonary embolism. Follow anticoagulation and mobility orders; do not massage a suspected DVT limb.'
+            action: 'Escalate suspected DVT with new chest pain, dyspnoea, syncope, hypoxia or hypotension as possible pulmonary embolism. Follow anticoagulation, compression and mobility orders plus the local DVT pathway.'
         },
         {
             title: 'Arterial Doppler / vascular USG', category: 'Ultrasound', icon: '🫀',
@@ -1855,6 +2493,14 @@
             wording: '“Monophasic / damped waveform”, marked velocity change, reduced distal flow or absent flow can indicate haemodynamically important disease. The report should state location and severity.',
             meaning: 'Match imaging with limb colour, temperature, capillary refill, motor / sensory function and pulses. Chronic peripheral arterial disease and acute limb ischaemia have very different urgency.',
             action: 'A suddenly painful, pale / mottled, cold, pulseless, weak or numb limb is a vascular emergency—escalate immediately and document neurovascular observations.'
+        },
+        {
+            title: 'Carotid USG Doppler', category: 'Ultrasound', icon: '〽️',
+            keywords: 'carotid ultrasound usg doppler stenosis plaque occlusion bruit tia stroke neck vessel velocity',
+            why: 'Assess carotid plaque, narrowing or occlusion after TIA / stroke assessment, a carotid bruit, or before selected vascular procedures.',
+            wording: 'Reports describe plaque, flow velocities and an estimated stenosis category, and may state near-occlusion or occlusion. Percentage thresholds and velocity criteria depend on the reporting laboratory.',
+            meaning: 'Carotid Doppler evaluates neck vessels; it does not image brain tissue and does not replace acute stroke imaging. Read the side and severity, then check the report recommendation and stroke / vascular plan.',
+            action: 'Any new facial droop, arm weakness, speech disturbance, visual loss or other focal neurological deficit requires immediate stroke-pathway escalation—do not wait for a Doppler result.'
         },
         {
             title: 'CT brain — non-contrast', category: 'CT', icon: '🧠',
@@ -1881,12 +2527,28 @@
             action: 'Escalate tension pneumothorax, major airway compromise, active bleeding, aortic emergency, large / rapidly increasing effusion with compromise, or any critical result phoned by radiology.'
         },
         {
+            title: 'CTA aorta / CT aortogram', category: 'CT', icon: '🩸',
+            keywords: 'cta aorta aortogram dissection aneurysm rupture intramural hematoma haematoma penetrating ulcer malperfusion true false lumen contrast',
+            why: 'Suspected acute aortic syndrome, aneurysm complication, major vascular trauma or assessment before / after aortic repair.',
+            wording: 'Time-critical terms include “intimal flap / dissection”, “true and false lumen”, “rupture”, “active extravasation”, “periaortic haematoma” and branch-vessel “malperfusion”. The report should state the involved aortic segment and complications.',
+            meaning: 'CTA uses iodinated contrast and is protocolled for vessels. Connect the report with sudden chest / back / abdominal pain, blood-pressure difference, pulse or neurological deficit, renal / limb ischaemia and haemodynamic state.',
+            action: 'Suspected or reported dissection, rupture, active bleeding or end-organ malperfusion is an emergency. Keep monitoring, obtain urgent senior / vascular review and follow the local aortic pathway without delay.'
+        },
+        {
             title: 'CT pulmonary angiogram (CTPA)', category: 'CT', icon: '🫀',
             keywords: 'ctpa ct pulmonary angiogram pulmonary embolism pe contrast filling defect right heart strain rv lv',
             why: 'Suspected pulmonary embolism after clinical risk assessment and the appropriate local diagnostic pathway.',
             wording: 'An intraluminal pulmonary-artery “filling defect” supports PE. The report may describe central / lobar / segmental extent and signs of right-heart strain. “No PE” only answers the embolism question and may list another cause for symptoms.',
             meaning: 'Interpret with haemodynamics, oxygen requirement, ECG / biomarkers and bleeding risk. Imaging clot burden alone does not determine treatment.',
             action: 'Urgently escalate PE with hypotension, syncope, rising oxygen requirement, severe tachycardia, chest pain, altered mental state or reported right-heart strain.'
+        },
+        {
+            title: 'CT KUB / renal stone', category: 'CT', icon: '💎',
+            keywords: 'ct kub renal stone calculus ureteric colic non contrast hydronephrosis hydroureter obstruction perinephric stranding kidney bladder',
+            why: 'Acute renal colic, haematuria or suspected ureteric calculus / urinary obstruction. A stone-protocol CT is commonly non-contrast.',
+            wording: 'Read stone location and size, upstream hydroureter / hydronephrosis, perinephric change and any alternative cause of pain. “Non-obstructing renal calculus” differs from an obstructing ureteric stone.',
+            meaning: 'CT can show obstruction but imaging alone does not diagnose an infected obstructed system. Correlate with fever, observations, urine, renal function, pain and urine output.',
+            action: 'Escalate obstruction with fever / sepsis, anuria, worsening AKI, a solitary kidney, uncontrolled pain or vomiting, or bilateral obstruction urgently under the local urology pathway.'
         },
         {
             title: 'CT abdomen / pelvis', category: 'CT', icon: '⬡',
@@ -1897,12 +2559,52 @@
             action: 'Escalate perforation, bowel ischaemia / closed-loop obstruction, active haemorrhage, ruptured aneurysm, organ injury, obstructed infected system or a drainable septic collection with deterioration.'
         },
         {
+            title: 'MRI brain', category: 'MRI', icon: '🧠',
+            keywords: 'mri brain head diffusion dwi adc flair susceptibility swi stroke infarct tumour tumor metastasis infection demyelination seizure',
+            why: 'Detailed assessment of suspected stroke, tumour, infection, inflammation / demyelination, seizure cause, pituitary disease or an abnormal CT finding.',
+            wording: '“Restricted diffusion” can support acute infarction but has other causes. FLAIR signal, oedema, susceptibility / blood products, enhancement and mass effect must be interpreted together with the radiologist’s impression.',
+            meaning: 'MRI is detailed and uses no ionising radiation, but takes longer and requires a completed safety screen. Do not delay an acute stroke or neurological emergency pathway while waiting for MRI unless the pathway specifically directs it.',
+            action: 'Escalate acute infarction, haemorrhage, mass effect / herniation, hydrocephalus, abscess or any finding matching neurological deterioration. Continue neurological observations and follow stroke / neurosurgical instructions.'
+        },
+        {
+            title: 'MRI spine / cord', category: 'MRI', icon: '🧬',
+            keywords: 'mri spine cord compression cauda equina epidural abscess collection discitis osteomyelitis stenosis fracture metastasis weakness saddle bladder bowel',
+            why: 'Suspected spinal-cord / cauda-equina compression, infection, tumour, trauma, progressive neurological deficit or persistent radicular symptoms.',
+            wording: 'Urgent terms include “cord / cauda-equina compression”, “epidural collection”, “discitis / osteomyelitis”, “pathological fracture”, severe canal stenosis and abnormal cord signal. The report should state level and severity.',
+            meaning: 'Match the named level with power, sensation, reflexes, gait and bladder / bowel symptoms. MRI is very sensitive for cord and soft tissue, but image quality and certainty can be limited by movement or metal artefact.',
+            action: 'New urinary retention / incontinence, saddle sensory loss, progressive weakness, cord compression or suspected spinal infection with sepsis needs immediate senior and spinal / neurosurgical escalation.'
+        },
+        {
             title: 'Echocardiogram (TTE)', category: 'Echo', icon: '♥',
             keywords: 'echo echocardiogram tte ef ejection fraction lv rv wall motion valve stenosis regurgitation pericardial effusion tamponade vegetation ivc',
             why: 'Heart failure or shock assessment, murmur / valve disease, regional wall-motion abnormality, right-heart function, pericardial fluid, suspected endocarditis or embolic source.',
             wording: 'LVEF describes left-ventricular systolic emptying and may be reported as preserved, mildly / moderately / severely reduced. Also read LV size, regional wall motion, RV function, valve stenosis / regurgitation, pulmonary-pressure estimate and pericardial effusion.',
             meaning: 'Do not reduce the report to EF alone: a patient can have heart failure with preserved EF, important valve disease or RV failure. “Technically difficult / limited views” lowers certainty. Compare with the prior echo.',
             action: 'Escalate tamponade physiology, a new severely reduced LV / RV function, a critical valve lesion, suspected vegetation with sepsis / emboli, or echo findings that match clinical shock.'
+        },
+        {
+            title: 'Transoesophageal echo (TOE / TEE)', category: 'Echo', icon: '♡',
+            keywords: 'toe tee transoesophageal transesophageal echo endocarditis vegetation valve prosthetic thrombus left atrial appendage aorta sedation npo fasting',
+            why: 'Obtain clearer views of valves, upper heart chambers, left-atrial appendage and thoracic aorta; often used for suspected endocarditis, intracardiac thrombus or peri-procedural guidance.',
+            wording: 'Reports may describe vegetation, valve destruction / regurgitation, prosthetic-valve complication, atrial thrombus, shunt or aortic pathology. A negative study must be interpreted with the clinical likelihood and the treating team’s plan.',
+            meaning: 'TOE / TEE uses an oesophageal probe and commonly throat anaesthetic plus sedation. Confirm fasting, consent, dentures, swallowing / oesophageal history and post-sedation monitoring according to local policy.',
+            action: 'After the test, follow the documented fasting interval until throat sensation / swallowing has recovered. Escalate breathing difficulty, aspiration, haematemesis, severe chest / throat pain, reduced consciousness or major abnormal findings.'
+        },
+        {
+            title: 'VFSS / modified barium swallow', category: 'Fluoroscopy', icon: '🥤',
+            keywords: 'vfss vfse videofluoroscopic swallow modified barium speech therapy slt aspiration penetration residue dysphagia texture iddsi',
+            why: 'Assess swallowing safety and efficiency, aspiration risk, suitable food / fluid texture and whether postures or other strategies improve swallowing.',
+            wording: '“Penetration” enters the laryngeal space but remains above the vocal cords; “aspiration” passes below the cords. Reports may describe timing, residue, silent aspiration and the tested strategy / texture that was safest.',
+            meaning: 'Read the speech and language therapy recommendation as well as the imaging result. The result applies to the tested conditions and does not justify independently changing diet, fluid thickness or supervision.',
+            action: 'Use the prescribed texture, positioning, pacing, supervision and oral-care plan. Stop feeding and escalate coughing / choking, wet voice, respiratory distress, reduced alertness or suspected aspiration.'
+        },
+        {
+            title: 'V/Q lung scan', category: 'Nuclear', icon: '☢️',
+            keywords: 'vq ventilation perfusion lung scan pulmonary embolism pe mismatch matched defect nuclear medicine spect',
+            why: 'Assess for pulmonary embolism when selected by the clinical pathway, including some patients in whom CTPA is unsuitable.',
+            wording: 'A perfusion defect without a matching ventilation abnormality may be described as a mismatch. Reports may use “normal”, “low / high probability”, “PE present / absent” or “non-diagnostic”, depending on technique and reporting standard.',
+            meaning: 'Interpret the final conclusion with clinical probability and other tests. Lung disease or an abnormal CXR can complicate interpretation; a non-diagnostic scan does not safely end the PE pathway.',
+            action: 'Escalate suspected PE with hypotension, syncope, chest pain, rising oxygen need, severe tachycardia or altered mental state immediately. Follow nuclear-medicine radiation instructions and the documented PE plan.'
         },
         {
             title: 'Iodinated CT contrast safety', category: 'Safety', icon: '🛡️',
@@ -1960,7 +2662,7 @@
             <div class="card imaging-empty">
                 <div style="font-size:1.4rem; margin-bottom:6px;">⌕</div>
                 <strong>No matching investigation</strong>
-                <div style="margin-top:5px; font-size:.8rem;">Try “CT”, “Doppler”, “effusion”, “EF” or choose All.</div>
+                <div style="margin-top:5px; font-size:.8rem;">Try “CT”, “MRI”, “Doppler”, “aspiration”, “EF” or choose All.</div>
             </div>`;
     }
 
@@ -2250,6 +2952,7 @@
         }, { passive: true });
     }
 
+    renderLabReference();
     setupIOSPWAGesture();
 
 </script>

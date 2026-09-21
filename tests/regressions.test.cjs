@@ -73,8 +73,8 @@ test('Ward imaging reference covers and filters common radiology and echo studie
 
     const state = browserContext();
     for (const source of inlineScripts('ward.html')) vm.runInContext(source, state.context);
-    assert.ok(vm.runInContext('imagingReference.length', state.context) >= 14);
-    for (const term of ['USG abdomen', 'AXR / KUB', 'CT brain', 'CT thorax', 'Venous USG Doppler', 'Echocardiogram', 'contrast safety']) {
+    assert.ok(vm.runInContext('imagingReference.length', state.context) >= 24);
+    for (const term of ['USG abdomen', 'AXR / KUB', 'CT brain', 'CT thorax', 'Venous USG Doppler', 'Carotid USG Doppler', 'CT KUB', 'CTA aorta', 'MRI brain', 'MRI spine', 'Echocardiogram', 'TOE / TEE', 'VFSS', 'V/Q lung scan', 'contrast safety']) {
         assert.match(html, new RegExp(term, 'i'));
     }
 
@@ -82,13 +82,50 @@ test('Ward imaging reference covers and filters common radiology and echo studie
     input.value = 'droppler';
     state.context.renderImagingReference();
     assert.match(state.document.getElementById('imaging-grid').innerHTML, /Venous USG Doppler/);
-    assert.match(state.document.getElementById('imaging-result-meta').textContent, /2 of 14/);
+    assert.match(state.document.getElementById('imaging-result-meta').textContent, /2 of 24/);
 
     state.context.setImagingCategory('Echo', element());
     input.value = '';
     state.context.renderImagingReference();
     assert.match(state.document.getElementById('imaging-grid').innerHTML, /Echocardiogram \(TTE\)/);
+    assert.match(state.document.getElementById('imaging-grid').innerHTML, /TOE \/ TEE/);
     assert.doesNotMatch(state.document.getElementById('imaging-grid').innerHTML, /CT pulmonary angiogram/);
+
+    state.context.setImagingCategory('MRI', element());
+    state.context.renderImagingReference();
+    assert.match(state.document.getElementById('imaging-grid').innerHTML, /MRI brain/);
+    assert.match(state.document.getElementById('imaging-grid').innerHTML, /MRI spine/);
+    assert.doesNotMatch(state.document.getElementById('imaging-grid').innerHTML, /CT brain/);
+});
+
+test('Ward laboratory reference explains common values and safe ABG / VBG use', () => {
+    const html = read('ward.html');
+    assert.match(html, /Laboratory values \+ ABG \/ VBG/);
+    assert.match(html, /adult ranges below are approximate learning aids/i);
+    assert.match(html, /Never use PvO₂ to judge oxygenation/);
+    assert.match(html, /Assay-specific 99th percentile \+ serial change/);
+    assert.match(html, /expected PaCO₂ ≈ 1\.5 × HCO₃⁻ \+ 8 \(±2 mmHg\)/);
+    assert.doesNotMatch(html, /Troponin I[^\n]*&lt;\s*0\.04/i);
+
+    const state = browserContext();
+    for (const source of inlineScripts('ward.html')) vm.runInContext(source, state.context);
+    assert.ok(vm.runInContext('labReference.length', state.context) >= 60);
+    for (const term of ['haemoglobin', 'INR', 'sodium', 'creatinine', 'bilirubin', 'CRP', 'troponin', 'HbA1c', 'albumin:creatinine ratio', 'PaCO₂', 'lactate', 'anion gap']) {
+        assert.match(html, new RegExp(term, 'i'));
+    }
+
+    const input = state.document.getElementById('lab-search');
+    input.value = 'serial delta';
+    state.context.renderLabReference();
+    assert.match(state.document.getElementById('lab-grid').innerHTML, /High-sensitivity troponin I \/ T/);
+    assert.match(state.document.getElementById('lab-result-meta').textContent, /1 of 62/);
+
+    state.context.setLabCategory('ABG / VBG', element());
+    input.value = '';
+    state.context.renderLabReference();
+    assert.match(state.document.getElementById('lab-grid').innerHTML, /PaCO₂/);
+    assert.match(state.document.getElementById('lab-grid').innerHTML, /VBG: what it can and cannot answer/);
+    assert.doesNotMatch(state.document.getElementById('lab-grid').innerHTML, /Sodium/);
 });
 
 test('malformed or incompatible saved state does not block startup; valid state survives', () => {
@@ -225,7 +262,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -285,7 +322,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
