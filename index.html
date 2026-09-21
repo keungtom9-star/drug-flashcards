@@ -318,7 +318,8 @@
             visibility: visible;
             transition: opacity .2s ease, transform .24s cubic-bezier(.2,.8,.2,1), max-height .24s ease, margin .24s ease, padding .24s ease, border-width .24s ease, visibility 0s linear;
         }
-        body.mobile-ui.search-results-active .glass-nav {
+        body.mobile-ui.search-results-active .glass-nav,
+        body.mobile-ui.search-focus-active .glass-nav {
             max-height: 0;
             margin-top: 0;
             margin-bottom: 0;
@@ -330,6 +331,32 @@
             visibility: hidden;
             pointer-events: none;
             transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, .24s;
+        }
+        body.mobile-ui.search-focus-active header,
+        body.mobile-ui.search-results-active header {
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+        body.mobile-ui.search-focus-active header .subtitle,
+        body.mobile-ui.search-results-active header .subtitle {
+            display: none;
+        }
+        body.mobile-ui.search-focus-active #search-api-notice,
+        body.mobile-ui.search-focus-active #history-section,
+        body.mobile-ui.search-focus-active #search-browse,
+        body.mobile-ui.search-results-active #search-api-notice,
+        body.mobile-ui.search-results-active #history-section,
+        body.mobile-ui.search-results-active #search-browse {
+            display: none !important;
+        }
+        body.mobile-ui.search-focus-active:not(.search-results-active) #search-status,
+        body.mobile-ui.search-focus-active:not(.search-results-active) #search-results,
+        body.mobile-ui.search-focus-active .search-label {
+            display: none;
+        }
+        body.mobile-ui.search-focus-active .search-toolbar,
+        body.mobile-ui.search-results-active .search-toolbar {
+            padding-top: 8px;
         }
         body.mobile-ui .nav-btn {
             height: 52px;
@@ -980,15 +1007,15 @@
                 <label class="search-label" for="search-input">Find a drug</label>
                 <div class="search-wrapper">
                     <span class="search-icon" aria-hidden="true">🔍</span>
-                    <input type="search" id="search-input" class="search-bar" placeholder="Drug name, brand or condition" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" oninput="handleSearch()">
+                    <input type="search" id="search-input" class="search-bar" placeholder="Drug name, brand or condition" aria-label="Search drugs" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" onfocus="setSearchFocus(true)" onblur="setSearchFocus(false)" oninput="handleSearch()">
                     <button type="button" id="clear-search" class="clear-search" aria-label="Clear search" onclick="clearSearch()" hidden>×</button>
                 </div>
             </form>
             <p id="search-status" class="search-status" role="status" aria-live="polite">Search your saved drug database.</p>
         </div>
         <div id="search-api-notice" class="api-notice" hidden>
-            <span>AI needs a <strong data-api-provider>DeepSeek</strong> key. Local search is ready.</span>
-            <button type="button" onclick="openApiSettings()">Add API key</button>
+            <span>AI search needs a <strong data-api-provider>DeepSeek</strong> key.</span>
+            <button type="button" onclick="openApiSettings()">Add key</button>
         </div>
         <div id="history-section" style="margin-bottom:16px; display:none;">
             <div class="section-header">Recent searches</div>
@@ -2820,6 +2847,11 @@ Language: ${langInstruction}.`;
         document.body.classList.toggle('search-results-active', searchIsActive);
     }
 
+    function setSearchFocus(isFocused) {
+        const searchHasFocus = !!isFocused && activeAppMode === 'search';
+        document.body.classList.toggle('search-focus-active', searchHasFocus);
+    }
+
     function handleTopBack() {
         const active = document.querySelector('.nav-btn.active')?.id;
         if (active === 'nav-clinical') {
@@ -2831,13 +2863,23 @@ Language: ${langInstruction}.`;
             return;
         }
         const input = document.getElementById('search-input');
-        if (input) input.blur();
+        if (!input) return;
+        if (input.value.trim() || searchSystem !== 'All') {
+            clearTimeout(searchDebounceTimer);
+            input.value = '';
+            searchSystem = 'All';
+            renderAllSystems();
+            runSearch();
+        }
+        input.blur();
+        setSearchFocus(false);
     }
 
     function switchMode(mode) {
         if (mode === 'settings') { toggleSettings(); return; }
         if (!['search', 'quiz', 'ward', 'clinical'].includes(mode)) mode = 'search';
         activeAppMode = mode;
+        if (mode !== 'search') setSearchFocus(false);
         document.querySelectorAll('.glass-nav .nav-btn').forEach(button => {
             button.classList.remove('active');
             button.removeAttribute('aria-current');
