@@ -102,6 +102,9 @@ test('malformed or incompatible saved state does not block startup; valid state 
 test('viewport changes follow keyboard height without overriding pinch zoom', () => {
     const { context, viewportListeners, css } = browserContext();
     assert.equal(css['--app-height'], '844px');
+    context.visualViewport.height = 764;
+    viewportListeners.resize();
+    assert.equal(css['--app-height'], '844px');
     context.visualViewport.height = 390;
     context.visualViewport.offsetTop = 20;
     viewportListeners.resize();
@@ -222,7 +225,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -282,7 +285,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -416,6 +419,20 @@ test('mobile search focus keeps the keyboard view uncluttered and Back exits res
     context.renderAllSystems = () => {};
     context.handleTopBack();
     assert.equal(document.getElementById('search-input').value, '');
+    assert.equal(document.body.classList.contains('search-results-active'), false);
+    assert.equal(document.body.classList.contains('search-focus-active'), false);
+});
+
+test('the app brand returns to a clean main search page', () => {
+    const { context, document } = loadMain();
+    document.getElementById('search-input').value = 'Metformin';
+    document.getElementById('search-section').scrollTop = 240;
+    vm.runInContext("searchSystem = '🫀 Cardio'; activeAppMode = 'clinical';", context);
+    context.goHome();
+    assert.equal(vm.runInContext('activeAppMode', context), 'search');
+    assert.equal(vm.runInContext('searchSystem', context), 'All');
+    assert.equal(document.getElementById('search-input').value, '');
+    assert.equal(document.getElementById('search-section').scrollTop, 0);
     assert.equal(document.body.classList.contains('search-results-active'), false);
     assert.equal(document.body.classList.contains('search-focus-active'), false);
 });

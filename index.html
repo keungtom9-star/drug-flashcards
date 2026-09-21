@@ -80,6 +80,24 @@
             align-items: center;
             gap: 10px;
         }
+
+        .app-home-button {
+            min-height: 44px;
+            margin: -3px -8px;
+            padding: 3px 8px;
+            border: 0;
+            border-radius: 14px;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            font-weight: inherit;
+            letter-spacing: inherit;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .app-home-button:active { background: rgba(0,122,255,.08); transform: scale(.98); }
         
         .app-icon-img {
             width: 38px; height: 38px;
@@ -298,6 +316,7 @@
             box-sizing: border-box;
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            padding-bottom: 0;
             overflow: hidden;
         }
         body.mobile-ui header { flex: 0 0 auto; }
@@ -308,7 +327,7 @@
             flex: 0 0 auto;
             width: calc(100% - 24px);
             box-sizing: border-box;
-            margin: 8px 12px;
+            margin: 8px 12px max(4px, env(safe-area-inset-bottom));
             padding: 4px;
             gap: 2px;
             max-height: 64px;
@@ -984,8 +1003,10 @@
 
 <header>
     <h1>
-        <img src="apple-touch-icon.png" class="app-icon-img" alt="App Icon">
-        AI Drug Tutor
+        <button type="button" class="app-home-button" onclick="goHome()" aria-label="Go to the main search page">
+            <img src="apple-touch-icon.png" class="app-icon-img" alt="">
+            <span>AI Drug Tutor</span>
+        </button>
     </h1>
     <button onclick="handleTopBack()" class="top-back-btn" aria-label="Back">←</button>
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
@@ -2850,6 +2871,20 @@ Language: ${langInstruction}.`;
     function setSearchFocus(isFocused) {
         const searchHasFocus = !!isFocused && activeAppMode === 'search';
         document.body.classList.toggle('search-focus-active', searchHasFocus);
+    }
+
+    function goHome() {
+        clearTimeout(searchDebounceTimer);
+        const input = document.getElementById('search-input');
+        if (input) input.value = '';
+        searchSystem = 'All';
+        renderAllSystems();
+        switchMode('search');
+        runSearch();
+        if (input) input.blur();
+        setSearchFocus(false);
+        const searchSection = document.getElementById('search-section');
+        if (searchSection) searchSection.scrollTop = 0;
     }
 
     function handleTopBack() {
