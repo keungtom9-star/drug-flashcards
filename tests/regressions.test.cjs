@@ -262,7 +262,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -322,7 +322,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -359,7 +359,7 @@ test('startup and all navigation tabs work after removing the old study controls
     assert.ok(vm.runInContext('activeSourceList.length', context) > 0);
     assert.equal(vm.runInContext('quizList.length === activeSourceList.length', context), true);
     assert.equal(getElement('search-section').style.display, 'block');
-    assert.equal(getElement('search-api-notice').hidden, false);
+    assert.equal(getElement('search-api-notice').hidden, true);
     vm.runInContext('setupWardPreload = () => {}; setupClinicalPreload = () => {}; beginClinicalBackSync = () => {};', context);
     for (const mode of ['quiz', 'ward', 'clinical', 'search']) {
         context.switchMode(mode);
@@ -682,7 +682,7 @@ test('search history saves submitted searches once, with a small limit', () => {
 });
 
 test('missing or blank API keys open setup without sending AI requests or resetting a quiz', async () => {
-    const { context, document } = loadMain({ ds_key: '  ' });
+    const { context, document } = loadMain({ ds_key: '  ', active_provider: 'deepseek-v4-flash' });
     let aiRequests = 0;
     context.fetch = async url => {
         if (/api\.(deepseek|openrouter)/.test(String(url))) aiRequests++;
@@ -716,6 +716,30 @@ test('API reminders follow the active provider and save/clear updates them immed
     document.getElementById('openrouter-key').value = ' ';
     context.saveSettings();
     assert.equal(document.getElementById('search-api-notice').hidden, false);
+});
+
+test('server-managed Qwen is the default and never sends an API key from the browser', async () => {
+    const { context, document } = loadMain();
+    context.updateApiNotices();
+    const requests = [];
+    context.fetch = async (url, options) => {
+        requests.push({ url, options });
+        return new Response('data: {"choices":[{"delta":{"content":"Ready"}}]}\n\ndata: [DONE]\n\n', {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' },
+        });
+    };
+
+    const updates = [];
+    await context.streamAIResponse([{ role: 'user', content: 'Explain this drug.' }], text => updates.push(text));
+
+    assert.equal(vm.runInContext('currentProvider', context), 'openrouter-qwen');
+    assert.equal(document.getElementById('search-api-notice').hidden, true);
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, '/.netlify/functions/openrouter-qwen');
+    assert.equal(requests[0].options.headers.Authorization, undefined);
+    assert.equal(JSON.parse(requests[0].options.body).model, 'qwen/qwen3.8-27b:free');
+    assert.deepEqual(updates, ['Ready']);
 });
 
 test('Clinical Bank reads the shared DeepSeek key and guides keyless generation to Settings', async () => {
