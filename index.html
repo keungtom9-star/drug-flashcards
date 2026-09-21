@@ -80,6 +80,24 @@
             align-items: center;
             gap: 10px;
         }
+
+        .app-home-button {
+            min-height: 44px;
+            margin: -3px -8px;
+            padding: 3px 8px;
+            border: 0;
+            border-radius: 14px;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            font-weight: inherit;
+            letter-spacing: inherit;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .app-home-button:active { background: rgba(0,122,255,.08); transform: scale(.98); }
         
         .app-icon-img {
             width: 38px; height: 38px;
@@ -298,6 +316,7 @@
             box-sizing: border-box;
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            padding-bottom: 0;
             overflow: hidden;
         }
         body.mobile-ui header { flex: 0 0 auto; }
@@ -308,7 +327,7 @@
             flex: 0 0 auto;
             width: calc(100% - 24px);
             box-sizing: border-box;
-            margin: 8px 12px;
+            margin: 8px 12px max(4px, env(safe-area-inset-bottom));
             padding: 4px;
             gap: 2px;
             max-height: 64px;
@@ -746,6 +765,33 @@
             line-height: 1.45;
         }
         .drug-explain-output li::before { content: '•'; position: absolute; left: 12px; color: var(--ios-indigo); font-weight: 900; }
+        .drug-explain-output.is-streaming::after {
+            content: '';
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            margin-left: 5px;
+            border-radius: 50%;
+            background: var(--ios-indigo);
+            animation: streamBlink .9s ease-in-out infinite;
+        }
+        .ai-stream-card { margin-top: 14px; padding: 14px; text-align: left; }
+        .ai-stream-heading { display: flex; align-items: center; gap: 9px; color: #1e3a8a; font-weight: 800; }
+        .ai-stream-heading .loading-spinner { width: 18px; height: 18px; border-width: 2px; flex: 0 0 auto; }
+        .ai-stream-text {
+            max-height: 190px;
+            margin: 12px 0 0;
+            padding: 11px 12px;
+            overflow: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            border: 1px solid #dbeafe;
+            border-radius: 11px;
+            background: #f8fbff;
+            color: #334155;
+            font: 500 .78rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+        @keyframes streamBlink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
         .ai-review-note {
             margin: 10px 0 14px;
             padding: 10px 12px;
@@ -984,8 +1030,10 @@
 
 <header>
     <h1>
-        <img src="apple-touch-icon.png" class="app-icon-img" alt="App Icon">
-        AI Drug Tutor
+        <button type="button" class="app-home-button" onclick="goHome()" aria-label="Go to the main search page">
+            <img src="apple-touch-icon.png" class="app-icon-img" alt="">
+            <span>AI Drug Tutor</span>
+        </button>
     </h1>
     <button onclick="handleTopBack()" class="top-back-btn" aria-label="Back">←</button>
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
@@ -2852,6 +2900,20 @@ Language: ${langInstruction}.`;
         document.body.classList.toggle('search-focus-active', searchHasFocus);
     }
 
+    function goHome() {
+        clearTimeout(searchDebounceTimer);
+        const input = document.getElementById('search-input');
+        if (input) input.value = '';
+        searchSystem = 'All';
+        renderAllSystems();
+        switchMode('search');
+        runSearch();
+        if (input) input.blur();
+        setSearchFocus(false);
+        const searchSection = document.getElementById('search-section');
+        if (searchSection) searchSection.scrollTop = 0;
+    }
+
     function handleTopBack() {
         const active = document.querySelector('.nav-btn.active')?.id;
         if (active === 'nav-clinical') {
@@ -3241,13 +3303,20 @@ Language: ${langInstruction}.`;
         return hanCount >= 30 && hanCount >= latinCount;
     }
 
-    async function generateCantoneseDrugExplanation(drugName) {
+    function hasReadableCantoneseStream(text) {
+        return (String(text || '').match(/[\u3400-\u9fff]/g) || []).length >= 4;
+    }
+
+    async function generateCantoneseDrugExplanation(drugName, onUpdate = () => {}) {
         let answer = '';
         const messages = [
             { role: 'system', content: '所有回覆必須係清楚易明嘅繁體中文廣東話。只可保留必要藥名、醫學名詞同縮寫。' },
             { role: 'user', content: getCantoneseDrugExplainPrompt(drugName) }
         ];
-        await streamAIResponse(messages, (text) => { answer = text; });
+        await streamAIResponse(messages, (text) => {
+            answer = text;
+            if (hasReadableCantoneseStream(text)) onUpdate(text);
+        });
         if (isMostlyCantoneseExplanation(answer)) return answer;
 
         let rewritten = '';
@@ -3255,7 +3324,10 @@ Language: ${langInstruction}.`;
         await streamAIResponse([
             { role: 'system', content: '你只可以輸出繁體中文廣東話。' },
             { role: 'user', content: rewritePrompt }
-        ], (text) => { rewritten = text; });
+        ], (text) => {
+            rewritten = text;
+            if (hasReadableCantoneseStream(text)) onUpdate(text);
+        });
         if (isMostlyCantoneseExplanation(rewritten)) return rewritten;
         return '## ⚠️ 暫時未能產生廣東話解釋\n- 請再試一次。\n- 用藥前請核對正式藥物參考同病房指引。';
     }
@@ -3270,13 +3342,19 @@ Language: ${langInstruction}.`;
         box.innerHTML = '<div style="padding:4px 0; color:#4f46e5; font-weight:700;">整理緊廣東話重點…</div>';
         withSearchDrugSelection(btn, '揀一隻藥物解釋', async (pickedName) => {
             try {
-                const explanation = await generateCantoneseDrugExplanation(pickedName);
+                box.classList.add('is-streaming');
+                box.setAttribute('aria-busy', 'true');
+                const explanation = await generateCantoneseDrugExplanation(pickedName, (partialText) => {
+                    box.innerHTML = marked.parse(partialText);
+                });
                 box.innerHTML = marked.parse(explanation);
                 btn.innerText = '✅ 廣東話解釋';
             } catch (_) {
                 box.innerHTML = marked.parse('## ⚠️ 解釋失敗\n- 請檢查網絡後再試。');
                 btn.innerText = '↻ 再試解釋';
             } finally {
+                box.classList.remove('is-streaming');
+                box.removeAttribute('aria-busy');
                 btn.disabled = false;
             }
         });
@@ -3468,9 +3546,9 @@ ${rawText}`;
         const container = document.getElementById('ai-search-output');
         container.style.display = 'block';
         container.innerHTML = `
-            <div style="text-align:center; padding:20px;">
-                <div class="loading-spinner"></div>
-                <div style="margin-top:10px; font-weight:600;">Searching database...</div>
+            <div class="ios-card ai-stream-card" aria-live="polite" aria-busy="true">
+                <div class="ai-stream-heading"><div class="loading-spinner"></div><span>AI is building the drug details…</span></div>
+                <pre id="ai-search-stream" class="ai-stream-text">Connecting…</pre>
             </div>`;
 
         const prompt = `You are a nursing tutor. The user searched for "${query}". Return strict JSON only.
@@ -3487,7 +3565,14 @@ Rules:
 
         try {
             let fullText = "";
-            await streamAIResponse([{role: "user", content: prompt}], (text) => { fullText = text; });
+            await streamAIResponse([{role: "user", content: prompt}], (text) => {
+                fullText = text;
+                const liveOutput = document.getElementById('ai-search-stream');
+                if (liveOutput) {
+                    liveOutput.textContent = text;
+                    liveOutput.scrollTop = liveOutput.scrollHeight;
+                }
+            });
             let parsed = parseAISearchPayload(fullText);
             if (!parsed) {
                 parsed = await recoverAISearchPayload(fullText, query);
@@ -4869,23 +4954,35 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
             let fullText = "";
+            let eventBuffer = "";
+
+            const readEventLine = (line) => {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('data:')) return;
+                const payload = trimmed.slice(5).trim();
+                if (!payload || payload === '[DONE]') return;
+                try {
+                    const json = JSON.parse(payload);
+                    const content = json.choices?.[0]?.delta?.content || json.choices?.[0]?.message?.content || "";
+                    if (content) {
+                        fullText += content;
+                        onUpdate(fullText);
+                    }
+                } catch (_) {
+                    // The remaining partial SSE line stays buffered for the next chunk.
+                }
+            };
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        if (line.trim() === 'data: [DONE]') continue;
-                        try {
-                            const json = JSON.parse(line.substring(6));
-                            const content = json.choices?.[0]?.delta?.content || json.choices?.[0]?.message?.content || "";
-                            if (content) { fullText += content; onUpdate(fullText); }
-                        } catch (e) {}
-                    }
-                }
+                eventBuffer += decoder.decode(value, { stream: true });
+                const lines = eventBuffer.split(/\r?\n/);
+                eventBuffer = lines.pop() || '';
+                lines.forEach(readEventLine);
             }
+            eventBuffer += decoder.decode();
+            if (eventBuffer.trim()) readEventLine(eventBuffer);
 
             if (!fullText) {
                 onUpdate('No explanation content received. Please try again.');

@@ -16,7 +16,14 @@
         const viewport = window.visualViewport;
         // Keep native pinch zoom working; only resize for browser chrome/keyboard changes.
         if (viewport && viewport.scale !== 1) return;
-        const height = viewport ? viewport.height : window.innerHeight;
+        const layoutHeight = window.innerHeight || document.documentElement.clientHeight;
+        const visualHeight = viewport ? viewport.height : layoutHeight;
+        // iOS may reserve space for transient browser chrome even when it is not
+        // visible. Only accept the shorter visual viewport when the difference is
+        // large enough to be the software keyboard; otherwise the tab bar floats
+        // above a blank strip at the bottom of the screen.
+        const keyboardOpen = layoutHeight - visualHeight > 160;
+        const height = keyboardOpen ? visualHeight : Math.max(layoutHeight, visualHeight);
         const top = viewport ? viewport.offsetTop : 0;
         document.documentElement.style.setProperty('--app-height', `${height}px`);
         document.documentElement.style.setProperty('--viewport-top', `${top}px`);
