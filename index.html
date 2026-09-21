@@ -306,7 +306,7 @@
         /* Explicit dual UI modes */
         body.mobile-ui .subtitle::after { content: ''; }
 
-        /* Mobile shell: each page scrolls above the persistent tab bar. */
+        /* Mobile shell: compact controls stay at the top so content gets the full lower screen. */
         body.mobile-ui {
             position: fixed;
             inset: 0;
@@ -319,22 +319,67 @@
             padding-bottom: 0;
             overflow: hidden;
         }
-        body.mobile-ui header { flex: 0 0 auto; }
+        body.mobile-ui header {
+            order: 1;
+            flex: 0 0 auto;
+            min-height: 48px;
+            padding: 4px 50px;
+            flex-direction: row;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 0;
+        }
+        body.mobile-ui h1 { min-width: 0; font-size: 1.05rem; }
+        body.mobile-ui .app-home-button {
+            min-height: 36px;
+            min-width: 0;
+            margin: 0;
+            padding: 2px 4px;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        body.mobile-ui .app-icon-img {
+            width: 24px;
+            height: 24px;
+            border-radius: 7px;
+        }
+        body.mobile-ui .subtitle {
+            flex: 0 1 auto;
+            max-width: 92px;
+            margin: 0;
+            padding: 2px 7px;
+            overflow: hidden;
+            font-size: .62rem;
+            line-height: 1.25;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        body.mobile-ui .top-back-btn,
+        body.mobile-ui .settings-btn-top {
+            top: 6px;
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+        }
+        body.mobile-ui .top-back-btn { left: 8px; }
+        body.mobile-ui .settings-btn-top { right: 8px; }
         body.mobile-ui .glass-nav {
-            order: 3;
+            order: 2;
             position: relative;
             top: auto;
             flex: 0 0 auto;
-            width: calc(100% - 24px);
+            width: calc(100% - 16px);
             box-sizing: border-box;
-            margin: 8px 12px max(4px, env(safe-area-inset-bottom));
-            padding: 4px;
+            margin: 4px 8px 6px;
+            padding: 3px;
             gap: 2px;
-            max-height: 64px;
+            max-height: 44px;
             overflow: hidden;
             opacity: 1;
             transform: translateY(0);
             visibility: visible;
+            border-radius: 14px;
+            box-shadow: 0 7px 22px rgba(15,23,42,.09), inset 0 1px 0 rgba(255,255,255,.8);
             transition: opacity .2s ease, transform .24s cubic-bezier(.2,.8,.2,1), max-height .24s ease, margin .24s ease, padding .24s ease, border-width .24s ease, visibility 0s linear;
         }
         body.mobile-ui.search-results-active .glass-nav,
@@ -346,7 +391,7 @@
             padding-bottom: 0;
             border-width: 0;
             opacity: 0;
-            transform: translateY(18px);
+            transform: translateY(-10px);
             visibility: hidden;
             pointer-events: none;
             transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, .24s;
@@ -378,20 +423,23 @@
             padding-top: 8px;
         }
         body.mobile-ui .nav-btn {
-            height: 52px;
+            height: 38px;
+            min-height: 38px;
             min-width: 0;
-            flex-direction: column;
+            padding: 0 5px;
+            flex-direction: row;
             gap: 4px;
+            border-radius: 10px;
             animation: none;
         }
-        body.mobile-ui .nav-ico { font-size: 1.2rem; }
+        body.mobile-ui .nav-ico { font-size: .84rem; }
         body.mobile-ui .nav-label { display: none; }
-        body.mobile-ui .nav-label-mobile { display: block; font-size: .7rem; }
+        body.mobile-ui .nav-label-mobile { display: block; font-size: .68rem; line-height: 1; }
         body.mobile-ui #app-container {
-            order: 2;
+            order: 3;
             position: relative;
             inset: auto;
-            width: calc(100% - 24px);
+            width: calc(100% - 16px);
             max-width: none;
             flex: 1 1 0;
             min-height: 0;
@@ -405,17 +453,19 @@
             overflow-y: auto;
             overscroll-behavior-y: contain;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 16px;
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
         }
         body.mobile-ui #ward-section,
         body.mobile-ui #clinical-section { height: 100%; }
         body.mobile-ui.ward-fullscreen .immersive-shell {
             height: 100%;
             min-height: 0;
-            padding: 0;
+            padding: 0 0 max(3px, env(safe-area-inset-bottom));
             overflow: hidden;
         }
+        body.mobile-ui.ward-fullscreen #app-container { width: 100%; }
         body.mobile-ui .immersive-frame { display: block; }
+        body.mobile-ui.ward-fullscreen .immersive-frame { border-radius: 0; box-shadow: none; }
 
         body.desktop-ui header {
             width: 100%;
