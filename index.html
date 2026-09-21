@@ -1087,7 +1087,7 @@
     </h1>
     <button onclick="handleTopBack()" class="top-back-btn" aria-label="Back">←</button>
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
-    <div class="subtitle" id="provider-display">DeepSeek</div>
+    <div class="subtitle" id="provider-display">Qwen3.8 27B</div>
 </header>
 
 <nav class="glass-nav" aria-label="Main navigation">
@@ -1248,6 +1248,7 @@
         <div style="margin-bottom:20px; background:#F9FAFB; padding:15px; border-radius:12px;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">AI Model</label>
             <select id="provider-select" onchange="updateProviderDisplay()" class="ios-select" style="width:100%; margin-top:5px; background:white;">
+                <option value="openrouter-qwen">Qwen3.8 27B (Free · Secure)</option>
                 <option value="deepseek-v4-flash">DeepSeek V4 Flash (Fast)</option>
                 <option value="deepseek-v4-pro">DeepSeek V4 Pro (Flagship)</option>
                 <option value="openrouter-trinity">OpenRouter Trinity (Free)</option>
@@ -1255,7 +1256,12 @@
             </select>
         </div>
 
-        <div id="deepseek-config" class="config-section">
+        <div id="qwen-config" class="config-section">
+            <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Qwen3.8 27B</label>
+            <div style="font-size:0.78rem; line-height:1.45; color:var(--ios-gray);">Free OpenRouter model. The API key stays in the Netlify server environment and is never sent to this browser.</div>
+        </div>
+
+        <div id="deepseek-config" class="config-section" style="display:none;">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">DeepSeek API Key</label>
             <input type="password" id="deepseek-key" aria-label="DeepSeek API key" autocomplete="off" spellcheck="false" class="settings-input" placeholder="sk-...">
             <div style="font-size:0.75rem; color:var(--ios-gray);">Works with DeepSeek V4 Flash and V4 Pro.</div>
@@ -2509,7 +2515,7 @@ Language: ${langInstruction}.`;
     const LOCAL_QUIZ_BANK_KEY = 'drug_tutor_quiz_bank_v1';
     
     // API & Keys
-    let currentProvider = localStorage.getItem('active_provider') || 'deepseek-v4-flash';
+    let currentProvider = localStorage.getItem('active_provider') || 'openrouter-qwen';
     let deepSeekKey = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
     let openRouterKey = (localStorage.getItem('openrouter_key') || '').trim();
     let yinliKey = (localStorage.getItem('yinli_key') || '').trim();
@@ -2518,6 +2524,8 @@ Language: ${langInstruction}.`;
     let quizSheetURL = localStorage.getItem('quiz_sheet_url') || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
     const YINLI_API_URL = 'https://yinli.one/v1/chat/completions';
     const YINLI_MODEL_NAME = 'gemini-3.1-pro-preview';
+    const QWEN_PROXY_URL = '/.netlify/functions/openrouter-qwen';
+    const QWEN_MODEL_NAME = 'qwen/qwen3.8-27b:free';
     
     // Settings
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
@@ -3125,6 +3133,7 @@ Language: ${langInstruction}.`;
     }
 
     function getApiConfiguration(provider = currentProvider) {
+        if (provider === 'openrouter-qwen') return { label: 'Qwen3.8 27B', inputId: null, key: 'server-managed', serverManaged: true };
         if (provider === 'openrouter-trinity') return { label: 'OpenRouter', inputId: 'openrouter-key', key: openRouterKey.trim() };
         if (provider === 'yinli-gemini') return { label: 'Yinli Gemini', inputId: 'yinli-key', key: yinliKey.trim() };
         return { label: 'DeepSeek', inputId: 'deepseek-key', key: deepSeekKey.trim() };
@@ -3148,8 +3157,12 @@ Language: ${langInstruction}.`;
         document.getElementById('provider-select').value = provider;
         updateProviderDisplay();
         const input = document.getElementById(getApiConfiguration(provider).inputId);
-        input.focus({ preventScroll: true });
-        input.scrollIntoView({ block: 'center' });
+        if (input) {
+            input.focus({ preventScroll: true });
+            input.scrollIntoView({ block: 'center' });
+        } else {
+            document.getElementById('qwen-config')?.scrollIntoView({ block: 'center' });
+        }
     }
 
     function requireApiKey() {
@@ -3161,7 +3174,7 @@ Language: ${langInstruction}.`;
 
     window.addEventListener('storage', event => {
         if (!['ds_key', 'api_key', 'openrouter_key', 'yinli_key', 'active_provider'].includes(event.key)) return;
-        currentProvider = localStorage.getItem('active_provider') || 'deepseek-v4-flash';
+        currentProvider = localStorage.getItem('active_provider') || 'openrouter-qwen';
         deepSeekKey = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
         openRouterKey = (localStorage.getItem('openrouter_key') || '').trim();
         yinliKey = (localStorage.getItem('yinli_key') || '').trim();
@@ -4508,7 +4521,9 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
     }
 
     async function prepareQuizQuestion(roundQuizList, level, system) {
-        const canUseAI = (currentProvider === 'openrouter-trinity')
+        const canUseAI = currentProvider === 'openrouter-qwen'
+            ? true
+            : (currentProvider === 'openrouter-trinity')
             ? !!(openRouterKey && openRouterKey.startsWith('sk-'))
             : (currentProvider === 'yinli-gemini'
                 ? !!yinliKey
@@ -4540,6 +4555,10 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
                 return { error: 'Yinli API key is required for AI generation.' };
             }
             return { error: 'DeepSeek API key is required for AI generation.' };
+        }
+
+        if (currentProvider === 'openrouter-qwen') {
+            return { error: 'Qwen server is unavailable. Check the Netlify OPENROUTER_API_KEY environment variable and retry.' };
         }
 
         return { error: hasSheetBank
@@ -4624,10 +4643,15 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
                 nursing: d.nursing
             }));
 
-            const modelName = currentProvider === 'openrouter-trinity'
+            const usingServerQwen = currentProvider === 'openrouter-qwen';
+            const modelName = usingServerQwen
+                ? QWEN_MODEL_NAME
+                : currentProvider === 'openrouter-trinity'
                 ? 'arcee-ai/trinity-large-preview:free'
                 : (currentProvider === 'yinli-gemini' ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash'));
-            const aiApiUrl = currentProvider === 'openrouter-trinity'
+            const aiApiUrl = usingServerQwen
+                ? QWEN_PROXY_URL
+                : currentProvider === 'openrouter-trinity'
                 ? 'https://openrouter.ai/api/v1/chat/completions'
                 : (currentProvider === 'yinli-gemini' ? YINLI_API_URL : 'https://api.deepseek.com/chat/completions');
             const levelGuidance = {
@@ -4651,10 +4675,12 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
             try {
                 const response = await fetch(aiApiUrl, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${currentProvider === 'openrouter-trinity' ? openRouterKey : (currentProvider === 'yinli-gemini' ? yinliKey : deepSeekKey)}`,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: usingServerQwen
+                        ? { 'Content-Type': 'application/json' }
+                        : {
+                            'Authorization': `Bearer ${currentProvider === 'openrouter-trinity' ? openRouterKey : (currentProvider === 'yinli-gemini' ? yinliKey : deepSeekKey)}`,
+                            'Content-Type': 'application/json'
+                        },
                     body: JSON.stringify({
                         model: modelName,
                         messages: [{ role: 'user', content: prompt }],
@@ -4965,19 +4991,26 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
     // --- AI FUNCTIONS ---
     async function streamAIResponse(messages, onUpdate) {
         if (!requireApiKey()) throw new Error('Add an API key in Settings to use AI features.');
+        const usingServerQwen = currentProvider === 'openrouter-qwen';
         const usingOpenRouter = currentProvider === 'openrouter-trinity';
         const usingYinli = currentProvider === 'yinli-gemini';
-        const apiUrl = usingOpenRouter
+        const apiUrl = usingServerQwen
+            ? QWEN_PROXY_URL
+            : usingOpenRouter
             ? "https://openrouter.ai/api/v1/chat/completions"
             : (usingYinli ? YINLI_API_URL : "https://api.deepseek.com/chat/completions");
-        const modelName = usingOpenRouter
+        const modelName = usingServerQwen
+            ? QWEN_MODEL_NAME
+            : usingOpenRouter
             ? 'arcee-ai/trinity-large-preview:free'
             : (usingYinli ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash'));
 
-        const headers = {
-            "Authorization": `Bearer ${usingOpenRouter ? openRouterKey : (usingYinli ? yinliKey : deepSeekKey)}`,
-            "Content-Type": "application/json"
-        };
+        const headers = usingServerQwen
+            ? { "Content-Type": "application/json" }
+            : {
+                "Authorization": `Bearer ${usingOpenRouter ? openRouterKey : (usingYinli ? yinliKey : deepSeekKey)}`,
+                "Content-Type": "application/json"
+            };
         
         const body = { 
             model: modelName, 
@@ -5177,10 +5210,13 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
     
     function updateProviderDisplay() {
         const val = document.getElementById('provider-select').value;
-        document.getElementById('deepseek-config').style.display = (val === 'openrouter-trinity' || val === 'yinli-gemini') ? 'none' : 'block';
+        document.getElementById('qwen-config').style.display = val === 'openrouter-qwen' ? 'block' : 'none';
+        document.getElementById('deepseek-config').style.display = (val === 'openrouter-qwen' || val === 'openrouter-trinity' || val === 'yinli-gemini') ? 'none' : 'block';
         document.getElementById('openrouter-config').style.display = val === 'openrouter-trinity' ? 'block' : 'none';
         document.getElementById('yinli-config').style.display = val === 'yinli-gemini' ? 'block' : 'none';
-        if (val === 'deepseek-v4-pro') {
+        if (val === 'openrouter-qwen') {
+            document.getElementById('provider-display').innerText = 'Qwen3.8 27B';
+        } else if (val === 'deepseek-v4-pro') {
             document.getElementById('provider-display').innerText = 'DeepSeek V4 Pro';
         } else if (val === 'deepseek-v4-flash') {
             document.getElementById('provider-display').innerText = 'DeepSeek V4 Flash';
