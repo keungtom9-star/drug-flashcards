@@ -28,3 +28,15 @@ The default AI provider is the free OpenRouter model `qwen/qwen3.8-27b:free`. Br
 4. Trigger a new deployment. Netlify applies runtime environment-variable changes to Functions on the next deploy.
 
 For local Function testing, use Netlify Dev and provide `OPENROUTER_API_KEY` through a gitignored local environment file. Never add the real value to this repository.
+
+## Secure Google Sheet connection on Netlify
+
+The browser uses `netlify/functions/google-data.mjs`; the real Google Sheet and Apps Script URLs stay in Netlify's server environment.
+
+Add these variables in **Project configuration → Environment variables**, enable Functions access, and redeploy:
+
+- `GOOGLE_DRUG_SHEET_CSV_URL` — published drug CSV URL
+- `GOOGLE_QUIZ_SHEET_CSV_URL` — published quiz CSV URL
+- `GOOGLE_SCRIPT_WEB_APP_URL` — Apps Script web-app URL used to save an approved drug
+
+Do not commit the real URLs. Local development can load them from a gitignored environment file when running Netlify Dev.
