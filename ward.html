@@ -20,7 +20,7 @@
             --text-main: #000000;
             --text-sec: #6e6e73;
             --border: #E5E5EA;
-            
+
             --blue: #007AFF;
             --green: #34C759;
             --red: #FF3B30;
@@ -351,6 +351,83 @@
         .t-inf { background: #DCFCE7; color: var(--green); }
         .t-pump { background: #fee2e2; color: var(--red); }
         .t-im { background: #FEF3C7; color: #D97706; }
+
+        /* --- Dedicated IV infusion / syringe pump reference --- */
+        #infusion.container { align-content: start; }
+        .infusion-hero, .infusion-reference { grid-column: 1 / -1; }
+        .infusion-hero {
+            color: white;
+            border: 0;
+            background:
+                radial-gradient(circle at 92% 0%, rgba(96,165,250,.42), transparent 38%),
+                linear-gradient(135deg, #172554 0%, #1e40af 56%, #0369a1 100%);
+            box-shadow: 0 18px 38px rgba(30,64,175,.2);
+        }
+        .infusion-hero h1 { margin: 4px 0 6px; font-size: 1.35rem; letter-spacing: -.025em; }
+        .infusion-hero p { margin: 0; color: rgba(255,255,255,.86); font-size: .82rem; line-height: 1.5; }
+        .infusion-warning {
+            margin-top: 11px;
+            padding: 9px 11px;
+            border: 1px solid rgba(255,255,255,.22);
+            border-radius: 12px;
+            background: rgba(255,255,255,.1);
+            font-size: .74rem;
+            line-height: 1.45;
+        }
+        .infusion-jump-row { display: flex; gap: 8px; margin-top: 11px; overflow-x: auto; scrollbar-width: none; }
+        .infusion-jump-row::-webkit-scrollbar { display: none; }
+        .infusion-jump {
+            flex: 0 0 auto;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,.28);
+            border-radius: 999px;
+            background: rgba(255,255,255,.13);
+            color: white;
+            font: inherit;
+            font-size: .75rem;
+            font-weight: 750;
+            cursor: pointer;
+        }
+        .infusion-reference { overflow: hidden; }
+        .infusion-table td { vertical-align: top; padding: 9px 7px; line-height: 1.4; }
+
+        @media (max-width: 768px) {
+            .infusion-hero h1 { font-size: 1.08rem; }
+            .infusion-reference { padding: 10px; }
+            #infusion .infusion-table { display: block; width: 100% !important; table-layout: auto !important; font-size: .8rem !important; }
+            #infusion .infusion-table thead { display: none; }
+            #infusion .infusion-table tbody { display: grid; gap: 9px; }
+            #infusion .infusion-table tr {
+                display: block;
+                overflow: hidden;
+                border: 1px solid #dbeafe;
+                border-radius: 13px;
+                background: white;
+                box-shadow: 0 7px 18px rgba(30,64,175,.07);
+            }
+            #infusion .infusion-table td {
+                display: block;
+                width: 100% !important;
+                padding: 9px 11px;
+                border-bottom: 1px solid #e5e7eb;
+                word-break: normal;
+                overflow-wrap: anywhere;
+            }
+            #infusion .infusion-table td:last-child { border-bottom: 0; }
+            #infusion .infusion-table td::before {
+                display: block;
+                margin-bottom: 4px;
+                color: #64748b;
+                font-size: .62rem;
+                font-weight: 800;
+                letter-spacing: .055em;
+                text-transform: uppercase;
+            }
+            #infusion .infusion-table td:nth-child(1)::before { content: "Medication & preparation"; }
+            #infusion .infusion-table td:nth-child(2)::before { content: "Dose & pump rate"; }
+            #infusion .infusion-table td:nth-child(3)::before { content: "Remarks"; }
+        }
 
 
         /* --- Intake Flow (embedded app) --- */
@@ -698,6 +775,7 @@
             <button class="tab-btn" data-tab="ecg" onclick="switchTab('ecg')">ECG</button>
             <button class="tab-btn" data-tab="imaging" onclick="switchTab('imaging')">Imaging</button>
             <button class="tab-btn" data-tab="tools" onclick="switchTab('tools')">Tools</button>
+            <button class="tab-btn" data-tab="infusion" onclick="switchTab('infusion')">Infusion</button>
             <button class="tab-btn" data-tab="meds" onclick="switchTab('meds')">Meds</button>
             <button class="tab-btn" data-tab="intake" onclick="switchTab('intake')">Intake</button>
         </div>
@@ -1291,28 +1369,28 @@
         </div>
     </div>
 
-    <!-- ================= MEDS TAB ================= -->
-    <div id="meds" class="container">
-        <div class="card full-width" style="min-height: 80vh;">
-            <div class="card-header">💊 Injectables Guide</div>
-            <input type="search" id="medSearch" class="search-box" placeholder="Search drug..." onkeyup="filterMeds()">
-            
-            <div style="font-size:0.7rem; color:var(--text-sec); margin-bottom:10px; text-align:center;">
-                <span class="tag t-push">PUSH</span> IV Direct &nbsp; 
-                <span class="tag t-inf">INF</span> IV Drip &nbsp; 
-                <span class="tag t-pump">PUMP</span> Machine &nbsp;
-                <span class="tag t-im">IM</span>
+    <!-- ================= INFUSION TAB ================= -->
+    <div id="infusion" class="container">
+        <section class="card infusion-hero" aria-labelledby="infusion-title">
+            <div class="imaging-eyebrow">NTEC MSSC 2024 ward quick reference</div>
+            <h1 id="infusion-title">IV Infusion / Syringe Pump</h1>
+            <p>Standard preparations and pump-rate tables kept separate from the injectable medicines list for faster bedside checking.</p>
+            <div class="infusion-warning"><strong>Safety check:</strong> verify the current prescription, patient weight, concentration, compatible diluent, line, pump settings and the original local protocol before administration. Independent double-checks and local policy still apply.</div>
+            <div class="infusion-jump-row" aria-label="Jump to pump reference">
+                <button class="infusion-jump" type="button" onclick="scrollInfusionSection('infusion-pump')">100 mL infusion pump</button>
+                <button class="infusion-jump" type="button" onclick="scrollInfusionSection('syringe-pump')">50 mL syringe pump</button>
             </div>
+        </section>
 
-            <div style="margin-bottom:14px; border:1px solid var(--border); border-radius:12px; padding:10px; background:#f8fbff; overflow:hidden;">
+        <section class="card infusion-reference">
                 <div style="font-weight:700; margin-bottom:8px; color:#1e3a8a;">IV Infusion / Syringe Pump Ward Cheatsheet (NTEC MSSC 2024)</div>
                 <div style="font-size:0.72rem; color:var(--text-sec); margin-bottom:8px; line-height:1.4;">
                     Updated to match the 2024 ward infusion cards (Appendix A/B). Use as quick bedside reference and verify against official protocol before administration.
                 </div>
 
-                <div style="font-size:0.74rem; font-weight:700; color:#1e40af; margin:4px 0 6px;">INFUSION PUMP (100 ml regimens)</div>
+                <div id="infusion-pump" style="font-size:0.74rem; font-weight:700; color:#1e40af; margin:4px 0 6px; scroll-margin-top:12px;">INFUSION PUMP (100 ml regimens)</div>
                 <div style="overflow-x:hidden; margin-bottom:10px;">
-                    <table class="val-table" style="width:100%; table-layout:fixed; font-size:0.67rem; line-height:1.28; word-break:break-word;">
+                    <table class="val-table infusion-table" style="width:100%; table-layout:fixed; font-size:0.67rem; line-height:1.28; word-break:break-word;">
                         <thead>
                             <tr>
                                 <td style="width:31%;"><strong>Medication &amp; Preparation</strong></td>
@@ -1365,9 +1443,9 @@
                     </table>
                 </div>
 
-                <div style="font-size:0.74rem; font-weight:700; color:#065f46; margin:4px 0 6px;">SYRINGE PUMP (50 ml regimens)</div>
+                <div id="syringe-pump" style="font-size:0.74rem; font-weight:700; color:#065f46; margin:4px 0 6px; scroll-margin-top:12px;">SYRINGE PUMP (50 ml regimens)</div>
                 <div style="overflow-x:hidden;">
-                    <table class="val-table" style="width:100%; table-layout:fixed; font-size:0.67rem; line-height:1.28; word-break:break-word;">
+                    <table class="val-table infusion-table" style="width:100%; table-layout:fixed; font-size:0.67rem; line-height:1.28; word-break:break-word;">
                         <thead>
                             <tr>
                                 <td style="width:31%;"><strong>Medication &amp; Preparation</strong></td>
@@ -1414,6 +1492,20 @@
                         </tbody>
                     </table>
                 </div>
+        </section>
+    </div>
+
+    <!-- ================= MEDS TAB ================= -->
+    <div id="meds" class="container">
+        <div class="card full-width" style="min-height: 80vh;">
+            <div class="card-header">💊 Injectables Guide</div>
+            <input type="search" id="medSearch" class="search-box" placeholder="Search drug..." onkeyup="filterMeds()">
+
+            <div style="font-size:0.7rem; color:var(--text-sec); margin-bottom:10px; text-align:center;">
+                <span class="tag t-push">PUSH</span> IV Direct &nbsp;
+                <span class="tag t-inf">INF</span> IV Drip &nbsp;
+                <span class="tag t-pump">PUMP</span> Machine &nbsp;
+                <span class="tag t-im">IM</span>
             </div>
 
             <div id="medList">
@@ -1959,6 +2051,13 @@
         if (tabId === 'imaging') renderImagingReference();
         if (tabId === 'intake') intakeInit();
         window.scrollTo(0,0);
+    }
+
+    function scrollInfusionSection(sectionId) {
+        const target = document.getElementById(sectionId);
+        if (!target) return;
+        const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
     }
 
     const labReference = [
