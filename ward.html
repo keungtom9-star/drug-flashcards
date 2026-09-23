@@ -389,18 +389,31 @@
             font-weight: 750;
             cursor: pointer;
         }
-        .infusion-reference { overflow: hidden; }
+        .infusion-reference { overflow: visible; }
         .infusion-table td { vertical-align: top; padding: 9px 7px; line-height: 1.4; }
 
         @media (max-width: 768px) {
+            #infusion.container.active {
+                display: block;
+                flex: 1 1 0;
+                min-height: 0;
+                height: 0;
+                overflow-y: auto !important;
+                overflow-x: hidden;
+                overscroll-behavior-y: contain;
+                -webkit-overflow-scrolling: touch;
+                touch-action: pan-y;
+            }
+            #infusion.container.active > * + * { margin-top: 8px; }
             .infusion-hero h1 { font-size: 1.08rem; }
             .infusion-reference { padding: 10px; }
             #infusion .infusion-table { display: block; width: 100% !important; table-layout: auto !important; font-size: .8rem !important; }
             #infusion .infusion-table thead { display: none; }
-            #infusion .infusion-table tbody { display: grid; gap: 9px; }
+            #infusion .infusion-table tbody { display: block; }
             #infusion .infusion-table tr {
                 display: block;
                 overflow: hidden;
+                margin-bottom: 9px;
                 border: 1px solid #dbeafe;
                 border-radius: 13px;
                 background: white;
@@ -3064,7 +3077,7 @@
             if (!touch) return;
             const dx = touch.clientX - state.startX;
             const dy = Math.abs(touch.clientY - state.startY);
-            if (dx > 12 && dy < maxVerticalDrift) event.preventDefault();
+            if (dx > 12 && dx > dy * 1.2 && dy < maxVerticalDrift) event.preventDefault();
         }, { passive: false });
 
         const endSwipe = (event) => {
