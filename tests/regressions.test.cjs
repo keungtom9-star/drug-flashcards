@@ -281,7 +281,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -341,7 +341,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -363,8 +363,8 @@ test('main page keeps heavy data and optional libraries off the critical HTML pa
     assert.match(html, /function ensurePapaParse\(\)/);
     assert.match(html, /autoSyncOnStartup\s*=\s*localStorage\.getItem\('auto_sync_startup'\) === '1'/);
     assert.match(html, /scheduleNonCriticalTask\(\(\) => fetchSheetData\(true\), 1800, 5000\)/);
-    assert.match(html, /const GOOGLE_DATA_PROXY_URL = '\/.netlify\/functions\/google-data'/);
-    assert.doesNotMatch(html, /https:\/\/(?:docs\.google\.com\/spreadsheets|script\.google\.com\/macros)/);
+    assert.match(html, /const REQUIRED_SCRIPT_URL = "https:\/\/script\.google\.com\/macros\/s\//);
+    assert.match(html, /https:\/\/docs\.google\.com\/spreadsheets\/d\/e\//);
 });
 
 function fillAIEditor(document, overrides = {}) {
