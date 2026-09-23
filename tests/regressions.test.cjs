@@ -281,7 +281,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -341,7 +341,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -349,9 +349,23 @@ test('worker leaves other apps, third parties and writes untouched', async () =>
 
 function loadMain(records = {}) {
     const state = browserContext({ auto_sync_startup: '0', ...records });
+    vm.runInContext(read('drugs.js'), state.context);
     for (const source of inlineScripts('index.html')) vm.runInContext(source, state.context);
     return state;
 }
+
+test('main page keeps heavy data and optional libraries off the critical HTML path', () => {
+    const html = read('index.html');
+    assert.ok(Buffer.byteLength(html) < 240_000, 'index.html should stay below 240 KB');
+    assert.match(html, /<script src="drugs\.js" defer><\/script>/);
+    assert.doesNotMatch(html, /const commonDrugs\s*=\s*\[/);
+    assert.doesNotMatch(html, /<script[^>]+(?:marked|papaparse)/i);
+    assert.match(html, /function ensurePapaParse\(\)/);
+    assert.match(html, /autoSyncOnStartup\s*=\s*localStorage\.getItem\('auto_sync_startup'\) === '1'/);
+    assert.match(html, /scheduleNonCriticalTask\(\(\) => fetchSheetData\(true\), 1800, 5000\)/);
+    assert.match(html, /const GOOGLE_DATA_PROXY_URL = '\/.netlify\/functions\/google-data'/);
+    assert.doesNotMatch(html, /https:\/\/(?:docs\.google\.com\/spreadsheets|script\.google\.com\/macros)/);
+});
 
 function fillAIEditor(document, overrides = {}) {
     const values = {
@@ -652,6 +666,20 @@ test('drug Explain enforces readable Cantonese and retries an English response',
     assert.ok(liveUpdates.length > 0);
     assert.ok(liveUpdates.every(text => !text.includes('This medicine')));
     assert.match(liveUpdates.at(-1), /護士要留意/);
+});
+
+test('Cantonese Explain exposes the first Cantonese fragment while generation continues', async () => {
+    const { context } = loadMain({ ds_key: 'test-key' });
+    const updates = [];
+    context.streamAIResponse = async (_messages, onUpdate) => {
+        onUpdate('## 💊 點');
+        onUpdate('## 💊 點樣起效\n- 幫身體減少製造血糖。');
+        onUpdate('## 💊 點樣起效\n- 幫身體減少製造血糖。\n## 🎯 點解會用\n- 用嚟控制糖尿病。\n## 🩺 護士要留意\n- 留意腎功能。\n## ⚠️ 常見／嚴重副作用\n- 常見肚瀉同作嘔。\n## 🚨 幾時要即刻報醫生\n- 呼吸急促或極度虛弱要即報。');
+    };
+    const answer = await context.generateCantoneseDrugExplanation('Metformin', text => updates.push(text));
+    assert.equal(updates[0], '## 💊 點');
+    assert.ok(updates.length >= 3);
+    assert.match(answer, /即刻報醫生/);
 });
 
 test('AI text streams across split server-sent event chunks', async () => {
