@@ -11,8 +11,6 @@
     <link rel="icon" href="apple-touch-icon.png" type="image/png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     
     <script src="app-ui.js" defer></script>
     <script src="drugs.js" defer></script>
@@ -1076,13 +1074,14 @@
         @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes modernSheetIn { from { opacity: 0; transform: translateY(34px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
     </style>
+    <link rel="stylesheet" href="ios-polish.css">
 </head>
-<body>
+<body class="ios-home">
 
 <header>
     <h1>
         <button type="button" class="app-home-button" onclick="goHome()" aria-label="Go to the main search page">
-            <img src="apple-touch-icon.png" class="app-icon-img" alt="">
+            <img src="apple-touch-icon.png" class="app-icon-img" alt="" decoding="async">
             <span>AI Drug Tutor</span>
         </button>
     </h1>
