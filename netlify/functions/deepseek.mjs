@@ -79,7 +79,7 @@ export default async function handler(request) {
       model: DEEPSEEK_MODEL,
       messages,
       temperature: clampNumber(input?.temperature, 0.4, 0, 1),
-      max_tokens: Math.round(clampNumber(input?.max_tokens, 700, 64, 2400)),
+      max_tokens: Math.round(clampNumber(input?.max_tokens, 700, 64, 4096)),
       stream,
     };
     if (input?.response_format?.type === 'json_object') {

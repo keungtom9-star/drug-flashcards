@@ -454,7 +454,7 @@ test('AI Drugs calls only the server proxy and never sends a browser secret or m
     assert.equal(body.model, undefined);
     assert.equal(body.stream, false);
     assert.deepEqual(body.response_format, { type: 'json_object' });
-    assert.equal(body.max_tokens, 2400);
+    assert.equal(body.max_tokens, 4096);
 });
 
 test('AI Drugs retries a short answer once and preserves safe partial results', async () => {
@@ -480,6 +480,43 @@ test('AI Drugs retries a short answer once and preserves safe partial results', 
     assert.match(document.getElementById('result-count').textContent, /7\/10/);
     assert.match(document.getElementById('status').textContent, /只搵到 7 隻可信/);
     assert.equal((document.getElementById('drug-list').innerHTML.match(/class="drug-card"/g) || []).length, 7);
+});
+
+test('AI Drugs automatically retries one malformed or truncated JSON answer', async () => {
+    const { context, document } = loadDisease();
+    context.loadDatabase();
+    document.getElementById('disease-input').value = 'Heart failure';
+    let calls = 0;
+    const retryModes = [];
+    context.requestDiseaseData = async (_disease, _acceptedNames, compactRetry) => {
+        calls++;
+        retryModes.push(compactRetry === true);
+        if (calls === 1) {
+            const error = new Error('Incomplete JSON');
+            error.code = 'DEEPSEEK_JSON_INCOMPLETE';
+            throw error;
+        }
+        return {
+            disease: 'Heart failure',
+            drugs: Array.from({ length: 10 }, (_, index) => ({
+                name: `Medicine ${index + 1}`, class: `Class ${index + 1}`,
+                use_en: `English use ${index + 1}`, use_zh: `中文用途 ${index + 1}`,
+                distinction_en: 'Distinct role.', distinction_zh: '作用唔同。'
+            })),
+            interactions: []
+        };
+    };
+    await context.searchDisease({ preventDefault() {} });
+    assert.equal(calls, 2);
+    assert.deepEqual(retryModes, [false, true]);
+    assert.equal(document.getElementById('result-count').textContent, '10/10');
+    assert.match(document.getElementById('status').textContent, /完成：10 隻不同藥物/);
+});
+
+test('desktop shell uses border-box sizing to avoid horizontal overflow', () => {
+    const html = read('index.html');
+    assert.match(html, /body\.desktop-ui \.glass-nav\s*\{[^}]*box-sizing:\s*border-box/s);
+    assert.match(html, /body\.desktop-ui #app-container\s*\{[^}]*box-sizing:\s*border-box/s);
 });
 
 test('local search ranks names before incidental text and supports case, multiple words and systems', () => {

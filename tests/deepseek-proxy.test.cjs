@@ -74,7 +74,7 @@ test('DeepSeek proxy sanitises options and does not forward arbitrary response f
         }));
         assert.equal(response.status, 200);
         assert.equal(forwarded.temperature, 1);
-        assert.equal(forwarded.max_tokens, 2400);
+        assert.equal(forwarded.max_tokens, 4096);
         assert.equal(forwarded.response_format, undefined);
         assert.deepEqual(forwarded.messages, [
             { role: 'system', content: 'Safe prompt' },
