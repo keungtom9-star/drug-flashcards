@@ -2040,8 +2040,95 @@ Language: ${langInstruction}.`;
         });
     }
 
+    function cleanDiseaseRevisionDrugName(value) {
+        return String(value || '')
+            .replace(/^\s*(?:[-*•]|\d{1,2}[.)])\s*/, '')
+            .replace(/\*\*/g, '')
+            .replace(/^(?:drug|medicine|medication|generic(?: name)?)\s*:\s*/i, '')
+            .replace(/^[\s"'`\[\]{}]+|[\s"'`\[\]{},;:]+$/g, '')
+            .replace(/[.!?]+$/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 100);
+    }
+
+    function isPlausibleDiseaseDrugName(value) {
+        const name = cleanDiseaseRevisionDrugName(value);
+        if (!name || name.length < 2 || name.length > 100 || name.split(/\s+/).length > 12) return false;
+        if (!/[a-z]/i.test(name) || /[{}\[\]]/.test(name)) return false;
+        return !/^(?:error\b|no (?:explanation|content|result)\b|please try\b|unable to\b|drugs?$|medicines?$|medications?$|json$)/i.test(name);
+    }
+
+    function coerceDiseaseRevisionRow(row) {
+        if (typeof row === 'string') {
+            const name = cleanDiseaseRevisionDrugName(row);
+            return isPlausibleDiseaseDrugName(name) ? { name } : null;
+        }
+        if (!row || typeof row !== 'object' || Array.isArray(row)) return null;
+        const rawName = [row.name, row.generic_name, row.drug_name, row.generic, row.drug, row.medicine, row.medication]
+            .find(value => typeof value === 'string' && value.trim());
+        const name = cleanDiseaseRevisionDrugName(rawName);
+        return isPlausibleDiseaseDrugName(name) ? { ...row, name } : null;
+    }
+
+    function splitDiseaseRevisionNames(value) {
+        return String(value || '')
+            .split(/\r?\n|[,;]+/)
+            .map(cleanDiseaseRevisionDrugName)
+            .filter(isPlausibleDiseaseDrugName);
+    }
+
     function getDiseaseRevisionRows(parsed) {
-        return Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.drugs) ? parsed.drugs : []);
+        if (Array.isArray(parsed)) return parsed;
+        if (typeof parsed === 'string') return splitDiseaseRevisionNames(parsed);
+        if (!parsed || typeof parsed !== 'object') return [];
+        for (const key of ['drugs', 'medicines', 'medications', 'results', 'items']) {
+            if (Array.isArray(parsed[key])) return parsed[key];
+            if (typeof parsed[key] === 'string') return splitDiseaseRevisionNames(parsed[key]);
+        }
+        if (coerceDiseaseRevisionRow(parsed)) return [parsed];
+        const dictionaryRows = Object.entries(parsed)
+            .filter(([, value]) => value && typeof value === 'object' && !Array.isArray(value))
+            .map(([key, value]) => ({ ...value, name: value.name || value.generic_name || key }));
+        return dictionaryRows;
+    }
+
+    function parseDiseaseRevisionResponse(rawText) {
+        const parsedRows = getDiseaseRevisionRows(parseAISearchPayload(rawText))
+            .map(coerceDiseaseRevisionRow)
+            .filter(Boolean);
+        if (parsedRows.length) return parsedRows;
+
+        const raw = String(rawText || '');
+        const recoveredNames = [];
+        const jsonNamePattern = /"(?:name|generic_name|drug_name|generic|medicine|medication)"\s*:\s*"((?:\\.|[^"\\])*)"/gi;
+        for (const match of raw.matchAll(jsonNamePattern)) {
+            let decoded = match[1];
+            try { decoded = JSON.parse(`"${match[1]}"`); } catch (_) { decoded = decoded.replace(/\\"/g, '"'); }
+            if (isPlausibleDiseaseDrugName(decoded)) recoveredNames.push(cleanDiseaseRevisionDrugName(decoded));
+        }
+        if (recoveredNames.length) return recoveredNames.map(name => ({ name }));
+
+        const bulletNames = [];
+        raw.split(/\r?\n/).forEach(line => {
+            const match = line.match(/^\s*(?:[-*•]|\d{1,2}[.)])\s+(.+)$/);
+            if (!match) return;
+            const leadingName = match[1].replace(/\*\*/g, '').split(/\s+(?:—|–|-)\s+|:\s+/)[0];
+            if (isPlausibleDiseaseDrugName(leadingName)) bulletNames.push(cleanDiseaseRevisionDrugName(leadingName));
+        });
+        if (bulletNames.length) return bulletNames.map(name => ({ name }));
+
+        const tableNames = raw.split(/\r?\n/).map(line => {
+            const match = line.match(/^\s*\|\s*([^|]+?)\s*\|/);
+            return match ? cleanDiseaseRevisionDrugName(match[1]) : '';
+        }).filter(name => isPlausibleDiseaseDrugName(name) && !/^(?:name|drug|medicine|generic)$/i.test(name) && !/^-+$/.test(name));
+        if (tableNames.length) return tableNames.map(name => ({ name }));
+
+        if (raw.length <= 1200 && !/[{}\[\]]/.test(raw)) {
+            const plainNames = splitDiseaseRevisionNames(raw);
+            if (plainNames.length >= 2) return plainNames.map(name => ({ name }));
+        }
+        return [];
     }
 
     function normalizeDiseaseRevisionDrugs(parsed, disease, { requireTen = true, database = null } = {}) {
@@ -2050,8 +2137,9 @@ Language: ${langInstruction}.`;
         const seen = new Set();
         const normalized = [];
         for (const row of rows) {
-            if (!row || typeof row !== 'object') continue;
-            const name = String(row.name || row.generic_name || '').trim();
+            const candidateRow = coerceDiseaseRevisionRow(row);
+            if (!candidateRow) continue;
+            const name = candidateRow.name;
             const identity = revisionDrugIdentity(name);
             const aliases = revisionDrugAliases(name);
             if (!name || !identity || Array.from(aliases).some(alias => seen.has(alias))) continue;
@@ -2059,14 +2147,14 @@ Language: ${langInstruction}.`;
             const saved = findSavedRevisionDrug(name, databaseSource);
             aliases.forEach(alias => seen.add(alias));
             if (saved) revisionDrugAliases(saved.name).forEach(alias => seen.add(alias));
-            const aiSystem = normalizeSystemLabel(row.system || '');
+            const aiSystem = normalizeSystemLabel(candidateRow.system || '');
             const candidate = {
                 name,
-                class: usefulDrugText(row.class, 'Drug class to verify'),
-                system: systemCategories.includes(aiSystem) ? aiSystem : inferOfficialDrugSystem(row),
-                indication: usefulDrugText(row.indication, `Verify its role in current guidance for ${disease}.`),
-                side_effects: usefulDrugText(row.side_effects || row.SideEffects || row.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects),
-                effect_of_drug: usefulDrugText(row.effect_of_drug || row.drug_effect || row.effect, DRUG_TEXT_FALLBACKS.effect),
+                class: usefulDrugText(candidateRow.class, 'Drug class to verify'),
+                system: systemCategories.includes(aiSystem) ? aiSystem : inferOfficialDrugSystem(candidateRow),
+                indication: usefulDrugText(candidateRow.indication, `Verify its role in current guidance for ${disease}.`),
+                side_effects: usefulDrugText(candidateRow.side_effects || candidateRow.SideEffects || candidateRow.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects),
+                effect_of_drug: usefulDrugText(candidateRow.effect_of_drug || candidateRow.drug_effect || candidateRow.effect, DRUG_TEXT_FALLBACKS.effect),
             };
             normalized.push({
                 name: String(saved?.name || candidate.name).trim(),
@@ -2107,6 +2195,7 @@ ${exclusionRule}
 - Do not return Nursing care, doses, routes, infusion rates, patient-specific advice, or local policy.
 - Never invent an inappropriate medicine merely to reach the requested count.
 - Never use "Not specified", "Unknown", "N/A", or empty values.
+- If the full objects would be cut off, return compact JSON such as {"drugs":["generic name 1","generic name 2"]}; valid names are more important than missing details.
 - Output JSON only with no Markdown or extra text.`;
     }
 
@@ -2117,7 +2206,7 @@ ${exclusionRule}
             { role: 'user', content: getDiseaseRevisionPrompt(disease, { requestedCount, excludedNames }) },
         ], text => { fullText = text; }, { temperature: 0.2, maxTokens: 1600 });
         if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
-        return parseAISearchPayload(fullText);
+        return parseDiseaseRevisionResponse(fullText);
     }
 
     function showRandomRevisionDrugs() {
@@ -2172,7 +2261,7 @@ ${exclusionRule}
                     retryFailed = true;
                 }
             }
-            if (!drugs.length) throw new Error('AI did not return any usable drug names. Please try again.');
+            if (!drugs.length) throw new Error('AI response contained no recognisable medicine names after two attempts. Please try again.');
             revisionDrugs = drugs;
             revisionDisease = disease;
             renderRevisionDrugs();
