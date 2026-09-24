@@ -16,10 +16,7 @@ export interface System {
 }
 
 export interface Settings {
-  provider: 'deepseek' | 'yinli';
   deepseekKey: string;
-  yinliKey: string;
-  yinliModel: string;
   voiceURI: string;
   aiLanguage: 'english' | 'lihkg';
 }

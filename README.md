@@ -18,16 +18,9 @@ View your app in AI Studio: https://ai.studio/apps/temp/1
 2. Run the app:
    `npm run dev`
 
-## Secure Qwen API on Netlify
+## DeepSeek-only AI
 
-The default AI provider is the free OpenRouter model `qwen/qwen3.8-27b:free`. Browser requests go through `netlify/functions/openrouter-qwen.mjs`, so the OpenRouter key is never included in the public HTML or JavaScript bundle.
-
-1. Revoke any API key that has been pasted into chat, source code, or a public location.
-2. Create a fresh OpenRouter key.
-3. In Netlify, open **Project configuration → Environment variables** and add `OPENROUTER_API_KEY` with Functions access.
-4. Trigger a new deployment. Netlify applies runtime environment-variable changes to Functions on the next deploy.
-
-For local Function testing, use Netlify Dev and provide `OPENROUTER_API_KEY` through a gitignored local environment file. Never add the real value to this repository.
+All AI features use the official DeepSeek API with the `deepseek-flash` model. Add a personal DeepSeek key in the app's Settings; it is stored only in that browser and sent directly to `api.deepseek.com`. Never add a real key to source code, GitHub, a screenshot, or a pull-request comment.
 
 ## Missing-drug search and Nursing care
 
@@ -35,6 +28,6 @@ Missing drugs are checked in this order: the configured Google Sheet, RxNorm, th
 
 Official RxNorm/openFDA results also offer an optional **AI improve official data** button. It simplifies the editable official fields in place without changing Nursing care or saving anything automatically.
 
-Only the editable **Nursing care** field uses DeepSeek. It generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add button.
+The editable **Nursing care** field uses DeepSeek and generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add button. AI improvement, Cantonese explanation, and disease-based revision also use the same DeepSeek model and key; there is no fallback to another provider.
 
-The home **Revise** tab shows 10 randomly selected drugs in a single floating-card column. Tap a card to reveal its indication, side effects, Nursing care, and drug effect; choose **Random 10** to reshuffle. You can also enter a disease and ask AI for up to 10 common, distinct medicines to revise. The app accepts full JSON objects, compact name arrays, numbered or bulleted lists, Markdown tables, and recoverable names from truncated JSON. It requests spare candidates, removes generic/brand/salt duplicates, and makes one repair request if the first answer is short. Every result is checked against the loaded or cached drug database: matches reuse the saved details and Nursing care, while unmatched cards are clearly marked as AI drafts. Disease lists stay in memory only and never auto-save.
+The home **Revise** tab shows 10 randomly selected drugs in a single floating-card column. Tap a card to reveal the indication, side effects, Nursing care, and drug effect; choose **Random 10** to reshuffle. You can also enter a disease and ask DeepSeek for up to 10 common, distinct generic medicines. This request uses DeepSeek JSON mode with a compact name array, then retries once if the first answer is empty or short. The app accepts full JSON objects, compact name arrays, numbered or bulleted lists, Markdown tables, and recoverable names from truncated JSON. It removes generic/brand/salt duplicates and checks every result against the loaded or cached drug database: matches reuse the saved details and Nursing care, while unmatched cards are clearly marked as AI drafts. Disease lists stay in memory only and never auto-save.

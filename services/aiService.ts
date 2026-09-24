@@ -1,20 +1,13 @@
 import { Settings } from '../types';
-import { YINLI_URL } from '../constants';
 
 export const streamAI = async (
   prompt: string,
   settings: Settings,
   onChunk: (chunk: string) => void
 ): Promise<void> => {
-  let url = "https://api.deepseek.com/chat/completions";
-  let headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
-  let body: any = { model: "deepseek-v4-flash", messages: [{ role: "user", content: prompt }], stream: true };
-
-  if (settings.provider === 'yinli') {
-    url = YINLI_URL;
-    headers["Authorization"] = `Bearer ${settings.yinliKey}`;
-    body.model = settings.yinliModel || "gemini-3.1-pro-preview";
-  }
+  const url = "https://api.deepseek.com/chat/completions";
+  const headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
+  const body: any = { model: "deepseek-flash", messages: [{ role: "user", content: prompt }], stream: true };
 
   const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
 
@@ -50,15 +43,9 @@ export const streamAI = async (
 };
 
 export const getFullAIResponse = async (prompt: string, settings: Settings): Promise<string> => {
-  let url = "https://api.deepseek.com/chat/completions";
-  let headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
-  let body: any = { model: "deepseek-v4-flash", messages: [{ role: "user", content: prompt }], stream: false };
-
-  if (settings.provider === 'yinli') {
-    url = YINLI_URL;
-    headers["Authorization"] = `Bearer ${settings.yinliKey}`;
-    body.model = settings.yinliModel || "gemini-3.1-pro-preview";
-  }
+  const url = "https://api.deepseek.com/chat/completions";
+  const headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
+  const body: any = { model: "deepseek-flash", messages: [{ role: "user", content: prompt }], stream: false };
 
   const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
   if(!response.ok) throw new Error("API Request Failed");
