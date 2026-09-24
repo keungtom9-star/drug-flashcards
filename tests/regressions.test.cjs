@@ -296,7 +296,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', prefix+'v27', prefix+'v28', prefix+'v29', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', prefix+'v27', prefix+'v28', prefix+'v29', prefix+'v30', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -357,7 +357,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26', 'drug-tutor-%2Fdrug-flashcards%2F-v27', 'drug-tutor-%2Fdrug-flashcards%2F-v28', 'drug-tutor-%2Fdrug-flashcards%2F-v29']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26', 'drug-tutor-%2Fdrug-flashcards%2F-v27', 'drug-tutor-%2Fdrug-flashcards%2F-v28', 'drug-tutor-%2Fdrug-flashcards%2F-v29', 'drug-tutor-%2Fdrug-flashcards%2F-v30']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -555,15 +555,50 @@ test('Revise can ask AI for 10 distinct disease drugs without saving or generati
     assert.throws(() => context.normalizeDiseaseRevisionDrugs({ drugs: Array(10).fill(aiRows[0]) }, 'Type 2 diabetes'), /returned 1 distinct drug/);
 });
 
+test('Disease revision recovers names from compact and imperfect AI formats', () => {
+    const { context } = loadMain();
+    const namesFrom = raw => Array.from(context.parseDiseaseRevisionResponse(raw), row => row.name);
+
+    assert.deepEqual(
+        namesFrom('```json\n{"drugs":["Metformin","Gliclazide","Empagliflozin"]}\n```'),
+        ['Metformin', 'Gliclazide', 'Empagliflozin']
+    );
+    assert.deepEqual(
+        namesFrom('1. Metformin\n2. Empagliflozin — SGLT2 inhibitor\n3. Gliclazide'),
+        ['Metformin', 'Empagliflozin', 'Gliclazide']
+    );
+    assert.deepEqual(
+        namesFrom('{"drugs":[{"name":"Metformin","class":"Biguanide"},{"name":"Gliclazide"'),
+        ['Metformin', 'Gliclazide']
+    );
+    assert.deepEqual(
+        namesFrom('| Drug | Class |\n| --- | --- |\n| Metformin | Biguanide |'),
+        ['Metformin']
+    );
+    assert.deepEqual(namesFrom('No explanation content received. Please try again.'), []);
+
+    context.rows = [{
+        name: 'Metformin (Glucophage)', class: 'Biguanide', indication: 'Type 2 diabetes',
+        side_effects: 'Diarrhoea, nausea', nursing: 'Saved guidance', system: '🦋 Endocrine',
+    }];
+    vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows)', context);
+    const normalized = context.normalizeDiseaseRevisionDrugs(
+        { drugs: ['Glucophage', 'Gliclazide'] },
+        'Type 2 diabetes',
+        { requireTen: false }
+    );
+    assert.equal(normalized.length, 2);
+    assert.equal(normalized[0].name, 'Metformin (Glucophage)');
+    assert.equal(normalized[0].__databaseMatch, true);
+    assert.equal(normalized[1].__databaseMatch, false);
+});
+
 test('Revise keeps valid partial disease results instead of failing the whole list', async () => {
     const { context, document } = loadMain();
     vm.runInContext('activeSourceList = []; revisionDrugs = [];', context);
     document.getElementById('revision-disease-input').value = 'Rare condition';
-    const rows = ['Drug one', 'Drug two', 'Drug three'].map(name => ({
-        name, class: 'Example class', system: '🧠 CNS / Neuro', indication: 'Rare condition',
-        side_effects: 'Nausea, dizziness', effect_of_drug: 'Example action',
-    }));
-    context.streamAIResponse = async (_messages, onUpdate) => onUpdate(JSON.stringify({ drugs: rows }));
+    const names = ['Drug one', 'Drug two', 'Drug three'];
+    context.streamAIResponse = async (_messages, onUpdate) => onUpdate(JSON.stringify({ drugs: names }));
 
     assert.equal(await context.searchRevisionByDisease({ preventDefault() {} }), true);
     assert.equal(vm.runInContext('revisionDrugs.length', context), 3);
