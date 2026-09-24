@@ -68,26 +68,6 @@ Include:
 Language: ${langInstruction}.`;
 }
 
-function getQuizExplainPrompt(quizData, language) {
-  const langInstruction = resolveLanguageInstruction(language);
-
-  return `The user has completed a pharmacology question.
-
-Question: "${quizData.q}"
-User answer: "${quizData.u}"
-Correct answer: "${quizData.correctAnswerText}"
-Drug focus: ${quizData.c.name}
-
-Respond in bullet points:
-1. State whether the answer is correct.
-2. Explain why the correct answer is correct (max 2 points).
-3. If incorrect, explain the mistake (max 1-2 points).
-4. Give one memory tip.
-5. End with one short bedside takeaway.
-
-Language: ${langInstruction}.`;
-}
-
 function getISBARPrompt(drug, language) {
   const langInstruction = resolveLanguageInstruction(language);
   return `Write an ISBAR handover for a patient receiving ${drug.name}.

@@ -258,30 +258,6 @@
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .quiz-stats-row {
-            margin: 12px 0;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .quiz-stat-pill {
-            background: #F2F2F7;
-            border-radius: 10px;
-            padding: 8px;
-            text-align: center;
-            font-size: 0.72rem;
-            color: var(--ios-gray);
-        }
-
-        .quiz-stat-pill strong {
-            display: block;
-            color: var(--text-primary);
-            font-size: 1rem;
-            margin-top: 2px;
-        }
-
-
         .mobile-tab-label { display: none; }
         .nav-label-mobile { display: none; }
 
@@ -446,7 +422,7 @@
             overflow: hidden;
         }
         body.mobile-ui #search-section,
-        body.mobile-ui #quiz-section {
+        body.mobile-ui #revise-section {
             height: 100%;
             box-sizing: border-box;
             overflow-y: auto;
@@ -666,90 +642,68 @@
             border:none; background:#eef2ff; color:var(--ios-blue); width:30px; height:30px;
             border-radius:50%; font-size:0.95rem; cursor:pointer; flex-shrink:0;
         }
-        .quiz-mini-explainer {
-            display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
-            background:#eff6ff; color:#1e3a8a; font-size:0.82rem; line-height:1.45;
-        }
-
-        .quiz-hint-box {
-            display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
-            background:#fffbeb; color:#92400e; font-size:0.83rem; line-height:1.45;
-            border:1px solid #fde68a;
-        }
-        .quiz-hint-actions {
-            display:none; margin-top:10px; gap:8px;
-        }
-
-        .quiz-option-btn {
-            text-align: left;
-            justify-content: flex-start;
-            background: #F2F2F7;
-            white-space: normal;
-            line-height: 1.45;
-            padding: 14px 16px;
-            font-size: 0.98rem;
-        }
-
-        .quiz-controls-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 10px;
-        }
-
-        .quiz-start-btn {
-            grid-column: 1 / -1;
-            margin: 0;
-            width: 100%;
-        }
-
-        .quiz-topbar {
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom: 10px;
-        }
-
-        .quiz-progress-pill {
-            font-size:0.85rem;
-            color:var(--ios-gray);
-            margin-bottom:8px;
-            background:#f1f5f9;
-            border:1px solid #e2e8f0;
-            border-radius:999px;
-            padding:6px 10px;
-            display:inline-block;
-        }
-
-
-        .quiz-generating-wrap {
-            display: none;
-            margin: 8px 0 12px;
-        }
-        .quiz-generating-track {
-            width: 100%;
-            height: 10px;
-            border-radius: 999px;
-            background: #e5e7eb;
+        .revision-hero {
+            position: relative;
             overflow: hidden;
-            border: 1px solid #d1d5db;
+            margin-bottom: 16px;
+            padding: 20px;
+            border: 1px solid rgba(99,102,241,.16);
+            border-radius: 24px;
+            background: linear-gradient(145deg, #ffffff 0%, #eef2ff 55%, #ecfeff 100%);
+            box-shadow: 0 18px 42px rgba(79,70,229,.12);
         }
-        .quiz-generating-bar {
-            height: 100%;
-            width: 0%;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #60a5fa, #2563eb);
-            transition: width 160ms linear;
+        .revision-hero::after {
+            content: '';
+            position: absolute;
+            right: -38px;
+            top: -54px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(52,199,89,.22), rgba(88,86,214,.04) 68%, transparent 70%);
+            pointer-events: none;
         }
-        .quiz-generating-meta {
-            margin-top: 5px;
-            font-size: 0.76rem;
-            color: #475569;
-            text-align: right;
+        .revision-hero-row { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+        .revision-eyebrow { color: #4f46e5; font-size: .72rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+        .revision-title { margin: 5px 0 4px; color: #111827; font-size: clamp(1.45rem, 5vw, 2rem); line-height: 1.12; }
+        .revision-subtitle { max-width: 560px; margin: 0; color: #64748b; font-size: .88rem; line-height: 1.5; }
+        .revision-shuffle { position: relative; z-index: 1; flex: 0 0 auto; width: auto; margin: 0; white-space: nowrap; background: #111827; color: white; box-shadow: 0 10px 22px rgba(15,23,42,.18); }
+        .revision-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 13px; padding: 2px 2px 24px; }
+        .revision-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(148,163,184,.22);
+            border-radius: 22px;
+            background: rgba(255,255,255,.94);
+            box-shadow: 0 13px 30px rgba(15,23,42,.09), inset 0 1px 0 rgba(255,255,255,.9);
+            transform: translateZ(0);
+            animation: revisionCardIn .44s cubic-bezier(.2,.8,.2,1) both;
+            animation-delay: var(--revision-delay, 0ms);
+            content-visibility: auto;
+            contain-intrinsic-size: 150px;
+        }
+        .revision-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--revision-accent, var(--ios-indigo)); }
+        .revision-card-toggle { width: 100%; min-height: 88px; padding: 15px 16px 15px 20px; border: 0; background: transparent; display: grid; grid-template-columns: 42px minmax(0, 1fr) 26px; align-items: center; gap: 12px; color: inherit; text-align: left; cursor: pointer; }
+        .revision-number { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--revision-accent, var(--ios-indigo)) 12%, white); color: var(--revision-accent, var(--ios-indigo)); font-weight: 900; box-shadow: inset 0 0 0 1px rgba(255,255,255,.8); }
+        .revision-name { display: block; color: #111827; font-size: 1.05rem; font-weight: 820; line-height: 1.3; overflow-wrap: anywhere; }
+        .revision-meta { display: block; margin-top: 4px; color: #64748b; font-size: .78rem; line-height: 1.35; overflow-wrap: anywhere; }
+        .revision-chevron { color: #94a3b8; font-size: 1.1rem; transition: transform .24s ease; }
+        .revision-card.is-open .revision-chevron { transform: rotate(180deg); }
+        .revision-details { display: none; padding: 0 16px 17px 20px; }
+        .revision-card.is-open .revision-details { display: grid; gap: 9px; animation: revisionDetailsIn .22s ease-out; }
+        .revision-detail { padding: 11px 12px; border: 1px solid rgba(226,232,240,.9); border-radius: 14px; background: #f8fafc; color: #334155; font-size: .86rem; line-height: 1.48; }
+        .revision-detail strong { display: block; margin-bottom: 3px; color: #475569; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
+        .revision-empty { padding: 30px 18px; border: 1px dashed #cbd5e1; border-radius: 20px; background: rgba(255,255,255,.8); color: #64748b; text-align: center; }
+        @keyframes revisionCardIn { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes revisionDetailsIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        @media (hover:hover) { .revision-card:hover { transform: translateY(-3px); box-shadow: 0 20px 42px rgba(15,23,42,.13); } }
+        @media (max-width:560px) {
+            .revision-hero-row { display: grid; }
+            .revision-shuffle { width: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .revision-card, .revision-card.is-open .revision-details { animation: none; }
+            .revision-card, .revision-chevron { transition: none; }
         }
 
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
@@ -873,6 +827,19 @@
         .ai-nursing-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 7px; }
         .ai-nursing-tools .action-btn { width: auto; min-height: 40px; margin: 0; padding: 9px 12px; }
         .ai-nursing-hint { flex: 1 1 180px; color: #64748b; font-size: .74rem; line-height: 1.4; }
+        .ai-improve-tools {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 9px;
+            margin: 0 0 14px;
+            padding: 11px;
+            border: 1px solid #ddd6fe;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f5f3ff, #eef6ff);
+        }
+        .ai-improve-tools .action-btn { width: auto; min-height: 42px; margin: 0; padding: 10px 13px; }
+        .ai-improve-hint { flex: 1 1 190px; color: #5b6476; font-size: .75rem; line-height: 1.42; }
         .ai-review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
         .ai-review-actions.one-action { grid-template-columns: 1fr; }
         .ai-save-status { min-height: 20px; margin-top: 9px; text-align: center; font-size: .82rem; font-weight: 700; line-height: 1.4; }
@@ -910,10 +877,8 @@
             .detail-content { font-size: .95rem !important; line-height: 1.5 !important; }
             .action-btn, .ios-select, .chip, .speak-icon-btn { min-height: 44px; box-sizing: border-box; }
             .action-btn { padding: 12px; font-size: .95rem; }
-            #quiz-section .ios-card { padding: 16px; }
-            #quiz-question { font-size: 1.05rem !important; line-height: 1.5; }
-            .quiz-controls-grid { grid-template-columns: 1fr; }
-            .quiz-option-btn { min-height: 48px; font-size: 1rem; line-height: 1.4; }
+            .revision-hero { padding: 17px; border-radius: 20px; }
+            .revision-card-toggle { padding-right: 12px; }
             input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
             .result-header { flex-wrap: wrap; gap: 8px; }
             .name-with-speak { min-width: 0; flex: 1 1 180px; }
@@ -1095,7 +1060,7 @@
 
 <nav class="glass-nav" aria-label="Main navigation">
     <button class="nav-btn active" id="nav-search" onclick="switchMode('search'); focusSearch()"><span class="nav-ico">🧸</span><span class="nav-label">Search</span><span class="nav-label-mobile">Search</span></button>
-    <button class="nav-btn" id="nav-quiz" onclick="switchMode('quiz')"><span class="nav-ico">🧩</span><span class="nav-label">Quiz</span><span class="nav-label-mobile">Quiz</span></button>
+    <button class="nav-btn" id="nav-revise" onclick="switchMode('revise')"><span class="nav-ico">💊</span><span class="nav-label">Revise</span><span class="nav-label-mobile">Revise</span></button>
     <button class="nav-btn" id="nav-ward" style="color:var(--ios-green);" onclick="switchMode('ward')"><span class="nav-ico">🩺</span><span class="nav-label">Ward</span><span class="nav-label-mobile">Ward</span></button>
     <button class="nav-btn" id="nav-clinical" style="color:var(--ios-purple);" onclick="switchMode('clinical')"><span class="nav-ico">🏥</span><span class="nav-label">Clinical</span><span class="nav-label-mobile">Clinical</span></button>
 </nav>
@@ -1115,7 +1080,7 @@
             <p id="search-status" class="search-status" role="status" aria-live="polite">Search your saved drug database.</p>
         </div>
         <div id="search-api-notice" class="api-notice" hidden>
-            <span>AI search needs a <strong data-api-provider>DeepSeek</strong> key.</span>
+            <span>AI improvement and Cantonese Explain need a <strong data-api-provider>DeepSeek</strong> key.</span>
             <button type="button" onclick="openApiSettings()">Add key</button>
         </div>
         <div id="history-section" style="margin-bottom:16px; display:none;">
@@ -1130,65 +1095,19 @@
         <button type="button" id="more-search-results" class="action-btn" onclick="showMoreSearchResults()" hidden>Show more results</button>
     </section>
 
-    <div id="quiz-section" class="app-smooth" style="display:none;">
-        <div id="quiz-api-notice" class="api-notice" hidden>
-            <span>Add a <strong data-api-provider>DeepSeek</strong> key to generate quiz questions.</span>
-            <button type="button" onclick="openApiSettings()">Add API key</button>
-        </div>
-        <div class="ios-card">
-            <div class="quiz-topbar">
-                <h3 style="margin-top:0; color:var(--ios-blue);">Adaptive Quiz</h3>
-                <button onclick="showProgressModal()" style="font-size:0.8rem; background:none; border:none; color:var(--ios-gray);">📊 Stats</button>
-            </div>
-            <div id="quiz-setup-controls" class="quiz-controls-grid">
-                <select id="quiz-level" class="ios-select" style="margin:0; width:100%;">
-                    <option value="all" selected>All levels</option>
-                    <option value="remembering">Remembering</option>
-                    <option value="understanding">Understanding</option>
-                    <option value="applying">Applying</option>
-                    <option value="analyzing">Analyzing</option>
-                    <option value="evaluating">Evaluating</option>
-                </select>
-                <select id="quiz-system" class="ios-select" style="margin:0; width:100%;">
-                    <option value="mix" selected>Mix systems</option>
-                </select>
-                <select id="quiz-count" class="ios-select" style="margin:0; width:100%;">
-                    <option value="5">5 questions</option>
-                    <option value="10" selected>10 questions</option>
-                    <option value="15">15 questions</option>
-                    <option value="20">20 questions</option>
-                    <option value="25">25 questions</option>
-                    <option value="50">50 questions</option>
-                </select>
-                <button onclick="showQuizLevelBadge()" class="action-btn" style="padding:10px 12px; margin:0; background:#eef6ff; color:#1d4ed8; border:1px solid #bfdbfe;">Show level</button>
-                <button onclick="startQuizRound()" class="action-btn btn-primary quiz-start-btn" style="padding:10px 12px;">Start</button>
-            </div>
-            <div id="quiz-round-progress" class="quiz-progress-pill">Round not started</div>
-            <p id="quiz-question" style="font-size:1.1rem; font-weight:600; min-height:60px;">Loading question...</p>
-            <div id="quiz-generating-wrap" class="quiz-generating-wrap" aria-live="polite" aria-label="Generating question">
-                <div class="quiz-generating-track">
-                    <div id="quiz-generating-bar" class="quiz-generating-bar"></div>
+    <section id="revise-section" class="app-smooth" style="display:none;" aria-label="Ten-drug revision list">
+        <div class="revision-hero">
+            <div class="revision-hero-row">
+                <div>
+                    <div class="revision-eyebrow">Quick revision</div>
+                    <h2 class="revision-title">10 drugs for today</h2>
+                    <p class="revision-subtitle">Tap each floating card to reveal the indication, adverse effects, Nursing care and drug action.</p>
                 </div>
-                <div id="quiz-generating-meta" class="quiz-generating-meta">Generating... 0%</div>
+                <button type="button" class="action-btn revision-shuffle" onclick="renderRevisionDrugs({ reshuffle: true })">↻ New 10</button>
             </div>
-            <div class="quiz-stats-row">
-                <div class="quiz-stat-pill">Score<strong id="quiz-score">0%</strong></div>
-                <div class="quiz-stat-pill">Streak<strong id="quiz-streak">0</strong></div>
-                <div class="quiz-stat-pill">Answered<strong id="quiz-answered">0</strong></div>
-            </div>
-            <div id="quiz-options" style="display:flex; flex-direction:column; gap:10px;"></div>
-            <div id="quiz-hint-actions" class="quiz-hint-actions">
-                <button id="quiz-hint-btn" class="action-btn" style="margin:0; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;">💡 Get hint</button>
-            </div>
-            <div id="quiz-hint-box" class="quiz-hint-box"></div>
-            
-            <div id="quiz-feedback" style="display:none; margin-top:15px; padding:12px; border-radius:12px; text-align:center;"></div>
-            <div id="quiz-mini-explainer" class="quiz-mini-explainer"></div>
-
-
-            <button onclick="nextQuestion()" id="next-quiz-btn" class="action-btn btn-primary" style="display:none; margin-top:15px;">Next question →</button>
         </div>
-    </div>
+        <div id="revision-list" class="revision-stack" aria-live="polite"></div>
+    </section>
 
     <div id="ward-section" class="app-smooth" style="display:none; width:100%; max-width:none; padding-bottom:0; position:relative;">
         <div class="immersive-shell">
@@ -1288,10 +1207,8 @@
              <div class="import-wrapper" style="margin-top:10px;">
                 <input type="hidden" id="sheet-url" />
                 <input type="hidden" id="script-url" />
-                <input type="hidden" id="quiz-sheet-url" />
                 <div style="font-size:0.78rem; line-height:1.45; color:var(--ios-gray); margin-bottom:8px;">Built-in Google Sheet connection.</div>
                 <button onclick="fetchSheetData()" class="action-btn">Load Drug Database</button>
-                <button onclick="fetchQuizSheetData()" class="action-btn" style="background:#eef6ff; color:#1d4ed8;">Load Quiz Database</button>
                 <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
                     <input id="auto-sync-startup" type="checkbox" style="width:16px; height:16px;"> Auto-sync online CSV on startup (slower)
                 </label>
@@ -1300,39 +1217,10 @@
         </div>
 
         <div class="settings-help">
-            Search saved drugs by name, brand or condition. When a drug is missing, the app checks Google Sheet and uses AI if needed. Review and edit the result before choosing whether to add it. Add your own API key to enable AI search, explanations and quiz generation.
+            Search saved drugs by name, brand or condition. Missing drugs are checked against Google Sheet, RxNorm and openFDA without AI. You may ask AI to improve an official result, then review every field before choosing whether to add it.
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Settings</button>
-    </div>
-</div>
-
-<div id="progress-modal" class="modal-overlay" onclick="if(event.target===this) closeProgressModal()">
-    <div class="modal-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:15px;">
-            <h3 style="margin:0;">📊 Knowledge Base</h3>
-            <button onclick="closeProgressModal()" class="modal-close-btn">Close</button>
-        </div>
-        <div id="progress-list-content" style="overflow-y:auto; flex-grow:1;"></div>
-    </div>
-</div>
-
-<div id="quiz-review-modal" class="modal-overlay" onclick="if(event.target===this) closeQuizReviewModal()">
-    <div class="modal-card" style="width:96vw; max-width:none; height:92vh; max-height:92vh;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:12px;">
-            <h3 style="margin:0;">🧠 Round Review</h3>
-            <button onclick="closeQuizReviewModal()" class="modal-close-btn">Close</button>
-        </div>
-        <div id="quiz-review-summary" style="margin-bottom:12px; padding:10px; border-radius:10px; background:#eef6ff; color:#1e3a8a; font-size:0.9rem;">Preparing review...</div>
-        <div id="quiz-review-actions" style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-            <button onclick="renderRoundReview('incorrect')" class="action-btn" style="margin:0; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;">Review incorrect questions</button>
-            <button onclick="renderRoundReview('all')" class="action-btn" style="margin:0; background:#f3f4f6; color:#111827; border:1px solid #e5e7eb;">Review all answers</button>
-        </div>
-        <div id="quiz-review-list" style="overflow-y:auto; max-height:42vh;"></div>
-        <div style="display:flex; gap:8px; margin-top:12px;">
-            <button onclick="continueQuizRound()" class="action-btn btn-primary" style="margin:0;">Continue another round</button>
-            <button onclick="closeQuizReviewModal()" class="action-btn" style="margin:0; background:#f3f4f6; color:#111827;">Stay here</button>
-        </div>
     </div>
 </div>
 
@@ -1411,26 +1299,6 @@ Include:
 Language: ${langInstruction}.`;
 }
 
-function getQuizExplainPrompt(quizData, language) {
-  const langInstruction = resolveLanguageInstruction(language);
-
-  return `The user has completed a pharmacology question.
-
-Question: "${quizData.q}"
-User answer: "${quizData.u}"
-Correct answer: "${quizData.correctAnswerText}"
-Drug focus: ${quizData.c.name}
-
-Respond in bullet points:
-1. State whether the answer is correct.
-2. Explain why the correct answer is correct (max 2 points).
-3. If incorrect, explain the mistake (max 1-2 points).
-4. Give one memory tip.
-5. End with one short bedside takeaway.
-
-Language: ${langInstruction}.`;
-}
-
 function getISBARPrompt(drug, language) {
   const langInstruction = resolveLanguageInstruction(language);
   return `Write an ISBAR handover for a patient receiving ${drug.name}.
@@ -1449,36 +1317,8 @@ Language: ${langInstruction}.`;
     // --- STATE VARIABLES ---
     let extendedDrugs = []; 
     let activeSourceList = []; 
-    let quizList = [];      
+    let revisionDrugs = [];
     let searchHistory = []; 
-    let quizStats = {}; 
-    let quizCurrentIndex = 0;
-    let currentQuizData = null;
-    let currentQuizQuestion = null;
-    let currentHintLevel = 0;
-    let selectedQuizLevel = '';
-    let selectedQuizSystem = '';
-    let selectedQuizCount = 10;
-    let currentRoundTotal = 0;
-    let currentRoundAnswered = 0;
-    let currentRoundIncorrect = [];
-    let currentRoundReview = [];
-    let recentQuizDrugNames = [];
-    let usedRoundCorrectDrugNames = [];
-    let usedQuizQuestionKeys = [];
-    let roundBulkGenerationStarted = false;
-    let roundQuestionSerial = 0;
-    let roundAiQuestionCount = 0;
-    let roundSheetQuestionCount = 0;
-    let roundTargetAiCount = 0;
-    let roundTargetSheetCount = 0;
-    let roundNextQuestionSource = 'ai';
-    let quizQuestionQueue = [];
-    let quizGeneratingPct = 0;
-    let quizGeneratingTimer = null;
-    let quizGenerationInFlight = false;
-    const QUIZ_PREFETCH_TARGET = 2;
-    let quizSession = { answered: 0, correct: 0, streak: 0, bestStreak: 0 };
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
     const IOS_EDGE_SWIPE_MAX_START_X = 28;
@@ -1488,7 +1328,6 @@ Language: ${langInstruction}.`;
     let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') === '1';
 
     const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
-    const LOCAL_QUIZ_BANK_KEY = 'drug_tutor_quiz_bank_v1';
     
     // API & Keys
     let currentProvider = localStorage.getItem('active_provider') || 'openrouter-qwen';
@@ -1497,7 +1336,6 @@ Language: ${langInstruction}.`;
     let yinliKey = (localStorage.getItem('yinli_key') || '').trim();
     const REQUIRED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
     let googleScriptURL = REQUIRED_SCRIPT_URL;
-    let quizSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
     const YINLI_API_URL = 'https://yinli.one/v1/chat/completions';
     const YINLI_MODEL_NAME = 'gemini-3.1-pro-preview';
     const QWEN_PROXY_URL = '/.netlify/functions/openrouter-qwen';
@@ -1509,7 +1347,6 @@ Language: ${langInstruction}.`;
     
     // Settings
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
-    let quizQuestionBank = [];
 
     // System Data
     const systemCategories = [
@@ -1557,6 +1394,16 @@ Language: ${langInstruction}.`;
     function usefulDrugText(value, fallback) {
         return isMissingDrugText(value) ? fallback : String(value).trim();
     }
+
+    function escapeHtml(text) {
+        return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     const systemShortNames = Object.fromEntries(systemCategories.map(s => [s, s]));
     const systemIcons = {
         "GI System": "🍔", "Cardio": "🫀", "Respiratory": "🫁", "CNS / Neuro": "🧠", "Infections": "🦠",
@@ -1680,8 +1527,6 @@ Language: ${langInstruction}.`;
         
         // Restore Data
         searchHistory = DrugTutorUI.readStoredJSON('drug_tutor_search_history', []).filter(term => typeof term === 'string' && term.trim()).slice(0, 6);
-        quizStats = DrugTutorUI.readStoredJSON('drug_tutor_quiz_stats', {});
-        quizQuestionBank = loadLocalQuizBank();
 
         // Init UI
         document.getElementById('provider-select').value = currentProvider;
@@ -1690,11 +1535,9 @@ Language: ${langInstruction}.`;
         document.getElementById('yinli-key').value = yinliKey;
         document.getElementById('sheet-url').value = defaultSheetUrl;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
-        document.getElementById('quiz-sheet-url').value = quizSheetURL;
 
         document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
 
-        initQuizSystemDropdown();
         refreshDrugViews();
         renderHistory();
         updateProviderDisplay();
@@ -1992,14 +1835,14 @@ Language: ${langInstruction}.`;
 
     function switchMode(mode) {
         if (mode === 'settings') { toggleSettings(); return; }
-        if (!['search', 'quiz', 'ward', 'clinical'].includes(mode)) mode = 'search';
+        if (!['search', 'revise', 'ward', 'clinical'].includes(mode)) mode = 'search';
         activeAppMode = mode;
         if (mode !== 'search') setSearchFocus(false);
         document.querySelectorAll('.glass-nav .nav-btn').forEach(button => {
             button.classList.remove('active');
             button.removeAttribute('aria-current');
         });
-        ['search', 'quiz', 'ward', 'clinical'].forEach(name => {
+        ['search', 'revise', 'ward', 'clinical'].forEach(name => {
             const section = document.getElementById(`${name}-section`);
             section.classList.remove('mode-transition');
             section.style.display = name === mode ? 'block' : 'none';
@@ -2014,10 +1857,8 @@ Language: ${langInstruction}.`;
         tab.classList.add('active');
         tab.setAttribute('aria-current', 'page');
         updateSearchNavigationVisibility();
-        if (mode === 'quiz') {
-            const inProgress = currentRoundTotal > 0 && currentRoundAnswered < currentRoundTotal;
-            setQuizSetupControlsVisible(!inProgress);
-            if (!inProgress) document.getElementById('quiz-question').innerText = 'Select level, system, and question count. Then tap Start.';
+        if (mode === 'revise') {
+            renderRevisionDrugs({ reshuffle: revisionDrugs.length === 0 });
         } else if (mode === 'ward') {
             setupWardPreload();
         } else if (mode === 'clinical') {
@@ -2088,9 +1929,70 @@ Language: ${langInstruction}.`;
     }
 
     function refreshDrugViews() {
-        quizList = [...activeSourceList];
+        revisionDrugs = [];
         renderAllSystems();
         runSearch();
+        renderRevisionDrugs({ reshuffle: true });
+    }
+
+    function selectRandomRevisionDrugs(list, count = 10, random = Math.random) {
+        const pool = Array.isArray(list) ? list.filter(drug => drug && drug.name) : [];
+        const shuffled = [...pool];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled.slice(0, Math.min(Math.max(0, count), shuffled.length));
+    }
+
+    function revisionAccentForSystem(system) {
+        const colors = ['#5856D6', '#007AFF', '#0EA5A8', '#34C759', '#FF9500', '#AF52DE'];
+        const index = Math.max(0, systemCategories.indexOf(system));
+        return colors[index % colors.length];
+    }
+
+    function renderRevisionDrugs({ reshuffle = false } = {}) {
+        const list = document.getElementById('revision-list');
+        if (!list) return [];
+        if (reshuffle || revisionDrugs.length === 0) {
+            revisionDrugs = selectRandomRevisionDrugs(activeSourceList, 10);
+        }
+        if (!revisionDrugs.length) {
+            list.innerHTML = '<div class="revision-empty">No saved drugs are available yet. Load the drug database, then try again.</div>';
+            return [];
+        }
+
+        list.innerHTML = revisionDrugs.map((drug, index) => {
+            const system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
+            const sideEffects = usefulDrugText(drug.side_effects || drug.SideEffects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
+            const effect = usefulDrugText(drug.effect_of_drug || drug.quiz || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
+            const nursing = usefulDrugText(drug.nursing, DRUG_TEXT_FALLBACKS.nursing);
+            const accent = revisionAccentForSystem(system);
+            return `
+                <article class="revision-card" style="--revision-delay:${index * 35}ms; --revision-accent:${accent};">
+                    <button type="button" class="revision-card-toggle" onclick="toggleRevisionCard(this)" aria-expanded="false">
+                        <span class="revision-number">${String(index + 1).padStart(2, '0')}</span>
+                        <span><span class="revision-name">${escapeHtml(drug.name)}</span><span class="revision-meta">${escapeHtml(drug.class || 'Drug class to review')} · ${escapeHtml(system)}</span></span>
+                        <span class="revision-chevron" aria-hidden="true">⌄</span>
+                    </button>
+                    <div class="revision-details">
+                        <div class="revision-detail"><strong>Indication</strong>${escapeHtml(drug.indication || 'Check the current formulary.')}</div>
+                        <div class="revision-detail"><strong>Side effects</strong>${escapeHtml(sideEffects)}</div>
+                        <div class="revision-detail"><strong>Nursing care</strong>${escapeHtml(nursing)}</div>
+                        <div class="revision-detail"><strong>Drug effect</strong>${escapeHtml(effect)}</div>
+                    </div>
+                </article>`;
+        }).join('');
+        list.scrollTop = 0;
+        return revisionDrugs;
+    }
+
+    function toggleRevisionCard(button) {
+        const card = button?.closest?.('.revision-card');
+        if (!card) return;
+        const open = !card.classList.contains('is-open');
+        card.classList.toggle('is-open', open);
+        button.setAttribute('aria-expanded', String(open));
     }
 
     function focusSearch() {
@@ -2140,10 +2042,8 @@ Language: ${langInstruction}.`;
 
     function updateApiNotices() {
         const config = getApiConfiguration();
-        ['search-api-notice', 'quiz-api-notice'].forEach(id => {
-            const notice = document.getElementById(id);
-            if (notice) notice.hidden = !!config.key;
-        });
+        const notice = document.getElementById('search-api-notice');
+        if (notice) notice.hidden = !!config.key;
         document.querySelectorAll('[data-api-provider]').forEach(label => { label.textContent = config.label; });
     }
 
@@ -2728,6 +2628,7 @@ Language: ${langInstruction}.`;
                     allowSheetSave: true,
                     requireNursing: true,
                     enableDeepSeekNursing: true,
+                    enableAIDataImprove: true,
                 });
                 return;
             }
@@ -2836,6 +2737,120 @@ Rules:
 - If the supplied information is insufficient, say what must be checked instead of guessing.
 - End with: "Verify against the prescription, local protocol and current formulary."
 - Output the bullets only; no title or introduction.`;
+    }
+
+    function getOfficialDataImprovePrompt(drugData) {
+        return `You are editing medicine information retrieved from RxNorm and openFDA for a nursing reference app.
+
+Official source text supplied by the app:
+${JSON.stringify({
+    name: drugData.name || '',
+    class: drugData.class || '',
+    system: drugData.system || '',
+    indication: drugData.indication || '',
+    side_effects: drugData.side_effects || '',
+    effect_of_drug: drugData.effect_of_drug || ''
+}, null, 2)}
+
+Return strict JSON only with exactly these keys: "name", "class", "system", "indication", "side_effects", "effect_of_drug".
+
+Rules:
+- Improve clarity, remove duplicated label wording, and shorten the text for fast mobile reading.
+- Use only facts present in the supplied official source text; do not add a dose, route, dilution, monitoring threshold, contraindication, or local policy.
+- Keep clinically important common or serious adverse effects; never use "Not specified", "Unknown", "N/A", or an empty value.
+- "system" must be exactly one of: ${systemCategories.join(', ')}.
+- Do not include Nursing care. That field is handled separately by DeepSeek.
+- Use concise English. Output JSON only, with no Markdown.`;
+    }
+
+    function unwrapDrugObject(parsed) {
+        let candidate = parsed;
+        if (Array.isArray(candidate)) candidate = candidate[0] || null;
+        if (candidate && Array.isArray(candidate.drugs)) candidate = candidate.drugs[0] || null;
+        if (candidate && candidate.drug && typeof candidate.drug === 'object') candidate = candidate.drug;
+        return candidate && typeof candidate === 'object' ? candidate : null;
+    }
+
+    function applyAIImprovedOfficialData(parsed, originalDraft) {
+        const candidate = unwrapDrugObject(parsed);
+        if (!candidate) throw new Error('AI did not return usable drug data. Please try again.');
+        const chooseText = (value, fallback) => isMissingDrugText(value) ? String(fallback || '').trim() : String(value).trim();
+        const sideEffects = chooseText(
+            candidate.side_effects || candidate.SideEffects || candidate.sideEffects || candidate['side effects'],
+            originalDraft.side_effects
+        );
+        if (isMissingDrugText(sideEffects) || sideEffects === DRUG_TEXT_FALLBACKS.sideEffects) {
+            throw new Error('AI did not return useful side effects. The official data was left unchanged.');
+        }
+        const proposedSystem = normalizeSystemLabel(candidate.system || originalDraft.system);
+        const improved = {
+            name: chooseText(candidate.name, originalDraft.name),
+            class: chooseText(candidate.class, originalDraft.class),
+            system: systemCategories.includes(proposedSystem) ? proposedSystem : originalDraft.system,
+            indication: chooseText(candidate.indication, originalDraft.indication),
+            side_effects: sideEffects,
+            effect_of_drug: chooseText(
+                candidate.effect_of_drug || candidate.drug_effect || candidate['effect of drug'] || candidate.effect,
+                originalDraft.effect_of_drug
+            ),
+        };
+        if (!improved.name) throw new Error('AI did not return a drug name. The official data was left unchanged.');
+
+        const fieldMap = {
+            'ai-edit-name': improved.name,
+            'ai-edit-class': improved.class,
+            'ai-edit-system': improved.system,
+            'ai-edit-indication': improved.indication,
+            'ai-edit-side-effects': improved.side_effects,
+            'ai-edit-effect': improved.effect_of_drug,
+        };
+        Object.entries(fieldMap).forEach(([id, value]) => {
+            const field = document.getElementById(id);
+            if (field) field.value = value;
+        });
+        return improved;
+    }
+
+    async function improveOfficialDrugDataWithAI() {
+        const button = document.getElementById('btn-improve-official-data');
+        const draft = getEditableAISearchDrugDraft();
+        const nursingBefore = document.getElementById('ai-edit-nursing')?.value || '';
+        if (!draft.name) {
+            setAIReviewStatus('Add the drug name before improving the official data.', 'var(--ios-red)');
+            document.getElementById('ai-edit-name')?.focus();
+            return false;
+        }
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'AI is improving…';
+            button.setAttribute('aria-busy', 'true');
+        }
+        setAIReviewStatus('AI is simplifying the official fields. Nursing care will not be changed.', 'var(--ios-blue)');
+        try {
+            let fullText = '';
+            await streamAIResponse([
+                { role: 'system', content: 'Edit only the supplied official medicine data. Return strict JSON and never include Nursing care.' },
+                { role: 'user', content: getOfficialDataImprovePrompt(draft) },
+            ], text => { fullText = text; });
+            if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
+            const parsed = parseAISearchPayload(fullText);
+            applyAIImprovedOfficialData(parsed, draft);
+            const nursingField = document.getElementById('ai-edit-nursing');
+            if (nursingField) nursingField.value = nursingBefore;
+            setAIReviewStatus('AI improvements applied. Review every field before choosing Add.', 'var(--ios-green)');
+            return true;
+        } catch (error) {
+            const nursingField = document.getElementById('ai-edit-nursing');
+            if (nursingField) nursingField.value = nursingBefore;
+            setAIReviewStatus(error?.message || 'AI could not improve the official data. Nothing was added.', 'var(--ios-red)');
+            return false;
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.innerText = '✨ AI improve official data';
+                button.removeAttribute('aria-busy');
+            }
+        }
     }
 
     async function streamDeepSeekNursingResponse(messages, onUpdate) {
@@ -2955,6 +2970,7 @@ Rules:
         allowSheetSave = true,
         requireNursing = false,
         enableDeepSeekNursing = true,
+        enableAIDataImprove = false,
         showGoogleSearch = false,
         googleQuery = '',
     } = {}) {
@@ -2973,6 +2989,7 @@ Rules:
                 </div>
                 <div class="ai-review-note"><strong>Nothing has been added yet.</strong> Edit any field below, verify it against the prescription and current local formulary, then choose an Add button.</div>
                 ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
+                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn" style="background:#4f46e5; color:white;">✨ AI improve official data</button><span class="ai-improve-hint">Improves the official fields in place. Nursing care stays separate and nothing is saved automatically.</span></div>' : ''}
                 <div class="ai-edit-grid">
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name || '')}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">Class</span><input id="ai-edit-class" class="ai-edit-input" value="${escapeHtml(drugData.class || '')}" autocomplete="off"></label>
@@ -2993,6 +3010,9 @@ Rules:
 
         const googleSearchBtn = document.getElementById('btn-google-missing-drug');
         if (googleSearchBtn) googleSearchBtn.onclick = () => openGoogleDeepLink(googleQuery || drugData.name || 'medicine');
+
+        const improveDataBtn = enableAIDataImprove ? document.getElementById('btn-improve-official-data') : null;
+        if (improveDataBtn) improveDataBtn.onclick = improveOfficialDrugDataWithAI;
 
         const nursingBtn = document.getElementById('btn-generate-nursing');
         if (nursingBtn) nursingBtn.onclick = generateDeepSeekNursingCare;
@@ -3460,18 +3480,6 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
         return "💊";
     }
 
-    function initQuizSystemDropdown() {
-        const select = document.getElementById('quiz-system');
-        if (!select) return;
-        select.innerHTML = '<option value="mix">Mix systems</option>';
-        systemCategories.forEach(sys => {
-            const opt = document.createElement('option');
-            opt.value = sys;
-            opt.innerText = sys;
-            select.appendChild(opt);
-        });
-    }
-
     function renderAllSystems() {
         const container = document.getElementById('recommend-container');
         container.innerHTML = '';
@@ -3507,918 +3515,6 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
             container.appendChild(chip);
         });
     }
-
-    // --- QUIZ LOGIC ---
-    function updateQuizSessionUI() {
-        const answered = quizSession.answered || 0;
-        const pct = answered ? Math.round((quizSession.correct / answered) * 100) : 0;
-        document.getElementById('quiz-score').innerText = `${pct}%`;
-        document.getElementById('quiz-streak').innerText = `${quizSession.streak}`;
-        document.getElementById('quiz-answered').innerText = `${answered}`;
-    }
-
-    function updateQuizRoundProgress() {
-        const el = document.getElementById('quiz-round-progress');
-        if (!el) return;
-        if (!currentRoundTotal) {
-            el.innerText = 'Round not started';
-            return;
-        }
-        el.innerText = `Round progress: ${currentRoundAnswered}/${currentRoundTotal}`;
-    }
-
-    function showQuizLevelBadge() {
-        const levelEl = document.getElementById('quiz-level');
-        const feedback = document.getElementById('quiz-feedback');
-        if (!feedback) return;
-        const levelText = String(levelEl?.value || 'all').replace(/^./, c => c.toUpperCase());
-        feedback.style.display = 'block';
-        feedback.style.background = '#eef6ff';
-        feedback.style.color = '#1e3a8a';
-        feedback.innerHTML = `<strong>Current level:</strong> ${escapeHtml(levelText)}`;
-    }
-
-    function setQuizSetupControlsVisible(show) {
-        const wrap = document.getElementById('quiz-setup-controls');
-        if (!wrap) return;
-        wrap.style.display = show ? 'grid' : 'none';
-    }
-
-    function startQuizRound() {
-        if (!requireApiKey()) return;
-        const levelEl = document.getElementById('quiz-level');
-        const systemEl = document.getElementById('quiz-system');
-        const countEl = document.getElementById('quiz-count');
-        selectedQuizLevel = levelEl ? levelEl.value : '';
-        selectedQuizSystem = systemEl ? systemEl.value : '';
-        selectedQuizCount = parseInt(countEl?.value || '10', 10) || 10;
-
-        currentRoundTotal = Math.max(1, selectedQuizCount);
-        currentRoundAnswered = 0;
-        currentRoundIncorrect = [];
-        currentRoundReview = [];
-        recentQuizDrugNames = [];
-        usedRoundCorrectDrugNames = [];
-        usedQuizQuestionKeys = [];
-        roundBulkGenerationStarted = true;
-        roundQuestionSerial = 0;
-        roundAiQuestionCount = 0;
-        roundSheetQuestionCount = 0;
-        roundTargetAiCount = currentRoundTotal;
-        roundTargetSheetCount = 0;
-        roundNextQuestionSource = 'ai';
-        quizQuestionQueue = [];
-        setQuizGeneratingState(false);
-        quizGenerationInFlight = false;
-        updateQuizRoundProgress();
-        setQuizSetupControlsVisible(false);
-        const feedback = document.getElementById('quiz-feedback');
-        if (feedback) {
-            feedback.style.display = 'block';
-            feedback.style.background = '#eef6ff';
-            feedback.style.color = '#1e3a8a';
-            feedback.innerHTML = `<strong>Fast adaptive mode:</strong> the first question appears immediately from your drug data while AI prepares enhanced clinical scenarios in the background.`;
-        }
-        generateQuizQuestion();
-    }
-
-    function getMasteryMetrics(drugName) {
-        const s = quizStats[drugName];
-        if (!s || !s.attempts) return { attempts: 0, accuracy: 0, masteryBand: 'new' };
-        const accuracy = s.correct / s.attempts;
-        const attempts = s.attempts;
-        const masteryBand = (accuracy >= 0.85 && attempts >= 4)
-            ? 'mastered'
-            : (accuracy >= 0.6 && attempts >= 2 ? 'developing' : 'weak');
-        return { attempts, accuracy, masteryBand };
-    }
-
-    function getWeakDrugPool(list) {
-        if (!list.length) return [];
-        const scored = list.map(drug => {
-            const m = getMasteryMetrics(drug.name);
-            if (!m.attempts) return { drug, weakness: 1.35 };
-            let weakness = Math.max(0.08, 1 - m.accuracy);
-            if (m.masteryBand === 'mastered') weakness *= 0.35;
-            if (m.masteryBand === 'developing') weakness *= 0.75;
-            if (m.masteryBand === 'weak') weakness *= 1.15;
-            return { drug, weakness };
-        });
-        scored.sort((a, b) => b.weakness - a.weakness);
-        return scored.slice(0, Math.min(18, scored.length)).map(x => x.drug);
-    }
-
-    function buildAdaptiveQuizSample(roundQuizList, sampleSize = 12) {
-        if (!Array.isArray(roundQuizList) || !roundQuizList.length) return [];
-        const pool = [...roundQuizList];
-        const selected = [];
-
-        while (pool.length && selected.length < sampleSize) {
-            const weighted = pool.map(drug => {
-                const m = getMasteryMetrics(drug.name);
-                let weight = 1;
-                if (!m.attempts) weight = 2.2;
-                else if (m.masteryBand === 'weak') weight = 1.7;
-                else if (m.masteryBand === 'developing') weight = 1.0;
-                else weight = 0.35; // mastered appears less often
-                return { drug, weight };
-            });
-
-            const total = weighted.reduce((sum, x) => sum + x.weight, 0);
-            let r = Math.random() * total;
-            let pickIndex = 0;
-            for (let i = 0; i < weighted.length; i++) {
-                r -= weighted[i].weight;
-                if (r <= 0) {
-                    pickIndex = i;
-                    break;
-                }
-            }
-
-            const pickedDrug = weighted[pickIndex].drug;
-            selected.push(pickedDrug);
-            const removeIdx = pool.findIndex(d => d.name === pickedDrug.name);
-            if (removeIdx >= 0) pool.splice(removeIdx, 1);
-        }
-
-        return selected;
-    }
-
-    function quizOptionSimilarityScore(target, candidate) {
-        const targetSystem = target.system || getSystemForDrug(target);
-        const candidateSystem = candidate.system || getSystemForDrug(candidate);
-        const targetClass = normalizeSearchText(target.class);
-        const candidateClass = normalizeSearchText(candidate.class);
-        const targetClassTokens = new Set(optionClassTokens(target));
-        const sharedClassTokens = optionClassTokens(candidate).filter(token => targetClassTokens.has(token)).length;
-        const targetIndicationTokens = new Set(normalizeSearchText(target.indication).split(' ').filter(token => token.length > 3));
-        const sharedIndicationTokens = normalizeSearchText(candidate.indication).split(' ').filter(token => targetIndicationTokens.has(token)).length;
-        return (targetSystem === candidateSystem ? 8 : 0)
-            + (targetClass && targetClass === candidateClass ? 10 : 0)
-            + (sharedClassTokens * 4)
-            + Math.min(3, sharedIndicationTokens);
-    }
-
-    function shuffleQuizOptions(options) {
-        const copy = [...options];
-        for (let i = copy.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [copy[i], copy[j]] = [copy[j], copy[i]];
-        }
-        return copy;
-    }
-
-    function buildQuizOptionCluster(roundQuizList) {
-        if (!Array.isArray(roundQuizList) || roundQuizList.length < 4) return null;
-        const adaptivePool = buildAdaptiveQuizSample(roundQuizList, Math.min(18, roundQuizList.length));
-        const target = adaptivePool.find(drug => canUseRoundCorrectDrug(drug.name, roundQuizList) && !isRecentlyUsedQuizDrug(drug.name))
-            || adaptivePool.find(drug => canUseRoundCorrectDrug(drug.name, roundQuizList))
-            || adaptivePool[0]
-            || roundQuizList[0];
-        if (!target) return null;
-
-        const distractors = roundQuizList
-            .filter(drug => normalizeDrugNameForMatch(drug.name) !== normalizeDrugNameForMatch(target.name))
-            .map(drug => ({ drug, score: quizOptionSimilarityScore(target, drug), tie: Math.random() }))
-            .sort((a, b) => b.score - a.score || a.tie - b.tie)
-            .slice(0, 3)
-            .map(item => item.drug);
-        if (distractors.length !== 3) return null;
-
-        return {
-            target,
-            choices: [target, ...distractors],
-            options: shuffleQuizOptions([target.name, ...distractors.map(drug => drug.name)])
-        };
-    }
-
-    function buildLocalAdaptiveQuizQuestion(roundQuizList, level = 'all') {
-        const cluster = buildQuizOptionCluster(roundQuizList);
-        if (!cluster) return null;
-        const drug = cluster.target;
-        const indication = usefulDrugText(drug.indication, 'the clinical indication described');
-        const drugClass = usefulDrugText(drug.class, 'the required medication class');
-        const nursing = usefulDrugText(drug.nursing, 'monitor the therapeutic response and important adverse effects');
-        const stems = {
-            remembering: `Which medication is a ${drugClass} commonly used for ${indication}?`,
-            understanding: `Which medication best matches the class ${drugClass} and the indication ${indication}?`,
-            applying: `A ward patient requires medication therapy for ${indication}. Which option is the best match?`,
-            analyzing: `The team is comparing related medicines for ${indication}. Which option has the strongest indication and class match?`,
-            evaluating: `Which medication is the most appropriate choice for ${indication} when the nurse must also ${nursing}?`,
-            all: `A ward patient requires treatment for ${indication}. Which medication is the best match?`
-        };
-        const prompt = stems[level] || stems.all;
-        if (isRepeatedQuizQuestion(prompt, drug.name)) return null;
-
-        const question = {
-            type: 'local_adaptive',
-            prompt,
-            options: cluster.options,
-            correctAnswerText: drug.name,
-            aiExplanation: `${drug.name} is a ${drugClass} used for ${indication}. Nursing focus: ${nursing}.`,
-            correctDrug: drug,
-            answerLabel: () => drug.name
-        };
-        rememberQuizDrug(drug.name);
-        rememberRoundCorrectDrug(drug.name);
-        rememberQuizQuestion(prompt, drug.name);
-        return question;
-    }
-
-    function setQuizGeneratingState(isGenerating, forceComplete = false) {
-        const barWrap = document.getElementById('quiz-generating-wrap');
-        const bar = document.getElementById('quiz-generating-bar');
-        const meta = document.getElementById('quiz-generating-meta');
-        if (!barWrap || !bar || !meta) return;
-
-        if (quizGeneratingTimer) {
-            clearInterval(quizGeneratingTimer);
-            quizGeneratingTimer = null;
-        }
-
-        if (isGenerating) {
-            quizGeneratingPct = 0;
-            bar.style.width = '0%';
-            meta.innerText = 'Generating... 0%';
-            barWrap.style.display = 'block';
-            quizGeneratingTimer = setInterval(() => {
-                quizGeneratingPct = Math.min(92, quizGeneratingPct + (quizGeneratingPct < 45 ? 6 : 2));
-                bar.style.width = `${quizGeneratingPct}%`;
-                meta.innerText = `Generating... ${Math.round(quizGeneratingPct)}%`;
-            }, 180);
-            return;
-        }
-
-        if (forceComplete) {
-            quizGeneratingPct = 100;
-            bar.style.width = '100%';
-            meta.innerText = 'Generating... 100%';
-            setTimeout(() => {
-                barWrap.style.display = 'none';
-            }, 180);
-            return;
-        }
-
-        barWrap.style.display = 'none';
-        quizGeneratingPct = 0;
-        bar.style.width = '0%';
-        meta.innerText = 'Generating... 0%';
-    }
-
-    async function generateQuizQuestion() {
-        const container = document.getElementById('quiz-options');
-        const qEl = document.getElementById('quiz-question');
-        const levelEl = document.getElementById('quiz-level');
-        const systemEl = document.getElementById('quiz-system');
-        container.innerHTML = '';
-        document.getElementById('quiz-feedback').style.display = 'none';
-        document.getElementById('next-quiz-btn').style.display = 'none';
-        document.getElementById('quiz-mini-explainer').style.display = 'none';
-        document.getElementById('quiz-hint-actions').style.display = 'none';
-        document.getElementById('quiz-hint-box').style.display = 'none';
-        updateQuizSessionUI();
-
-        if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
-            qEl.innerText = `Round complete (${currentRoundAnswered}/${currentRoundTotal}). Review your results below.`;
-            return;
-        }
-
-        if (quizQuestionQueue.length > 0) {
-            setQuizGeneratingState(false);
-            const nextQ = quizQuestionQueue.shift();
-            renderPreparedQuizQuestion(container, qEl, nextQ);
-            preGenerateRoundQuestions();
-            return;
-        }
-
-        const roundQuizList = selectedQuizSystem === 'mix'
-            ? [...quizList]
-            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
-        if (roundQuizList.length === 0) { qEl.innerText = "No drugs available for the selected system."; return; }
-
-        const instantQuestion = buildLocalAdaptiveQuizQuestion(roundQuizList, selectedQuizLevel);
-        if (instantQuestion) {
-            setQuizGeneratingState(false);
-            renderPreparedQuizQuestion(container, qEl, instantQuestion);
-            preGenerateRoundQuestions();
-            return;
-        }
-
-        qEl.innerText = 'Preparing AI question...';
-        setQuizGeneratingState(true);
-        try {
-            const prepared = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-            if (!prepared) {
-                qEl.innerText = 'Unable to generate quiz question. Please try again.';
-                return;
-            }
-            if (prepared.error) {
-                qEl.innerText = prepared.error;
-                return;
-            }
-            renderPreparedQuizQuestion(container, qEl, prepared);
-            if (!roundBulkGenerationStarted) {
-                roundBulkGenerationStarted = true;
-                preGenerateRoundQuestions();
-            } else {
-                preGenerateRoundQuestions();
-            }
-        } finally {
-            setQuizGeneratingState(false, true);
-        }
-    }
-
-    function getQuizHintText(q, hintLevel) {
-        const correctText = q?.correctAnswerText || q?.answerLabel?.(q?.correctDrug) || '';
-        const correctDrug = q?.correctDrug || findDrugFromOptionText(correctText, quizList);
-        const options = q?.options || [];
-        const wrongOptions = options.filter(opt => opt !== correctText);
-
-        if (Array.isArray(q?.hints) && q.hints[hintLevel - 1]) {
-            return `Hint ${hintLevel}: ${escapeHtml(q.hints[hintLevel - 1])}`;
-        }
-
-        if (hintLevel <= 1) {
-            const cls = correctDrug?.class || 'the same therapeutic class shown in the options';
-            return `Hint 1: Focus on the option that best matches the <strong>drug class</strong> needed here (${escapeHtml(cls)}).`;
-        }
-        if (hintLevel === 2) {
-            const indication = correctDrug?.indication || 'the key clinical indication in the stem';
-            return `Hint 2: Prioritize the option whose main <strong>indication</strong> aligns with ${escapeHtml(indication)}.`;
-        }
-        if (hintLevel === 3) {
-            const remove = wrongOptions.slice(0, 1).map(o => `<strong>${escapeHtml(o)}</strong>`).join(', ');
-            if (remove) return `Hint 3: You can usually eliminate ${remove} first based on mismatch with the scenario.`;
-            return 'Hint 3: Eliminate the least indication-matched option first, then compare safety priorities.';
-        }
-        return `Final hint: The best answer is in the same therapeutic pathway as <strong>${escapeHtml(correctText)}</strong>. Re-check indication and bedside safety priorities.`;
-    }
-
-    function showNextQuizHint() {
-        if (!currentQuizQuestion) return;
-        currentHintLevel += 1;
-        const hintBox = document.getElementById('quiz-hint-box');
-        const hintBtn = document.getElementById('quiz-hint-btn');
-        if (!hintBox || !hintBtn) return;
-        hintBox.style.display = 'block';
-        hintBox.innerHTML = getQuizHintText(currentQuizQuestion, currentHintLevel);
-        hintBtn.innerText = currentHintLevel >= 3 ? '💡 Show final hint' : `💡 More hint (${currentHintLevel}/3)`;
-    }
-
-    function renderPreparedQuizQuestion(container, qEl, q) {
-        if (!q) return;
-        currentQuizQuestion = q;
-        currentHintLevel = 0;
-        qEl.innerText = formatQuizQuestionText(q.prompt);
-        container.innerHTML = '';
-        const hintActions = document.getElementById('quiz-hint-actions');
-        const hintBox = document.getElementById('quiz-hint-box');
-        const hintBtn = document.getElementById('quiz-hint-btn');
-        if (hintActions && hintBox && hintBtn) {
-            hintActions.style.display = 'flex';
-            hintBox.style.display = 'none';
-            hintBox.innerHTML = '';
-            hintBtn.innerText = '💡 Get hint';
-            hintBtn.onclick = () => showNextQuizHint();
-        }
-        (q.options || []).forEach(optText => {
-            const btn = document.createElement('button');
-            btn.className = 'action-btn quiz-option-btn';
-            btn.innerText = optText;
-            btn.onclick = () => checkAnswer(btn, optText, q);
-            container.appendChild(btn);
-        });
-    }
-
-    function normalizeQuestionKey(questionText, answerText) {
-        return `${String(questionText || '').toLowerCase().replace(/\s+/g, ' ').trim()}::${String(answerText || '').toLowerCase().trim()}`;
-    }
-
-    function rememberQuizQuestion(questionText, answerText) {
-        const key = normalizeQuestionKey(questionText, answerText);
-        if (!key || key === '::') return;
-        usedQuizQuestionKeys.push(key);
-        if (usedQuizQuestionKeys.length > 40) usedQuizQuestionKeys.shift();
-    }
-
-    function isRepeatedQuizQuestion(questionText, answerText) {
-        const key = normalizeQuestionKey(questionText, answerText);
-        if (!key || key === '::') return false;
-        return usedQuizQuestionKeys.includes(key);
-    }
-
-    function optionsHaveDuplicateMeanings(options, roundQuizList, answerText) {
-        if (!Array.isArray(options) || options.length !== 4) return true;
-        const normalized = options.map(o => normalizeDrugNameForMatch(o));
-        if (new Set(normalized).size !== 4) return true;
-
-        const mapped = options.map(opt => findDrugFromOptionText(opt, roundQuizList));
-        const mappedNames = mapped.filter(Boolean).map(d => normalizeDrugNameForMatch(d.name));
-        if (mappedNames.length >= 2 && new Set(mappedNames).size !== mappedNames.length) return true;
-
-        const correctDrug = findDrugFromOptionText(answerText, roundQuizList);
-        if (correctDrug) {
-            const target = normalizeDrugNameForMatch(correctDrug.name);
-            const sameAsCorrect = mappedNames.filter(n => n === target).length;
-            if (sameAsCorrect > 1) return true;
-        }
-        return false;
-    }
-
-    async function preGenerateRoundQuestions() {
-        if (quizGenerationInFlight || !roundBulkGenerationStarted) return;
-        if (!currentRoundTotal) return;
-        const roundQuizList = selectedQuizSystem === 'mix'
-            ? [...quizList]
-            : quizList.filter(drug => (drug.system || getSystemForDrug(drug)) === selectedQuizSystem);
-        if (!roundQuizList.length) return;
-
-        const questionsAfterCurrent = Math.max(0, currentRoundTotal - 1 - currentRoundAnswered);
-        const targetQueueSize = Math.min(QUIZ_PREFETCH_TARGET, questionsAfterCurrent);
-        if (quizQuestionQueue.length >= targetQueueSize) return;
-
-        quizGenerationInFlight = true;
-        try {
-            let attempts = 0;
-            const maxAttempts = Math.max(2, targetQueueSize * 2);
-            while (quizQuestionQueue.length < targetQueueSize && attempts < maxAttempts) {
-                attempts++;
-                const nextQ = await prepareQuizQuestion(roundQuizList, selectedQuizLevel, selectedQuizSystem);
-                if (!nextQ || nextQ.error) continue;
-                quizQuestionQueue.push(nextQ);
-            }
-        } finally {
-            quizGenerationInFlight = false;
-        }
-    }
-
-    async function prepareQuizQuestion(roundQuizList, level, system) {
-        const canUseAI = currentProvider === 'openrouter-qwen'
-            ? true
-            : (currentProvider === 'openrouter-trinity')
-            ? !!(openRouterKey && openRouterKey.startsWith('sk-'))
-            : (currentProvider === 'yinli-gemini'
-                ? !!yinliKey
-                : !!(deepSeekKey && deepSeekKey.startsWith('sk-')));
-
-        const hasSheetBank = Array.isArray(quizQuestionBank) && quizQuestionBank.length > 0;
-        const aiRemaining = Math.max(0, roundTargetAiCount - roundAiQuestionCount);
-        if (aiRemaining <= 0) return { error: 'Round AI target already reached.' };
-
-        roundQuestionSerial++;
-
-        const tryAI = async () => {
-            if (!canUseAI || aiRemaining <= 0) return null;
-            const aiQ = await generateAIQuizQuestionData(roundQuizList, level, system);
-            if (!aiQ) return null;
-            roundAiQuestionCount++;
-            roundNextQuestionSource = 'ai';
-            return aiQ;
-        };
-
-        const aiQ = await tryAI();
-        if (aiQ) return aiQ;
-
-        if (!canUseAI) {
-            if (currentProvider === 'openrouter-trinity') {
-                return { error: 'OpenRouter API key is required for AI generation.' };
-            }
-            if (currentProvider === 'yinli-gemini') {
-                return { error: 'Yinli API key is required for AI generation.' };
-            }
-            return { error: 'DeepSeek API key is required for AI generation.' };
-        }
-
-        if (currentProvider === 'openrouter-qwen') {
-            return { error: 'Qwen server is unavailable. Check the Netlify OPENROUTER_API_KEY environment variable and retry.' };
-        }
-
-        return { error: hasSheetBank
-            ? 'AI generation failed. Check provider/API key and retry. Quiz database is loaded and used as context to improve prompts.'
-            : 'AI generation failed. Check provider/API key and retry.' };
-    }
-
-    function normalizeDrugNameForMatch(name) {
-        return String(name || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9+\s/-]/g, ' ').replace(/\s+/g, ' ').trim();
-    }
-
-    function findDrugFromOptionText(optionText, list) {
-        const normalizedOption = normalizeDrugNameForMatch(optionText);
-        if (!normalizedOption) return null;
-        return list.find(d => {
-            const name = normalizeDrugNameForMatch(d.name);
-            return normalizedOption.includes(name) || name.includes(normalizedOption);
-        }) || null;
-    }
-
-    function optionClassTokens(drug) {
-        const raw = String(drug?.class || '').toLowerCase();
-        if (!raw) return [];
-        return raw
-            .replace(/[()]/g, ' ')
-            .split(/[^a-z0-9]+/)
-            .map(t => t.trim())
-            .filter(Boolean)
-            .filter(t => !['agent', 'drug', 'drugs', 'class', 'classes', 'acting', 'combo', 'combination'].includes(t));
-    }
-
-    function hasStrongOptionSimilarity(options, roundQuizList) {
-        if (!Array.isArray(options) || options.length !== 4) return false;
-        const mapped = options.map(opt => findDrugFromOptionText(opt, roundQuizList));
-        if (mapped.some(x => !x)) return false;
-
-        const systems = mapped.map(d => d.system || getSystemForDrug(d));
-        const sameSystem = systems.every(s => s === systems[0]);
-
-        const tokenSets = mapped.map(d => new Set(optionClassTokens(d)));
-        const base = tokenSets[0];
-        const sharedCount = [...base].filter(tok => tokenSets.slice(1).every(set => set.has(tok))).length;
-
-        return sameSystem && sharedCount >= 1;
-    }
-
-    function isRecentlyUsedQuizDrug(drugName) {
-        const normalized = String(drugName || '').toLowerCase().trim();
-        if (!normalized) return false;
-        return recentQuizDrugNames.includes(normalized);
-    }
-
-    function rememberQuizDrug(drugName) {
-        const normalized = String(drugName || '').toLowerCase().trim();
-        if (!normalized) return;
-        recentQuizDrugNames.push(normalized);
-        if (recentQuizDrugNames.length > 4) recentQuizDrugNames.shift();
-    }
-
-    function rememberRoundCorrectDrug(drugName) {
-        const normalized = String(drugName || '').toLowerCase().trim();
-        if (!normalized) return;
-        if (!usedRoundCorrectDrugNames.includes(normalized)) usedRoundCorrectDrugNames.push(normalized);
-    }
-
-    function canUseRoundCorrectDrug(drugName, roundQuizList) {
-        const normalized = String(drugName || '').toLowerCase().trim();
-        if (!normalized) return true;
-        const uniqueAvailable = new Set((roundQuizList || []).map(d => String(d.name || '').toLowerCase().trim())).size;
-        if (uniqueAvailable <= usedRoundCorrectDrugNames.length) return true;
-        return !usedRoundCorrectDrugNames.includes(normalized);
-    }
-
-    async function generateAIQuizQuestionData(roundQuizList, level, system) {
-        try {
-            const cluster = buildQuizOptionCluster(roundQuizList);
-            if (!cluster) return null;
-            const optionContext = cluster.choices.map(d => ({
-                name: d.name,
-                class: d.class,
-                indication: d.indication,
-                nursing: d.nursing
-            }));
-
-            const usingServerQwen = currentProvider === 'openrouter-qwen';
-            const modelName = usingServerQwen
-                ? QWEN_MODEL_NAME
-                : currentProvider === 'openrouter-trinity'
-                ? 'arcee-ai/trinity-large-preview:free'
-                : (currentProvider === 'yinli-gemini' ? YINLI_MODEL_NAME : (currentProvider === 'deepseek-v4-pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash'));
-            const aiApiUrl = usingServerQwen
-                ? QWEN_PROXY_URL
-                : currentProvider === 'openrouter-trinity'
-                ? 'https://openrouter.ai/api/v1/chat/completions'
-                : (currentProvider === 'yinli-gemini' ? YINLI_API_URL : 'https://api.deepseek.com/chat/completions');
-            const levelGuidance = {
-                remembering: 'Test factual recall only (drug class, key indication, common nursing fact). Avoid scenario reasoning.',
-                understanding: 'Test conceptual understanding (match class-to-drug or indication-to-drug) with brief clinical interpretation.',
-                applying: 'Use a short patient-care scenario requiring direct application of pharmacology to nursing action/choice.',
-                analyzing: 'Require comparison among options and discrimination of class-indication relationships before selecting answer.',
-                evaluating: 'Require judgment of best option using safety, appropriateness, and nursing monitoring priorities.',
-                all: 'Randomly choose one Bloom level from remembering/understanding/applying/analyzing/evaluating and reflect it in the question stem.'
-            };
-
-            const prompt = `Create one concise English nursing pharmacology MCQ stem.
-System: ${system}. Bloom level: ${level}.
-Design: ${levelGuidance[level] || levelGuidance.all}
-The correct answer MUST be "${cluster.target.name}". Make the clinical clues uniquely fit its indication/class and keep the stem mobile-readable. Do not list answer options in the question.
-Options are already selected by the app: ${JSON.stringify(optionContext)}
-Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing rationale including monitoring or safety"}`;
-
-            const controller = typeof AbortController === 'function' ? new AbortController() : null;
-            const timeoutId = controller ? setTimeout(() => controller.abort(), 12000) : null;
-            try {
-                const response = await fetch(aiApiUrl, {
-                    method: 'POST',
-                    headers: usingServerQwen
-                        ? { 'Content-Type': 'application/json' }
-                        : {
-                            'Authorization': `Bearer ${currentProvider === 'openrouter-trinity' ? openRouterKey : (currentProvider === 'yinli-gemini' ? yinliKey : deepSeekKey)}`,
-                            'Content-Type': 'application/json'
-                        },
-                    body: JSON.stringify({
-                        model: modelName,
-                        messages: [{ role: 'user', content: prompt }],
-                        temperature: 0.25,
-                        max_tokens: 320,
-                        stream: false
-                    }),
-                    ...(controller ? { signal: controller.signal } : {})
-                });
-
-                if (!response.ok) return null;
-                const data = await response.json();
-                const content = data?.choices?.[0]?.message?.content || '';
-                const parsed = parseAIQuizStemJSON(content);
-                if (!parsed || isRepeatedQuizQuestion(parsed.question, cluster.target.name)) return null;
-
-                const q = {
-                    type: 'ai_quiz',
-                    prompt: parsed.question,
-                    options: cluster.options,
-                    correctAnswerText: cluster.target.name,
-                    aiExplanation: parsed.explanation,
-                    correctDrug: cluster.target,
-                    answerLabel: () => cluster.target.name
-                };
-                rememberQuizDrug(cluster.target.name);
-                rememberRoundCorrectDrug(cluster.target.name);
-                rememberQuizQuestion(parsed.question, cluster.target.name);
-                return q;
-            } finally {
-                if (timeoutId) clearTimeout(timeoutId);
-            }
-        } catch (e) {
-            return null;
-        }
-    }
-
-    function parseAIQuizStemJSON(content) {
-        if (!content) return null;
-        try {
-            const cleaned = content.trim().replace(/^```json\s*/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-            const obj = JSON.parse(cleaned);
-            if (!obj.question) return null;
-            return {
-                question: String(obj.question).trim(),
-                explanation: String(obj.explanation || '').trim()
-            };
-        } catch {
-            return null;
-        }
-    }
-
-    function parseAIQuizJSON(content) {
-        if (!content) return null;
-        try {
-            const cleaned = content.trim().replace(/^```json\s*/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-            const obj = JSON.parse(cleaned);
-            if (!obj.question || !Array.isArray(obj.options) || obj.options.length !== 4 || !obj.answer) return null;
-            if (!obj.options.includes(obj.answer)) return null;
-            return {
-                question: String(obj.question),
-                options: obj.options.map(o => String(o)),
-                answer: String(obj.answer),
-                drug: String(obj.drug || ''),
-                explanation: String(obj.explanation || '')
-            };
-        } catch {
-            return null;
-        }
-    }
-
-    function formatQuizQuestionText(text) {
-        const raw = String(text || '').trim();
-        if (!raw) return raw;
-        const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-        const cleaned = lines.filter(line => !/^(decision focus:|reference drug:|drug focus:|class focus:|indication focus:|nursing interpretation:)/i.test(line));
-        if (!cleaned.length) return raw;
-        return cleaned.length > 1 ? cleaned[cleaned.length - 1] : cleaned[0];
-    }
-
-    function escapeHtml(text) {
-        return String(text || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
-
-    function buildOptionRationale(optionText, q, correctText) {
-        const optionDrug = findDrugFromOptionText(optionText, quizList);
-        const correctDrug = q.correctDrug || findDrugFromOptionText(correctText, quizList);
-        const isCorrectOption = optionText === correctText;
-
-        if (isCorrectOption) {
-            if (correctDrug) {
-                return `
-                    <ul style="margin:0; padding-left:18px; line-height:1.45;">
-                        <li><strong>Why right:</strong> best indication match for this stem: <strong>${escapeHtml(correctDrug.indication || 'clinical use')}</strong>.</li>
-                        <li><strong>Class logic:</strong> belongs to <strong>${escapeHtml(correctDrug.class || 'drug class')}</strong>, which fits the therapeutic goal in the question.</li>
-                        <li><strong>Nursing focus:</strong> ${escapeHtml(correctDrug.nursing || 'monitor response, adverse effects, and safety parameters after administration.')}</li>
-                    </ul>`;
-            }
-            return '<strong>Why right:</strong> this option best matches the key clinical clue and immediate treatment priority in the stem.';
-        }
-
-        if (optionDrug && correctDrug) {
-            const optionClass = String(optionDrug.class || '').trim();
-            const correctClass = String(correctDrug.class || '').trim();
-            const sameClass = optionClass && correctClass && optionClass.toLowerCase() === correctClass.toLowerCase();
-            return `
-                <ul style="margin:0; padding-left:18px; line-height:1.45;">
-                    <li><strong>Why not best:</strong> option is mainly for <strong>${escapeHtml(optionDrug.indication || 'another indication')}</strong>, while this stem is better matched by <strong>${escapeHtml(correctText)}</strong>.</li>
-                    <li><strong>Comparison:</strong> option class is <strong>${escapeHtml(optionClass || 'different class')}</strong>${sameClass ? ' (same class family, but less appropriate choice here)' : ''}; correct answer class is <strong>${escapeHtml(correctClass || 'best-fit class')}</strong>.</li>
-                    <li><strong>Safety/priority:</strong> choose the drug with strongest indication fit and bedside safety profile for this exact scenario.</li>
-                </ul>`;
-        }
-
-        return `<ul style="margin:0; padding-left:18px; line-height:1.45;"><li><strong>Why not best:</strong> weaker indication/class fit than <strong>${escapeHtml(correctText)}</strong> for this case.</li><li><strong>Review tip:</strong> prioritize mechanism, indication, and nursing monitoring priorities together.</li></ul>`;
-    }
-
-    function createRoundReviewEntry(q, selectedText, correctText, isCorrect) {
-        const correctDrug = q.correctDrug || findDrugFromOptionText(correctText, quizList);
-        return {
-            question: formatQuizQuestionText(q.prompt),
-            selected: selectedText,
-            correct: correctText,
-            isCorrect,
-            aiExplanation: q.aiExplanation || '',
-            clinicalFocus: correctDrug ? {
-                drug: correctDrug.name || '',
-                drugClass: correctDrug.class || '',
-                indication: correctDrug.indication || '',
-                nursing: correctDrug.nursing || ''
-            } : null,
-            options: (q.options || []).map(opt => ({
-                text: opt,
-                rationale: buildOptionRationale(opt, q, correctText)
-            }))
-        };
-    }
-
-    function checkAnswer(btn, selectedText, q) {
-         const btns = document.querySelectorAll('#quiz-options button');
-         btns.forEach(b => b.onclick = null);
-         const feedback = document.getElementById('quiz-feedback');
-         feedback.style.display = 'block';
-         const hintActions = document.getElementById('quiz-hint-actions');
-         if (hintActions) hintActions.style.display = 'none';
-
-         const correct = q.correctAnswerText || q.answerLabel(q.correctDrug);
-         const isCorrect = selectedText === correct;
-
-         if(!isCorrect) {
-             currentRoundReview.push(createRoundReviewEntry(q, selectedText, correct, isCorrect));
-         }
-
-         if(q.correctDrug?.name) {
-             if(!quizStats[q.correctDrug.name]) quizStats[q.correctDrug.name] = { correct: 0, attempts: 0 };
-             quizStats[q.correctDrug.name].attempts++;
-         }
-         quizSession.answered++;
-
-         if(isCorrect) {
-             btn.style.background = '#dcfce7'; btn.style.color = '#166534';
-             feedback.innerHTML = "✅ <strong>Correct!</strong>";
-             feedback.style.background = "#dcfce7"; feedback.style.color = "#166534";
-             if(q.correctDrug?.name) quizStats[q.correctDrug.name].correct++;
-             quizSession.correct++;
-             quizSession.streak++;
-             quizSession.bestStreak = Math.max(quizSession.bestStreak, quizSession.streak);
-         } else {
-             btn.style.background = '#fee2e2'; btn.style.color = '#991b1b';
-             feedback.innerHTML = `❌ <strong>Incorrect.</strong> Correct answer: ${correct}。`;
-             feedback.style.background = "#fee2e2"; feedback.style.color = "#991b1b";
-             quizSession.streak = 0;
-             btns.forEach(b => { if(b.innerText === correct) { b.style.background = '#dcfce7'; b.style.color = '#166534'; } });
-             currentRoundIncorrect.push({
-                 question: formatQuizQuestionText(q.prompt),
-                 selected: selectedText,
-                 correct,
-                 explanation: q.aiExplanation || ''
-             });
-         }
-
-         const mini = document.getElementById('quiz-mini-explainer');
-         mini.style.display = 'block';
-         if (q.aiExplanation) {
-             mini.innerHTML = `<strong>AI takeaway:</strong>  ${q.aiExplanation}`;
-         } else if (q.correctDrug) {
-             mini.innerHTML = `<strong>Clinical link:</strong> ${q.correctDrug.name} • Class: <strong>${q.correctDrug.class}</strong> • Indication: <strong>${q.correctDrug.indication}</strong>.`;
-         } else {
-             mini.innerHTML = `<strong>Review tip:</strong>  Focus on class-action and indication pairing.`;
-         }
-
-         updateQuizSessionUI();
-         currentRoundAnswered++;
-         updateQuizRoundProgress();
-         localStorage.setItem('drug_tutor_quiz_stats', JSON.stringify(quizStats));
-         const nextBtn = document.getElementById('next-quiz-btn');
-         if (currentRoundTotal && currentRoundAnswered >= currentRoundTotal) {
-             nextBtn.style.display = 'none';
-             showQuizReviewModal();
-         } else {
-             nextBtn.style.display = 'block';
-         }
-         currentQuizData = { q: q.prompt, u: selectedText, c: q.correctDrug, correctAnswerText: correct };
-         preGenerateRoundQuestions();
-    }
-
-    function nextQuestion() { generateQuizQuestion(); }
-
-    function showQuizReviewModal() {
-        const modal = document.getElementById('quiz-review-modal');
-        const summary = document.getElementById('quiz-review-summary');
-        if (!modal || !summary) return;
-
-        const incorrectCount = currentRoundIncorrect.length;
-        const correctCount = Math.max(0, currentRoundAnswered - incorrectCount);
-        const score = currentRoundTotal ? Math.round((correctCount / currentRoundTotal) * 100) : 0;
-        summary.innerHTML = `Round done: <strong>${currentRoundAnswered}/${currentRoundTotal}</strong> answered • Score <strong>${score}%</strong> • Correct <strong>${correctCount}</strong> • Incorrect <strong>${incorrectCount}</strong>. Choose how you want to review this round.`;
-
-        renderRoundReview('incorrect');
-        setQuizSetupControlsVisible(true);
-        modal.style.display = 'flex';
-    }
-
-    function renderRoundReview(mode = 'incorrect') {
-        const list = document.getElementById('quiz-review-list');
-        if (!list) return;
-        list.innerHTML = '';
-
-        const source = mode === 'all'
-            ? currentRoundReview
-            : currentRoundReview.filter(item => !item.isCorrect);
-
-        if (!source.length) {
-            list.innerHTML = mode === 'all'
-                ? '<div style="padding:10px; border-radius:10px; background:#f3f4f6; color:#374151;">No answers captured for this round yet.</div>'
-                : '<div style="padding:10px; border-radius:10px; background:#f0fdf4; color:#166534;">Perfect round 🎉 No incorrect answers to review.</div>';
-            return;
-        }
-
-        source.forEach((item, idx) => {
-            const row = document.createElement('div');
-            row.style.padding = '12px';
-            row.style.border = '1px solid #e5e7eb';
-            row.style.borderRadius = '12px';
-            row.style.marginBottom = '10px';
-            row.style.background = item.isCorrect ? '#f0fdf4' : '#fff7ed';
-
-            const optionsHtml = (item.options || []).map(opt => {
-                const mark = opt.text === item.correct ? '✅' : '•';
-                return `<div style="padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:6px; background:white;">
-                    <div style="font-weight:600; margin-bottom:4px;">${mark} ${escapeHtml(opt.text)}</div>
-                    <div style="font-size:0.84rem; color:#374151;">${opt.rationale}</div>
-                </div>`;
-            }).join('');
-
-            row.innerHTML = `
-                <div style="font-weight:700; margin-bottom:6px;">Q${idx + 1}. ${escapeHtml(item.question)}</div>
-                <div style="font-size:0.86rem; margin-bottom:4px;"><strong>Your answer:</strong> <span style="color:${item.isCorrect ? '#166534' : '#b91c1c'};">${escapeHtml(item.selected)}</span></div>
-                <div style="font-size:0.86rem; margin-bottom:8px;"><strong>Correct answer:</strong> <span style="color:#166534;">${escapeHtml(item.correct)}</span></div>
-                <details open style="margin-bottom:8px;">
-                    <summary style="cursor:pointer; font-weight:600;">Detailed AI rationale</summary>
-                    <div style="margin-top:6px; font-size:0.86rem; color:#374151; line-height:1.45;">${escapeHtml(item.aiExplanation || 'No model explanation returned. Use the option-by-option rationale below.')}</div>
-                </details>
-                ${item.clinicalFocus ? `<div style="font-size:0.84rem; color:#1f2937; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px; margin-bottom:8px;">
-                    <div><strong>Drug focus:</strong> ${escapeHtml(item.clinicalFocus.drug)}</div>
-                    <div><strong>Class:</strong> ${escapeHtml(item.clinicalFocus.drugClass || 'N/A')}</div>
-                    <div><strong>Indication:</strong> ${escapeHtml(item.clinicalFocus.indication || 'N/A')}</div>
-                    <div><strong>Nursing note:</strong> ${escapeHtml(item.clinicalFocus.nursing || 'Monitor indication-response, contraindications, and safety parameters.')}</div>
-                </div>` : ''}
-                <div style="font-size:0.82rem; color:#6b7280; margin-bottom:6px; font-weight:600;">Why each option is right/wrong</div>
-                ${optionsHtml}
-            `;
-            list.appendChild(row);
-        });
-    }
-
-    function closeQuizReviewModal() {
-        const modal = document.getElementById('quiz-review-modal');
-        if (modal) modal.style.display = 'none';
-    }
-
-    function continueQuizRound() {
-        closeQuizReviewModal();
-        startQuizRound();
-    }
-    
-    function showProgressModal() {
-        const modal = document.getElementById('progress-modal');
-        const list = document.getElementById('progress-list-content');
-        list.innerHTML = '';
-        const sorted = Object.keys(quizStats).sort((a,b) => (quizStats[a].correct / quizStats[a].attempts) - (quizStats[b].correct / quizStats[b].attempts));
-        sorted.forEach(key => {
-            const s = quizStats[key];
-            const pct = Math.round((s.correct/s.attempts)*100);
-            const row = document.createElement('div');
-            row.style.padding = '10px'; row.style.borderBottom = '1px solid #f0f0f0'; row.style.display = 'flex'; row.style.justifyContent = 'space-between';
-            row.innerHTML = `<span>${key}</span><span style="font-weight:bold; color:${pct>70?'green':'red'}">${pct}%</span>`;
-            list.appendChild(row);
-        });
-        modal.style.display = 'flex';
-    }
-    function closeProgressModal() { document.getElementById('progress-modal').style.display = 'none'; }
 
     // --- AI FUNCTIONS ---
     async function streamAIResponse(messages, onUpdate) {
@@ -4529,83 +3625,6 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
         } catch (_) {}
     }
 
-    function normalizeQuizBankRows(rows) {
-        return (rows || []).map((r, idx) => {
-            const q = String(r.question || r.q || '').trim();
-            const a = String(r.option_a || r.A || '').trim();
-            const b = String(r.option_b || r.B || '').trim();
-            const c = String(r.option_c || r.C || '').trim();
-            const d = String(r.option_d || r.D || '').trim();
-            const answer = String(r.answer || '').trim();
-            if (!q || !a || !b || !c || !d || !answer) return null;
-            const options = [a, b, c, d];
-            if (!options.includes(answer)) return null;
-            return {
-                id: String(r.id || `sheet-${idx+1}`),
-                question: q,
-                options,
-                answer,
-                explanation: String(r.explanation || '').trim(),
-                drug: String(r.drug || '').trim(),
-                level: String(r.level || 'all').trim().toLowerCase(),
-                system: String(r.system || 'mix').trim(),
-                hint1: String(r.hint1 || '').trim(),
-                hint2: String(r.hint2 || '').trim(),
-                hint3: String(r.hint3 || '').trim()
-            };
-        }).filter(Boolean);
-    }
-
-    function loadLocalQuizBank() {
-        try {
-            const raw = localStorage.getItem(LOCAL_QUIZ_BANK_KEY);
-            if (!raw) return [];
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (_) {
-            return [];
-        }
-    }
-
-    function saveLocalQuizBank(list) {
-        try {
-            localStorage.setItem(LOCAL_QUIZ_BANK_KEY, JSON.stringify(list || []));
-        } catch (_) {}
-    }
-
-    function getSheetQuizQuestion(roundQuizList, level, system) {
-        if (!quizQuestionBank.length) return null;
-        const levelNorm = String(level || 'all').toLowerCase();
-        const systemNorm = String(system || 'mix').toLowerCase();
-        const filtered = quizQuestionBank.filter(item => {
-            const levelOk = levelNorm === 'all' || !item.level || item.level === 'all' || item.level === levelNorm;
-            const itemSystem = String(item.system || '').toLowerCase();
-            const systemOk = systemNorm === 'mix'
-                ? (!itemSystem || itemSystem === 'mix')
-                : (itemSystem === systemNorm);
-            if (!levelOk || !systemOk) return false;
-            if (isRepeatedQuizQuestion(item.question, item.answer)) return false;
-            if (!canUseRoundCorrectDrug(item.drug || item.answer, roundQuizList)) return false;
-            return true;
-        });
-        if (!filtered.length) return null;
-        const picked = filtered[Math.floor(Math.random() * filtered.length)];
-        const mappedDrug = roundQuizList.find(d => normalizeDrugNameForMatch(d.name) === normalizeDrugNameForMatch(picked.drug)) || findDrugFromOptionText(picked.answer, roundQuizList) || null;
-        rememberRoundCorrectDrug(picked.drug || picked.answer);
-        rememberQuizDrug(picked.drug || picked.answer);
-        rememberQuizQuestion(picked.question, picked.answer);
-        return {
-            type: 'sheet_quiz',
-            prompt: picked.question,
-            options: picked.options,
-            correctAnswerText: picked.answer,
-            aiExplanation: picked.explanation,
-            correctDrug: mappedDrug,
-            hints: [picked.hint1, picked.hint2, picked.hint3].filter(Boolean),
-            answerLabel: () => picked.answer
-        };
-    }
-
     function toggleSettings() {
         const p = document.getElementById('settings-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
@@ -4618,7 +3637,6 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
         localStorage.setItem('openrouter_key', document.getElementById('openrouter-key').value.trim());
         localStorage.setItem('yinli_key', document.getElementById('yinli-key').value.trim());
         localStorage.removeItem('google_script_url');
-        localStorage.removeItem('quiz_sheet_url');
 
         localStorage.setItem('auto_sync_startup', document.getElementById('auto-sync-startup').checked ? '1' : '0');
         // reload globals
@@ -4628,7 +3646,6 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
         yinliKey = document.getElementById('yinli-key').value.trim();
         googleScriptURL = REQUIRED_SCRIPT_URL;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
-        quizSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
 
         autoSyncOnStartup = document.getElementById('auto-sync-startup').checked;
         saveLocalDrugCache(activeSourceList);
@@ -4691,29 +3708,6 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
                 activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
                 refreshDrugViews();
             }
-        }
-    }
-
-    async function fetchQuizSheetData() {
-        const url = document.getElementById('quiz-sheet-url').value;
-        let fetchUrl = url;
-        if (url.includes('docs.google.com/spreadsheets') && url.includes('/edit')) fetchUrl = url.replace(/\/edit.*$/, '/export?format=csv');
-
-        const status = document.getElementById('upload-status');
-        status.innerText = '⏳ Loading quiz database...';
-
-        try {
-            const papa = await ensurePapaParse();
-            const response = await fetch(fetchUrl, { cache: 'no-store' });
-            if (!response.ok) throw new Error(`Quiz sheet returned ${response.status}`);
-            const csv = await response.text();
-            const results = papa.parse(csv, { header: true, skipEmptyLines: true });
-            const bank = normalizeQuizBankRows(results.data || []);
-            quizQuestionBank = bank;
-            saveLocalQuizBank(bank);
-            status.innerText = `✅ Loaded ${bank.length} quiz questions`;
-        } catch (_) {
-            status.innerText = '❌ Quiz database load failed';
         }
     }
 
