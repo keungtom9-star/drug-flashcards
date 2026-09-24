@@ -296,7 +296,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', prefix+'v27', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', prefix+'v27', prefix+'v28', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -357,7 +357,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26', 'drug-tutor-%2Fdrug-flashcards%2F-v27']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26', 'drug-tutor-%2Fdrug-flashcards%2F-v27', 'drug-tutor-%2Fdrug-flashcards%2F-v28']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -481,8 +481,62 @@ test('Revise shows one floating column of 10 unique random drugs', () => {
     assert.match(document.getElementById('revision-list').innerHTML, /Nursing care/);
     assert.match(document.getElementById('revision-list').innerHTML, /Drug effect/);
     assert.match(read('index.html'), /10 drugs for today/);
-    assert.match(read('index.html'), /New 10/);
+    assert.match(read('index.html'), /Random 10/);
+    assert.match(read('index.html'), /Revise by disease/);
+    assert.match(read('index.html'), /Find 10 drugs/);
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
+});
+
+test('Revise can ask AI for 10 distinct disease drugs without saving or generating Nursing care', async () => {
+    const { context, document } = loadMain();
+    context.rows = [{
+        name: 'Metformin (Glucophage)', class: 'Biguanide', indication: 'Type 2 diabetes',
+        side_effects: 'Diarrhoea, nausea', nursing: 'Saved Nursing guidance',
+        effect_of_drug: 'Reduces hepatic glucose production', system: '🦋 Endocrine',
+    }];
+    vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows); revisionDrugs = [];', context);
+    document.getElementById('revision-disease-input').value = 'Type 2 diabetes';
+
+    const names = ['Metformin', 'Empagliflozin', 'Gliclazide', 'Sitagliptin', 'Semaglutide', 'Insulin glargine', 'Pioglitazone', 'Acarbose', 'Dapagliflozin', 'Glimepiride'];
+    const aiRows = names.map((name, index) => ({
+        name,
+        class: `Class ${index + 1}`,
+        system: '🦋 Endocrine',
+        indication: 'Type 2 diabetes management',
+        side_effects: 'Nausea, dizziness',
+        effect_of_drug: 'Improves glucose control',
+        nursing: 'AI must not supply this field',
+    }));
+    let capturedMessages;
+    let capturedOptions;
+    context.streamAIResponse = async (messages, onUpdate, options) => {
+        capturedMessages = messages;
+        capturedOptions = options;
+        onUpdate(JSON.stringify({ drugs: aiRows }));
+    };
+    let saveCalls = 0;
+    context.saveToGoogleSheet = async () => { saveCalls++; return true; };
+
+    const ok = await context.searchRevisionByDisease({ preventDefault() {} });
+    assert.equal(ok, true);
+    assert.equal(vm.runInContext('revisionDrugs.length', context), 10);
+    assert.equal(vm.runInContext('new Set(revisionDrugs.map(drug => revisionDrugIdentity(drug.name))).size', context), 10);
+    assert.equal(vm.runInContext('activeSourceList.length', context), 1);
+    assert.equal(vm.runInContext('revisionDrugs[0].nursing', context), 'Saved Nursing guidance');
+    assert.equal(vm.runInContext('revisionDrugs[1].nursing', context), 'Not generated by this AI search. Check BNF / local protocol.');
+    assert.equal(saveCalls, 0);
+    assert.equal((document.getElementById('revision-list').innerHTML.match(/class="revision-card"/g) || []).length, 10);
+    assert.match(document.getElementById('revision-list').innerHTML, /Saved database details/);
+    assert.match(document.getElementById('revision-list').innerHTML, /AI study draft · verify/);
+    assert.equal(document.getElementById('revision-title').textContent, '10 drugs for Type 2 diabetes');
+    assert.match(document.getElementById('revision-context').textContent, /Revision only/);
+    assert.match(capturedMessages[0].content, /Never include Nursing care/);
+    assert.match(capturedMessages[1].content, /exactly 10 clinically common and distinct generic medicines/);
+    assert.equal(capturedOptions.temperature, 0.25);
+    assert.equal(capturedOptions.maxTokens, 900);
+    assert.equal(document.getElementById('revision-disease-button').disabled, false);
+
+    assert.throws(() => context.normalizeDiseaseRevisionDrugs({ drugs: Array(10).fill(aiRows[0]) }, 'Type 2 diabetes'), /10 distinct drugs/);
 });
 
 test('local search ranks names before incidental text and supports case, multiple words and systems', () => {
@@ -631,6 +685,28 @@ test('openFDA lookup prefers the requested single ingredient over a combination 
     assert.equal(new URL(requestedURL).searchParams.get('limit'), '5');
 });
 
+test('DeepSeek Nursing care is limited to exactly three plain sentences', () => {
+    const { context } = loadMain();
+    const result = context.normalizeThreeSentenceNursingCare([
+        '- Check allergies and baseline observations.',
+        '2. Administer as prescribed and monitor response.',
+        '• Hold and escalate concerns; verify the prescription, local protocol and current formulary.',
+    ].join('\n'));
+    assert.equal(
+        result,
+        'Check allergies and baseline observations. Administer as prescribed and monitor response. Hold and escalate concerns; verify the prescription, local protocol and current formulary.'
+    );
+    assert.doesNotMatch(result, /\n|[-*•]\s/);
+    assert.throws(
+        () => context.normalizeThreeSentenceNursingCare('Check allergies. Monitor response.'),
+        /exactly three/i
+    );
+    assert.throws(
+        () => context.normalizeThreeSentenceNursingCare('One. Two. Three. Four.'),
+        /exactly three/i
+    );
+});
+
 test('an official-source drug uses no search AI and waits for DeepSeek Nursing care plus explicit approval', async () => {
     const { context, document } = loadMain({ ds_key: 'deepseek-test-key', active_provider: 'openrouter-qwen' });
     document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
@@ -638,6 +714,7 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     context.Papa = { parse: () => ({ data: [] }) };
     let sheetWrites = 0;
     let writtenPayload;
+    let returnInvalidNursing = false;
     const requests = [];
     context.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
@@ -658,7 +735,10 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
                 });
             }
             if (String(url) === 'https://api.deepseek.com/chat/completions') {
-                return new Response('data: {"choices":[{"delta":{"content":"- Check allergies and baseline observations.\\n"}}]}\n\ndata: {"choices":[{"delta":{"content":"- Monitor response and adverse effects.\\n- Verify against the prescription, local protocol and current formulary."}}]}\n\ndata: [DONE]\n\n', {
+                const content = returnInvalidNursing
+                    ? 'One. Two. Three. Four.'
+                    : '- Check allergies and baseline observations.\n- Monitor response and adverse effects.\n- Hold and escalate concerns; verify against the prescription, local protocol and current formulary.';
+                return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`, {
                     status: 200,
                     headers: { 'Content-Type': 'text/event-stream' },
                 });
@@ -718,11 +798,23 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.match(document.getElementById('save-status').innerText, /DeepSeek.*Nursing care/i);
 
     await document.getElementById('btn-generate-nursing').onclick();
-    assert.match(document.getElementById('ai-edit-nursing').value, /Monitor response/);
+    const generatedNursing = document.getElementById('ai-edit-nursing').value;
+    assert.match(generatedNursing, /Monitor response/);
+    assert.doesNotMatch(generatedNursing, /\n|^\s*[-*•]/);
+    assert.equal((generatedNursing.match(/[.!?](?:\s|$)/g) || []).length, 3);
     const deepSeekRequest = requests.find(request => request.url === 'https://api.deepseek.com/chat/completions');
     assert.ok(deepSeekRequest);
     assert.equal(deepSeekRequest.options.headers.Authorization, 'Bearer deepseek-test-key');
-    assert.equal(JSON.parse(deepSeekRequest.options.body).model, 'deepseek-chat');
+    const deepSeekBody = JSON.parse(deepSeekRequest.options.body);
+    assert.equal(deepSeekBody.model, 'deepseek-chat');
+    assert.equal(deepSeekBody.max_tokens, 180);
+    assert.match(deepSeekBody.messages[0].content, /exactly three short sentences/i);
+    assert.match(deepSeekBody.messages[0].content, /Do not use bullets/i);
+
+    returnInvalidNursing = true;
+    await document.getElementById('btn-generate-nursing').onclick();
+    assert.equal(document.getElementById('ai-edit-nursing').value, generatedNursing);
+    assert.match(document.getElementById('save-status').innerText, /exactly three/i);
 
     await document.getElementById('btn-save-sheet').onclick();
     assert.equal(sheetWrites, 1);

@@ -35,6 +35,6 @@ Missing drugs are checked in this order: the configured Google Sheet, RxNorm, th
 
 Official RxNorm/openFDA results also offer an optional **AI improve official data** button. It simplifies the editable official fields in place without changing Nursing care or saving anything automatically.
 
-Only the editable **Nursing care** field uses DeepSeek. Add a DeepSeek key in Settings, generate the short bedside guidance, then review it against the prescription, current formulary, and local policy before choosing an Add button.
+Only the editable **Nursing care** field uses DeepSeek. It generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add button.
 
-The home **Revise** tab shows 10 randomly selected drugs in a single floating-card column. Tap a card to reveal its indication, side effects, Nursing care, and drug effect; choose **New 10** to reshuffle.
+The home **Revise** tab shows 10 randomly selected drugs in a single floating-card column. Tap a card to reveal its indication, side effects, Nursing care, and drug effect; choose **Random 10** to reshuffle. You can also enter a disease and ask AI for 10 common, distinct medicines to revise. Disease lists stay in memory only, never auto-save, and never use AI to invent Nursing care; matching saved drugs reuse their database Nursing care.
