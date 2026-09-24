@@ -16,7 +16,6 @@ export interface System {
 }
 
 export interface Settings {
-  deepseekKey: string;
   voiceURI: string;
   aiLanguage: 'english' | 'lihkg';
 }

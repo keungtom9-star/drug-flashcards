@@ -20,7 +20,16 @@ View your app in AI Studio: https://ai.studio/apps/temp/1
 
 ## DeepSeek-only AI
 
-All AI features use the official DeepSeek API with the `deepseek-flash` model. Add a personal DeepSeek key in the app's Settings; it is stored only in that browser and sent directly to `api.deepseek.com`. Never add a real key to source code, GitHub, a screenshot, or a pull-request comment.
+All AI features use the official DeepSeek API with the `deepseek-flash` model through `/.netlify/functions/deepseek`. The browser never receives the secret and never calls `api.deepseek.com` directly.
+
+Before deploying on Netlify:
+
+1. Open **Project configuration → Environment variables**.
+2. Create `DEEPSEEK_API_KEY` and paste a newly issued DeepSeek key as its value.
+3. Mark it as a secret / sensitive value when Netlify offers that option.
+4. Redeploy the site so the function receives the new variable.
+
+Never add the real key to source code, GitHub, screenshots, logs, or pull-request comments. Local Vite alone does not emulate Netlify Functions; use a Netlify development environment or a deployed preview when testing live AI calls.
 
 ## Missing-drug search and Nursing care
 
@@ -28,6 +37,10 @@ Missing drugs are checked in this order: the configured Google Sheet, RxNorm, th
 
 Official RxNorm/openFDA results also offer an optional **AI improve official data** button. It simplifies the editable official fields in place without changing Nursing care or saving anything automatically.
 
-The editable **Nursing care** field uses DeepSeek and generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add button. AI improvement, Cantonese explanation, and disease-based revision also use the same DeepSeek model and key; there is no fallback to another provider.
+The editable **Nursing care** field uses DeepSeek and generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add button. AI improvement, streaming Cantonese explanation, and disease-drug revision all use the same server-protected DeepSeek model; there is no fallback to another provider.
 
-The home **Revise** tab shows 10 randomly selected drugs in a single floating-card column. Tap a card to reveal the indication, side effects, Nursing care, and drug effect; choose **Random 10** to reshuffle. You can also enter a disease and ask DeepSeek for up to 10 common, distinct generic medicines. This request uses DeepSeek JSON mode with a compact name array, then retries once if the first answer is empty or short. The app accepts full JSON objects, compact name arrays, numbered or bulleted lists, Markdown tables, and recoverable names from truncated JSON. It removes generic/brand/salt duplicates and checks every result against the loaded or cached drug database: matches reuse the saved details and Nursing care, while unmatched cards are clearly marked as AI drafts. Disease lists stay in memory only and never auto-save.
+The home **Revise** tab is deliberately local and fast: it shows 10 randomly selected saved drugs in one floating-card column, and **Random 10** reshuffles them.
+
+The former Clinical / quiz page is now **AI Drugs by Disease**. Enter a disease or condition to request 10 common but distinct medicines, bilingual use explanations, distinct roles, and clinically important interactions within that 10-drug set. The page removes duplicate generic / brand / salt entries, retries once when the first response is short, and checks every result against the loaded or cached drug database. Matches are marked **In database**; unmatched results remain clearly labelled AI drafts and are never auto-saved.
+
+Ward laboratory cards keep their English clinical explanation and add Traditional Chinese Cantonese names, uses, interpretation, and nursing escalation points for all 62 listed values, including ABG / VBG.

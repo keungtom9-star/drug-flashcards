@@ -249,86 +249,6 @@ summary {
   box-shadow: none;
 }
 
-/* Clinical shell */
-.ios-clinical {
-  background: var(--ios-grouped);
-  color: var(--ios-label);
-}
-
-.ios-clinical .app-container {
-  background: var(--ios-grouped);
-  box-shadow: none;
-}
-
-.ios-clinical .sticky-header,
-.ios-clinical .view-header {
-  background: rgba(249, 249, 249, 0.9);
-  border-bottom: 0.5px solid var(--ios-line);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
-}
-
-.ios-clinical h1 {
-  color: var(--ios-label);
-  background: none;
-  -webkit-text-fill-color: currentColor;
-}
-
-.ios-clinical .main-input,
-.ios-clinical .settings-input,
-.ios-clinical .gen-input,
-.ios-clinical .gen-select,
-.ios-clinical #lang-select {
-  border: 0;
-  border-radius: 12px;
-  background: var(--ios-fill);
-  box-shadow: none;
-}
-
-.ios-clinical .icon-btn,
-.ios-clinical .back-btn {
-  border: 0;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--ios-tint);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.ios-clinical .gen-btn,
-.ios-clinical .btn-next,
-.ios-clinical .btn-play-all,
-.ios-clinical .btn-magic,
-.ios-clinical .btn-save-settings {
-  background: var(--ios-tint) !important;
-  color: #fff;
-  box-shadow: none;
-}
-
-.ios-clinical .grid-card,
-.ios-clinical .q-card,
-.ios-clinical .option {
-  border-color: transparent;
-  border-radius: var(--ios-radius);
-  box-shadow: var(--ios-shadow);
-}
-
-.ios-clinical .grid-card,
-.ios-clinical .q-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 220px;
-}
-
-.ios-clinical .overlay-bg {
-  background: rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.ios-clinical .modal-box {
-  border: 0;
-  background: #f9f9fb;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.16);
-}
-
 @media (max-width: 600px) {
   .ios-home.mobile-ui header {
     min-height: 50px;
@@ -347,9 +267,7 @@ summary {
 
   .ios-home .ios-card,
   .ios-home .result-card,
-  .ios-ward .card,
-  .ios-clinical .grid-card,
-  .ios-clinical .q-card {
+  .ios-ward .card {
     border-radius: 15px;
   }
 }

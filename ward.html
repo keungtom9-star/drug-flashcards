@@ -249,6 +249,8 @@
         .lab-block { padding: 9px 0; border-top: 1px solid #e2e8f0; }
         .lab-label { display: block; margin-bottom: 3px; color: #64748b; font-size: .65rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
         .lab-copy { margin: 0; color: #334155; font-size: .77rem; line-height: 1.48; }
+        .lab-copy-zh { color: #0f172a; font-weight: 650; }
+        .lab-copy-en { margin-top: 5px; color: #64748b; font-size: .73rem; }
         .lab-watch { margin-top: 3px; padding: 9px 10px; border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; color: #9a3412; }
         .lab-empty { grid-column: 1 / -1; padding: 28px 18px; text-align: center; color: var(--text-sec); }
         .gas-steps { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 7px; }
@@ -2518,6 +2520,389 @@
         }
     ];
 
+    const labChineseReference = {
+        'Haemoglobin (Hb)': {
+            name: '血紅素',
+            use: '用嚟睇紅血球帶氧能力，評估貧血、失血、血液濃縮，同埋輸血或治療反應。',
+            meaning: '低 Hb 可見於出血、缺鐵／B12／葉酸、腎病、溶血或骨髓問題；高 Hb 可見於脫水、慢性缺氧或紅血球增多。',
+            watch: '如果 Hb 快速下跌、持續出血、胸痛、暈厥、氣促、低血壓或灌流差，要即時上報；唔可以只憑一個數決定輸血。'
+        },
+        'White cell count (WBC)': {
+            name: '白血球總數',
+            use: '反映整體白血球反應，協助評估感染、炎症、壓力反應、藥物影響或骨髓疾病。',
+            meaning: 'WBC 高唔一定係細菌感染，類固醇、壓力或惡性病都可升高；低 WBC 可見於病毒感染、化療、藥物或骨髓抑制。',
+            watch: '就算 WBC 正常都唔可以排除 sepsis；發燒加白血球／中性粒細胞低可以好危急，要即時跟 pathway。'
+        },
+        'Neutrophils / ANC': {
+            name: '中性粒細胞／絕對中性粒細胞數',
+            use: '主要用嚟估計抗細菌防禦力；評估 neutropenia 感染風險時，ANC 比總 WBC 更有用。',
+            meaning: 'ANC 低代表感染防禦下降；高值可見於細菌感染、類固醇、壓力或炎症，要連同病情同趨勢睇。',
+            watch: 'Neutropenia 病人一有發燒或 sepsis signs，就要當 febrile neutropenia 即時上報、抽 culture 同按本地指引處理。'
+        },
+        'Lymphocytes': {
+            name: '淋巴細胞',
+            use: '協助評估病毒感染、免疫狀態，同部分血液科疾病。',
+            meaning: '升高可見於病毒感染或 lymphoproliferative disease；降低可見於急性病、類固醇、HIV、化療或其他免疫抑制。',
+            watch: '要配合症狀、趨勢同 blood film；嚴重或原因不明異常、反覆感染、淋巴結腫大或病情轉差要上報。'
+        },
+        'Platelets': {
+            name: '血小板',
+            use: '評估初級止血、出血／血栓風險，亦用於手術前或抗凝治療前檢查。',
+            meaning: '低值可見於 sepsis／DIC、藥物、免疫破壞、肝病、稀釋或骨髓問題；高值可以係反應性或骨髓增生性。',
+            watch: '活動性出血、血小板急跌、神經症狀或懷疑 HIT／DIC 要立即上報；程序同輸注 threshold 要跟本地指引。'
+        },
+        'Mean cell volume (MCV)': {
+            name: '平均紅血球體積',
+            use: '按紅血球大小將貧血分做 microcytic、normocytic 或 macrocytic，幫手決定下一步檢查。',
+            meaning: '低 MCV 常見於缺鐵或地中海貧血；高 MCV 可見於 B12／葉酸不足、酒精、肝病、甲減、網狀紅血球增加或藥物。',
+            watch: 'MCV 正常都可能有混合性缺乏；要連 Hb、RDW、reticulocyte、ferritin、B12／folate 同 blood film 一齊睇。'
+        },
+        'Reticulocyte count': {
+            name: '網狀紅血球計數',
+            use: '睇骨髓面對貧血時有冇增加製造及釋放新紅血球。',
+            meaning: '貧血時適當升高支持失血或溶血；應升而唔升就較支持製造不足，嚴重貧血宜睇 absolute／corrected count。',
+            watch: '配合 Hb trend、bilirubin、LDH、haptoglobin 同 blood film；懷疑急性溶血、持續出血或骨髓衰竭要上報。'
+        },
+        'PT / INR': {
+            name: '凝血酶原時間／國際標準化比值',
+            use: '評估外源性及共同凝血途徑；INR 主要用作 warfarin 監測。',
+            meaning: 'INR 高可由 warfarin、肝功能差、維他命 K 缺乏、DIC 或凝血因子不足引起；DOAC 唔可以靠 INR 準確監測。',
+            watch: '活動性出血、頭部受傷、INR 極高／急升或要做緊急程序，要立即按 reversal／warfarin protocol 上報處理。'
+        },
+        'aPTT': {
+            name: '活化部分凝血活酶時間',
+            use: '評估內源性及共同凝血途徑；部分醫院用嚟監測 unfractionated heparin。',
+            meaning: '延長可由 heparin、凝血因子不足、lupus anticoagulant、DIC 或嚴重肝病引起；治療範圍視乎試劑同 protocol。',
+            watch: '先核對抽血時間、infusion rate 同有冇由 heparin line 污染；出血或超出 heparin protocol 範圍要上報。'
+        },
+        'Fibrinogen': {
+            name: '纖維蛋白原',
+            use: '係形成血塊的重要蛋白，常用於大出血、DIC、肝衰竭及部分產科／創傷 pathway。',
+            meaning: '低值可代表消耗、嚴重肝功能不全或大量出血；炎症時會升高，所以大出血時「正常」亦可能相對不足。',
+            watch: '活動性出血兼 fibrinogen、platelet 下跌或 PT／aPTT 延長要即時上報，補充治療跟 major haemorrhage／專科 protocol。'
+        },
+        'D-dimer': {
+            name: 'D-二聚體',
+            use: '只可配合合適嘅臨床機率 pathway，用作排除部分低／中風險 VTE。',
+            meaning: '陰性喺合適病人先有排除價值；陽性非常不特異，年齡、感染、癌症、懷孕、創傷或手術都可升高。',
+            watch: '唔可以用陽性 D-dimer 診斷 PE／DVT；高風險或不穩定病人唔好等佢而延誤 imaging 同 escalation。'
+        },
+        'Ferritin + iron profile': {
+            name: '鐵蛋白＋鐵代謝檢查',
+            use: '評估鐵儲備及可用鐵，要配合 transferrin saturation、Hb／MCV 同炎症指標。',
+            meaning: 'Ferritin 低強烈支持缺鐵；但炎症、肝病或癌症可令 ferritin 正常／高，即使仍有 functional iron deficiency。',
+            watch: '要追查缺鐵原因，包括慢性失血；唔可以單憑 ferritin 高就判斷 iron overload。'
+        },
+        'Sodium (Na⁺)': {
+            name: '鈉',
+            use: '主要反映身體水分相對鈉嘅平衡，幫手評估 fluid status 同神經風險。',
+            meaning: '低鈉可由水過多、低容量、SIADH、心／肝／腎衰竭或藥物引起；高鈉多數反映缺水或飲水受限，亦要睇 glucose 同 osmolality。',
+            watch: '抽搐、GCS 下降或鈉嚴重／快速改變要即時上報；矯正速度必須由醫療計劃控制，過快可致嚴重神經損傷。'
+        },
+        'Potassium (K⁺)': {
+            name: '鉀',
+            use: '對心臟傳導同神經肌肉功能非常重要，腎衰、DKA、利尿劑使用及 arrhythmia 特別要監察。',
+            meaning: '高鉀可由腎衰、酸中毒、組織分解或藥物引起，溶血標本可假高；低鉀可由 GI loss、利尿劑、insulin 或 alkalosis 引起。',
+            watch: '明顯異常、ECG change、無力、arrhythmia 或快速升高要即時上報；懷疑溶血要盡快重抽，但病情吻合時唔好延誤急救。'
+        },
+        'Urea': {
+            name: '尿素',
+            use: '輔助評估腎功能、腎灌流、水分狀態及蛋白分解。',
+            meaning: '升高可見於腎功能差、脫水、GI bleeding、catabolism 或 steroid；降低可見於低蛋白攝取、過度稀釋或嚴重肝功能差。',
+            watch: '要連 creatinine、尿量、fluid status 同 uraemia 症狀睇；少尿、AKI 惡化、confusion、pericarditic pain、嚴重嘔吐或 overload 要上報。'
+        },
+        'Creatinine': {
+            name: '肌酸酐',
+            use: '常用腎小球過濾指標，用嚟偵測 AKI 同計 eGFR，但急性損傷後會有時間差，亦受肌肉量影響。',
+            meaning: '一定要同 baseline 同時間趨勢比較；細身／低肌肉量病人即使數值「正常」仍可能有 AKI，穩定偏高可以係 CKD。',
+            watch: '較 baseline 明顯上升、尿量下降、高鉀、酸中毒、肺水腫或 nephrotoxin exposure 要上報，並核對藥物腎功能調整同 fluid balance。'
+        },
+        'eGFR': {
+            name: '估算腎小球過濾率',
+            use: '用作 CKD 分期及藥物／contrast 規劃；佢係估算值，唔係直接量度。',
+            meaning: '一次偏低唔代表一定有 CKD，要持續異常或有其他腎損傷證據；creatinine 快速變化、極端肌肉量等情況會唔準。',
+            watch: 'AKI 要跟 creatinine 變化同尿量，唔好只睇 eGFR；藥物劑量同 contrast 決定要跟該藥及本地政策。'
+        },
+        'Chloride (Cl⁻)': {
+            name: '氯',
+            use: '協助評估輸液同酸鹼狀態，尤其 non-anion-gap metabolic acidosis 或嘔吐相關 alkalosis。',
+            meaning: '高氯可見於大量 0.9% saline 或 bicarbonate loss；低氯可見於嘔吐、利尿劑或 metabolic alkalosis。',
+            watch: '要一齊睇 IV fluid 種類／份量、bicarbonate、sodium 同 anion gap；處理原因，唔係單獨追個 chloride 數。'
+        },
+        'Serum bicarbonate / total CO₂': {
+            name: '血清碳酸氫鹽／總二氧化碳',
+            use: '化學檢驗中用嚟篩查酸鹼平衡嘅 metabolic 部分。',
+            meaning: '低值提示 metabolic acidosis 或 respiratory alkalosis compensation；高值提示 metabolic alkalosis 或 chronic hypercapnia compensation，必要時要 blood gas。',
+            watch: '嚴重 acidosis、shock、DKA、中毒、腎衰或呼吸受損要上報；bicarbonate 低時要計 anion gap。'
+        },
+        'Adjusted calcium (Ca²⁺)': {
+            name: '校正鈣',
+            use: '評估神經肌肉、心臟、骨骼同內分泌相關鈣狀態；total calcium 會受 albumin 影響。',
+            meaning: 'Adjusted calcium 只係估算，critical illness 時 ionised calcium 更可靠；低鈣可致 QT prolongation／tetany，高鈣可致脫水、便秘、confusion 或 arrhythmia。',
+            watch: '有症狀、ECG change 或明顯異常要上報，並一齊睇 magnesium、phosphate、腎功能、albumin 同藥物。'
+        },
+        'Magnesium (Mg²⁺)': {
+            name: '鎂',
+            use: '支援心律、神經肌肉功能，同 potassium／calcium 平衡。',
+            meaning: '低鎂可促發 torsades，亦令低鉀難以補正；高鎂多見於腎功能差或過量補充，可抑制反射、呼吸及心臟傳導。',
+            watch: 'Arrhythmia、QT prolongation、無力、反射下降或呼吸抑制要上報；補充前後要留意腎功能。'
+        },
+        'Phosphate (PO₄³⁻)': {
+            name: '磷酸鹽',
+            use: '對 ATP、肌肉／呼吸功能、紅血球代謝同骨骼重要，refeeding、DKA 同腎病常要監察。',
+            meaning: '低磷可見於 refeeding、insulin、酒精或攝取不足並致無力；高磷常見於腎衰、細胞分解或 tumour lysis，亦會影響 calcium。',
+            watch: '嚴重無力、呼吸衰竭、溶血、arrhythmia 或懷疑 refeeding／tumour lysis 要上報；補充跟處方 protocol。'
+        },
+        'Serum osmolality': {
+            name: '血清滲透壓',
+            use: '界定鈉異常嘅 tonicity，亦協助評估 HHS、水分平衡同 osmolar gap。',
+            meaning: '低 osmolality 支持 hypotonic hyponatraemia；高值可由 sodium、glucose、urea 或外來 osmole 引起，urea 對有效 tonicity 影響較少。',
+            watch: '神經狀態改變、嚴重 sodium／glucose 異常或不明顯大 osmolar gap 要上報，後者可提示 toxic alcohol。'
+        },
+        'ALT': {
+            name: '丙氨酸轉氨酶',
+            use: '較集中反映肝細胞受損，用嚟睇 injury pattern 同 trend，唔係直接量度肝功能。',
+            meaning: '升高可見於病毒、代謝、缺血、阻塞或藥物性肝損傷；升得幾高唔等於剩餘肝功能有幾差。',
+            watch: '快速上升兼 jaundice、INR 高、低血糖、encephalopathy、低血壓或懷疑 overdose 要即時上報。'
+        },
+        'AST': {
+            name: '天門冬氨酸轉氨酶',
+            use: '協助判斷 hepatocellular pattern，但亦會由肌肉同其他組織釋出。',
+            meaning: 'AST 高可以來自肝損傷、肌肉損傷或溶血；要同 ALT、CK、bilirubin 同病情一齊睇。',
+            watch: 'AST 同 CK 一齊升、加上深色尿或 AKI risk，要考慮 muscle injury／rhabdomyolysis 並上報。'
+        },
+        'ALP': {
+            name: '鹼性磷酸酶',
+            use: '協助辨認 cholestatic liver pattern，但 ALP 亦可來自骨同胎盤。',
+            meaning: 'ALP 高兼 GGT 高較支持 hepatobiliary source；單獨 ALP 高可同骨 turnover 有關，需睇 pattern 同 imaging。',
+            watch: 'Jaundice 加 fever、RUQ pain、sepsis、bilirubin 上升或懷疑 biliary obstruction／cholangitis 要即時上報。'
+        },
+        'GGT': {
+            name: 'γ-谷氨酰轉移酶',
+            use: '當 ALP 高時，幫手分辨較似肝膽來源定骨來源。',
+            meaning: 'GGT 可因 cholestasis、飲酒或 enzyme-inducing medicines 升高，但唔特異，唔可以單獨診斷酒精相關疾病。',
+            watch: '要連 ALP、bilirubin、藥物／飲酒史同 imaging 一齊睇，唔好只追一個 GGT。'
+        },
+        'Total bilirubin': {
+            name: '總膽紅素',
+            use: '評估 bilirubin 產生、結合同排泄，常用於 jaundice work-up。',
+            meaning: 'Unconjugated 升高可見於溶血或結合障礙；conjugated 升高較支持肝細胞功能差或 cholestasis，要配合 fraction 同 LFT pattern。',
+            watch: 'Jaundice 加 sepsis、RUQ pain、低血壓、出血／INR 高、confusion 或肝指數急劇惡化要上報。'
+        },
+        'Albumin': {
+            name: '白蛋白',
+            use: '反映較慢性嘅合成、炎症或蛋白流失狀態，亦影響 oncotic pressure 同藥物結合。',
+            meaning: '低 albumin 可由炎症、肝病、腎／腸道流失或稀釋造成，唔係單獨營養指標；急性肝衰時亦唔夠敏感。',
+            watch: '評估 oedema／ascites、urine protein、fluid balance 同原發病；冇特定 indication 唔應只為追數而輸 albumin。'
+        },
+        'Total protein': {
+            name: '總蛋白',
+            use: '包括 albumin 加 globulins，協助評估脫水、炎症、免疫或 plasma-cell disorder。',
+            meaning: 'Total protein／globulin gap 高可能要驗 immunoglobulin 或 electrophoresis；低值可由製造減少、流失或稀釋引起。',
+            watch: '要連 albumin、globulin、腎功能、calcium、blood count 同症狀一齊解讀。'
+        },
+        'LDH': {
+            name: '乳酸脫氫酶',
+            use: '非特異性細胞受損／turnover 指標，可配合其他檢查評估溶血、缺血或部分惡性病。',
+            meaning: '好多疾病同標本溶血都可令 LDH 升高，單獨一個數唔可以定位來源。',
+            watch: '先睇標本質素，再配合 Hb、bilirubin、haptoglobin、CK、urate、potassium、phosphate 同臨床問題。'
+        },
+        'Amylase': {
+            name: '澱粉酶',
+            use: '按本地做法，喺懷疑 acute pancreatitis 時提供支持，尤其未有 lipase 時。',
+            meaning: 'Pancreatic 同非 pancreatic 原因都可升高，而且可較早回落；正常值唔一定排除 pancreatitis。',
+            watch: '嚴重 epigastric pain、shock、hypoxia、少尿或全身轉差要上報；監察 organ function 同 fluid status，唔好只追 amylase。'
+        },
+        'Lipase': {
+            name: '脂肪酶',
+            use: '較 amylase 集中反映胰臟，常用作支持 acute pancreatitis 診斷。',
+            meaning: '達本地 upper limit 三倍兼臨床吻合可支持 pancreatitis，但腎病或其他腹部疾病亦可升高；高度唔代表嚴重程度。',
+            watch: '靠 observations、器官功能、fluid balance 同 severity assessment 睇轉差，唔好用 serial lipase 判斷康復。'
+        },
+        'Ammonia': {
+            name: '血氨',
+            use: '喺部分 hyperammonaemia 評估有用，但 hepatic encephalopathy 主要仍係臨床診斷。',
+            meaning: '數值同 encephalopathy 程度未必一致，亦好受採血／運送影響；升高唔等於一定係肝性腦病。',
+            watch: 'GCS 下降、asterixis、seizure 或 airway risk 要即時上報，同時查 glucose、感染、出血、便秘、藥物及其他原因。'
+        },
+        'C-reactive protein (CRP)': {
+            name: 'C 反應蛋白',
+            use: '非特異性 acute-phase marker，用臨床情況同 trend 追蹤炎症或感染。',
+            meaning: '感染、組織損傷、炎症疾病同癌症都可升高；病初可滯後，免疫抑制病人反應亦可能較弱。',
+            watch: '低 CRP 唔可排除 sepsis，高 CRP 亦唔證明細菌感染；要睇病人、趨勢、感染源、observations 同 culture。'
+        },
+        'Erythrocyte sedimentation rate (ESR)': {
+            name: '紅血球沉降率',
+            use: '變化較慢嘅非特異性炎症指標，主要用於部分慢性炎症或 autoimmune condition。',
+            meaning: 'ESR 受年齡、貧血、懷孕、腎病同 plasma proteins 影響，升跌比 CRP 慢。',
+            watch: '只喺合適 pathway 配合 trend 使用；唔係所有感染嘅篩查或單獨 emergency marker。'
+        },
+        'Procalcitonin (PCT)': {
+            name: '降鈣素原',
+            use: '喺指定 pathway 可協助 antibiotic stewardship 或細菌感染評估。',
+            meaning: '早期感染可以仍然低；大創傷、手術等非感染原因亦可升高，腎功能差會影響解讀。',
+            watch: '懷疑 sepsis 唔好等 PCT 先畀抗生素；亦唔可以離開本地 protocol 憑一次數值自行開始或停止治療。'
+        },
+        'Blood cultures': {
+            name: '血液培養',
+            use: '找出 bloodstream organism 同 antibiotic susceptibility；如唔延誤治療，最好抗生素前按處方由不同位置抽取。',
+            meaning: '陽性可以係真正 pathogen 或 contamination，要睇 organism、幾多樽陽性、採血位置、時間同臨床情況；陰性唔排除感染。',
+            watch: '用 aseptic technique、記錄位置／時間、盡快送檢；收到 critical Gram stain 或病人轉差要即時處理。'
+        },
+        'High-sensitivity troponin I / T': {
+            name: '高敏感度心肌肌鈣蛋白 I／T',
+            use: '偵測 myocardial injury，必須配合症狀、ECG 同 validated serial pathway 評估 ACS。',
+            meaning: '高過 assay 99th percentile 代表心肌受損，唔等於一定 type-1 MI；sepsis、tachyarrhythmia、腎病、PE 同 heart failure 都可升高。',
+            watch: '持續胸痛、ischaemic ECG change、hemodynamic instability 或明顯 serial rise／fall 要即時上報，必須用本院 assay 同 algorithm。'
+        },
+        'BNP / NT-proBNP': {
+            name: 'B 型利鈉肽／N 端前體',
+            use: '喺氣促病人協助評估 heart failure，部分情況亦用於 prognosis 或 follow-up。',
+            meaning: '合適情況下低值令 heart failure 較不可能；年齡、腎功能差、AF、PE、critical illness 可升高，肥胖可令數值較低。',
+            watch: '處理病人同 congestion，唔係只追 peptide；肺水腫、hypoxia、低血壓或 perfusion 差要立即上報。'
+        },
+        'Creatine kinase (CK)': {
+            name: '肌酸激酶',
+            use: '反映 skeletal muscle injury，懷疑 rhabdomyolysis 時最常用；心肌損傷現時首選 troponin。',
+            meaning: '創傷、長期壓住、seizure、劇烈運動、myositis 或藥物都可升高；要配合趨勢、腎功能、potassium 同尿液。',
+            watch: 'Rhabdomyolysis 兼 AKI、高鉀、compartment syndrome、少尿或 CK 明顯／持續上升要上報，監察 fluid plan 同 urine output。'
+        },
+        'CK-MB': {
+            name: '肌酸激酶同工酶 MB',
+            use: '較舊嘅 cardiac marker；當 hs-troponin 可用時通常唔係 first-line，只喺特定專科問題先有角色。',
+            meaning: 'Skeletal muscle injury 都可令 CK-MB 升高，特異性比 modern troponin 低。',
+            watch: '唔好用 CK-MB 取代現行 ACS troponin pathway；無論 marker 點，症狀同 ECG 異常都要上報。'
+        },
+        'Blood glucose': {
+            name: '血糖',
+            use: '即時評估 hypo／hyperglycaemia，並監察糖尿病、steroid、營養、DKA 或 HHS。',
+            meaning: '要知道係 fasting 定 random 同病人係咪急病；shock／perfusion 差時 capillary reading 可唔準，必要時用 lab 或 blood gas glucose 確認。',
+            watch: 'Hypoglycaemia 要按 protocol 即時處理；高血糖兼 ketone、acidosis、脫水、GCS 改變或高 osmolality 要上報。'
+        },
+        'HbA1c': {
+            name: '糖化血紅素',
+            use: '估計大約 2–3 個月平均血糖，用於糖尿病診斷及長期監察。',
+            meaning: '6.5% 係診斷 threshold，唔係人人治療目標；貧血、Hb variant、輸血、懷孕、CKD 或紅血球壽命改變會令結果失真。',
+            watch: '唔可以用 HbA1c 評估急性血糖危機；病人急性不適要即時驗 glucose 同 ketones。'
+        },
+        'Blood ketones (β-hydroxybutyrate)': {
+            name: '血酮（β-羥丁酸）',
+            use: '偵測同追蹤 ketosis，尤其 DKA 同 SGLT2 inhibitor 相關 euglycaemic DKA。',
+            meaning: '升高要同 pH／bicarbonate、glucose 同病情一齊睇；starvation 可有 ketosis，而 DKA 亦可冇明顯高血糖。',
+            watch: 'Ketone 高兼 acidosis、嘔吐、脫水、tachypnoea、腹痛或 GCS 改變要即時跟 DKA pathway；唔好因 glucose 跌就自行停 insulin。'
+        },
+        'TSH': {
+            name: '促甲狀腺激素',
+            use: '好多穩定病人嘅甲狀腺 first-line test，要同 free T4 同臨床情況解讀。',
+            meaning: 'TSH 高加 fT4 低支持 primary hypothyroidism；TSH 低加 fT4 高支持 thyrotoxicosis，但急病、懷孕、藥物同 pituitary disease 可令結果誤導。',
+            watch: '懷疑 thyroid storm 或 myxoedema coma 要靠臨床 syndrome 即時上報，唔好等 TSH 數字。'
+        },
+        'Free T4 (fT4)': {
+            name: '游離甲狀腺素',
+            use: '顯示 circulating free thyroxine，用嚟釐清異常 TSH 或懷疑 pituitary／嚴重 thyroid disease。',
+            meaning: '除非專科 pathway 另有指示，一般要同 TSH 一齊睇；不一致可由急病、assay interference、懷孕、藥物或 central thyroid disease 引起。',
+            watch: '懷疑嚴重 thyroid disease 時，優先睇 observations、ECG、temperature、GCS 同 cardiovascular stability。'
+        },
+        'Cortisol': {
+            name: '皮質醇',
+            use: '協助評估 adrenal insufficiency；抽血時間同近期 steroid exposure 非常重要。',
+            meaning: '急病時 random cortisol 難解讀，可能要 morning cortisol 或 stimulation test；外源性 steroid 同 binding protein 都會影響。',
+            watch: '懷疑 adrenal crisis 如 shock、嘔吐、腹痛、低鈉、高鉀或低血糖，可行先抽血但唔好延誤處方 emergency steroid 同 fluid。'
+        },
+        'Lipid profile': {
+            name: '血脂組合',
+            use: '評估 cardiovascular risk 同監察 lipid-lowering therapy；極高 triglyceride 同 pancreatitis 有關。',
+            meaning: 'LDL 冇一個人人相同嘅 target，要睇已知 CVD、糖尿病、CKD 同整體風險；急病亦可改變數值。',
+            watch: '跟處方 risk-based target 同藥物計劃；嚴重腹痛兼 triglyceride 極高要考慮 pancreatitis 並上報。'
+        },
+        'Urinalysis / dipstick': {
+            name: '尿液分析／試紙',
+            use: '床邊快速篩查 blood、protein、glucose、ketone、nitrite 同 leukocyte esterase。',
+            meaning: 'Dipstick finding 唔等於診斷，月經污染、尿濃度、採樣質素同藥物都會影響；nitrite 陰性唔排除 UTI，pyuria 亦唔等於有症狀感染。',
+            watch: '有臨床 indication 先正確收集 microscopy／culture；肉眼血尿兼 clot／retention、sepsis、劇痛或 AKI 要上報。'
+        },
+        'Urine albumin:creatinine ratio (ACR)': {
+            name: '尿白蛋白／肌酸酐比率',
+            use: '量化 albuminuria，用於 CKD risk classification 同糖尿病／高血壓腎病評估。',
+            meaning: '運動、發燒、UTI、月經同嚴重高血糖可短暫升高；除非情況緊急，持續異常通常要重覆確認。',
+            watch: '連 eGFR、BP、糖尿控制同 urine sediment 一齊睇；nephrotic-range proteinuria、oedema、低 albumin 或腎功能急跌要上報。'
+        },
+        'Urine sodium': {
+            name: '尿鈉',
+            use: '喺正確採樣同情境下，協助評估 hyponatraemia、volume physiology 同部分 AKI。',
+            meaning: '利尿劑、CKD、IV fluid 同抽樣時間可令結果誤導，必須配合 serum／urine osmolality、臨床 volume status 同問題。',
+            watch: '唔可以單憑 urine sodium 診斷 SIADH 或 pre-renal AKI；要核對藥物、抽樣時間同 fluid therapy。'
+        },
+        'Urine osmolality': {
+            name: '尿滲透壓',
+            use: '反映尿液濃縮程度，協助評估水分平衡、hyponatraemia 同 diabetes insipidus。',
+            meaning: '稀尿提示排水，濃尿提示 ADH effect 或其他濃縮驅動；離開 serum result 同病情冇一個單一正常值。',
+            watch: '嚴重 sodium 異常或神經症狀要上報；準確 input／output 同配對樣本時間好重要。'
+        },
+        'pH': {
+            name: '酸鹼度',
+            use: '第一步判斷血液係 acidemia 定 alkalemia。',
+            meaning: 'pH 接近正常都唔排除 mixed disorder，因為相反過程可以互相抵銷；VBG pH 通常稍低，但唔應套用固定 correction。',
+            watch: '嚴重 pH 異常，或伴 shock、arrhythmia、呼吸疲勞、GCS 下降或快速轉差，要即時上報。'
+        },
+        'PaCO₂': {
+            name: '動脈二氧化碳分壓',
+            use: '反映呼吸性酸鹼部分同 alveolar ventilation 是否足夠。',
+            meaning: 'PaCO₂ 高推向 respiratory acidosis，低就推向 respiratory alkalosis；要判斷係 primary disorder 定 compensation，PvCO₂ 唔可精準代替。',
+            watch: 'CO₂ 上升、嗜睡、頭痛、疲倦、asterixis 或 acidosis，尤其用氧、NIV、sedative／opioid 時，要即時上報。'
+        },
+        'HCO₃⁻': {
+            name: '碳酸氫鹽',
+            use: '代表 blood gas 嘅 metabolic 部分，通常由 pH 同 CO₂ 計算。',
+            meaning: '低值支持 metabolic acidosis 或 respiratory alkalosis 嘅腎代償；高值支持 metabolic alkalosis 或 chronic respiratory acidosis 嘅代償。',
+            watch: '低時要睇 anion gap、lactate、ketone、腎衰、腹瀉或毒物；高時要睇嘔吐、利尿劑、chloride 同 chronic hypercapnia。'
+        },
+        'Base excess (BE)': {
+            name: '鹼剩餘',
+            use: '扣除 CO₂ 影響後，概括 metabolic 成分。',
+            meaning: '負 BE／base deficit 支持 metabolic acidosis；正 BE 支持 metabolic alkalosis，但唔會話你知原因，亦可能遮住 mixed disorder。',
+            watch: '要同 pH、HCO₃⁻、lactate、chloride、anion gap 同 perfusion 一齊 trend，唔好單獨治療個數。'
+        },
+        'PaO₂': {
+            name: '動脈氧分壓',
+            use: '量度 arterial oxygen tension，協助評估 hypoxaemia、oxygen delivery 同 respiratory failure。',
+            meaning: '一定要記錄 FiO₂／氧氣裝置、年齡同病情；高 FiO₂ 下「正常」PaO₂ 仍可能代表嚴重 gas-exchange failure，venous PO₂ 唔可判斷氧合。',
+            watch: 'Hypoxaemia、氧需求增加，或 PaO₂ 與 FiO₂ 唔相稱要上報；確認標本係 arterial 並對照 SpO₂。'
+        },
+        'SaO₂ / co-oximetry': {
+            name: '動脈血氧飽和度／共氧測定',
+            use: '評估 Hb oxygen saturation；co-oximetry 可直接驗 carboxyhaemoglobin 或 methaemoglobin。',
+            meaning: '高 CO₂ 風險病人目標可較低；普通 pulse oximetry 喺 CO poisoning 可假安心，perfusion 差或 dyshemoglobinaemia 時亦可唔準。',
+            watch: '跟處方 oxygen target；症狀同 saturation 唔吻合或懷疑 CO／methemoglobin exposure，要上報同考慮 co-oximetry。'
+        },
+        'Lactate': {
+            name: '乳酸',
+            use: '反映產生增加或清除減少，用於評估 shock、sepsis 等急病嘅嚴重度同反應。',
+            meaning: '高 lactate 唔等於一定 sepsis 或缺氧；seizure、beta-agonist、肝功能差、藥物或採樣因素都可升高，正常亦唔排除嚴重病。',
+            watch: '病人轉差兼 lactate 高或持續升要上報，重新評估 perfusion、source、藥物同 clearance；trend 必須連病情及治療反應睇。'
+        },
+        'Anion gap (AG)': {
+            name: '陰離子間隙',
+            use: '將 metabolic acidosis 分做 high-gap 同 normal-gap；常用公式係 Na⁺ −（Cl⁻＋HCO₃⁻）。',
+            meaning: 'High AG 提示 lactate、ketone、腎衰或毒物等未量度酸；normal-gap 多見於 bicarbonate loss 或腎排酸問題，低 albumin 會令預期 AG 較低。',
+            watch: '不明 high-gap acidosis、懷疑中毒、DKA、shock 或腎衰要即時上報；albumin correction 同 toxicology advice 跟本地做法。'
+        },
+        'VBG: what it can and cannot answer': {
+            name: 'VBG 可以／唔可以答到咩',
+            use: 'VBG 較少侵入，perfusion 足夠而又唔需要精準 arterial oxygenation 時，可用作酸鹼篩查同 trend。',
+            meaning: 'Venous pH 通常稍低、PvCO₂ 較高，但差距會變；VBG 唔可以提供 PaO₂，嚴重 shock 時 arterial–venous 差距可更大。',
+            watch: '要準確氧合／PaCO₂、嚴重 respiratory failure、NIV decision、perfusion 差、SpO₂ 唔可靠或 VBG 同病人唔吻合時，要抽 ABG。'
+        }
+    };
+
+    for (const item of labReference) {
+        const zh = labChineseReference[item.name];
+        item.nameZh = zh?.name || '中文名稱待核對';
+        item.useZh = zh?.use || '請配合病人情況同本地化驗參考範圍解讀。';
+        item.meaningZh = zh?.meaning || '單一數值唔能夠獨立診斷，要睇趨勢同其他檢查。';
+        item.watchZh = zh?.watch || '病人有臨床轉差或 critical result 時要即時上報。';
+    }
+
     let activeLabCategory = 'All';
 
     function renderLabReference() {
@@ -2530,26 +2915,26 @@
         const query = input.value.trim().toLowerCase();
         const matches = labReference.filter(item => {
             const categoryMatch = activeLabCategory === 'All' || item.category === activeLabCategory;
-            const searchable = `${item.name} ${item.category} ${item.range} ${item.keywords} ${item.use} ${item.meaning} ${item.watch}`.toLowerCase();
+            const searchable = `${item.name} ${item.nameZh} ${item.category} ${item.range} ${item.keywords} ${item.use} ${item.useZh} ${item.meaning} ${item.meaningZh} ${item.watch} ${item.watchZh}`.toLowerCase();
             return categoryMatch && (!query || searchable.includes(query));
         });
 
         clear.hidden = !query;
         meta.textContent = query || activeLabCategory !== 'All'
             ? `${matches.length} of ${labReference.length} values shown`
-            : `${labReference.length} common values — tap a card for interpretation`;
+            : `${labReference.length} common values／常用化驗 — tap a card for interpretation`;
 
         grid.innerHTML = matches.length ? matches.map(item => `
             <details class="lab-item" data-name="${item.name}" ${matches.length === 1 ? 'open' : ''}>
                 <summary>
-                    <span><span class="lab-name">${item.name}</span><span class="lab-category">${item.category}</span></span>
+                    <span><span class="lab-name">${item.name} · ${item.nameZh}</span><span class="lab-category">${item.category}</span></span>
                     <span class="lab-range">${item.range}</span>
                     <span class="lab-chevron" aria-hidden="true">⌄</span>
                 </summary>
                 <div class="lab-body">
-                    <div class="lab-block"><span class="lab-label">Why it is checked</span><p class="lab-copy">${item.use}</p></div>
-                    <div class="lab-block"><span class="lab-label">How to interpret</span><p class="lab-copy">${item.meaning}</p></div>
-                    <div class="lab-block"><span class="lab-label">Nursing watch / escalation</span><p class="lab-copy lab-watch">${item.watch}</p></div>
+                    <div class="lab-block"><span class="lab-label">用途 · Why it is checked</span><p class="lab-copy lab-copy-zh">${item.useZh}</p><p class="lab-copy lab-copy-en">${item.use}</p></div>
+                    <div class="lab-block"><span class="lab-label">點樣解讀 · How to interpret</span><p class="lab-copy lab-copy-zh">${item.meaningZh}</p><p class="lab-copy lab-copy-en">${item.meaning}</p></div>
+                    <div class="lab-block"><span class="lab-label">護理留意／上報 · Nursing watch / escalation</span><p class="lab-copy lab-copy-zh lab-watch">${item.watchZh}</p><p class="lab-copy lab-copy-en">${item.watch}</p></div>
                 </div>
             </details>`).join('') : `
             <div class="card lab-empty">
