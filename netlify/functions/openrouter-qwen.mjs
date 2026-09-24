@@ -67,7 +67,7 @@ export default async function handler(request) {
     : 0.4;
   const requestedTokens = Number(input.max_tokens);
   const maxTokens = Number.isInteger(requestedTokens)
-    ? Math.min(900, Math.max(64, requestedTokens))
+    ? Math.min(1600, Math.max(64, requestedTokens))
     : 700;
 
   let upstream;

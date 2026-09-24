@@ -41,6 +41,7 @@ test('Qwen proxy keeps the key server-side and pins the free model', async () =>
   const response = await handler(qwenRequest({
     model: 'untrusted/model',
     messages: [{ role: 'user', content: 'Hello' }],
+    max_tokens: 99_999,
     stream: true,
   }));
 
@@ -49,6 +50,7 @@ test('Qwen proxy keeps the key server-side and pins the free model', async () =>
   assert.equal(forwarded.options.headers.Authorization, 'Bearer server-only-test-key');
   const payload = JSON.parse(forwarded.options.body);
   assert.equal(payload.model, 'qwen/qwen3.8-27b:free');
+  assert.equal(payload.max_tokens, 1600);
   assert.equal(payload.stream, true);
 });
 
