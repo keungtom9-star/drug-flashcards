@@ -241,19 +241,32 @@ test('imported question text and quotation marks cannot break the option handler
     assert.doesNotThrow(() => new vm.Script(decoded));
 });
 
-test('unknown search text is safe and offers text lookup without an infusion upload', async () => {
+test('unknown search text is safe and falls back to Google plus manual review without AI', async () => {
     const { context, document } = browserContext({ ds_key: 'test-key' });
     for (const source of inlineScripts('index.html')) vm.runInContext(source, context);
     const query = '<img src=x onerror=alert(1)> "quote"';
     document.getElementById('search-input').value = query;
-    let passed;
+    const opened = [];
+    document.createElement = tag => {
+        const node = element();
+        node.click = () => opened.push({ tag, href: node.href });
+        node.remove = () => {};
+        return node;
+    };
     context.fetch = async () => { throw new Error('Sheet unavailable'); };
-    context.triggerAISearch = q => { passed = q; };
+    let aiCalls = 0;
+    context.triggerAISearch = () => { aiCalls++; };
     context.runSearch();
     assert.ok(!document.getElementById('search-results').innerHTML.includes('<img src=x'));
     assert.doesNotMatch(document.getElementById('search-results').innerHTML, /upload an infusion chart|ai-image-upload/i);
     await document.getElementById('ask-ai-search').onclick();
-    assert.equal(passed, query);
+    assert.equal(aiCalls, 0);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Manual entry/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Search this drug on Google/);
+    document.getElementById('btn-google-missing-drug').onclick();
+    assert.equal(opened.length, 1);
+    assert.equal(new URL(opened[0].href).hostname, 'www.google.com');
+    assert.equal(new URL(opened[0].href).searchParams.get('q'), query);
 });
 
 test('cached clinical questions still load when the CSV library is unavailable', async () => {
@@ -283,7 +296,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -344,7 +357,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -590,35 +603,81 @@ test('a Google Sheet result waits for review and explicit local add', async () =
     assert.equal(context.findLocalDrugs('Cloud medicine')[0].name, 'Cloud medicine (Edited brand)');
 });
 
-test('an AI-found drug waits for edited approval before Sheet and local add', async () => {
-    const { context, document } = loadMain({ ds_key: 'test-key' });
+test('openFDA lookup prefers the requested single ingredient over a combination product', async () => {
+    const { context } = loadMain();
+    let requestedURL = '';
+    context.fetch = async url => {
+        requestedURL = String(url);
+        return { ok: true, json: async () => ({ results: [
+            { openfda: { generic_name: ['SITAGLIPTIN AND METFORMIN HYDROCHLORIDE'] } },
+            { openfda: { generic_name: ['METFORMIN HYDROCHLORIDE'] } },
+        ] }) };
+    };
+    const result = await context.findOpenFDALabel(['metformin']);
+    assert.equal(result.openfda.generic_name[0], 'METFORMIN HYDROCHLORIDE');
+    assert.equal(new URL(requestedURL).searchParams.get('limit'), '5');
+});
+
+test('an official-source drug uses no search AI and waits for DeepSeek Nursing care plus explicit approval', async () => {
+    const { context, document } = loadMain({ ds_key: 'deepseek-test-key', active_provider: 'openrouter-qwen' });
     document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
     document.getElementById('search-input').value = 'Novelmed';
     context.Papa = { parse: () => ({ data: [] }) };
     let sheetWrites = 0;
     let writtenPayload;
-    context.fetch = async (_url, options = {}) => {
+    const requests = [];
+    context.fetch = async (url, options = {}) => {
+        requests.push({ url: String(url), options });
         if (options.method === 'POST') {
+            if (String(url) === 'https://api.deepseek.com/chat/completions') {
+                return new Response('data: {"choices":[{"delta":{"content":"- Check allergies and baseline observations.\\n"}}]}\n\ndata: {"choices":[{"delta":{"content":"- Monitor response and adverse effects.\\n- Verify against the prescription, local protocol and current formulary."}}]}\n\ndata: [DONE]\n\n', {
+                    status: 200,
+                    headers: { 'Content-Type': 'text/event-stream' },
+                });
+            }
             sheetWrites++;
             writtenPayload = JSON.parse(options.body);
             return { ok: true, text: async () => '' };
         }
-        return { ok: true, text: async () => 'name,class' };
+        if (String(url).includes('example.test/drugs.csv')) return { ok: true, text: async () => 'name,class' };
+        if (String(url).includes('/rxcui.json')) return { ok: true, json: async () => ({ idGroup: { rxnormId: ['123'] } }) };
+        if (String(url).includes('/properties.json')) return { ok: true, json: async () => ({ properties: { name: 'Novelmed' } }) };
+        if (String(url).includes('/related.json')) return { ok: true, json: async () => ({ relatedGroup: { conceptGroup: [{ conceptProperties: [{ name: 'novelmed' }] }] } }) };
+        if (String(url).startsWith('https://api.fda.gov/drug/label.json')) {
+            return { ok: true, json: async () => ({ results: [{
+                openfda: { generic_name: ['Novelmed'], brand_name: ['Nova'], pharm_class_epc: ['Test class [EPC]'] },
+                indications_and_usage: ['Used for testing.'],
+                adverse_reactions: ['Nausea, rash and dizziness.'],
+                mechanism_of_action: ['Example action.'],
+            }] }) };
+        }
+        throw new Error(`Unexpected request: ${url}`);
     };
-    context.streamAIResponse = async (_messages, onUpdate) => onUpdate(JSON.stringify({
-        name: 'Novelmed (Nova)', class: 'Test class', system: '🫀 Cardio', indication: 'Testing',
-        side_effects: 'Example effect', nursing: 'Monitor response', effect_of_drug: 'Example action'
-    }));
     await context.resolveMissingDrug('Novelmed');
     assert.equal(sheetWrites, 0);
     assert.equal(context.findLocalDrugs('Novelmed').length, 0);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /RxNorm \+ openFDA/);
+    assert.equal(requests.some(request => request.url.includes('openrouter')), false);
+    assert.equal(requests.some(request => request.url.includes('deepseek')), false);
 
     fillAIEditor(document, {
         'ai-edit-name': 'Novelmed (Edited brand)',
         'ai-edit-indication': 'Edited indication for testing',
-        'ai-edit-side-effects': 'Edited nausea, rash, dizziness'
+        'ai-edit-side-effects': 'Edited nausea, rash, dizziness',
+        'ai-edit-nursing': ''
     });
+    await document.getElementById('btn-save-sheet').onclick();
+    assert.equal(sheetWrites, 0, 'Nursing care is required before saving an official result');
+    assert.match(document.getElementById('save-status').innerText, /DeepSeek.*Nursing care/i);
+
+    await document.getElementById('btn-generate-nursing').onclick();
+    assert.match(document.getElementById('ai-edit-nursing').value, /Monitor response/);
+    const deepSeekRequest = requests.find(request => request.url === 'https://api.deepseek.com/chat/completions');
+    assert.ok(deepSeekRequest);
+    assert.equal(deepSeekRequest.options.headers.Authorization, 'Bearer deepseek-test-key');
+    assert.equal(JSON.parse(deepSeekRequest.options.body).model, 'deepseek-chat');
+
     await document.getElementById('btn-save-sheet').onclick();
     assert.equal(sheetWrites, 1);
     assert.equal(writtenPayload.name, 'Novelmed (Edited brand)');
@@ -750,7 +809,7 @@ test('search history saves submitted searches once, with a small limit', () => {
     assert.equal(history.filter(term => term.toLowerCase() === 'term 7').length, 1);
 });
 
-test('missing or blank API keys open setup without sending AI requests or resetting a quiz', async () => {
+test('missing drug lookup needs no AI key; DeepSeek Nursing care opens setup when its key is blank', async () => {
     const { context, document } = loadMain({ ds_key: '  ', active_provider: 'deepseek-v4-flash' });
     let aiRequests = 0;
     context.fetch = async url => {
@@ -760,6 +819,10 @@ test('missing or blank API keys open setup without sending AI requests or resett
     document.getElementById('search-input').value = 'unknown drug';
     context.runSearch();
     await document.getElementById('ask-ai-search').onclick();
+    assert.notEqual(document.getElementById('settings-panel').style.display, 'flex');
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Manual entry/);
+    fillAIEditor(document, { 'ai-edit-name': 'Unknown drug', 'ai-edit-nursing': '' });
+    await document.getElementById('btn-generate-nursing').onclick();
     assert.equal(document.getElementById('settings-panel').style.display, 'flex');
     assert.equal(document.getElementById('deepseek-key').focused, true);
     await context.triggerAISearch('unknown drug');

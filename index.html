@@ -870,6 +870,9 @@
             transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
         }
         .ai-edit-input:focus { border-color: var(--ios-blue); box-shadow: 0 0 0 4px rgba(0,122,255,.1); background: #fff; outline: none; }
+        .ai-nursing-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 7px; }
+        .ai-nursing-tools .action-btn { width: auto; min-height: 40px; margin: 0; padding: 9px 12px; }
+        .ai-nursing-hint { flex: 1 1 180px; color: #64748b; font-size: .74rem; line-height: 1.4; }
         .ai-review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
         .ai-review-actions.one-action { grid-template-columns: 1fr; }
         .ai-save-status { min-height: 20px; margin-top: 9px; text-align: center; font-size: .82rem; font-weight: 700; line-height: 1.4; }
@@ -1499,6 +1502,10 @@ Language: ${langInstruction}.`;
     const YINLI_MODEL_NAME = 'gemini-3.1-pro-preview';
     const QWEN_PROXY_URL = '/.netlify/functions/openrouter-qwen';
     const QWEN_MODEL_NAME = 'qwen/qwen3.8-27b:free';
+    const DEEPSEEK_NURSING_URL = 'https://api.deepseek.com/chat/completions';
+    const DEEPSEEK_NURSING_MODEL = 'deepseek-chat';
+    const RXNORM_API_ROOT = 'https://rxnav.nlm.nih.gov/REST';
+    const OPENFDA_LABEL_URL = 'https://api.fda.gov/drug/label.json';
     
     // Settings
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
@@ -2153,6 +2160,19 @@ Language: ${langInstruction}.`;
         }
     }
 
+    function openDeepSeekNursingSettings() {
+        document.getElementById('settings-panel').style.display = 'flex';
+        document.getElementById('provider-select').value = currentProvider;
+        updateProviderDisplay();
+        const config = document.getElementById('deepseek-config');
+        const input = document.getElementById('deepseek-key');
+        if (config) config.style.display = 'block';
+        if (input) {
+            input.focus({ preventScroll: true });
+            input.scrollIntoView({ block: 'center' });
+        }
+    }
+
     function requireApiKey() {
         if (hasApiKey()) return true;
         updateApiNotices();
@@ -2213,12 +2233,11 @@ Language: ${langInstruction}.`;
                 container.innerHTML = '<div class="search-empty"><p>No saved drugs in this system yet.</p><button type="button" class="action-btn" onclick="clearSearch()">Search all drugs</button></div>';
                 return;
             }
-            const needsKey = !hasApiKey();
             container.innerHTML = `
                 <div class="search-empty">
                     <p>No saved drugs found for "${escapeHtml(rawQuery)}".</p>
-                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">${needsKey ? 'Check Google Sheet' : 'Search Google Sheet & AI'}</button>
-                    <p class="search-hint">Checks the latest Google Sheet first.${needsKey ? ' If it is still missing, add an API key for AI search.' : ' Review and edit any result, then choose whether to add it.'}</p>
+                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">Search official drug sources</button>
+                    <p class="search-hint">Checks Google Sheet, RxNorm and openFDA without AI. If still missing, you can use Google Search and enter the details manually. DeepSeek is used only for Nursing care.</p>
                     <div id="ai-search-output"></div>
                 </div>`;
             document.getElementById('ask-ai-search').onclick = async () => {
@@ -2513,6 +2532,173 @@ Language: ${langInstruction}.`;
         return findLocalDrugs(query, 'All', sheetDrugs)[0] || null;
     }
 
+    async function fetchOfficialDrugJson(url, timeoutMs = 8000) {
+        const controller = typeof AbortController === 'undefined' ? null : new AbortController();
+        const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+        try {
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store',
+                ...(controller ? { signal: controller.signal } : {}),
+            });
+            if (response.ok === false) return null;
+            return response.json();
+        } finally {
+            if (timer !== null) clearTimeout(timer);
+        }
+    }
+
+    function firstOfficialValue(value) {
+        if (Array.isArray(value)) return String(value.find(item => String(item || '').trim()) || '').trim();
+        return String(value || '').trim();
+    }
+
+    function compactOfficialLabelText(value, maxLength = 900) {
+        const joined = Array.isArray(value) ? value.join(' ') : String(value || '');
+        const clean = joined
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;|&#160;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;|&apos;/gi, "'")
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (clean.length <= maxLength) return clean;
+        const clipped = clean.slice(0, maxLength + 1);
+        const boundary = Math.max(clipped.lastIndexOf('. '), clipped.lastIndexOf('; '), clipped.lastIndexOf(', '));
+        const end = boundary > maxLength * 0.62 ? boundary + 1 : maxLength;
+        return `${clipped.slice(0, end).trim()}…`;
+    }
+
+    function cleanOfficialDrugClass(value) {
+        return firstOfficialValue(value).replace(/\s*\[[^\]]+\]\s*$/g, '').trim();
+    }
+
+    async function resolveRxNormConcept(query) {
+        let rxcui = '';
+        const exactURL = `${RXNORM_API_ROOT}/rxcui.json?name=${encodeURIComponent(query)}&search=2`;
+        const exact = await fetchOfficialDrugJson(exactURL);
+        rxcui = firstOfficialValue(exact?.idGroup?.rxnormId);
+
+        if (!rxcui) {
+            const approximateURL = `${RXNORM_API_ROOT}/approximateTerm.json?term=${encodeURIComponent(query)}&maxEntries=5&option=1`;
+            const approximate = await fetchOfficialDrugJson(approximateURL);
+            rxcui = String(approximate?.approximateGroup?.candidate?.[0]?.rxcui || '').trim();
+        }
+        if (!rxcui) return null;
+
+        const [properties, related] = await Promise.all([
+            fetchOfficialDrugJson(`${RXNORM_API_ROOT}/rxcui/${encodeURIComponent(rxcui)}/properties.json`).catch(() => null),
+            fetchOfficialDrugJson(`${RXNORM_API_ROOT}/rxcui/${encodeURIComponent(rxcui)}/related.json?tty=IN+MIN`).catch(() => null),
+        ]);
+        const ingredient = (related?.relatedGroup?.conceptGroup || [])
+            .flatMap(group => group?.conceptProperties || [])
+            .map(concept => String(concept?.name || '').trim())
+            .find(Boolean) || '';
+        return {
+            rxcui,
+            displayName: String(properties?.properties?.name || query).trim(),
+            ingredient,
+        };
+    }
+
+    async function findOpenFDALabel(searchTerms) {
+        const terms = [...new Set(searchTerms.map(term => String(term || '').trim()).filter(Boolean))].slice(0, 3);
+        for (const term of terms) {
+            const safeTerm = term.replace(/["\\]/g, ' ').replace(/\s+/g, ' ').trim();
+            const url = new URL(OPENFDA_LABEL_URL);
+            url.searchParams.set('search', `openfda.generic_name:"${safeTerm}" OR openfda.brand_name:"${safeTerm}" OR openfda.substance_name:"${safeTerm}"`);
+            url.searchParams.set('limit', '5');
+            const data = await fetchOfficialDrugJson(url.href).catch(() => null);
+            const target = safeTerm.toLowerCase();
+            const scoreName = value => {
+                const name = String(value || '').trim().toLowerCase();
+                if (!name) return 0;
+                if (name === target) return 120;
+                const combinationPenalty = /\band\b|[;,/+]/.test(name) ? 45 : 0;
+                if (name.startsWith(`${target} `)) return 100 - combinationPenalty;
+                if (name.includes(target)) return 70 - combinationPenalty;
+                return 0;
+            };
+            const label = (data?.results || [])
+                .map(result => {
+                    const names = [
+                        ...(result?.openfda?.generic_name || []),
+                        ...(result?.openfda?.brand_name || []),
+                        ...(result?.openfda?.substance_name || []),
+                    ];
+                    return { result, score: Math.max(0, ...names.map(scoreName)) };
+                })
+                .sort((a, b) => b.score - a.score)[0]?.result;
+            if (label) return label;
+        }
+        return null;
+    }
+
+    function inferOfficialDrugSystem(drugData) {
+        const text = [drugData.class, drugData.indication, drugData.effect_of_drug, drugData.name].join(' ').toLowerCase();
+        const rules = [
+            ['🦠 Infections', /antibi|antibacter|antiviral|antifungal|infection|sepsis|microb/],
+            ['🦋 Endocrine', /diabet|insulin|glucose|thyroid|corticosteroid|endocrin/],
+            ['🫁 Respiratory', /asthma|bronch|airway|pulmon|respirat|copd/],
+            ['🧠 CNS / Neuro', /seizure|epilep|depress|psych|neuropath|migraine|sedat|dement|parkinson/],
+            ['🍔 GI System', /gastr|ulcer|nausea|bowel|constipat|diarr|hepatic|liver|gastro/],
+            ['🤰 ObGyn / GU', /renal|urinary|bladder|prostate|contracep|pregnan|uter|vaginal/],
+            ['🎗️ Oncology', /cancer|tumou?r|neoplasm|chemotherap|antineoplastic/],
+            ['🍎 Nutrition / Blood', /anaemia|anemia|coag|platelet|vitamin|iron|anticoag|haem|hemat/],
+            ['🦴 MSK / Bone', /arthritis|bone|gout|muscle|osteop|analges|pain/],
+            ['👁️ Eye', /ophthalm|glaucoma|ocular|retina/],
+            ['👂 ENT', /otic|rhinitis|nasal|oropharyn|ear\b/],
+            ['🧴 Skin', /dermat|eczema|psoriasis|topical|cutaneous|acne/],
+            ['🛡️ Immune / Vax', /vaccine|immun|allerg|anaphyl/],
+            ['💉 Anaesthesia', /anaesth|anesth|neuromuscular block/],
+            ['🫀 Cardio', /hypertension|cardiac|heart|arrhythm|angina|vascular|diuretic|lipid|cholesterol/],
+        ];
+        return rules.find(([, pattern]) => pattern.test(text))?.[0] || '🫀 Cardio';
+    }
+
+    async function findDrugInOfficialSources(query) {
+        const [rxNorm, directLabel] = await Promise.all([
+            resolveRxNormConcept(query).catch(() => null),
+            findOpenFDALabel([query]).catch(() => null),
+        ]);
+        const label = directLabel || await findOpenFDALabel([rxNorm?.ingredient, rxNorm?.displayName]);
+        if (!label) return null;
+
+        const openfda = label.openfda || {};
+        const generic = firstOfficialValue(openfda.generic_name)
+            || rxNorm?.ingredient
+            || rxNorm?.displayName
+            || query;
+        const brand = firstOfficialValue(openfda.brand_name);
+        const displayName = brand && brand.toLowerCase() !== generic.toLowerCase()
+            ? `${generic} (${brand})`
+            : generic;
+        const drugClass = cleanOfficialDrugClass(openfda.pharm_class_epc)
+            || cleanOfficialDrugClass(openfda.pharm_class_moa)
+            || cleanOfficialDrugClass(openfda.pharm_class_cs)
+            || 'Check official label drug class';
+        const indication = compactOfficialLabelText(label.indications_and_usage, 800);
+        const sideEffects = compactOfficialLabelText(
+            label.adverse_reactions || label.warnings_and_cautions || label.warnings,
+            900
+        );
+        const effect = compactOfficialLabelText(label.mechanism_of_action || label.clinical_pharmacology, 700);
+        const drugData = {
+            name: displayName,
+            generic_name: generic,
+            brand_name: brand,
+            class: drugClass,
+            system: '',
+            indication: indication || 'Review the official product label for approved indications.',
+            side_effects: sideEffects || DRUG_TEXT_FALLBACKS.sideEffects,
+            nursing: '',
+            effect_of_drug: effect || DRUG_TEXT_FALLBACKS.effect,
+        };
+        drugData.system = inferOfficialDrugSystem(drugData);
+        return drugData;
+    }
+
     async function resolveMissingDrug(query) {
         const button = document.getElementById('ask-ai-search');
         if (button) {
@@ -2528,19 +2714,45 @@ Language: ${langInstruction}.`;
                 return;
             }
         } catch (_) {
-            // Continue to AI when the online sheet is unavailable or has no match.
+            // Continue to the public drug sources when the Sheet is unavailable.
         }
 
-        if (!hasApiKey()) {
-            if (button) {
-                button.disabled = false;
-                button.innerText = 'Add API key to continue';
+        if (button) button.innerText = 'Checking RxNorm + openFDA…';
+        try {
+            const officialDrug = await findDrugInOfficialSources(query);
+            if (officialDrug) {
+                const status = document.getElementById('search-status');
+                if (status) status.textContent = 'Found in RxNorm / openFDA. Review it before adding.';
+                renderEditableDrugReview(officialDrug, {
+                    sourceLabel: 'RxNorm + openFDA',
+                    allowSheetSave: true,
+                    requireNursing: true,
+                    enableDeepSeekNursing: true,
+                });
+                return;
             }
-            openApiSettings();
-            return;
+        } catch (_) {
+            // The manual form and Google Search fallback remain available offline or after an API error.
         }
-        if (button) button.innerText = 'Searching with AI…';
-        await triggerAISearch(query);
+
+        const status = document.getElementById('search-status');
+        if (status) status.textContent = 'Not found in the saved or official sources. Search Google, then review your manual entry.';
+        renderEditableDrugReview({
+            name: query,
+            class: '',
+            system: '🫀 Cardio',
+            indication: '',
+            side_effects: '',
+            nursing: '',
+            effect_of_drug: '',
+        }, {
+            sourceLabel: 'Manual entry',
+            allowSheetSave: true,
+            requireNursing: true,
+            enableDeepSeekNursing: true,
+            showGoogleSearch: true,
+            googleQuery: query,
+        });
     }
 
     const brandFallbackProfiles = {
@@ -2570,19 +2782,23 @@ ${rawText}`;
         return parseAISearchPayload(repairedText);
     }
 
-    function validateEditedAISearchDrug(drugData) {
+    function validateEditedAISearchDrug(drugData, { requireNursing = false } = {}) {
         const name = String(drugData?.name || '').trim();
         const sideEffects = String(drugData?.side_effects || '').trim();
+        const nursing = String(drugData?.nursing || '').trim();
         if (!name) throw new Error('Add a drug name before saving.');
         if (isMissingDrugText(sideEffects) || sideEffects === DRUG_TEXT_FALLBACKS.sideEffects) {
             throw new Error('Add useful common or serious side effects before saving.');
         }
-        return normalizeAISearchDrugPayload({ ...drugData, name, side_effects: sideEffects });
+        if (requireNursing && (isMissingDrugText(nursing) || nursing === DRUG_TEXT_FALLBACKS.nursing)) {
+            throw new Error('Generate with DeepSeek or add useful Nursing care before saving.');
+        }
+        return normalizeAISearchDrugPayload({ ...drugData, name, side_effects: sideEffects, nursing });
     }
 
-    function readEditableAISearchDrug() {
+    function getEditableAISearchDrugDraft() {
         const value = id => String(document.getElementById(id)?.value || '').trim();
-        return validateEditedAISearchDrug({
+        return {
             name: value('ai-edit-name'),
             class: value('ai-edit-class'),
             system: value('ai-edit-system'),
@@ -2590,7 +2806,11 @@ ${rawText}`;
             side_effects: value('ai-edit-side-effects'),
             nursing: value('ai-edit-nursing'),
             effect_of_drug: value('ai-edit-effect')
-        });
+        };
+    }
+
+    function readEditableAISearchDrug(options = {}) {
+        return validateEditedAISearchDrug(getEditableAISearchDrugDraft(), options);
     }
 
     function setAIReviewStatus(message, color = 'var(--ios-gray)') {
@@ -2600,7 +2820,144 @@ ${rawText}`;
         status.style.color = color;
     }
 
-    function renderEditableDrugReview(drugData, { sourceLabel = 'AI result', allowSheetSave = true } = {}) {
+    function getDeepSeekNursingPrompt(drugData) {
+        return `You are a hospital nursing medication safety assistant. Write concise bedside Nursing care for the medicine below.
+
+Medicine: ${drugData.name || 'Not supplied'}
+Class: ${drugData.class || 'Not supplied'}
+Indication: ${drugData.indication || 'Not supplied'}
+Known adverse effects / warnings: ${drugData.side_effects || 'Not supplied'}
+Drug effect: ${drugData.effect_of_drug || 'Not supplied'}
+
+Rules:
+- English only, 4 to 7 short bullet points, plain text.
+- Cover pre-administration checks, safe administration, monitoring, important hold/escalation signs, and patient education only when supported.
+- Do not invent a dose, route, dilution, infusion rate, contraindication, laboratory threshold, or local policy.
+- If the supplied information is insufficient, say what must be checked instead of guessing.
+- End with: "Verify against the prescription, local protocol and current formulary."
+- Output the bullets only; no title or introduction.`;
+    }
+
+    async function streamDeepSeekNursingResponse(messages, onUpdate) {
+        const key = String(deepSeekKey || '').trim();
+        if (!key) throw new Error('Add a DeepSeek key in Settings, or type Nursing care manually.');
+        const response = await fetch(DEEPSEEK_NURSING_URL, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: DEEPSEEK_NURSING_MODEL,
+                messages,
+                temperature: 0.2,
+                max_tokens: 450,
+                stream: true,
+            }),
+        });
+        if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            throw new Error(`DeepSeek request failed (${response.status})${detail ? `: ${detail.slice(0, 180)}` : ''}`);
+        }
+
+        if (!response.body) {
+            const json = await response.json();
+            const answer = String(json?.choices?.[0]?.message?.content || '').trim();
+            if (!answer) throw new Error('DeepSeek returned no Nursing care.');
+            onUpdate(answer);
+            return answer;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let fullText = '';
+        let eventBuffer = '';
+        const consumeLine = line => {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) return;
+            const payload = trimmed.slice(5).trim();
+            if (!payload || payload === '[DONE]') return;
+            try {
+                const json = JSON.parse(payload);
+                const chunk = json?.choices?.[0]?.delta?.content || json?.choices?.[0]?.message?.content || '';
+                if (!chunk) return;
+                fullText += chunk;
+                onUpdate(fullText);
+            } catch (_) {
+                // Keep reading the next server-sent event.
+            }
+        };
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            eventBuffer += decoder.decode(value, { stream: true });
+            const lines = eventBuffer.split(/\r?\n/);
+            eventBuffer = lines.pop() || '';
+            lines.forEach(consumeLine);
+        }
+        eventBuffer += decoder.decode();
+        if (eventBuffer.trim()) consumeLine(eventBuffer);
+        fullText = fullText.trim();
+        if (!fullText) throw new Error('DeepSeek returned no Nursing care.');
+        return fullText;
+    }
+
+    async function generateDeepSeekNursingCare() {
+        const button = document.getElementById('btn-generate-nursing');
+        const nursingField = document.getElementById('ai-edit-nursing');
+        const draft = getEditableAISearchDrugDraft();
+        if (!draft.name) {
+            setAIReviewStatus('Add the drug name before generating Nursing care.', 'var(--ios-red)');
+            document.getElementById('ai-edit-name')?.focus();
+            return false;
+        }
+        if (!String(deepSeekKey || '').trim()) {
+            setAIReviewStatus('Add a DeepSeek key, or type Nursing care manually.', 'var(--ios-red)');
+            openDeepSeekNursingSettings();
+            return false;
+        }
+
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'DeepSeek is generating…';
+            button.setAttribute('aria-busy', 'true');
+        }
+        if (nursingField) nursingField.value = '';
+        setAIReviewStatus('Generating Nursing care with DeepSeek…', 'var(--ios-blue)');
+        try {
+            const answer = await streamDeepSeekNursingResponse(
+                [{ role: 'user', content: getDeepSeekNursingPrompt(draft) }],
+                text => {
+                    if (nursingField) {
+                        nursingField.value = text;
+                        nursingField.scrollTop = nursingField.scrollHeight;
+                    }
+                }
+            );
+            if (nursingField) nursingField.value = answer;
+            setAIReviewStatus('DeepSeek Nursing care is ready. Review and edit it before adding.', 'var(--ios-green)');
+            return true;
+        } catch (error) {
+            setAIReviewStatus(error?.message || 'DeepSeek Nursing care failed. Type it manually or try again.', 'var(--ios-red)');
+            return false;
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.innerText = '✨ Generate Nursing care';
+                button.removeAttribute('aria-busy');
+            }
+        }
+    }
+
+    function renderEditableDrugReview(drugData, {
+        sourceLabel = 'AI result',
+        allowSheetSave = true,
+        requireNursing = false,
+        enableDeepSeekNursing = true,
+        showGoogleSearch = false,
+        googleQuery = '',
+    } = {}) {
         const container = document.getElementById('ai-search-output');
         if (!container) return;
         const systemOptions = systemCategories.map(system =>
@@ -2614,15 +2971,18 @@ ${rawText}`;
                     <h3 style="margin:0; color:var(--ios-blue);">Review drug details</h3>
                     <span class="chip" style="background:var(--ios-green); color:white;">${escapeHtml(sourceLabel)}</span>
                 </div>
-                <div class="ai-review-note"><strong>Nothing has been added yet.</strong> Edit any field below, then choose an Add button.</div>
+                <div class="ai-review-note"><strong>Nothing has been added yet.</strong> Edit any field below, verify it against the prescription and current local formulary, then choose an Add button.</div>
+                ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
                 <div class="ai-edit-grid">
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name)}" autocomplete="off"></label>
-                    <label class="ai-edit-field"><span class="ai-edit-label">Class</span><input id="ai-edit-class" class="ai-edit-input" value="${escapeHtml(drugData.class)}" autocomplete="off"></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name || '')}" autocomplete="off"></label>
+                    <label class="ai-edit-field"><span class="ai-edit-label">Class</span><input id="ai-edit-class" class="ai-edit-input" value="${escapeHtml(drugData.class || '')}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">System</span><select id="ai-edit-system" class="ai-edit-input">${systemOptions}</select></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Indication</span><textarea id="ai-edit-indication" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication)}</textarea></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects)}</textarea></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Nursing</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="3">${escapeHtml(drugData.nursing)}</textarea></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Drug effect</span><textarea id="ai-edit-effect" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug || drugData.quiz)}</textarea></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Indication</span><textarea id="ai-edit-indication" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication || '')}</textarea></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects || '')}</textarea></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Nursing care · DeepSeek</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="4" placeholder="Generate with DeepSeek or type Nursing care manually">${escapeHtml(drugData.nursing || '')}</textarea>
+                        ${enableDeepSeekNursing ? '<span class="ai-nursing-tools"><button id="btn-generate-nursing" type="button" class="action-btn" style="background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe;">✨ Generate Nursing care</button><span class="ai-nursing-hint">Only this field uses DeepSeek. Review the answer against the prescription and local protocol.</span></span>' : ''}
+                    </label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Drug effect</span><textarea id="ai-edit-effect" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug || drugData.quiz || '')}</textarea></label>
                 </div>
                 <div class="ai-review-actions ${allowSheetSave ? '' : 'one-action'}">
                     <button id="btn-add-local" class="action-btn" style="margin:0; background:#ecfdf5; color:#047857;">📱 Add to this device</button>
@@ -2631,11 +2991,17 @@ ${rawText}`;
                 <div id="save-status" class="ai-save-status" aria-live="polite"></div>
             </div>`;
 
+        const googleSearchBtn = document.getElementById('btn-google-missing-drug');
+        if (googleSearchBtn) googleSearchBtn.onclick = () => openGoogleDeepLink(googleQuery || drugData.name || 'medicine');
+
+        const nursingBtn = document.getElementById('btn-generate-nursing');
+        if (nursingBtn) nursingBtn.onclick = generateDeepSeekNursingCare;
+
         const addLocalBtn = document.getElementById('btn-add-local');
         if (addLocalBtn) {
             addLocalBtn.onclick = () => {
                 try {
-                    const editedDrug = readEditableAISearchDrug();
+                    const editedDrug = readEditableAISearchDrug({ requireNursing });
                     const ok = upsertDrugToLocalList(editedDrug);
                     setAIReviewStatus(ok ? '✅ Added to this device with your edits.' : '❌ Unable to add this drug.', ok ? 'var(--ios-green)' : 'var(--ios-red)');
                     if (ok) {
@@ -2644,7 +3010,9 @@ ${rawText}`;
                     }
                 } catch (error) {
                     setAIReviewStatus(error.message, 'var(--ios-red)');
-                    const focusId = /name/i.test(error.message) ? 'ai-edit-name' : 'ai-edit-side-effects';
+                    const focusId = /name/i.test(error.message)
+                        ? 'ai-edit-name'
+                        : (/nursing/i.test(error.message) ? 'ai-edit-nursing' : 'ai-edit-side-effects');
                     document.getElementById(focusId)?.focus();
                 }
             };
@@ -2654,11 +3022,13 @@ ${rawText}`;
         if (saveBtn) {
             saveBtn.onclick = async () => {
                 try {
-                    const editedDrug = readEditableAISearchDrug();
+                    const editedDrug = readEditableAISearchDrug({ requireNursing });
                     await saveToGoogleSheet(editedDrug);
                 } catch (error) {
                     setAIReviewStatus(error.message, 'var(--ios-red)');
-                    const focusId = /name/i.test(error.message) ? 'ai-edit-name' : 'ai-edit-side-effects';
+                    const focusId = /name/i.test(error.message)
+                        ? 'ai-edit-name'
+                        : (/nursing/i.test(error.message) ? 'ai-edit-nursing' : 'ai-edit-side-effects');
                     document.getElementById(focusId)?.focus();
                 }
             };

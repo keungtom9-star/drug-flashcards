@@ -28,3 +28,9 @@ The default AI provider is the free OpenRouter model `qwen/qwen3.8-27b:free`. Br
 4. Trigger a new deployment. Netlify applies runtime environment-variable changes to Functions on the next deploy.
 
 For local Function testing, use Netlify Dev and provide `OPENROUTER_API_KEY` through a gitignored local environment file. Never add the real value to this repository.
+
+## Missing-drug search and Nursing care
+
+Missing drugs are checked in this order: the configured Google Sheet, RxNorm, then the openFDA drug-label API. These searches do not use AI tokens and never add a result automatically. If all sources miss, the review form provides a Google Search button and manual entry.
+
+Only the editable **Nursing care** field uses DeepSeek. Add a DeepSeek key in Settings, generate the short bedside guidance, then review it against the prescription, current formulary, and local policy before choosing an Add button.
