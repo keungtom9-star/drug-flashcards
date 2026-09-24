@@ -45,20 +45,11 @@ function browserContext(records = {}) {
     vm.runInContext(read('app-ui.js'), context);
     return { context, elements, storage, document, viewportListeners, css, events };
 }
-function loadQuiz(records = {}) {
+function loadDisease(records = {}) {
     const state = browserContext(records);
     for (const source of inlineScripts('drugquiz.html')) vm.runInContext(source, state.context);
     return state;
 }
-function optionGroup(session = true, letters = ['A', 'B', 'C', 'D']) {
-    const group = element();
-    const options = letters.map(letter => Object.assign(element(), {
-        dataset: { option: letter }, parentElement: group, closest: () => session ? {} : null,
-    }));
-    group.querySelectorAll = () => options;
-    return options;
-}
-const question = { Topic: 'Practice', Question: 'Pick C', OptionA: 'First', OptionB: 'Second', OptionC: 'Third', OptionD: 'Fourth', Correct: 'C', Explanation: 'Example rationale' };
 
 test('all inline application scripts parse', () => {
     for (const file of ['index.html', 'drugquiz.html', 'ward.html']) {
@@ -110,6 +101,8 @@ test('Ward laboratory reference explains common values and safe ABG / VBG use', 
     const state = browserContext();
     for (const source of inlineScripts('ward.html')) vm.runInContext(source, state.context);
     assert.ok(vm.runInContext('labReference.length', state.context) >= 60);
+    assert.equal(vm.runInContext('Object.keys(labChineseReference).length', state.context), 62);
+    assert.equal(vm.runInContext('labReference.every(item => item.nameZh && item.useZh && item.meaningZh && item.watchZh)', state.context), true);
     for (const term of ['haemoglobin', 'INR', 'sodium', 'creatinine', 'bilirubin', 'CRP', 'troponin', 'HbA1c', 'albumin:creatinine ratio', 'PaCO₂', 'lactate', 'anion gap']) {
         assert.match(html, new RegExp(term, 'i'));
     }
@@ -119,6 +112,13 @@ test('Ward laboratory reference explains common values and safe ABG / VBG use', 
     state.context.renderLabReference();
     assert.match(state.document.getElementById('lab-grid').innerHTML, /High-sensitivity troponin I \/ T/);
     assert.match(state.document.getElementById('lab-result-meta').textContent, /1 of 62/);
+
+    input.value = '血紅素';
+    state.context.setLabCategory('All', element());
+    state.context.renderLabReference();
+    assert.match(state.document.getElementById('lab-grid').innerHTML, /Haemoglobin \(Hb\) · 血紅素/);
+    assert.match(state.document.getElementById('lab-grid').innerHTML, /用途 · Why it is checked/);
+    assert.match(state.document.getElementById('lab-grid').innerHTML, /護理留意／上報/);
 
     state.context.setLabCategory('ABG / VBG', element());
     input.value = '';
@@ -172,75 +172,6 @@ test('viewport changes follow keyboard height without overriding pinch zoom', ()
     assert.equal(css['--app-height'], '390px');
 });
 
-test('revisiting an answered question cannot increase attempts or change its recorded score', () => {
-    const { context } = loadQuiz();
-    context.check(optionGroup()[0], 'A', 'C', 'exp-1', question);
-    context.check(optionGroup()[2], 'C', 'C', 'exp-2', question);
-    assert.equal(vm.runInContext('sessionAttempted', context), 1);
-    assert.equal(vm.runInContext('sessionCorrect', context), 0);
-    assert.equal(vm.runInContext('sessionAnswers.values().next().value', context), 'A');
-});
-
-test('returning to a question restores its answer and clears the previous scroll position', () => {
-    const { context, document } = loadQuiz();
-    const options = optionGroup();
-    context.check(options[0], 'A', 'C', 'exp-old', question);
-    context.testQuestion = question;
-    const container = document.getElementById('quiz-container');
-    const revisited = optionGroup();
-    container.scrollTop = 800;
-    container.querySelector = selector => selector === '[data-option="A"]' ? revisited[0] : null;
-    vm.runInContext('quizQueue = [testQuestion]; renderCurrentQuestion()', context);
-    assert.equal(container.scrollTop, 0);
-    assert.equal(revisited[0].classList.contains('wrong'), true);
-    assert.equal(revisited[2].classList.contains('correct'), true);
-    assert.equal(revisited.every(option => option.disabled), true);
-    assert.equal(vm.runInContext('sessionAttempted', context), 1);
-});
-
-test('generated previews do not affect session progress, and sparse options highlight the correct letter', () => {
-    const { context, storage } = loadQuiz();
-    const options = optionGroup(false, ['A', 'D']);
-    context.check(options[0], 'A', 'D', 'exp-gen', { ...question, Correct: 'D' });
-    assert.equal(vm.runInContext('sessionAttempted', context), 0);
-    assert.equal(storage.has('quiz_progress'), false);
-    assert.equal(options[1].classList.contains('correct'), true);
-});
-
-test('starting a fresh session resets the score without shuffling the source array in place', () => {
-    const { context, document } = loadQuiz();
-    context.rows = [question, { ...question, Question: 'Second' }, { ...question, Question: 'Third' }];
-    const before = context.rows.map(q => q.Question);
-    vm.runInContext('renderCurrentQuestion = () => {}; Math.random = () => 0; startQuiz(rows)', context);
-    assert.deepEqual(context.rows.map(q => q.Question), before);
-    assert.equal(document.getElementById('accuracy-display').innerText, '🎯 0%');
-});
-
-test('Back respects CSS-hidden views and exits to the parent when no nested view is open', () => {
-    const { context, document } = loadQuiz();
-    for (const id of ['gen-view', 'quiz-view', 'subtopic-view']) document.getElementById(id).cssDisplay = 'none';
-    let destination;
-    context.parent = { switchMode: mode => { destination = mode; } };
-    context.goBack();
-    assert.equal(destination, 'search');
-    document.getElementById('subtopic-view').style.display = 'flex';
-    destination = undefined;
-    context.goBack();
-    assert.equal(document.getElementById('subtopic-view').style.display, 'none');
-    assert.equal(destination, undefined);
-});
-
-test('imported question text and quotation marks cannot break the option handler', () => {
-    const { context } = loadQuiz();
-    const hostile = { ...question, Question: '<img src=x onerror=alert(1)> & "quote"', OptionA: 'It\'s <safe> &quot;', Correct: "C'bad" };
-    const html = context.buildCardHTML(hostile, 'test', true);
-    assert.ok(!html.includes('<img src=x'));
-    assert.ok(html.includes('&lt;safe&gt;'));
-    const encoded = html.match(/onclick="([^"]+)"/)[1];
-    const decoded = encoded.replace(/&(quot|#39|lt|gt|amp);/g, (_, key) => ({ quot: '"', '#39': "'", lt: '<', gt: '>', amp: '&' }[key]));
-    assert.doesNotThrow(() => new vm.Script(decoded));
-});
-
 test('unknown search text is safe and falls back to Google plus manual review without AI', async () => {
     const { context, document } = browserContext({ ds_key: 'test-key' });
     for (const source of inlineScripts('index.html')) vm.runInContext(source, context);
@@ -254,34 +185,16 @@ test('unknown search text is safe and falls back to Google plus manual review wi
         return node;
     };
     context.fetch = async () => { throw new Error('Sheet unavailable'); };
-    let aiCalls = 0;
-    context.triggerAISearch = () => { aiCalls++; };
     context.runSearch();
     assert.ok(!document.getElementById('search-results').innerHTML.includes('<img src=x'));
     assert.doesNotMatch(document.getElementById('search-results').innerHTML, /upload an infusion chart|ai-image-upload/i);
     await document.getElementById('ask-ai-search').onclick();
-    assert.equal(aiCalls, 0);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Manual entry/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Search this drug on Google/);
     document.getElementById('btn-google-missing-drug').onclick();
     assert.equal(opened.length, 1);
     assert.equal(new URL(opened[0].href).hostname, 'www.google.com');
     assert.equal(new URL(opened[0].href).searchParams.get('q'), query);
-});
-
-test('cached clinical questions still load when the CSV library is unavailable', async () => {
-    const { context, storage, document } = loadQuiz();
-    document.head = element();
-    document.head.appendChild = script => script.onerror();
-    storage.set('clinical_question_bank:sheet-a', JSON.stringify([question]));
-    document.getElementById('sheet-url').value = 'sheet-a';
-    vm.runInContext('renderTopics = () => {}; filterTopics = () => {}', context);
-    await context.loadSheet();
-    assert.equal(vm.runInContext('dbQuestions.length', context), 1);
-    assert.match(document.getElementById('db-status').innerText, /saved questions.*offline/);
-    document.getElementById('sheet-url').value = 'sheet-b';
-    await context.loadSheet();
-    assert.equal(vm.runInContext('dbQuestions.length', context), 0);
 });
 
 function workerContext(base = 'https://example.test/drug-flashcards/') {
@@ -296,7 +209,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', prefix+'v27', prefix+'v28', prefix+'v29', prefix+'v30', prefix+'v31', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', prefix+'v27', prefix+'v28', prefix+'v29', prefix+'v30', prefix+'v31', prefix+'v32', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -324,7 +237,7 @@ test('service worker installs under root and GitHub Pages subpaths', async () =>
     }
 });
 
-test('Netlify build publishes Home, Ward and Clinical as multi-page entries', () => {
+test('Netlify build publishes Home, Ward and AI Drugs as multi-page entries', () => {
     const viteConfig = read('vite.config.ts');
     const netlifyConfig = read('netlify.toml');
     for (const page of ['index.html', 'ward.html', 'drugquiz.html']) assert.match(viteConfig, new RegExp(page.replace('.', '\\.')));
@@ -333,6 +246,8 @@ test('Netlify build publishes Home, Ward and Clinical as multi-page entries', ()
     assert.match(netlifyConfig, /publish\s*=\s*"dist"/);
     assert.match(netlifyConfig, /from\s*=\s*"\/ward"[\s\S]*to\s*=\s*"\/ward\.html"/);
     assert.match(netlifyConfig, /from\s*=\s*"\/clinical"[\s\S]*to\s*=\s*"\/drugquiz\.html"/);
+    assert.match(netlifyConfig, /from\s*=\s*"\/disease-drugs"[\s\S]*to\s*=\s*"\/drugquiz\.html"/);
+    assert.match(netlifyConfig, /\[functions\][\s\S]*directory\s*=\s*"netlify\/functions"/);
     assert.match(netlifyConfig, /from\s*=\s*"\/assets\/index\.html"[\s\S]*to\s*=\s*"\/index\.html"/);
     assert.doesNotMatch(netlifyConfig, /from\s*=\s*"\/\*"/);
     assert.match(viteConfig, /Incomplete production build\. Missing/);
@@ -343,7 +258,7 @@ test('Netlify build publishes Home, Ward and Clinical as multi-page entries', ()
     assert.doesNotMatch(viteConfig, /GEMINI_API_KEY|process\.env\.API_KEY/);
 });
 
-test('visiting Ward cannot replace cached home or Clinical pages', async () => {
+test('visiting Ward cannot replace cached home or AI Drugs pages', async () => {
     const base = 'https://example.test/drug-flashcards/';
     const worker = workerContext(base);
     await lifecycle(worker, 'install');
@@ -357,7 +272,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26', 'drug-tutor-%2Fdrug-flashcards%2F-v27', 'drug-tutor-%2Fdrug-flashcards%2F-v28', 'drug-tutor-%2Fdrug-flashcards%2F-v29', 'drug-tutor-%2Fdrug-flashcards%2F-v30', 'drug-tutor-%2Fdrug-flashcards%2F-v31']);
+    assert.deepEqual(worker.deleted, Array.from({ length: 31 }, (_, index) => `drug-tutor-%2Fdrug-flashcards%2F-v${index + 2}`));
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -383,21 +298,20 @@ test('main page keeps heavy data and optional libraries off the critical HTML pa
     assert.match(html, /https:\/\/docs\.google\.com\/spreadsheets\/d\/e\//);
 });
 
-test('all screens share the lightweight iOS visual layer and Clinical defers optional libraries', () => {
+test('all screens share the lightweight iOS visual layer and AI Drugs avoids optional libraries', () => {
     const home = read('index.html');
     const ward = read('ward.html');
-    const clinical = read('drugquiz.html');
+    const disease = read('drugquiz.html');
     const polish = read('ios-polish.css');
     assert.match(home, /<body class="ios-home">/);
     assert.match(ward, /<body class="ios-ward">/);
-    assert.match(clinical, /<body class="ios-clinical">/);
-    for (const html of [home, ward, clinical]) assert.match(html, /<link rel="stylesheet" href="ios-polish\.css">/);
-    assert.doesNotMatch(clinical, /<script[^>]+(?:marked|papaparse)/i);
-    assert.doesNotMatch(clinical, /fonts\.googleapis\.com/i);
-    assert.match(clinical, /<script src="app-ui\.js" defer><\/script>/);
-    assert.match(clinical, /function ensurePapaParse\(\)/);
-    assert.match(clinical, /loadSheet\(\{ deferNetwork: true \}\)/);
-    assert.match(clinical, /loading="lazy" decoding="async"/);
+    assert.match(disease, /<body class="ios-disease">/);
+    for (const html of [home, ward, disease]) assert.match(html, /<link rel="stylesheet" href="ios-polish\.css">/);
+    assert.doesNotMatch(disease, /<script[^>]+(?:marked|papaparse)/i);
+    assert.doesNotMatch(disease, /fonts\.googleapis\.com/i);
+    assert.match(disease, /<script src="app-ui\.js" defer><\/script>/);
+    assert.match(disease, /<script src="drugs\.js" defer><\/script>/);
+    assert.doesNotMatch(disease, /quiz|question bank|loadSheet/i);
     assert.match(polish, /content-visibility:\s*auto/);
     assert.match(polish, /\.glass-nav \.nav-btn\.active[\s\S]*animation:\s*none/);
 });
@@ -427,7 +341,7 @@ test('startup and all navigation tabs work after removing the old study controls
     assert.ok(vm.runInContext('activeSourceList.length', context) > 0);
     assert.equal(vm.runInContext('revisionDrugs.length', context), 10);
     assert.equal(getElement('search-section').style.display, 'block');
-    assert.equal(getElement('search-api-notice').hidden, false, 'DeepSeek setup reminder stays visible until a key is added');
+    assert.equal(getElement('search-api-notice').hidden, true, 'server-managed DeepSeek should not show a browser key reminder');
     vm.runInContext('setupWardPreload = () => {}; setupClinicalPreload = () => {}; beginClinicalBackSync = () => {};', context);
     for (const mode of ['revise', 'ward', 'clinical', 'search']) {
         context.switchMode(mode);
@@ -482,175 +396,127 @@ test('Revise shows one floating column of 10 unique random drugs', () => {
     assert.match(document.getElementById('revision-list').innerHTML, /Drug effect/);
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
-    assert.match(read('index.html'), /Revise by disease/);
-    assert.match(read('index.html'), /Find 10 drugs/);
+    assert.doesNotMatch(read('index.html'), /Revise by disease|revision-disease-input/);
+    assert.match(read('index.html'), /AI Drugs/);
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
 });
 
-test('Revise can ask DeepSeek for 10 distinct disease drugs without saving or generating Nursing care', async () => {
-    const { context, document } = loadMain({ ds_key: 'deepseek-test-key' });
-    context.rows = [
-        {
-            name: 'Metformin (Glucophage)', class: 'Biguanide', indication: 'Type 2 diabetes',
-            side_effects: 'Diarrhoea, nausea', nursing: 'Saved Metformin guidance',
-            effect_of_drug: 'Reduces hepatic glucose production', system: '🦋 Endocrine',
-        },
-        {
-            name: 'Empagliflozin (Jardiance)', class: 'SGLT2 inhibitor', indication: 'Type 2 diabetes',
-            side_effects: 'Genital infection, dehydration', nursing: 'Saved Empagliflozin guidance',
-            effect_of_drug: 'Increases urinary glucose excretion', system: '🦋 Endocrine',
-        },
-    ];
-    vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows); revisionDrugs = [];', context);
-    document.getElementById('revision-disease-input').value = 'Type 2 diabetes';
-
-    const names = ['Metformin', 'Jardiance', 'Gliclazide', 'Sitagliptin', 'Semaglutide', 'Insulin glargine', 'Pioglitazone', 'Acarbose', 'Dapagliflozin', 'Glimepiride'];
-    const aiRows = names.map((name, index) => ({
-        name,
-        class: `Class ${index + 1}`,
-        system: '🦋 Endocrine',
-        indication: 'Type 2 diabetes management',
-        side_effects: 'Nausea, dizziness',
-        effect_of_drug: 'Improves glucose control',
-        nursing: 'AI must not supply this field',
-    }));
-    const capturedMessages = [];
-    const capturedOptions = [];
-    let aiCalls = 0;
-    context.requestDeepSeekJSON = async (messages, options) => {
-        capturedMessages.push(messages);
-        capturedOptions.push(options);
-        aiCalls++;
-        return JSON.stringify({
-            drugs: aiCalls === 1
-                ? aiRows.slice(0, 8)
-                : [aiRows[0], aiRows[7], aiRows[8], aiRows[9]]
-        });
-    };
-    let saveCalls = 0;
-    context.saveToGoogleSheet = async () => { saveCalls++; return true; };
-
-    const ok = await context.searchRevisionByDisease({ preventDefault() {} });
-    assert.equal(ok, true);
-    assert.equal(vm.runInContext('revisionDrugs.length', context), 10);
-    assert.equal(vm.runInContext('new Set(revisionDrugs.map(drug => revisionDrugIdentity(drug.name))).size', context), 10);
-    assert.equal(aiCalls, 2, 'a short first response should trigger one repair request');
-    assert.equal(vm.runInContext('activeSourceList.length', context), 2);
-    assert.equal(vm.runInContext('revisionDrugs[0].nursing', context), 'Saved Metformin guidance');
-    assert.equal(vm.runInContext('revisionDrugs[1].nursing', context), 'Saved Empagliflozin guidance');
-    assert.equal(vm.runInContext('revisionDrugs[2].nursing', context), 'Not generated by this AI search. Check BNF / local protocol.');
-    assert.equal(saveCalls, 0);
-    assert.equal((document.getElementById('revision-list').innerHTML.match(/class="revision-card"/g) || []).length, 10);
-    assert.match(document.getElementById('revision-list').innerHTML, /In database · saved details/);
-    assert.match(document.getElementById('revision-list').innerHTML, /Not in database · AI draft/);
-    assert.equal(document.getElementById('revision-title').textContent, '10 drugs for Type 2 diabetes');
-    assert.match(document.getElementById('revision-context').textContent, /2 found in your loaded database; 8 AI-only/);
-    assert.match(capturedMessages[0][0].content, /Never include Nursing care/);
-    assert.match(capturedMessages[0][1].content, /return at least 10 when clinically appropriate/);
-    assert.match(capturedMessages[0][1].content, /compact shape/);
-    assert.match(capturedMessages[1][1].content, /Do not repeat any of these medicines/);
-    assert.equal(capturedOptions[0].temperature, 0.1);
-    assert.equal(capturedOptions[0].maxTokens, 500);
-    assert.equal(document.getElementById('revision-disease-button').disabled, false);
-
-    assert.throws(() => context.normalizeDiseaseRevisionDrugs({ drugs: Array(10).fill(aiRows[0]) }, 'Type 2 diabetes'), /returned 1 distinct drug/);
+test('AI Drugs replaces the old Clinical quiz and asks for uses plus within-list interactions', () => {
+    const html = read('drugquiz.html');
+    assert.match(html, /AI Drugs by Disease/);
+    assert.match(html, /疾病常用藥一覽/);
+    assert.match(html, /Exactly 10 clinically common, distinct active ingredients/);
+    assert.match(html, /Inter\w* must only compare medicines inside your 10-drug list/i);
+    assert.match(html, /有咩用 · Clinical use/);
+    assert.match(html, /重要藥物相互作用 · Interactions/);
+    assert.doesNotMatch(html, /multiple choice|quiz_progress|Question Factory|clinical question/i);
+    assert.match(read('index.html'), /<span class="nav-label">AI Drugs<\/span>/);
 });
 
-test('Disease revision recovers names from compact and imperfect AI formats', () => {
-    const { context } = loadMain();
-    const namesFrom = raw => Array.from(context.parseDiseaseRevisionResponse(raw), row => row.name);
-
-    assert.deepEqual(
-        namesFrom('```json\n{"drugs":["Metformin","Gliclazide","Empagliflozin"]}\n```'),
-        ['Metformin', 'Gliclazide', 'Empagliflozin']
-    );
-    assert.deepEqual(
-        namesFrom('1. Metformin\n2. Empagliflozin — SGLT2 inhibitor\n3. Gliclazide'),
-        ['Metformin', 'Empagliflozin', 'Gliclazide']
-    );
-    assert.deepEqual(
-        namesFrom('{"drugs":[{"name":"Metformin","class":"Biguanide"},{"name":"Gliclazide"'),
-        ['Metformin', 'Gliclazide']
-    );
-    assert.deepEqual(
-        namesFrom('| Drug | Class |\n| --- | --- |\n| Metformin | Biguanide |'),
-        ['Metformin']
-    );
-    assert.deepEqual(namesFrom('No explanation content received. Please try again.'), []);
-
-    context.rows = [{
-        name: 'Metformin (Glucophage)', class: 'Biguanide', indication: 'Type 2 diabetes',
-        side_effects: 'Diarrhoea, nausea', nursing: 'Saved guidance', system: '🦋 Endocrine',
-    }];
-    vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows)', context);
-    const normalized = context.normalizeDiseaseRevisionDrugs(
-        { drugs: ['Glucophage', 'Gliclazide'] },
-        'Type 2 diabetes',
-        { requireTen: false }
-    );
-    assert.equal(normalized.length, 2);
-    assert.equal(normalized[0].name, 'Metformin (Glucophage)');
-    assert.equal(normalized[0].__databaseMatch, true);
-    assert.equal(normalized[1].__databaseMatch, false);
+test('AI Drugs removes duplicates and checks every result against the saved database', () => {
+    const cached = [{ name: 'Metformin (Glucophage)', class: 'Biguanide', indication: 'Type 2 diabetes' }];
+    const { context } = loadDisease({ drug_tutor_local_data_v1: JSON.stringify(cached) });
+    context.loadDatabase();
+    const result = context.normalizeResult({
+        disease: 'Type 2 diabetes',
+        drugs: [
+            { name: 'Metformin', class: 'Biguanide', use_en: 'First-line glucose lowering.', use_zh: '常用作控制血糖。' },
+            { name: 'Metformin hydrochloride', class: 'Duplicate', use_en: 'Duplicate.', use_zh: '重複。' },
+            { name: 'Empagliflozin', class: 'SGLT2 inhibitor', use_en: 'Lowers glucose through glycosuria.', use_zh: '增加尿糖排出。' },
+        ],
+        interactions: [{
+            drug_a: 'Metformin', drug_b: 'Empagliflozin', severity: 'moderate',
+            interaction_en: 'Both can contribute to dehydration during acute illness.',
+            interaction_zh: '急病時兩者相關風險要一齊評估。',
+            nursing_en: 'Monitor hydration and renal function.', nursing_zh: '監察水分同腎功能。'
+        }]
+    }, 'Type 2 diabetes');
+    assert.equal(result.drugs.length, 2);
+    assert.equal(result.drugs[0].name, 'Metformin (Glucophage)');
+    assert.equal(!!result.drugs[0].saved, true);
+    assert.equal(!!result.drugs[1].saved, false);
+    assert.equal(result.interactions.length, 1);
 });
 
-test('Disease revision uses DeepSeek JSON mode and the current Flash model', async () => {
-    const { context } = loadMain({ ds_key: 'deepseek-test-key' });
+test('AI Drugs calls only the server proxy and never sends a browser secret or model choice', async () => {
+    const { context } = loadDisease();
     let request;
     context.fetch = async (url, options) => {
         request = { url: String(url), options };
         return new Response(JSON.stringify({
-            choices: [{ message: { content: JSON.stringify({ drugs: ['Salbutamol', 'Budesonide'] }) } }],
+            choices: [{ message: { content: JSON.stringify({ disease: 'Asthma', drugs: [], interactions: [] }) } }],
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     };
-
-    const rows = await context.requestDiseaseRevisionCandidates('asthma');
-    assert.deepEqual(Array.from(rows, row => row.name), ['Salbutamol', 'Budesonide']);
-    assert.equal(request.url, 'https://api.deepseek.com/chat/completions');
-    assert.equal(request.options.headers.Authorization, 'Bearer deepseek-test-key');
+    await context.requestDiseaseData('Asthma');
+    assert.equal(request.url, '/.netlify/functions/deepseek');
+    assert.equal(request.options.headers.Authorization, undefined);
     const body = JSON.parse(request.options.body);
-    assert.equal(body.model, 'deepseek-flash');
+    assert.equal(body.model, undefined);
     assert.equal(body.stream, false);
     assert.deepEqual(body.response_format, { type: 'json_object' });
-    assert.equal(body.max_tokens, 500);
+    assert.equal(body.max_tokens, 4096);
 });
 
-test('Disease revision retries an empty DeepSeek answer and still checks the database', async () => {
-    const { context, document } = loadMain({ ds_key: 'deepseek-test-key' });
-    context.rows = [{
-        name: 'Salbutamol (Ventolin)', class: 'SABA', indication: 'Asthma',
-        side_effects: 'Tremor, tachycardia', nursing: 'Saved guidance', system: '🫁 Respiratory',
-    }];
-    vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows); revisionDrugs = [];', context);
-    document.getElementById('revision-disease-input').value = 'asthma';
+test('AI Drugs retries a short answer once and preserves safe partial results', async () => {
+    const { context, document } = loadDisease();
+    context.loadDatabase();
+    document.getElementById('disease-input').value = 'Heart failure';
     let calls = 0;
-    context.requestDeepSeekJSON = async () => {
+    context.requestDiseaseData = async () => {
         calls++;
-        return calls === 1
-            ? ''
-            : JSON.stringify({ drugs: ['Salbutamol', 'Budesonide', 'Beclometasone', 'Montelukast'] });
+        const count = calls === 1 ? 2 : 7;
+        return {
+            disease: 'Heart failure',
+            drugs: Array.from({ length: count }, (_, index) => ({
+                name: `Medicine ${index + 1}`, class: `Class ${index + 1}`,
+                use_en: `English use ${index + 1}`, use_zh: `中文用途 ${index + 1}`,
+                distinction_en: 'Distinct role.', distinction_zh: '作用唔同。'
+            })),
+            interactions: []
+        };
     };
-
-    assert.equal(await context.searchRevisionByDisease({ preventDefault() {} }), true);
+    await context.searchDisease({ preventDefault() {} });
     assert.equal(calls, 2);
-    assert.equal(vm.runInContext('revisionDrugs.length', context), 4);
-    assert.equal(vm.runInContext('revisionDrugs[0].name', context), 'Salbutamol (Ventolin)');
-    assert.equal(vm.runInContext('revisionDrugs[0].__databaseMatch', context), true);
-    assert.match(document.getElementById('revision-context').textContent, /1 found in your loaded database; 3 AI-only/);
+    assert.match(document.getElementById('result-count').textContent, /7\/10/);
+    assert.match(document.getElementById('status').textContent, /只搵到 7 隻可信/);
+    assert.equal((document.getElementById('drug-list').innerHTML.match(/class="drug-card"/g) || []).length, 7);
 });
 
-test('Revise keeps valid partial disease results instead of failing the whole list', async () => {
-    const { context, document } = loadMain({ ds_key: 'deepseek-test-key' });
-    vm.runInContext('activeSourceList = []; revisionDrugs = [];', context);
-    document.getElementById('revision-disease-input').value = 'Rare condition';
-    const names = ['Drug one', 'Drug two', 'Drug three'];
-    context.requestDeepSeekJSON = async () => JSON.stringify({ drugs: names });
+test('AI Drugs automatically retries one malformed or truncated JSON answer', async () => {
+    const { context, document } = loadDisease();
+    context.loadDatabase();
+    document.getElementById('disease-input').value = 'Heart failure';
+    let calls = 0;
+    const retryModes = [];
+    context.requestDiseaseData = async (_disease, _acceptedNames, compactRetry) => {
+        calls++;
+        retryModes.push(compactRetry === true);
+        if (calls === 1) {
+            const error = new Error('Incomplete JSON');
+            error.code = 'DEEPSEEK_JSON_INCOMPLETE';
+            throw error;
+        }
+        return {
+            disease: 'Heart failure',
+            drugs: Array.from({ length: 10 }, (_, index) => ({
+                name: `Medicine ${index + 1}`, class: `Class ${index + 1}`,
+                use_en: `English use ${index + 1}`, use_zh: `中文用途 ${index + 1}`,
+                distinction_en: 'Distinct role.', distinction_zh: '作用唔同。'
+            })),
+            interactions: []
+        };
+    };
+    await context.searchDisease({ preventDefault() {} });
+    assert.equal(calls, 2);
+    assert.deepEqual(retryModes, [false, true]);
+    assert.equal(document.getElementById('result-count').textContent, '10/10');
+    assert.match(document.getElementById('status').textContent, /完成：10 隻不同藥物/);
+});
 
-    assert.equal(await context.searchRevisionByDisease({ preventDefault() {} }), true);
-    assert.equal(vm.runInContext('revisionDrugs.length', context), 3);
-    assert.equal(document.getElementById('revision-title').textContent, '3 drugs for Rare condition');
-    assert.match(document.getElementById('revision-context').textContent, /3 valid distinct drugs shown/);
-    assert.match(document.getElementById('revision-context').textContent, /0 found in your loaded database; 3 AI-only/);
+test('desktop shell uses border-box sizing to avoid horizontal overflow', () => {
+    const html = read('index.html');
+    assert.match(html, /body\.desktop-ui \.glass-nav\s*\{[^}]*box-sizing:\s*border-box/s);
+    assert.match(html, /body\.desktop-ui #app-container\s*\{[^}]*box-sizing:\s*border-box/s);
 });
 
 test('local search ranks names before incidental text and supports case, multiple words and systems', () => {
@@ -771,10 +637,7 @@ test('a Google Sheet result waits for review and explicit local add', async () =
     document.getElementById('search-input').value = 'Cloud medicine';
     context.Papa = { parse: () => ({ data: [{ name: 'Cloud medicine (Sheetbrand)', class: 'Example', indication: 'Testing', system: '🫀 Cardio' }] }) };
     context.fetch = async () => ({ ok: true, text: async () => 'csv' });
-    let aiCalls = 0;
-    context.triggerAISearch = async () => { aiCalls++; };
     await context.resolveMissingDrug('Cloud medicine');
-    assert.equal(aiCalls, 0);
     assert.equal(context.findLocalDrugs('Cloud medicine').length, 0);
     assert.match(document.getElementById('search-status').textContent, /Found in Google Sheet/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Nothing has been added yet/);
@@ -822,7 +685,7 @@ test('DeepSeek Nursing care is limited to exactly three plain sentences', () => 
 });
 
 test('an official-source drug uses no search AI and waits for DeepSeek Nursing care plus explicit approval', async () => {
-    const { context, document } = loadMain({ ds_key: 'deepseek-test-key' });
+    const { context, document } = loadMain();
     document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
     document.getElementById('search-input').value = 'Novelmed';
     context.Papa = { parse: () => ({ data: [] }) };
@@ -833,7 +696,7 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     context.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
         if (options.method === 'POST') {
-            if (String(url) === 'https://api.deepseek.com/chat/completions') {
+            if (String(url) === '/.netlify/functions/deepseek') {
                 const requestBody = JSON.parse(options.body);
                 const isNursingRequest = requestBody.max_tokens === 180;
                 const improved = JSON.stringify({
@@ -896,7 +759,7 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, rash, dizziness, hypotension');
     assert.equal(document.getElementById('ai-edit-effect').value, 'Concise official action');
     assert.equal(document.getElementById('ai-edit-nursing').value, 'Keep this Nursing care unchanged');
-    assert.equal(requests.filter(request => request.url === 'https://api.deepseek.com/chat/completions').length, 1);
+    assert.equal(requests.filter(request => request.url === '/.netlify/functions/deepseek').length, 1);
     assert.equal(sheetWrites, 0, 'AI improvement must never auto-save');
 
     fillAIEditor(document, {
@@ -915,13 +778,13 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.doesNotMatch(generatedNursing, /\n|^\s*[-*•]/);
     assert.equal((generatedNursing.match(/[.!?](?:\s|$)/g) || []).length, 3);
     const deepSeekRequest = requests.find(request => {
-        if (request.url !== 'https://api.deepseek.com/chat/completions') return false;
+        if (request.url !== '/.netlify/functions/deepseek') return false;
         return JSON.parse(request.options.body).max_tokens === 180;
     });
     assert.ok(deepSeekRequest);
-    assert.equal(deepSeekRequest.options.headers.Authorization, 'Bearer deepseek-test-key');
+    assert.equal(deepSeekRequest.options.headers.Authorization, undefined);
     const deepSeekBody = JSON.parse(deepSeekRequest.options.body);
-    assert.equal(deepSeekBody.model, 'deepseek-flash');
+    assert.equal(deepSeekBody.model, undefined);
     assert.equal(deepSeekBody.max_tokens, 180);
     assert.match(deepSeekBody.messages[0].content, /exactly three short sentences/i);
     assert.match(deepSeekBody.messages[0].content, /Do not use bullets/i);
@@ -941,27 +804,8 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.equal(sheetWrites, 1);
 });
 
-test('AI drug search repairs placeholder side effects before display or Sheet save', async () => {
-    const { context, document } = loadMain({ ds_key: 'test-key' });
-    let aiCalls = 0;
-    context.streamAIResponse = async (_messages, onUpdate) => {
-        aiCalls++;
-        onUpdate(JSON.stringify(aiCalls === 1 ? {
-            name: 'Examplemed (Example)', class: 'Example class', system: '🫀 Cardio', indication: 'Example indication',
-            side_effects: 'Not specified', nursing: 'Monitor the patient', effect_of_drug: 'Example action'
-        } : {
-            name: 'Examplemed (Example)', class: 'Example class', system: '🫀 Cardio', indication: 'Example indication',
-            side_effects: 'Nausea, dizziness, hypotension', nursing: 'Monitor the patient', effect_of_drug: 'Example action'
-        }));
-    };
-    let saveCalls = 0;
-    context.saveToGoogleSheet = async () => { saveCalls++; return true; };
-    await context.triggerAISearch('Examplemed');
-    assert.equal(aiCalls, 2);
-    assert.equal(saveCalls, 0);
-    assert.match(document.getElementById('ai-search-output').innerHTML, /Nausea, dizziness, hypotension/);
-    assert.doesNotMatch(document.getElementById('ai-search-output').innerHTML, /Side Effects<\/div><div[^>]*>Not specified/i);
-
+test('review validation rejects placeholder side effects', () => {
+    const { context } = loadMain();
     const fallback = context.normalizeAISearchDrugPayload({ name: 'Fallbackmed', side_effects: 'Not listed', nursing: 'N/A', effect_of_drug: 'Unknown' });
     assert.doesNotMatch([fallback.side_effects, fallback.nursing, fallback.effect_of_drug].join(' '), /not specified|not listed|unknown|n\/a/i);
     assert.throws(() => context.validateEditedAISearchDrug({ name: 'Fallbackmed', side_effects: 'Not specified' }), /useful.*side effects/i);
@@ -1019,25 +863,6 @@ test('AI text streams across split server-sent event chunks', async () => {
     assert.deepEqual(updates, ['廣東話', '廣東話逐段出']);
 });
 
-test('AI drug search exposes partial text before the editable result', async () => {
-    const { context, document } = loadMain({ ds_key: 'test-key' });
-    const streamedFrames = [];
-    const finalJson = JSON.stringify({
-        name: 'Streammed (Live)', class: 'Example class', system: '🫀 Cardio', indication: 'Testing',
-        side_effects: 'Nausea, dizziness', nursing: 'Monitor response', effect_of_drug: 'Example action'
-    });
-    context.streamAIResponse = async (_messages, onUpdate) => {
-        onUpdate('{"name":"Stream');
-        streamedFrames.push(document.getElementById('ai-search-stream').textContent);
-        onUpdate(finalJson);
-        streamedFrames.push(document.getElementById('ai-search-stream').textContent);
-    };
-    await context.triggerAISearch('Streammed');
-    assert.equal(streamedFrames[0], '{"name":"Stream');
-    assert.equal(streamedFrames[1], finalJson);
-    assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
-});
-
 test('search history saves submitted searches once, with a small limit', () => {
     const { context, storage } = loadMain();
     for (let i = 0; i < 8; i++) context.rememberSearch('Term ' + i);
@@ -1048,86 +873,66 @@ test('search history saves submitted searches once, with a small limit', () => {
     assert.equal(history.filter(term => term.toLowerCase() === 'term 7').length, 1);
 });
 
-test('missing drug lookup needs no AI key; DeepSeek Nursing care opens setup when its key is blank', async () => {
-    const { context, document } = loadMain({ ds_key: '  ' });
-    let aiRequests = 0;
-    context.fetch = async url => {
-        if (/api\.deepseek/.test(String(url))) aiRequests++;
+test('missing-drug lookup stays token-free while Nursing care uses the server proxy without a browser key', async () => {
+    const { context, document } = loadMain();
+    const requests = [];
+    context.fetch = async (url, options = {}) => {
+        requests.push({ url: String(url), options });
+        if (String(url) === '/.netlify/functions/deepseek') {
+            return new Response('data: {"choices":[{"delta":{"content":"Check allergies. Monitor response. Escalate concerns."}}]}\n\ndata: [DONE]\n\n', {
+                status: 200, headers: { 'Content-Type': 'text/event-stream' },
+            });
+        }
         throw Error('Sheet unavailable');
     };
     document.getElementById('search-input').value = 'unknown drug';
     context.runSearch();
     await document.getElementById('ask-ai-search').onclick();
-    assert.notEqual(document.getElementById('settings-panel').style.display, 'flex');
+    assert.equal(requests.some(request => request.url === '/.netlify/functions/deepseek'), false);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Manual entry/);
+
     fillAIEditor(document, { 'ai-edit-name': 'Unknown drug', 'ai-edit-nursing': '' });
     await document.getElementById('btn-generate-nursing').onclick();
-    assert.equal(document.getElementById('settings-panel').style.display, 'flex');
-    assert.equal(document.getElementById('deepseek-key').focused, true);
-    await context.triggerAISearch('unknown drug');
-    await assert.rejects(context.streamAIResponse([], () => {}), /Add your DeepSeek API key/);
-    assert.equal(aiRequests, 0);
+    assert.equal(document.getElementById('settings-panel').style.display, undefined);
+    assert.equal(requests.filter(request => request.url === '/.netlify/functions/deepseek').length, 1);
 });
 
-test('DeepSeek-only API reminder and saved key update immediately', () => {
+test('Settings presents server-managed DeepSeek and removes legacy browser secrets', () => {
     const { context, document, storage } = loadMain({
-        ds_key: 'existing-test-key', active_provider: 'old-provider',
+        ds_key: 'legacy-test-key', api_key: 'legacy-shared-key', active_provider: 'old-provider',
         openrouter_key: 'old-openrouter-key', yinli_key: 'old-yinli-key',
     });
     context.updateApiNotices();
     assert.equal(document.getElementById('search-api-notice').hidden, true);
-    context.openApiSettings();
-    assert.equal(document.getElementById('deepseek-key').focused, true);
-    document.getElementById('deepseek-key').value = '  replacement-test-key  ';
+    assert.equal(context.hasApiKey(), true);
+    assert.match(read('index.html'), /API key is managed by Netlify and is never sent to this browser/);
+    assert.doesNotMatch(read('index.html'), /id="deepseek-key"/);
     context.saveSettings();
-    assert.equal(storage.get('ds_key'), 'replacement-test-key');
-    assert.equal(storage.get('api_key'), 'replacement-test-key');
-    assert.equal(storage.has('active_provider'), false);
-    assert.equal(storage.has('openrouter_key'), false);
-    assert.equal(storage.has('yinli_key'), false);
-    assert.equal(document.getElementById('search-api-notice').hidden, true);
-    document.getElementById('deepseek-key').value = ' ';
-    context.saveSettings();
-    assert.equal(document.getElementById('search-api-notice').hidden, false);
+    for (const key of ['ds_key', 'api_key', 'active_provider', 'openrouter_key', 'yinli_key']) {
+        assert.equal(storage.has(key), false);
+    }
 });
 
-test('all streamed AI requests use DeepSeek Flash only', async () => {
-    const { context, document } = loadMain({ ds_key: 'deepseek-test-key' });
+test('all streamed AI requests use the server proxy without exposing a key or choosing a model', async () => {
+    const { context, document } = loadMain();
     context.updateApiNotices();
     const requests = [];
     context.fetch = async (url, options) => {
-        requests.push({ url, options });
+        requests.push({ url: String(url), options });
         return new Response('data: {"choices":[{"delta":{"content":"Ready"}}]}\n\ndata: [DONE]\n\n', {
-            status: 200,
-            headers: { 'Content-Type': 'text/event-stream' },
+            status: 200, headers: { 'Content-Type': 'text/event-stream' },
         });
     };
-
     const updates = [];
     await context.streamAIResponse([{ role: 'user', content: 'Explain this drug.' }], text => updates.push(text));
-
     assert.equal(document.getElementById('search-api-notice').hidden, true);
     assert.equal(requests.length, 1);
-    assert.equal(requests[0].url, 'https://api.deepseek.com/chat/completions');
-    assert.equal(requests[0].options.headers.Authorization, 'Bearer deepseek-test-key');
-    assert.equal(JSON.parse(requests[0].options.body).model, 'deepseek-flash');
+    assert.equal(requests[0].url, '/.netlify/functions/deepseek');
+    assert.equal(requests[0].options.headers.Authorization, undefined);
+    const body = JSON.parse(requests[0].options.body);
+    assert.equal(body.model, undefined);
+    assert.equal(body.stream, true);
     assert.doesNotMatch(read('index.html'), /Qwen|OpenRouter|Yinli|Gemini|provider-select/);
+    assert.doesNotMatch(read('index.html'), /https:\/\/api\.deepseek\.com/);
     assert.deepEqual(updates, ['Ready']);
-});
-
-test('Clinical Bank reads the shared DeepSeek key and guides keyless generation to Settings', async () => {
-    const { context, document, storage, events } = loadQuiz({ api_key: 'legacy-shared-test-key' });
-    context.onload();
-    assert.equal(document.getElementById('api-key').value, 'legacy-shared-test-key');
-    assert.equal(document.getElementById('clinical-api-notice').hidden, true);
-    storage.set('ds_key', '');
-    storage.set('api_key', '');
-    for (const callback of events.storage || []) callback({ key: 'ds_key' });
-    assert.equal(document.getElementById('clinical-api-notice').hidden, false);
-    let requests = 0;
-    context.fetch = async () => { requests++; };
-    await context.startGeneration();
-    assert.equal(document.getElementById('settings-overlay').style.display, 'flex');
-    assert.equal(document.getElementById('api-key').focused, true);
-    assert.equal(requests, 0);
 });

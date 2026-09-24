@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  directory = "netlify/functions"
+
 [[redirects]]
   from = "/ward"
   to = "/ward.html"
@@ -9,6 +12,11 @@
 
 [[redirects]]
   from = "/clinical"
+  to = "/drugquiz.html"
+  status = 200
+
+[[redirects]]
+  from = "/disease-drugs"
   to = "/drugquiz.html"
   status = 200
 

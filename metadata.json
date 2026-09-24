@@ -1,4 +1,4 @@
 {
   "name": "AI Drug Tutor",
-  "description": "A search-first medical drug reference for nursing students and professionals, with local lookup, recent searches, quizzes, ward tools and optional AI assistance."
+  "description": "A search-first drug and ward reference with bilingual laboratory guidance and server-protected DeepSeek disease-drug revision."
 }

@@ -2,12 +2,12 @@ import { Settings } from '../types';
 
 export const streamAI = async (
   prompt: string,
-  settings: Settings,
+  _settings: Settings,
   onChunk: (chunk: string) => void
 ): Promise<void> => {
-  const url = "https://api.deepseek.com/chat/completions";
-  const headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
-  const body: any = { model: "deepseek-flash", messages: [{ role: "user", content: prompt }], stream: true };
+  const url = "/.netlify/functions/deepseek";
+  const headers: any = { "Content-Type": "application/json" };
+  const body: any = { messages: [{ role: "user", content: prompt }], stream: true };
 
   const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
 
@@ -42,10 +42,10 @@ export const streamAI = async (
   }
 };
 
-export const getFullAIResponse = async (prompt: string, settings: Settings): Promise<string> => {
-  const url = "https://api.deepseek.com/chat/completions";
-  const headers: any = { "Content-Type": "application/json", "Authorization": `Bearer ${settings.deepseekKey}` };
-  const body: any = { model: "deepseek-flash", messages: [{ role: "user", content: prompt }], stream: false };
+export const getFullAIResponse = async (prompt: string, _settings: Settings): Promise<string> => {
+  const url = "/.netlify/functions/deepseek";
+  const headers: any = { "Content-Type": "application/json" };
+  const body: any = { messages: [{ role: "user", content: prompt }], stream: false };
 
   const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
   if(!response.ok) throw new Error("API Request Failed");
