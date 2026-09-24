@@ -22,4 +22,3 @@ export const SYSTEMS: System[] = [
 ];
 
 export const DEFAULT_DEEPSEEK_KEY = "";
-export const YINLI_URL = "https://yinli.one/v1/chat/completions";
