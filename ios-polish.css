@@ -1,0 +1,366 @@
+:root {
+  color-scheme: light;
+  --ios-grouped: #f2f2f7;
+  --ios-secondary-grouped: #ffffff;
+  --ios-fill: rgba(120, 120, 128, 0.12);
+  --ios-fill-strong: rgba(120, 120, 128, 0.18);
+  --ios-line: rgba(60, 60, 67, 0.18);
+  --ios-label: #1c1c1e;
+  --ios-secondary-label: rgba(60, 60, 67, 0.72);
+  --ios-tint: #007aff;
+  --ios-radius: 16px;
+  --ios-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.055);
+}
+
+html {
+  background: var(--ios-grouped);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+}
+
+button,
+[role="button"],
+summary {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(0, 122, 255, 0.4) !important;
+  outline-offset: 2px;
+}
+
+/* Home shell */
+.ios-home {
+  background: var(--ios-grouped);
+  color: var(--ios-label);
+  animation: none !important;
+}
+
+.ios-home header {
+  background: rgba(249, 249, 249, 0.88);
+  border-bottom: 0.5px solid var(--ios-line);
+  box-shadow: none;
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+}
+
+.ios-home .glass-nav {
+  padding: 3px;
+  gap: 2px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--ios-fill-strong);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ios-home .glass-nav .nav-btn {
+  border-radius: 10px;
+  color: var(--ios-secondary-label);
+  animation: none !important;
+  transition: color 160ms ease, background-color 160ms ease, transform 120ms ease;
+}
+
+.ios-home .glass-nav .nav-btn.active {
+  background: #fff;
+  color: var(--ios-tint);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+  animation: none !important;
+}
+
+.ios-home .search-toolbar {
+  background: linear-gradient(to bottom, var(--ios-grouped) 78%, rgba(242, 242, 247, 0));
+}
+
+.ios-home .search-bar,
+.ios-home .settings-input,
+.ios-home select.ios-select {
+  border: 0;
+  border-radius: 12px;
+  background: var(--ios-fill);
+  box-shadow: none;
+}
+
+.ios-home .search-bar:focus,
+.ios-home .settings-input:focus,
+.ios-home select.ios-select:focus {
+  border: 0;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.16);
+}
+
+.ios-home .ios-card,
+.ios-home .result-card {
+  border: 0;
+  border-radius: var(--ios-radius);
+  background: var(--ios-secondary-grouped);
+  box-shadow: var(--ios-shadow);
+  animation: none !important;
+}
+
+.ios-home .result-card,
+.ios-home #search-results > *,
+.ios-home #history-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 180px;
+}
+
+.ios-home .detail-row {
+  border-bottom: 0.5px solid var(--ios-line);
+}
+
+.ios-home .chip,
+.ios-home .action-btn,
+.ios-home .system-filter-chip {
+  border: 0 !important;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ios-home .action-btn.btn-primary,
+.ios-home .api-notice button,
+.ios-home .system-filter-chip[aria-pressed="true"] {
+  background: var(--ios-tint);
+  color: #fff;
+  box-shadow: none;
+}
+
+.ios-home .action-btn.btn-green {
+  background: #34c759;
+  box-shadow: none;
+}
+
+.ios-home .api-notice,
+.ios-home .settings-help {
+  border: 0;
+  border-radius: 14px;
+  background: #eaf3ff;
+  box-shadow: none;
+}
+
+.ios-home .top-back-btn,
+.ios-home .settings-btn-top,
+.ios-home .speak-icon-btn {
+  border: 0;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ios-tint);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ios-home .modal-overlay {
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.ios-home .modal-card {
+  border: 0;
+  border-radius: 24px 24px 0 0;
+  background: #f9f9fb;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.16);
+}
+
+/* Ward shell */
+.ios-ward {
+  background: var(--ios-grouped);
+}
+
+.ios-ward .sticky-header {
+  background: rgba(249, 249, 249, 0.9);
+  border-bottom: 0.5px solid var(--ios-line);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+}
+
+.ios-ward .tabs {
+  gap: 5px;
+}
+
+.ios-ward .tab-btn {
+  border: 0;
+  border-radius: 999px;
+  background: var(--ios-fill);
+  color: var(--ios-secondary-label);
+  box-shadow: none;
+  transition: color 160ms ease, background-color 160ms ease, transform 120ms ease;
+}
+
+.ios-ward .tab-btn.active {
+  background: var(--ios-tint);
+  color: #fff;
+  box-shadow: none;
+}
+
+.ios-ward .container.active {
+  animation: none;
+}
+
+.ios-ward .card,
+.ios-ward .lab-item,
+.ios-ward .imaging-card {
+  border-color: transparent;
+  border-radius: var(--ios-radius);
+  box-shadow: var(--ios-shadow);
+}
+
+.ios-ward .container.active > .card:not(.lab-hero):not(.infusion-hero):not(.imaging-hero),
+.ios-ward .lab-item,
+.ios-ward .imaging-card,
+.ios-ward .drug-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 160px;
+}
+
+.ios-ward .lab-search,
+.ios-ward .imaging-search,
+.ios-ward .search-box {
+  border: 0;
+  border-radius: 12px;
+  background: var(--ios-fill);
+  box-shadow: none;
+}
+
+.ios-ward .lab-filter,
+.ios-ward .imaging-filter,
+.ios-ward .intake-chip,
+.ios-ward .intake-btn {
+  border: 0;
+  box-shadow: none;
+}
+
+.ios-ward .lab-filter.active,
+.ios-ward .imaging-filter.active,
+.ios-ward .intake-chip.active {
+  background: var(--ios-tint);
+  color: #fff;
+  box-shadow: none;
+}
+
+/* Clinical shell */
+.ios-clinical {
+  background: var(--ios-grouped);
+  color: var(--ios-label);
+}
+
+.ios-clinical .app-container {
+  background: var(--ios-grouped);
+  box-shadow: none;
+}
+
+.ios-clinical .sticky-header,
+.ios-clinical .view-header {
+  background: rgba(249, 249, 249, 0.9);
+  border-bottom: 0.5px solid var(--ios-line);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+}
+
+.ios-clinical h1 {
+  color: var(--ios-label);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.ios-clinical .main-input,
+.ios-clinical .settings-input,
+.ios-clinical .gen-input,
+.ios-clinical .gen-select,
+.ios-clinical #lang-select {
+  border: 0;
+  border-radius: 12px;
+  background: var(--ios-fill);
+  box-shadow: none;
+}
+
+.ios-clinical .icon-btn,
+.ios-clinical .back-btn {
+  border: 0;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ios-tint);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ios-clinical .gen-btn,
+.ios-clinical .btn-next,
+.ios-clinical .btn-play-all,
+.ios-clinical .btn-magic,
+.ios-clinical .btn-save-settings {
+  background: var(--ios-tint) !important;
+  color: #fff;
+  box-shadow: none;
+}
+
+.ios-clinical .grid-card,
+.ios-clinical .q-card,
+.ios-clinical .option {
+  border-color: transparent;
+  border-radius: var(--ios-radius);
+  box-shadow: var(--ios-shadow);
+}
+
+.ios-clinical .grid-card,
+.ios-clinical .q-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 220px;
+}
+
+.ios-clinical .overlay-bg {
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.ios-clinical .modal-box {
+  border: 0;
+  background: #f9f9fb;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.16);
+}
+
+@media (max-width: 600px) {
+  .ios-home.mobile-ui header {
+    min-height: 50px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .ios-home.mobile-ui .glass-nav {
+    margin-top: 5px;
+    margin-bottom: 7px;
+  }
+
+  .ios-home.mobile-ui #app-container {
+    width: calc(100% - 20px);
+  }
+
+  .ios-home .ios-card,
+  .ios-home .result-card,
+  .ios-ward .card,
+  .ios-clinical .grid-card,
+  .ios-clinical .q-card {
+    border-radius: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

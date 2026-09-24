@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 
 const staticAppFiles = [
   'app-ui.js',
+  'ios-polish.css',
   'service-worker.js',
   'drugs.js',
   'prompts.js',
@@ -18,6 +19,7 @@ const requiredBuildFiles = [
   'ward.html',
   'drugquiz.html',
   'app-ui.js',
+  'ios-polish.css',
   'service-worker.js',
   'manifest.json',
 ];

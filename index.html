@@ -11,8 +11,6 @@
     <link rel="icon" href="apple-touch-icon.png" type="image/png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     
     <script src="app-ui.js" defer></script>
     <script src="drugs.js" defer></script>
@@ -1076,13 +1074,14 @@
         @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes modernSheetIn { from { opacity: 0; transform: translateY(34px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
     </style>
+    <link rel="stylesheet" href="ios-polish.css">
 </head>
-<body>
+<body class="ios-home">
 
 <header>
     <h1>
         <button type="button" class="app-home-button" onclick="goHome()" aria-label="Go to the main search page">
-            <img src="apple-touch-icon.png" class="app-icon-img" alt="">
+            <img src="apple-touch-icon.png" class="app-icon-img" alt="" decoding="async">
             <span>AI Drug Tutor</span>
         </button>
     </h1>
@@ -1287,7 +1286,7 @@
                 <input type="hidden" id="sheet-url" />
                 <input type="hidden" id="script-url" />
                 <input type="hidden" id="quiz-sheet-url" />
-                <div style="font-size:0.78rem; line-height:1.45; color:var(--ios-gray); margin-bottom:8px;">Google Sheet connections are managed securely by Netlify and are not exposed in this app.</div>
+                <div style="font-size:0.78rem; line-height:1.45; color:var(--ios-gray); margin-bottom:8px;">Built-in Google Sheet connection.</div>
                 <button onclick="fetchSheetData()" class="action-btn">Load Drug Database</button>
                 <button onclick="fetchQuizSheetData()" class="action-btn" style="background:#eef6ff; color:#1d4ed8;">Load Quiz Database</button>
                 <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.82rem; color:#374151;">
@@ -1493,17 +1492,16 @@ Language: ${langInstruction}.`;
     let deepSeekKey = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
     let openRouterKey = (localStorage.getItem('openrouter_key') || '').trim();
     let yinliKey = (localStorage.getItem('yinli_key') || '').trim();
-    const GOOGLE_DATA_PROXY_URL = '/.netlify/functions/google-data';
-    const REQUIRED_SCRIPT_URL = `${GOOGLE_DATA_PROXY_URL}?source=save`;
+    const REQUIRED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
     let googleScriptURL = REQUIRED_SCRIPT_URL;
-    let quizSheetURL = `${GOOGLE_DATA_PROXY_URL}?source=quiz`;
+    let quizSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
     const YINLI_API_URL = 'https://yinli.one/v1/chat/completions';
     const YINLI_MODEL_NAME = 'gemini-3.1-pro-preview';
     const QWEN_PROXY_URL = '/.netlify/functions/openrouter-qwen';
     const QWEN_MODEL_NAME = 'qwen/qwen3.8-27b:free';
     
     // Settings
-    let defaultSheetUrl = `${GOOGLE_DATA_PROXY_URL}?source=drugs`;
+    let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
     let quizQuestionBank = [];
 
     // System Data
@@ -2972,8 +2970,18 @@ Rules: Use concise English medical terms. If uncertain, keep value short and con
                 throw new Error(errText || `HTTP ${response.status}`);
             }
             return { ok: true, verified: true };
-        } catch (error) {
-            return { ok: false, verified: false, error };
+        } catch (corsError) {
+            try {
+                await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                return { ok: true, verified: false };
+            } catch (_) {
+                return { ok: false, verified: false, error: corsError };
+            }
         }
     }
 
@@ -4250,7 +4258,7 @@ Return strict JSON only: {"question":"...","explanation":"1-2 sentence nursing r
         yinliKey = document.getElementById('yinli-key').value.trim();
         googleScriptURL = REQUIRED_SCRIPT_URL;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
-        quizSheetURL = `${GOOGLE_DATA_PROXY_URL}?source=quiz`;
+        quizSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=68214016&single=true&output=csv';
 
         autoSyncOnStartup = document.getElementById('auto-sync-startup').checked;
         saveLocalDrugCache(activeSourceList);

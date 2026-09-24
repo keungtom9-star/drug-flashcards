@@ -1,10 +1,10 @@
 // Scope-relative URLs also work at /drug-flashcards/ on GitHub Pages.
 const APP_BASE = new URL('./', self.location.href);
 const CACHE_PREFIX = `drug-tutor-${encodeURIComponent(APP_BASE.pathname)}-`;
-const CACHE_NAME = `${CACHE_PREFIX}v24`;
+const CACHE_NAME = `${CACHE_PREFIX}v26`;
 const APP_SHELL = [
   './', './index.html', './ward.html', './drugquiz.html',
-  './manifest.json', './app-ui.js', './drugs.js', './prompts.js',
+  './manifest.json', './app-ui.js', './ios-polish.css', './drugs.js', './prompts.js',
 ].map(path => new URL(path, APP_BASE).href);
 
 self.addEventListener('install', event => {

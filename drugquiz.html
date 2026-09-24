@@ -10,11 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <script src="app-ui.js"></script>
+    <script src="app-ui.js" defer></script>
     <style>
         :root {
             /* Modern Palette */
@@ -41,7 +37,7 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
             background: radial-gradient(circle at top, #f8fbff 0%, var(--background) 60%, #eef4ff 100%);
             color: var(--text-main);
             margin: 0; padding: 0;
@@ -384,8 +380,9 @@
         @keyframes clinicalSheetIn { from { opacity: 0; transform: translateY(34px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes clinicalViewIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
     </style>
+    <link rel="stylesheet" href="ios-polish.css">
 </head>
-<body>
+<body class="ios-clinical">
 
     <div class="app-container">
         
@@ -558,6 +555,32 @@
         let currentSelectionRows = [];
         let generatedQTemp = null; // Temp holder for generated question
 
+        let papaParsePromise = null;
+        function ensurePapaParse() {
+            if (window.Papa) return Promise.resolve(window.Papa);
+            if (papaParsePromise) return papaParsePromise;
+            papaParsePromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js';
+                script.async = true;
+                script.onload = () => window.Papa ? resolve(window.Papa) : reject(new Error('CSV parser unavailable'));
+                script.onerror = () => reject(new Error('CSV parser failed to load'));
+                document.head.appendChild(script);
+            }).catch(error => {
+                papaParsePromise = null;
+                throw error;
+            });
+            return papaParsePromise;
+        }
+
+        function scheduleClinicalRefresh(task) {
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(task, { timeout: 3000 });
+            } else {
+                window.setTimeout(task, 900);
+            }
+        }
+
         window.onload = () => {
             document.getElementById('api-key').value = (localStorage.getItem('ds_key') || localStorage.getItem('api_key') || '').trim();
             updateClinicalApiNotice();
@@ -568,7 +591,7 @@
             audioEnabled = localStorage.getItem('audio_enabled') === 'true';
             document.getElementById('audio-toggle').checked = audioEnabled;
             
-            loadSheet();
+            loadSheet({ deferNetwork: true });
         };
 
         // --- CORE LOGIC ---
@@ -739,7 +762,7 @@
 
                 el.innerHTML = `
                     <div class="card-hero" style="background:${bg}">
-                        <img id="i${uid1}" src="${v.src}" class="card-icon-img" onerror="this.style.display='none';document.getElementById('e${uid2}').style.display='block'">
+                        <img id="i${uid1}" src="${v.src}" class="card-icon-img" alt="" loading="lazy" decoding="async" onerror="this.style.display='none';document.getElementById('e${uid2}').style.display='block'">
                         <span id="e${uid2}" class="card-icon-fallback">${v.emoji}</span>
                     </div>
                     <div class="card-info">
@@ -1099,10 +1122,10 @@
             updateClinicalApiNotice();
             localStorage.setItem('audio_enabled',document.getElementById('audio-toggle').checked);
             audioEnabled=document.getElementById('audio-toggle').checked;
-            loadSheet(); closeSettings();
+            loadSheet({ deferNetwork: false }); closeSettings();
         };
 
-        window.loadSheet = () => {
+        window.loadSheet = ({ deferNetwork = false } = {}) => {
             const status = document.getElementById('db-status');
             const url = document.getElementById('sheet-url').value.trim();
             // Keep question sets separate when the user changes their CSV URL.
@@ -1121,26 +1144,41 @@
                     : 'Unable to load questions. Check your connection and CSV URL in Settings.';
             };
             applyRows(cached);
-            status.innerText = cached.length ? `${cached.length} saved questions · updating…` : 'Updating Library…';
-            if (!url || typeof Papa === 'undefined') { offlineStatus(); return; }
-            Papa.parse(url, {
-                download: true, header: true, skipEmptyLines: true,
-                complete: result => {
-                    // Ignore an older response if Settings now points at another sheet.
-                    if (document.getElementById('sheet-url').value.trim() !== url) return;
-                    const rows = result.data.filter(row => {
-                        const answer = String(row.Correct || '').trim().toUpperCase();
-                        return row.Topic && row.Question && /^[ABCD]$/.test(answer) && row['Option' + answer];
+            status.innerText = cached.length ? `${cached.length} saved questions` : 'Updating Library…';
+            if (!url) { offlineStatus(); return; }
+
+            const refreshOnline = async () => {
+                if (cached.length) status.innerText = `${cached.length} saved questions · updating…`;
+                try {
+                    const papa = await ensurePapaParse();
+                    papa.parse(url, {
+                        download: true, header: true, skipEmptyLines: true,
+                        complete: result => {
+                            // Ignore an older response if Settings now points at another sheet.
+                            if (document.getElementById('sheet-url').value.trim() !== url) return;
+                            const rows = result.data.filter(row => {
+                                const answer = String(row.Correct || '').trim().toUpperCase();
+                                return row.Topic && row.Question && /^[ABCD]$/.test(answer) && row['Option' + answer];
+                            });
+                            if (!rows.length) { offlineStatus(); return; }
+                            applyRows(rows);
+                            try { localStorage.setItem(cacheKey, JSON.stringify(rows)); } catch (_) {}
+                            status.innerText = `${rows.length} Questions Loaded`;
+                        },
+                        error: () => {
+                            if (document.getElementById('sheet-url').value.trim() === url) offlineStatus();
+                        }
                     });
-                    if (!rows.length) { offlineStatus(); return; }
-                    applyRows(rows);
-                    try { localStorage.setItem(cacheKey, JSON.stringify(rows)); } catch (_) {}
-                    status.innerText = `${rows.length} Questions Loaded`;
-                },
-                error: () => {
+                } catch (_) {
                     if (document.getElementById('sheet-url').value.trim() === url) offlineStatus();
                 }
-            });
+            };
+
+            if (deferNetwork && cached.length) {
+                scheduleClinicalRefresh(refreshOnline);
+                return;
+            }
+            return refreshOnline();
         };
 
     </script>
