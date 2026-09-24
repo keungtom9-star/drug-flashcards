@@ -296,7 +296,7 @@ function workerContext(base = 'https://example.test/drug-flashcards/') {
     const context = vm.createContext({
         URL, Response,
         self: { location: { href: base + 'service-worker.js' }, addEventListener: (name, fn) => { handlers[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
-        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', 'another-app'], delete: async key => deleted.push(key) },
+        caches: { open: async () => cache, keys: async () => [prefix+'v2', prefix+'v3', prefix+'v4', prefix+'v5', prefix+'v6', prefix+'v7', prefix+'v8', prefix+'v9', prefix+'v10', prefix+'v11', prefix+'v12', prefix+'v13', prefix+'v14', prefix+'v15', prefix+'v16', prefix+'v17', prefix+'v18', prefix+'v19', prefix+'v20', prefix+'v21', prefix+'v22', prefix+'v23', prefix+'v24', prefix+'v25', prefix+'v26', prefix+'v27', 'another-app'], delete: async key => deleted.push(key) },
         fetch: async request => { if (!online) throw Error('offline'); return new Response('network:'+request.url); },
     });
     vm.runInContext(read('service-worker.js'), context);
@@ -357,7 +357,7 @@ test('visiting Ward cannot replace cached home or Clinical pages', async () => {
 test('worker leaves other apps, third parties and writes untouched', async () => {
     const worker = workerContext();
     await lifecycle(worker, 'activate');
-    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26']);
+    assert.deepEqual(worker.deleted, ['drug-tutor-%2Fdrug-flashcards%2F-v2', 'drug-tutor-%2Fdrug-flashcards%2F-v3', 'drug-tutor-%2Fdrug-flashcards%2F-v4', 'drug-tutor-%2Fdrug-flashcards%2F-v5', 'drug-tutor-%2Fdrug-flashcards%2F-v6', 'drug-tutor-%2Fdrug-flashcards%2F-v7', 'drug-tutor-%2Fdrug-flashcards%2F-v8', 'drug-tutor-%2Fdrug-flashcards%2F-v9', 'drug-tutor-%2Fdrug-flashcards%2F-v10', 'drug-tutor-%2Fdrug-flashcards%2F-v11', 'drug-tutor-%2Fdrug-flashcards%2F-v12', 'drug-tutor-%2Fdrug-flashcards%2F-v13', 'drug-tutor-%2Fdrug-flashcards%2F-v14', 'drug-tutor-%2Fdrug-flashcards%2F-v15', 'drug-tutor-%2Fdrug-flashcards%2F-v16', 'drug-tutor-%2Fdrug-flashcards%2F-v17', 'drug-tutor-%2Fdrug-flashcards%2F-v18', 'drug-tutor-%2Fdrug-flashcards%2F-v19', 'drug-tutor-%2Fdrug-flashcards%2F-v20', 'drug-tutor-%2Fdrug-flashcards%2F-v21', 'drug-tutor-%2Fdrug-flashcards%2F-v22', 'drug-tutor-%2Fdrug-flashcards%2F-v23', 'drug-tutor-%2Fdrug-flashcards%2F-v24', 'drug-tutor-%2Fdrug-flashcards%2F-v25', 'drug-tutor-%2Fdrug-flashcards%2F-v26', 'drug-tutor-%2Fdrug-flashcards%2F-v27']);
     assert.equal(request(worker, 'https://example.test/other-app/index.html'), undefined);
     assert.equal(request(worker, 'https://api.example.test/chat'), undefined);
     assert.equal(request(worker, 'https://example.test/drug-flashcards/index.html', 'navigate', 'POST'), undefined);
@@ -422,18 +422,22 @@ test('startup and all navigation tabs work after removing the old study controls
     const getElement = document.getElementById.bind(document);
     document.getElementById = id => ids.has(id) ? getElement(id) : null;
     document.querySelectorAll = selector => selector === '.glass-nav .nav-btn'
-        ? ['search', 'quiz', 'ward', 'clinical'].map(mode => getElement('nav-' + mode)) : [];
+        ? ['search', 'revise', 'ward', 'clinical'].map(mode => getElement('nav-' + mode)) : [];
     for (const callback of events.DOMContentLoaded || []) assert.doesNotThrow(callback);
     assert.ok(vm.runInContext('activeSourceList.length', context) > 0);
-    assert.equal(vm.runInContext('quizList.length === activeSourceList.length', context), true);
+    assert.equal(vm.runInContext('revisionDrugs.length', context), 10);
     assert.equal(getElement('search-section').style.display, 'block');
     assert.equal(getElement('search-api-notice').hidden, true);
     vm.runInContext('setupWardPreload = () => {}; setupClinicalPreload = () => {}; beginClinicalBackSync = () => {};', context);
-    for (const mode of ['quiz', 'ward', 'clinical', 'search']) {
+    for (const mode of ['revise', 'ward', 'clinical', 'search']) {
         context.switchMode(mode);
         assert.equal(getElement(mode + '-section').style.display, 'block');
         assert.equal(getElement('nav-' + mode).getAttribute('aria-current'), 'page');
     }
+    assert.equal(document.getElementById('nav-quiz'), null);
+    assert.equal(document.getElementById('quiz-section'), null);
+    assert.equal(typeof context.startQuizRound, 'undefined');
+    assert.equal(typeof context.fetchQuizSheetData, 'undefined');
     assert.equal(document.getElementById('nav-flash'), null);
     assert.equal(document.getElementById('flashcard-section'), null);
     assert.equal(typeof context.rateCurrentCard, 'undefined');
@@ -453,24 +457,32 @@ test('tool iframe guard replaces a recursively loaded app shell', () => {
     assert.match(frame.srcdoc, /https:\/\/example\.test\/ward\.html/);
 });
 
-test('fast adaptive quiz creates an instant balanced question and limits AI prefetch', () => {
-    const { context } = loadMain({ ds_key: 'sk-test' });
-    const drugs = context.prepareDrugListForFastSearch([
-        { name: 'Atenolol', class: 'Selective beta blocker', indication: 'Hypertension', nursing: 'Monitor heart rate and blood pressure', system: '🫀 Cardio' },
-        { name: 'Bisoprolol', class: 'Selective beta blocker', indication: 'Heart failure and hypertension', nursing: 'Monitor heart rate and blood pressure', system: '🫀 Cardio' },
-        { name: 'Metoprolol', class: 'Selective beta blocker', indication: 'Post-MI and heart failure', nursing: 'Monitor heart rate and blood pressure', system: '🫀 Cardio' },
-        { name: 'Propranolol', class: 'Non-selective beta blocker', indication: 'Tremor and hypertension', nursing: 'Check for bronchospasm and bradycardia', system: '🫀 Cardio' },
-        { name: 'Labetalol', class: 'Alpha and beta blocker', indication: 'Hypertensive crisis', nursing: 'Monitor blood pressure closely', system: '🫀 Cardio' },
-    ]);
-    const first = context.buildLocalAdaptiveQuizQuestion(drugs, 'applying');
-    const second = context.buildLocalAdaptiveQuizQuestion(drugs, 'applying');
-    assert.equal(first.type, 'local_adaptive');
-    assert.equal(first.options.length, 4);
-    assert.equal(new Set(first.options).size, 4);
-    assert.ok(first.options.includes(first.correctAnswerText));
-    assert.notEqual(second.correctAnswerText, first.correctAnswerText);
-    assert.match(first.aiExplanation, /Nursing focus:/);
-    assert.match(read('index.html'), /Math\.min\(QUIZ_PREFETCH_TARGET, questionsAfterCurrent\)/);
+test('Revise shows one floating column of 10 unique random drugs', () => {
+    const { context, document } = loadMain();
+    context.rows = Array.from({ length: 14 }, (_, index) => ({
+        name: `Revision drug ${index + 1}`,
+        class: 'Practice class',
+        indication: `Indication ${index + 1}`,
+        side_effects: 'Nausea, dizziness',
+        nursing: 'Monitor the patient',
+        effect_of_drug: 'Practice drug action',
+        system: '🫀 Cardio',
+    }));
+    const picked = context.selectRandomRevisionDrugs(context.rows, 10, () => 0.25);
+    assert.equal(picked.length, 10);
+    assert.equal(new Set(Array.from(picked, drug => drug.name)).size, 10);
+
+    vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows); revisionDrugs = [];', context);
+    const rendered = context.renderRevisionDrugs({ reshuffle: true });
+    assert.equal(rendered.length, 10);
+    assert.equal((document.getElementById('revision-list').innerHTML.match(/class="revision-card"/g) || []).length, 10);
+    assert.match(document.getElementById('revision-list').innerHTML, /Indication/);
+    assert.match(document.getElementById('revision-list').innerHTML, /Side effects/);
+    assert.match(document.getElementById('revision-list').innerHTML, /Nursing care/);
+    assert.match(document.getElementById('revision-list').innerHTML, /Drug effect/);
+    assert.match(read('index.html'), /10 drugs for today/);
+    assert.match(read('index.html'), /New 10/);
+    assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
 });
 
 test('local search ranks names before incidental text and supports case, multiple words and systems', () => {
@@ -598,6 +610,7 @@ test('a Google Sheet result waits for review and explicit local add', async () =
     assert.equal(context.findLocalDrugs('Cloud medicine').length, 0);
     assert.match(document.getElementById('search-status').textContent, /Found in Google Sheet/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Nothing has been added yet/);
+    assert.doesNotMatch(document.getElementById('ai-search-output').innerHTML, /AI improve official data/);
     fillAIEditor(document, { 'ai-edit-name': 'Cloud medicine (Edited brand)', 'ai-edit-side-effects': 'Headache, nausea' });
     document.getElementById('btn-add-local').onclick();
     assert.equal(context.findLocalDrugs('Cloud medicine')[0].name, 'Cloud medicine (Edited brand)');
@@ -629,6 +642,21 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     context.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
         if (options.method === 'POST') {
+            if (String(url) === '/.netlify/functions/openrouter-qwen') {
+                const improved = JSON.stringify({
+                    name: 'Novelmed (Nova)',
+                    class: 'Improved test class',
+                    system: '🫀 Cardio',
+                    indication: 'Concise official testing indication',
+                    side_effects: 'Nausea, rash, dizziness, hypotension',
+                    effect_of_drug: 'Concise official action',
+                    nursing: 'This must never replace Nursing care',
+                });
+                return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: improved } }] })}\n\ndata: [DONE]\n\n`, {
+                    status: 200,
+                    headers: { 'Content-Type': 'text/event-stream' },
+                });
+            }
             if (String(url) === 'https://api.deepseek.com/chat/completions') {
                 return new Response('data: {"choices":[{"delta":{"content":"- Check allergies and baseline observations.\\n"}}]}\n\ndata: {"choices":[{"delta":{"content":"- Monitor response and adverse effects.\\n- Verify against the prescription, local protocol and current formulary."}}]}\n\ndata: [DONE]\n\n', {
                     status: 200,
@@ -658,8 +686,26 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.equal(context.findLocalDrugs('Novelmed').length, 0);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /RxNorm \+ openFDA/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /AI improve official data/);
     assert.equal(requests.some(request => request.url.includes('openrouter')), false);
     assert.equal(requests.some(request => request.url.includes('deepseek')), false);
+
+    fillAIEditor(document, {
+        'ai-edit-name': 'Novelmed (Nova)',
+        'ai-edit-class': 'Test class',
+        'ai-edit-indication': 'Used for testing',
+        'ai-edit-side-effects': 'Nausea, rash and dizziness',
+        'ai-edit-nursing': 'Keep this Nursing care unchanged',
+        'ai-edit-effect': 'Example action',
+    });
+    await document.getElementById('btn-improve-official-data').onclick();
+    assert.equal(document.getElementById('ai-edit-class').value, 'Improved test class');
+    assert.equal(document.getElementById('ai-edit-indication').value, 'Concise official testing indication');
+    assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, rash, dizziness, hypotension');
+    assert.equal(document.getElementById('ai-edit-effect').value, 'Concise official action');
+    assert.equal(document.getElementById('ai-edit-nursing').value, 'Keep this Nursing care unchanged');
+    assert.equal(requests.filter(request => request.url === '/.netlify/functions/openrouter-qwen').length, 1);
+    assert.equal(sheetWrites, 0, 'AI improvement must never auto-save');
 
     fillAIEditor(document, {
         'ai-edit-name': 'Novelmed (Edited brand)',
@@ -827,9 +873,6 @@ test('missing drug lookup needs no AI key; DeepSeek Nursing care opens setup whe
     assert.equal(document.getElementById('deepseek-key').focused, true);
     await context.triggerAISearch('unknown drug');
     await assert.rejects(context.streamAIResponse([], () => {}), /Add an API key/);
-    vm.runInContext('currentRoundTotal = 5; currentRoundAnswered = 2;', context);
-    context.startQuizRound();
-    assert.equal(vm.runInContext('currentRoundAnswered', context), 2);
     assert.equal(aiRequests, 0);
 });
 
@@ -844,7 +887,6 @@ test('API reminders follow the active provider and save/clear updates them immed
     context.saveSettings();
     assert.equal(storage.get('openrouter_key'), 'replacement-test-key');
     assert.equal(document.getElementById('search-api-notice').hidden, true);
-    assert.equal(document.getElementById('quiz-api-notice').hidden, true);
     document.getElementById('openrouter-key').value = ' ';
     context.saveSettings();
     assert.equal(document.getElementById('search-api-notice').hidden, false);
