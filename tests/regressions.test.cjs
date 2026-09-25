@@ -455,11 +455,13 @@ test('AI Drugs defaults to the server proxy without a browser secret or model ch
     assert.equal(body.model, undefined);
     assert.equal(body.stream, false);
     assert.deepEqual(body.response_format, { type: 'json_object' });
-    assert.equal(body.max_tokens, 4096);
+    assert.equal(body.max_tokens, 8192);
+    assert.deepEqual(body.thinking, { type: 'disabled' });
 
     await context.requestDiseaseData('Asthma', [], true);
     const retryBody = JSON.parse(request.options.body);
-    assert.equal(retryBody.response_format, undefined);
+    assert.deepEqual(retryBody.response_format, { type: 'json_object' });
+    assert.deepEqual(retryBody.thinking, { type: 'disabled' });
 });
 
 test('AI Drugs shares the explicit personal DeepSeek mode and calls the official API directly', async () => {
@@ -477,7 +479,9 @@ test('AI Drugs shares the explicit personal DeepSeek mode and calls the official
     await context.requestDiseaseData('Asthma');
     assert.equal(request.url, 'https://api.deepseek.com/chat/completions');
     assert.equal(request.options.headers.Authorization, 'Bearer personal-unit-test-key');
-    assert.equal(JSON.parse(request.options.body).model, 'deepseek-flash');
+    const body = JSON.parse(request.options.body);
+    assert.equal(body.model, 'deepseek-flash');
+    assert.deepEqual(body.thinking, { type: 'disabled' });
 });
 
 test('AI Drugs retries a short answer once and preserves safe partial results', async () => {
@@ -545,6 +549,87 @@ test('AI Drugs salvages complete medicine objects from a truncated JSON response
     assert.equal(parsed.drugs.length, 2);
     assert.equal(parsed.drugs[0].name, 'Salbutamol');
     assert.equal(parsed.drugs[1].name, 'Budesonide');
+});
+
+test('AI Drugs parses the final delimiter fallback without requiring valid JSON', () => {
+    const { context } = loadDisease();
+    const parsed = context.parseDiseaseTextFallback(`DISEASE|Asthma
+DRUG|Salbutamol|SABA|Relieves bronchospasm.|紓緩支氣管痙攣。
+DRUG|Budesonide|ICS|Reduces airway inflammation.|減低氣道炎症。
+INTERACTION|Salbutamol|Budesonide|moderate|Monitor additive adverse effects.|留意疊加副作用。`, 'Asthma');
+    assert.equal(parsed.disease, 'Asthma');
+    assert.equal(parsed.drugs.length, 2);
+    assert.equal(parsed.drugs[0].name, 'Salbutamol');
+    assert.equal(parsed.interactions.length, 1);
+    assert.equal(parsed.interactions[0].drug_b, 'Budesonide');
+});
+
+test('AI Drugs can recover a bare names-only reply as usable draft cards', () => {
+    const { context } = loadDisease();
+    const parsed = context.parseDiseaseNamesFallback(
+        'NAMES|Salbutamol|Budesonide|Montelukast|Tiotropium|Ipratropium|Formoterol|Salmeterol|Prednisolone|Mepolizumab|Omalizumab',
+        'Asthma'
+    );
+    const result = context.normalizeResult(parsed, 'Asthma');
+    assert.equal(result.drugs.length, 10);
+    assert.equal(result.drugs[0].name, 'Salbutamol');
+    assert.match(result.drugs[0].useEn, /requires verification/i);
+});
+
+test('AI Drugs uses a delimiter fallback after two malformed JSON replies', async () => {
+    const { context, document } = loadDisease();
+    context.loadDatabase();
+    document.getElementById('disease-input').value = 'Asthma';
+    const modes = [];
+    context.requestDiseaseData = async (_disease, _acceptedNames, compactRetry, textFallback) => {
+        modes.push([compactRetry === true, textFallback === true]);
+        if (!textFallback) {
+            const error = new Error('Incomplete JSON');
+            error.code = 'DEEPSEEK_JSON_INCOMPLETE';
+            throw error;
+        }
+        return {
+            disease: 'Asthma',
+            drugs: Array.from({ length: 10 }, (_, index) => ({
+                name: `Fallback medicine ${index + 1}`, class: `Class ${index + 1}`,
+                use_en: `English use ${index + 1}`, use_zh: `中文用途 ${index + 1}`
+            })),
+            interactions: []
+        };
+    };
+    await context.searchDisease({ preventDefault() {} });
+    assert.deepEqual(modes, [[false, false], [true, false], [true, true]]);
+    assert.equal(document.getElementById('result-count').textContent, '10/10');
+    assert.match(document.getElementById('status').textContent, /完成：10 隻不同藥物/);
+});
+
+test('AI Drugs falls back to a names-only result when every detailed format is malformed', async () => {
+    const { context, document } = loadDisease();
+    context.loadDatabase();
+    document.getElementById('disease-input').value = 'Asthma';
+    const modes = [];
+    context.requestDiseaseData = async (_disease, _acceptedNames, compactRetry, textFallback, namesOnly) => {
+        modes.push([compactRetry === true, textFallback === true, namesOnly === true]);
+        if (!namesOnly) {
+            const error = new Error('Incomplete structured reply');
+            error.code = 'DEEPSEEK_JSON_INCOMPLETE';
+            throw error;
+        }
+        return {
+            disease: 'Asthma',
+            drugs: Array.from({ length: 10 }, (_, index) => ({
+                name: `Names-only medicine ${index + 1}`, class: '', use_en: '', use_zh: ''
+            })),
+            interactions: []
+        };
+    };
+    await context.searchDisease({ preventDefault() {} });
+    assert.deepEqual(modes, [
+        [false, false, false], [true, false, false],
+        [true, true, false], [true, false, true]
+    ]);
+    assert.equal(document.getElementById('result-count').textContent, '10/10');
+    assert.equal((document.getElementById('drug-list').innerHTML.match(/class="drug-card"/g) || []).length, 10);
 });
 
 test('desktop shell uses border-box sizing to avoid horizontal overflow', () => {

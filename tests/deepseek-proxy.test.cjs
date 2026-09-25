@@ -44,6 +44,7 @@ test('DeepSeek proxy keeps the key server-side and pins the Flash model', async 
             temperature: .2,
             max_tokens: 900,
             stream: false,
+            thinking: { type: 'disabled' },
             response_format: { type: 'json_object' },
         }));
         assert.equal(response.status, 200);
@@ -53,6 +54,7 @@ test('DeepSeek proxy keeps the key server-side and pins the Flash model', async 
         assert.equal(body.model, 'deepseek-flash');
         assert.equal(body.temperature, .2);
         assert.equal(body.max_tokens, 900);
+        assert.deepEqual(body.thinking, { type: 'disabled' });
         assert.deepEqual(body.response_format, { type: 'json_object' });
         assert.doesNotMatch(await response.text(), /server-secret-test-key/);
     });
@@ -70,11 +72,13 @@ test('DeepSeek proxy sanitises options and does not forward arbitrary response f
             messages: [{ role: 'system', content: 'Safe prompt' }, { role: 'user', content: 'Question' }],
             temperature: 99,
             max_tokens: 999999,
+            thinking: { type: 'enabled' },
             response_format: { type: 'text', extra: 'unsafe' },
         }));
         assert.equal(response.status, 200);
         assert.equal(forwarded.temperature, 1);
-        assert.equal(forwarded.max_tokens, 4096);
+        assert.equal(forwarded.max_tokens, 8192);
+        assert.equal(forwarded.thinking, undefined);
         assert.equal(forwarded.response_format, undefined);
         assert.deepEqual(forwarded.messages, [
             { role: 'system', content: 'Safe prompt' },
