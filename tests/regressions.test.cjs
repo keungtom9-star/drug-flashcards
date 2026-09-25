@@ -396,6 +396,7 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(document.getElementById('revision-list').innerHTML, /Drug effect/);
     assert.match(document.getElementById('revision-list').innerHTML, /revision-system-icon/);
     assert.match(document.getElementById('revision-list').innerHTML, /revision-system/);
+    assert.notEqual(context.revisionAccentForSystem('Other', 'A'), context.revisionAccentForSystem('Other', 'B'));
     assert.deepEqual(JSON.parse(JSON.stringify(context.updateRevisionProgress())), { viewed: 0, total: 10, percentage: 0, complete: false });
     assert.equal(document.getElementById('revision-progress-label').textContent, '0 / 10 explored');
     assert.equal(document.getElementById('revision-progress-bar').style.width, '0%');
@@ -420,6 +421,8 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /Updated 25 Sep 2026 · 22:00 HKT/);
     assert.match(read('index.html'), /datetime="2026-09-25T22:00:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
+    assert.match(read('index.html'), /\.action-btn\.revision-shuffle/);
+    assert.match(read('index.html'), /system === 'Other' \? '💊 General'/);
     assert.doesNotMatch(read('index.html'), /Revise by disease|revision-disease-input/);
     assert.match(read('index.html'), /AI Drugs/);
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);

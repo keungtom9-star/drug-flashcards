@@ -710,7 +710,7 @@
         .revision-eyebrow::before { content: '✦'; color: #ec4899; font-size: .92rem; }
         .revision-title { margin: 6px 0 5px; color: #111827; font-size: clamp(1.48rem, 5vw, 2.08rem); line-height: 1.12; letter-spacing: -.025em; }
         .revision-subtitle { max-width: 560px; margin: 0; color: #64748b; font-size: .88rem; line-height: 1.5; }
-        .revision-shuffle {
+        .action-btn.revision-shuffle {
             position: relative;
             z-index: 1;
             flex: 0 0 auto;
@@ -723,9 +723,9 @@
             border: 1px solid rgba(255,255,255,.5);
             box-shadow: 0 12px 26px rgba(168,85,247,.28), inset 0 1px 0 rgba(255,255,255,.32);
         }
-        .revision-shuffle::after { content: ''; position: absolute; inset: -80% auto -80% -34%; width: 28%; transform: rotate(18deg); background: rgba(255,255,255,.28); transition: left .48s ease; }
-        .revision-shuffle:active { transform: scale(.97); }
-        .revision-shuffle.is-shuffling::after { left: 118%; }
+        .action-btn.revision-shuffle::after { content: ''; position: absolute; inset: -80% auto -80% -34%; width: 28%; transform: rotate(18deg); background: rgba(255,255,255,.28); transition: left .48s ease; }
+        .action-btn.revision-shuffle:active { transform: scale(.97); }
+        .action-btn.revision-shuffle.is-shuffling::after { left: 118%; }
         .revision-progress-panel { position: relative; z-index: 1; margin-top: 17px; padding: 12px 13px; border: 1px solid rgba(255,255,255,.78); border-radius: 17px; background: rgba(255,255,255,.6); box-shadow: inset 0 1px 0 rgba(255,255,255,.92); backdrop-filter: blur(10px); }
         .revision-progress-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #64748b; font-size: .69rem; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; }
         .revision-progress-top strong { color: #5b21b6; font-size: .72rem; letter-spacing: 0; text-transform: none; }
@@ -2024,9 +2024,11 @@ Language: ${langInstruction}.`;
         return shuffled.slice(0, Math.min(Math.max(0, count), shuffled.length));
     }
 
-    function revisionAccentForSystem(system) {
+    function revisionAccentForSystem(system, seed = '') {
         const colors = ['#5856D6', '#007AFF', '#0EA5A8', '#34C759', '#FF9500', '#AF52DE'];
-        const index = Math.max(0, systemCategories.indexOf(system));
+        const knownIndex = systemCategories.indexOf(system);
+        const hash = Array.from(`${system}|${seed}`).reduce((total, character) => total + character.codePointAt(0), 0);
+        const index = knownIndex >= 0 ? knownIndex : hash;
         return colors[index % colors.length];
     }
 
@@ -2091,18 +2093,19 @@ Language: ${langInstruction}.`;
 
         list.innerHTML = revisionDrugs.map((drug, index) => {
             const system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
-            const systemIcon = Array.from(String(system).trim())[0] || '💊';
+            const displaySystem = system === 'Other' ? '💊 General' : system;
+            const systemIcon = getSystemIcon(displaySystem);
             const sideEffects = usefulDrugText(drug.side_effects || drug.SideEffects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
             const effect = usefulDrugText(drug.effect_of_drug || drug.quiz || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
             const nursing = usefulDrugText(drug.nursing, DRUG_TEXT_FALLBACKS.nursing);
-            const accent = revisionAccentForSystem(system);
+            const accent = revisionAccentForSystem(system, drug.name);
             const revisionKey = revisionKeyForDrug(drug, index);
             const seenClass = revisionViewedKeys.has(revisionKey) ? ' is-seen' : '';
             return `
                 <article class="revision-card${seenClass}" data-revision-key="${escapeHtml(revisionKey)}" style="--revision-delay:${index * 35}ms; --revision-accent:${accent};">
                     <button type="button" class="revision-card-toggle" onclick="toggleRevisionCard(this)" aria-expanded="false">
                         <span class="revision-number"><span class="revision-system-icon" aria-hidden="true">${escapeHtml(systemIcon)}</span><span class="revision-number-value">${String(index + 1).padStart(2, '0')}</span></span>
-                        <span><span class="revision-name">${escapeHtml(drug.name)}</span><span class="revision-meta">${escapeHtml(drug.class || 'Drug class to review')}</span><span class="revision-system">${escapeHtml(system)}</span>${drug.__revisionSource ? `<span class="revision-source ${drug.__databaseMatch ? 'is-saved' : 'is-ai'}">${escapeHtml(drug.__revisionSource)}</span>` : ''}</span>
+                        <span><span class="revision-name">${escapeHtml(drug.name)}</span><span class="revision-meta">${escapeHtml(drug.class || 'Drug class to review')}</span><span class="revision-system">${escapeHtml(displaySystem)}</span>${drug.__revisionSource ? `<span class="revision-source ${drug.__databaseMatch ? 'is-saved' : 'is-ai'}">${escapeHtml(drug.__revisionSource)}</span>` : ''}</span>
                         <span class="revision-open-cue"><span class="revision-chevron" aria-hidden="true">⌄</span><span class="revision-tap-label">Tap</span></span>
                     </button>
                     <div class="revision-details">
