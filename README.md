@@ -20,7 +20,7 @@ View your app in AI Studio: https://ai.studio/apps/temp/1
 
 ## DeepSeek-only AI
 
-All AI features use the official DeepSeek API with the `deepseek-flash` model through `/.netlify/functions/deepseek`. The browser never receives the secret and never calls `api.deepseek.com` directly.
+All AI features use the official DeepSeek API with the `deepseek-flash` model. By default they call `/.netlify/functions/deepseek`, so the browser never receives the site's secret.
 
 Before deploying on Netlify:
 
@@ -30,6 +30,8 @@ Before deploying on Netlify:
 4. Redeploy the site so the function receives the new variable.
 
 Never add the real key to source code, GitHub, screenshots, logs, or pull-request comments. Local Vite alone does not emulate Netlify Functions; use a Netlify development environment or a deployed preview when testing live AI calls.
+
+Users may instead choose **Settings → Use my own DeepSeek API**. This optional BYOK mode stores the personal key only in that browser's local storage and sends AI requests directly to `https://api.deepseek.com/chat/completions`; it never sends the personal key to Netlify. **Clear saved key** deletes it and immediately restores the built-in secure mode. Avoid BYOK on a shared device, and use the default server mode when direct browser requests are restricted by a network or browser policy.
 
 ## Missing-drug search and Nursing care
 
@@ -41,6 +43,6 @@ The editable **Nursing care** field uses DeepSeek and generates exactly three sh
 
 The home **Revise** tab is deliberately local and fast: it shows 10 randomly selected saved drugs in one floating-card column, and **Random 10** reshuffles them.
 
-The former Clinical / quiz page is now **AI Drugs by Disease**. Enter a disease or condition to request 10 common but distinct medicines, bilingual use explanations, distinct roles, and clinically important interactions within that 10-drug set. The page removes duplicate generic / brand / salt entries, retries once when the first response is short, and checks every result against the loaded or cached drug database. Matches are marked **In database**; unmatched results remain clearly labelled AI drafts and are never auto-saved.
+The former Clinical / quiz page is now **AI Drugs by Disease**. Enter a disease or condition to request 10 common but distinct medicines, their classes, bilingual uses, and clinically important interactions within that 10-drug set. The page removes duplicate generic / brand / salt entries, retries once when the first response is malformed, truncated or short, salvages complete entries from truncated JSON, and checks every result against the loaded or cached drug database. Matches are marked **In database**; unmatched results remain clearly labelled AI drafts and are never auto-saved.
 
 Ward laboratory cards keep their English clinical explanation and add Traditional Chinese Cantonese names, uses, interpretation, and nursing escalation points for all 62 listed values, including ABG / VBG.
