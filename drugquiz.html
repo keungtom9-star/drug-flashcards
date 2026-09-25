@@ -331,7 +331,6 @@ Output that line only. Do not include doses, descriptions, Markdown or commentar
                         : diseasePrompt(disease, acceptedNames, compactRetry) }
                 ],
                 temperature: .15,
-                max_tokens: namesOnly ? 512 : (textFallback ? 4096 : 8192),
                 stream: false,
                 thinking: { type: 'disabled' },
                 ...(textFallback || namesOnly ? {} : { response_format: { type: 'json_object' } }),

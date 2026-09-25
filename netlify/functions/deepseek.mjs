@@ -79,7 +79,6 @@ export default async function handler(request) {
       model: DEEPSEEK_MODEL,
       messages,
       temperature: clampNumber(input?.temperature, 0.4, 0, 1),
-      max_tokens: Math.round(clampNumber(input?.max_tokens, 700, 64, 8192)),
       stream,
     };
     if (input?.thinking?.type === 'disabled') {

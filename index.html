@@ -1183,6 +1183,7 @@
                     <span style="font-size:0.8rem; line-height:1.45; color:#334155;"><strong style="display:block; color:#1d4ed8;">🔑 Use my own DeepSeek API</strong>Your key stays on this device and is sent directly to the official DeepSeek API.</span>
                 </label>
             </div>
+            <div style="font-size:0.73rem; line-height:1.45; color:#64748b; margin-top:8px;">The app sets no output-token cap. DeepSeek model/context limits, account quota and API charges still apply.</div>
             <div id="deepseek-personal-panel" hidden style="margin-top:10px; padding:12px; border-radius:14px; background:#eff6ff; border:1px solid #bfdbfe;">
                 <label for="deepseek-personal-key" style="display:block; font-size:0.78rem; font-weight:700; color:#1e3a8a; margin-bottom:7px;">Personal DeepSeek API key</label>
                 <input id="deepseek-personal-key" type="password" inputmode="text" autocomplete="new-password" autocapitalize="none" spellcheck="false" placeholder="Paste a new key, or leave saved key unchanged" style="width:100%; box-sizing:border-box; border:1px solid #93c5fd; border-radius:12px; padding:11px 12px; font-size:16px; background:#fff;">
@@ -2831,7 +2832,7 @@ Rules:
     }
 
     async function streamDeepSeekNursingResponse(messages, onUpdate) {
-        return streamAIResponse(messages, onUpdate, { temperature: 0.2, maxTokens: 180 });
+        return streamAIResponse(messages, onUpdate, { temperature: 0.2 });
     }
 
     async function generateDeepSeekNursingCare() {
@@ -3268,11 +3269,10 @@ Rules:
         }
     }
 
-    async function requestDeepSeekJSON(messages, { temperature = 0.1, maxTokens = 800 } = {}) {
+    async function requestDeepSeekJSON(messages, { temperature = 0.1 } = {}) {
         const response = await fetchDeepSeek({
             messages,
             temperature,
-            max_tokens: maxTokens,
             stream: false,
             response_format: { type: 'json_object' },
         });
@@ -3284,12 +3284,11 @@ Rules:
         return extractDeepSeekText(json?.choices?.[0]?.message?.content).trim();
     }
 
-    async function streamAIResponse(messages, onUpdate, { temperature = 0.7, maxTokens = null } = {}) {
+    async function streamAIResponse(messages, onUpdate, { temperature = 0.7 } = {}) {
         const body = {
             messages,
             temperature,
-            stream: true,
-            ...(Number.isInteger(maxTokens) ? { max_tokens: maxTokens } : {})
+            stream: true
         };
         const response = await fetchDeepSeek(body);
         if (!response.ok) {

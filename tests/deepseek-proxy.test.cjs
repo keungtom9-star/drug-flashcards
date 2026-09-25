@@ -27,7 +27,7 @@ function request(body, origin = 'https://site.test') {
     });
 }
 
-test('DeepSeek proxy keeps the key server-side and pins the Flash model', async () => {
+test('DeepSeek proxy keeps the key server-side, pins the Flash model and omits an output cap', async () => {
     const { default: handler } = await modulePromise;
     await runWithServerKey('server-secret-test-key', async () => {
         let upstream;
@@ -53,7 +53,7 @@ test('DeepSeek proxy keeps the key server-side and pins the Flash model', async 
         const body = JSON.parse(upstream.options.body);
         assert.equal(body.model, 'deepseek-flash');
         assert.equal(body.temperature, .2);
-        assert.equal(body.max_tokens, 900);
+        assert.equal(body.max_tokens, undefined);
         assert.deepEqual(body.thinking, { type: 'disabled' });
         assert.deepEqual(body.response_format, { type: 'json_object' });
         assert.doesNotMatch(await response.text(), /server-secret-test-key/);
@@ -77,7 +77,7 @@ test('DeepSeek proxy sanitises options and does not forward arbitrary response f
         }));
         assert.equal(response.status, 200);
         assert.equal(forwarded.temperature, 1);
-        assert.equal(forwarded.max_tokens, 8192);
+        assert.equal(forwarded.max_tokens, undefined);
         assert.equal(forwarded.thinking, undefined);
         assert.equal(forwarded.response_format, undefined);
         assert.deepEqual(forwarded.messages, [
