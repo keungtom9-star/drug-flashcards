@@ -401,12 +401,13 @@ test('Revise shows one floating column of 10 unique random drugs', () => {
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
 });
 
-test('AI Drugs replaces the old Clinical quiz and asks for uses plus within-list interactions', () => {
+test('AI Drugs replaces the old Clinical quiz and asks for concise uses plus within-list interactions', () => {
     const html = read('drugquiz.html');
     assert.match(html, /AI Drugs by Disease/);
     assert.match(html, /疾病常用藥一覽/);
     assert.match(html, /Exactly 10 clinically common, distinct active ingredients/);
     assert.match(html, /Inter\w* must only compare medicines inside your 10-drug list/i);
+    assert.match(html, /at most 4 of the most clinically important/);
     assert.match(html, /有咩用 · Clinical use/);
     assert.match(html, /重要藥物相互作用 · Interactions/);
     assert.doesNotMatch(html, /multiple choice|quiz_progress|Question Factory|clinical question/i);
@@ -438,7 +439,7 @@ test('AI Drugs removes duplicates and checks every result against the saved data
     assert.equal(result.interactions.length, 1);
 });
 
-test('AI Drugs calls only the server proxy and never sends a browser secret or model choice', async () => {
+test('AI Drugs defaults to the server proxy without a browser secret or model choice', async () => {
     const { context } = loadDisease();
     let request;
     context.fetch = async (url, options) => {
@@ -455,6 +456,28 @@ test('AI Drugs calls only the server proxy and never sends a browser secret or m
     assert.equal(body.stream, false);
     assert.deepEqual(body.response_format, { type: 'json_object' });
     assert.equal(body.max_tokens, 4096);
+
+    await context.requestDiseaseData('Asthma', [], true);
+    const retryBody = JSON.parse(request.options.body);
+    assert.equal(retryBody.response_format, undefined);
+});
+
+test('AI Drugs shares the explicit personal DeepSeek mode and calls the official API directly', async () => {
+    const { context } = loadDisease({
+        drug_tutor_deepseek_mode: 'personal',
+        drug_tutor_deepseek_key: 'personal-unit-test-key',
+    });
+    let request;
+    context.fetch = async (url, options) => {
+        request = { url: String(url), options };
+        return new Response(JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ disease: 'Asthma', drugs: [], interactions: [] }) } }],
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+    await context.requestDiseaseData('Asthma');
+    assert.equal(request.url, 'https://api.deepseek.com/chat/completions');
+    assert.equal(request.options.headers.Authorization, 'Bearer personal-unit-test-key');
+    assert.equal(JSON.parse(request.options.body).model, 'deepseek-flash');
 });
 
 test('AI Drugs retries a short answer once and preserves safe partial results', async () => {
@@ -511,6 +534,17 @@ test('AI Drugs automatically retries one malformed or truncated JSON answer', as
     assert.deepEqual(retryModes, [false, true]);
     assert.equal(document.getElementById('result-count').textContent, '10/10');
     assert.match(document.getElementById('status').textContent, /完成：10 隻不同藥物/);
+});
+
+test('AI Drugs salvages complete medicine objects from a truncated JSON response', () => {
+    const { context } = loadDisease();
+    const parsed = context.parseJsonObject(`{"disease":"Asthma","drugs":[
+        {"name":"Salbutamol","class":"SABA","use_en":"Relieves bronchospasm.","use_zh":"紓緩支氣管痙攣。"},
+        {"name":"Budesonide","class":"ICS","use_en":"Reduces airway inflammation.","use_zh":"減低氣道炎症。"},
+        {"name":"Montelukast","class":"LTRA"`);
+    assert.equal(parsed.drugs.length, 2);
+    assert.equal(parsed.drugs[0].name, 'Salbutamol');
+    assert.equal(parsed.drugs[1].name, 'Budesonide');
 });
 
 test('desktop shell uses border-box sizing to avoid horizontal overflow', () => {
@@ -897,7 +931,7 @@ test('missing-drug lookup stays token-free while Nursing care uses the server pr
     assert.equal(requests.filter(request => request.url === '/.netlify/functions/deepseek').length, 1);
 });
 
-test('Settings presents server-managed DeepSeek and removes legacy browser secrets', () => {
+test('Settings defaults to server-managed DeepSeek and removes legacy browser secrets', () => {
     const { context, document, storage } = loadMain({
         ds_key: 'legacy-test-key', api_key: 'legacy-shared-key', active_provider: 'old-provider',
         openrouter_key: 'old-openrouter-key', yinli_key: 'old-yinli-key',
@@ -905,15 +939,18 @@ test('Settings presents server-managed DeepSeek and removes legacy browser secre
     context.updateApiNotices();
     assert.equal(document.getElementById('search-api-notice').hidden, true);
     assert.equal(context.hasApiKey(), true);
-    assert.match(read('index.html'), /API key is managed by Netlify and is never sent to this browser/);
-    assert.doesNotMatch(read('index.html'), /id="deepseek-key"/);
+    assert.match(read('index.html'), /Built-in secure key \(Recommended\)/);
+    assert.match(read('index.html'), /Use my own DeepSeek API/);
+    assert.match(read('index.html'), /It is never sent to this browser/);
+    assert.doesNotMatch(read('index.html'), /value=["'][^"']*sk-/i);
     context.saveSettings();
     for (const key of ['ds_key', 'api_key', 'active_provider', 'openrouter_key', 'yinli_key']) {
         assert.equal(storage.has(key), false);
     }
+    assert.equal(storage.get('drug_tutor_deepseek_mode'), 'server');
 });
 
-test('all streamed AI requests use the server proxy without exposing a key or choosing a model', async () => {
+test('streamed AI requests default to the server proxy without exposing a key or choosing a model', async () => {
     const { context, document } = loadMain();
     context.updateApiNotices();
     const requests = [];
@@ -933,6 +970,30 @@ test('all streamed AI requests use the server proxy without exposing a key or ch
     assert.equal(body.model, undefined);
     assert.equal(body.stream, true);
     assert.doesNotMatch(read('index.html'), /Qwen|OpenRouter|Yinli|Gemini|provider-select/);
-    assert.doesNotMatch(read('index.html'), /https:\/\/api\.deepseek\.com/);
     assert.deepEqual(updates, ['Ready']);
+});
+
+test('personal DeepSeek mode is explicit, device-local, shared by AI calls and clearable', async () => {
+    const { context, document, storage } = loadMain();
+    context.selectDeepSeekMode('personal');
+    document.getElementById('deepseek-personal-key').value = 'personal-unit-test-key';
+    context.saveSettings();
+    assert.equal(storage.get('drug_tutor_deepseek_mode'), 'personal');
+    assert.equal(storage.get('drug_tutor_deepseek_key'), 'personal-unit-test-key');
+
+    let request;
+    context.fetch = async (url, options) => {
+        request = { url: String(url), options };
+        return new Response('data: {"choices":[{"delta":{"content":"Ready"}}]}\n\ndata: [DONE]\n\n', {
+            status: 200, headers: { 'Content-Type': 'text/event-stream' },
+        });
+    };
+    await context.streamAIResponse([{ role: 'user', content: 'Explain this drug.' }], () => {});
+    assert.equal(request.url, 'https://api.deepseek.com/chat/completions');
+    assert.equal(request.options.headers.Authorization, 'Bearer personal-unit-test-key');
+    assert.equal(JSON.parse(request.options.body).model, 'deepseek-flash');
+
+    context.clearPersonalDeepSeekKey();
+    assert.equal(storage.has('drug_tutor_deepseek_key'), false);
+    assert.equal(storage.get('drug_tutor_deepseek_mode'), 'server');
 });

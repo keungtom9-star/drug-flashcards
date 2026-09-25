@@ -1173,7 +1173,22 @@
         
         <div id="deepseek-config" class="config-section">
             <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">DeepSeek AI</label>
-            <div style="margin-top:7px; padding:12px; border-radius:12px; background:#ecfdf5; color:#047857; font-size:0.78rem; line-height:1.5;"><strong>🔒 Built in securely</strong><br>The API key is managed by Netlify and is never sent to this browser.</div>
+            <div style="display:grid; gap:8px; margin-top:8px;">
+                <label style="display:flex; gap:10px; align-items:flex-start; padding:12px; border:1px solid #dbe4ef; border-radius:14px; background:#fff; cursor:pointer;">
+                    <input id="deepseek-mode-server" name="deepseek-mode" type="radio" value="server" onchange="selectDeepSeekMode('server')" style="width:18px; height:18px; margin-top:1px; accent-color:#16a34a;">
+                    <span style="font-size:0.8rem; line-height:1.45; color:#334155;"><strong style="display:block; color:#047857;">🔒 Built-in secure key (Recommended)</strong>Netlify manages the key. It is never sent to this browser.</span>
+                </label>
+                <label style="display:flex; gap:10px; align-items:flex-start; padding:12px; border:1px solid #dbe4ef; border-radius:14px; background:#fff; cursor:pointer;">
+                    <input id="deepseek-mode-personal" name="deepseek-mode" type="radio" value="personal" onchange="selectDeepSeekMode('personal')" style="width:18px; height:18px; margin-top:1px; accent-color:#2563eb;">
+                    <span style="font-size:0.8rem; line-height:1.45; color:#334155;"><strong style="display:block; color:#1d4ed8;">🔑 Use my own DeepSeek API</strong>Your key stays on this device and is sent directly to the official DeepSeek API.</span>
+                </label>
+            </div>
+            <div id="deepseek-personal-panel" hidden style="margin-top:10px; padding:12px; border-radius:14px; background:#eff6ff; border:1px solid #bfdbfe;">
+                <label for="deepseek-personal-key" style="display:block; font-size:0.78rem; font-weight:700; color:#1e3a8a; margin-bottom:7px;">Personal DeepSeek API key</label>
+                <input id="deepseek-personal-key" type="password" inputmode="text" autocomplete="new-password" autocapitalize="none" spellcheck="false" placeholder="Paste a new key, or leave saved key unchanged" style="width:100%; box-sizing:border-box; border:1px solid #93c5fd; border-radius:12px; padding:11px 12px; font-size:16px; background:#fff;">
+                <div id="deepseek-personal-status" style="font-size:0.73rem; line-height:1.4; color:#475569; margin-top:7px;"></div>
+                <button type="button" onclick="clearPersonalDeepSeekKey()" class="action-btn" style="margin:9px 0 0; background:#fff; color:#b91c1c; border:1px solid #fecaca;">Clear saved key</button>
+            </div>
         </div>
         
         <div style="margin-top:20px;">
@@ -1304,10 +1319,15 @@ Language: ${langInstruction}.`;
 
     const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
     
-    // DeepSeek is the only AI provider. The secret stays in the Netlify Function.
+    // DeepSeek is the only AI provider. Server mode keeps its secret in Netlify;
+    // personal mode is an explicit, device-local opt-in that calls DeepSeek directly.
     const REQUIRED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec";
     let googleScriptURL = REQUIRED_SCRIPT_URL;
     const DEEPSEEK_PROXY_URL = '/.netlify/functions/deepseek';
+    const DEEPSEEK_DIRECT_URL = 'https://api.deepseek.com/chat/completions';
+    const DEEPSEEK_MODEL = 'deepseek-flash';
+    const DEEPSEEK_MODE_STORAGE_KEY = 'drug_tutor_deepseek_mode';
+    const DEEPSEEK_PERSONAL_KEY_STORAGE_KEY = 'drug_tutor_deepseek_key';
     const RXNORM_API_ROOT = 'https://rxnav.nlm.nih.gov/REST';
     const OPENFDA_LABEL_URL = 'https://api.fda.gov/drug/label.json';
     
@@ -1502,6 +1522,7 @@ Language: ${langInstruction}.`;
 
         refreshDrugViews();
         renderHistory();
+        syncDeepSeekSettingsUI();
         updateProviderDisplay();
         updateApiNotices();
 
@@ -2004,23 +2025,45 @@ Language: ${langInstruction}.`;
         runSearch();
     }
 
+    function getSavedDeepSeekMode() {
+        return localStorage.getItem(DEEPSEEK_MODE_STORAGE_KEY) === 'personal' ? 'personal' : 'server';
+    }
+
     function getApiConfiguration() {
-        return { label: 'DeepSeek', key: 'server-managed', serverManaged: true };
+        const mode = getSavedDeepSeekMode();
+        const key = mode === 'personal'
+            ? String(localStorage.getItem(DEEPSEEK_PERSONAL_KEY_STORAGE_KEY) || '').trim()
+            : '';
+        return mode === 'personal'
+            ? {
+                label: 'DeepSeek · Own API', mode, key, configured: !!key, serverManaged: false,
+                url: DEEPSEEK_DIRECT_URL, model: DEEPSEEK_MODEL,
+            }
+            : {
+                label: 'DeepSeek', mode, key: '', configured: true, serverManaged: true,
+                url: DEEPSEEK_PROXY_URL, model: '',
+            };
     }
 
     function hasApiKey() {
-        return !!getApiConfiguration().key;
+        return getApiConfiguration().configured;
     }
 
     function updateApiNotices() {
         const config = getApiConfiguration();
         const notice = document.getElementById('search-api-notice');
-        if (notice) notice.hidden = true;
+        if (notice) {
+            notice.hidden = config.configured;
+            notice.innerHTML = config.configured
+                ? ''
+                : 'Own DeepSeek API is selected, but no key is saved. <button type="button" onclick="openApiSettings()">Open Settings</button>';
+        }
         document.querySelectorAll('[data-api-provider]').forEach(label => { label.textContent = config.label; });
     }
 
     function openApiSettings() {
         document.getElementById('settings-panel').style.display = 'flex';
+        syncDeepSeekSettingsUI();
         updateProviderDisplay();
         document.getElementById('deepseek-config')?.scrollIntoView({ block: 'center' });
     }
@@ -2030,7 +2073,10 @@ Language: ${langInstruction}.`;
     }
 
     function requireApiKey() {
-        return true;
+        if (hasApiKey()) return true;
+        openApiSettings();
+        alert('Please paste your own DeepSeek API key, or switch back to the built-in secure key.');
+        return false;
     }
 
     // --- SEARCH LOGIC ---
@@ -3198,17 +3244,37 @@ Rules:
         }
     }
 
+    async function fetchDeepSeek(body) {
+        const config = getApiConfiguration();
+        if (!config.configured) {
+            throw new Error('Own DeepSeek API is selected, but no API key is saved. Open Settings or use the built-in secure key.');
+        }
+        const requestBody = config.serverManaged ? body : { ...body, model: config.model };
+        try {
+            return await fetch(config.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(config.serverManaged ? {} : { Authorization: `Bearer ${config.key}` }),
+                    Accept: body.stream ? 'text/event-stream' : 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+        } catch (error) {
+            if (!config.serverManaged) {
+                throw new Error('Could not connect directly to DeepSeek. Check the key and network, or switch to the built-in secure key.');
+            }
+            throw error;
+        }
+    }
+
     async function requestDeepSeekJSON(messages, { temperature = 0.1, maxTokens = 800 } = {}) {
-        const response = await fetch(DEEPSEEK_PROXY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                messages,
-                temperature,
-                max_tokens: maxTokens,
-                stream: false,
-                response_format: { type: 'json_object' },
-            }),
+        const response = await fetchDeepSeek({
+            messages,
+            temperature,
+            max_tokens: maxTokens,
+            stream: false,
+            response_format: { type: 'json_object' },
         });
         if (!response.ok) {
             const detail = await getDeepSeekErrorDetail(response);
@@ -3225,11 +3291,7 @@ Rules:
             stream: true,
             ...(Number.isInteger(maxTokens) ? { max_tokens: maxTokens } : {})
         };
-        const response = await fetch(DEEPSEEK_PROXY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-        });
+        const response = await fetchDeepSeek(body);
         if (!response.ok) {
             const detail = await getDeepSeekErrorDetail(response);
             throw new Error(`DeepSeek request failed (${response.status})${detail ? `: ${detail}` : ''}`);
@@ -3299,10 +3361,53 @@ Rules:
 
     function toggleSettings() {
         const p = document.getElementById('settings-panel');
-        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+        const opening = p.style.display !== 'flex';
+        p.style.display = opening ? 'flex' : 'none';
+        if (opening) syncDeepSeekSettingsUI();
+    }
+
+    function selectDeepSeekMode(mode) {
+        const personal = mode === 'personal';
+        const serverRadio = document.getElementById('deepseek-mode-server');
+        const personalRadio = document.getElementById('deepseek-mode-personal');
+        const panel = document.getElementById('deepseek-personal-panel');
+        if (serverRadio) serverRadio.checked = !personal;
+        if (personalRadio) personalRadio.checked = personal;
+        if (panel) panel.hidden = !personal;
+        const status = document.getElementById('deepseek-personal-status');
+        if (status && personal) {
+            status.textContent = localStorage.getItem(DEEPSEEK_PERSONAL_KEY_STORAGE_KEY)
+                ? '✓ A key is saved on this device. Paste a new one only to replace it.'
+                : 'No key saved yet. It will stay only in this browser storage.';
+        }
+    }
+
+    function syncDeepSeekSettingsUI() {
+        selectDeepSeekMode(getSavedDeepSeekMode());
+        const input = document.getElementById('deepseek-personal-key');
+        if (input) input.value = '';
+    }
+
+    function clearPersonalDeepSeekKey() {
+        localStorage.removeItem(DEEPSEEK_PERSONAL_KEY_STORAGE_KEY);
+        localStorage.setItem(DEEPSEEK_MODE_STORAGE_KEY, 'server');
+        syncDeepSeekSettingsUI();
+        updateProviderDisplay();
+        updateApiNotices();
+        alert('Saved personal DeepSeek key cleared. Built-in secure mode is active.');
     }
     
     function saveSettings() {
+        const personalSelected = !!document.getElementById('deepseek-mode-personal')?.checked;
+        const personalInput = String(document.getElementById('deepseek-personal-key')?.value || '').trim();
+        const savedPersonalKey = String(localStorage.getItem(DEEPSEEK_PERSONAL_KEY_STORAGE_KEY) || '').trim();
+        if (personalSelected && !personalInput && !savedPersonalKey) {
+            alert('Paste your DeepSeek API key, or choose the built-in secure key.');
+            return;
+        }
+        if (personalInput) localStorage.setItem(DEEPSEEK_PERSONAL_KEY_STORAGE_KEY, personalInput);
+        localStorage.setItem(DEEPSEEK_MODE_STORAGE_KEY, personalSelected ? 'personal' : 'server');
+
         localStorage.removeItem('ds_key');
         localStorage.removeItem('api_key');
         localStorage.removeItem('active_provider');
@@ -3327,9 +3432,10 @@ Rules:
     
     function updateProviderDisplay() {
         const display = document.getElementById('provider-display');
-        if (display) display.innerText = 'DeepSeek V4.1 Flash';
-        const config = document.getElementById('deepseek-config');
-        if (config) config.style.display = 'block';
+        const config = getApiConfiguration();
+        if (display) display.innerText = config.serverManaged ? 'DeepSeek V4.1 Flash' : 'DeepSeek · Own API';
+        const section = document.getElementById('deepseek-config');
+        if (section) section.style.display = 'block';
     }
 
     async function fetchSheetData(autoSwitch = false) {

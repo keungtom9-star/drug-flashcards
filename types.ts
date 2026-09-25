@@ -18,6 +18,8 @@ export interface System {
 export interface Settings {
   voiceURI: string;
   aiLanguage: 'english' | 'lihkg';
+  deepseekMode?: 'server' | 'personal';
+  deepseekKey?: string;
 }
 
 export interface AIResponse {
