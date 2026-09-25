@@ -112,6 +112,20 @@
             padding: 4px 10px;
             border-radius: 12px;
         }
+        .header-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        .app-last-updated {
+            color: #7c879a;
+            font-size: .62rem;
+            font-weight: 650;
+            letter-spacing: .015em;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
         
         /* Settings Button */
         .top-back-btn,
@@ -328,6 +342,18 @@
             line-height: 1.25;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        body.mobile-ui .header-meta {
+            flex: 0 1 102px;
+            min-width: 0;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        body.mobile-ui .app-last-updated {
+            max-width: 102px;
+            overflow: hidden;
+            font-size: .54rem;
+            text-overflow: ellipsis;
         }
         body.mobile-ui .top-back-btn,
         body.mobile-ui .settings-btn-top {
@@ -648,68 +674,123 @@
             position: relative;
             overflow: hidden;
             margin-bottom: 16px;
-            padding: 20px;
-            border: 1px solid rgba(99,102,241,.16);
-            border-radius: 24px;
-            background: linear-gradient(145deg, #ffffff 0%, #eef2ff 55%, #ecfeff 100%);
-            box-shadow: 0 18px 42px rgba(79,70,229,.12);
+            padding: 22px;
+            border: 1px solid rgba(99,102,241,.18);
+            border-radius: 26px;
+            background:
+                radial-gradient(circle at 6% 5%, rgba(255,255,255,.92) 0 8%, transparent 28%),
+                linear-gradient(135deg, #fdf2ff 0%, #edf3ff 43%, #e7fff6 100%);
+            box-shadow: 0 20px 48px rgba(79,70,229,.15), inset 0 1px 0 rgba(255,255,255,.88);
+            isolation: isolate;
         }
+        .revision-hero::before,
         .revision-hero::after {
             content: '';
             position: absolute;
-            right: -38px;
-            top: -54px;
-            width: 150px;
-            height: 150px;
+            z-index: -1;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(52,199,89,.22), rgba(88,86,214,.04) 68%, transparent 70%);
             pointer-events: none;
         }
+        .revision-hero::before {
+            left: -50px;
+            bottom: -82px;
+            width: 190px;
+            height: 190px;
+            background: radial-gradient(circle, rgba(255,45,124,.18), rgba(255,149,0,.06) 62%, transparent 70%);
+        }
+        .revision-hero::after {
+            right: -38px;
+            top: -54px;
+            width: 170px;
+            height: 170px;
+            background: radial-gradient(circle, rgba(52,199,89,.25), rgba(88,86,214,.06) 64%, transparent 72%);
+        }
         .revision-hero-row { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-        .revision-eyebrow { color: #4f46e5; font-size: .72rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
-        .revision-title { margin: 5px 0 4px; color: #111827; font-size: clamp(1.45rem, 5vw, 2rem); line-height: 1.12; }
+        .revision-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #6d28d9; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+        .revision-eyebrow::before { content: '✦'; color: #ec4899; font-size: .92rem; }
+        .revision-title { margin: 6px 0 5px; color: #111827; font-size: clamp(1.48rem, 5vw, 2.08rem); line-height: 1.12; letter-spacing: -.025em; }
         .revision-subtitle { max-width: 560px; margin: 0; color: #64748b; font-size: .88rem; line-height: 1.5; }
-        .revision-shuffle { position: relative; z-index: 1; flex: 0 0 auto; width: auto; margin: 0; white-space: nowrap; background: #111827; color: white; box-shadow: 0 10px 22px rgba(15,23,42,.18); }
-        .revision-context { min-height: 18px; color: #64748b; font-size: .73rem; line-height: 1.4; }
-        .revision-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 13px; padding: 2px 2px 24px; }
+        .revision-shuffle {
+            position: relative;
+            z-index: 1;
+            flex: 0 0 auto;
+            width: auto;
+            margin: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            background: linear-gradient(135deg, #7c3aed, #ec4899 58%, #f97316);
+            color: white;
+            border: 1px solid rgba(255,255,255,.5);
+            box-shadow: 0 12px 26px rgba(168,85,247,.28), inset 0 1px 0 rgba(255,255,255,.32);
+        }
+        .revision-shuffle::after { content: ''; position: absolute; inset: -80% auto -80% -34%; width: 28%; transform: rotate(18deg); background: rgba(255,255,255,.28); transition: left .48s ease; }
+        .revision-shuffle:active { transform: scale(.97); }
+        .revision-shuffle.is-shuffling::after { left: 118%; }
+        .revision-progress-panel { position: relative; z-index: 1; margin-top: 17px; padding: 12px 13px; border: 1px solid rgba(255,255,255,.78); border-radius: 17px; background: rgba(255,255,255,.6); box-shadow: inset 0 1px 0 rgba(255,255,255,.92); backdrop-filter: blur(10px); }
+        .revision-progress-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #64748b; font-size: .69rem; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; }
+        .revision-progress-top strong { color: #5b21b6; font-size: .72rem; letter-spacing: 0; text-transform: none; }
+        .revision-progress-top strong.is-complete { color: #15803d; }
+        .revision-progress-track { height: 7px; margin-top: 8px; overflow: hidden; border-radius: 999px; background: rgba(148,163,184,.2); box-shadow: inset 0 1px 2px rgba(15,23,42,.07); }
+        .revision-progress-bar { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #7c3aed, #ec4899 50%, #f59e0b 74%, #22c55e); box-shadow: 0 0 12px rgba(236,72,153,.34); transition: width .36s cubic-bezier(.2,.8,.2,1); }
+        .revision-complete { position: relative; z-index: 1; margin-top: 10px; padding: 9px 11px; border-radius: 13px; background: rgba(236,253,245,.86); color: #166534; font-size: .76rem; font-weight: 800; line-height: 1.4; animation: revisionCelebrateIn .32s cubic-bezier(.2,.8,.2,1); }
+        .revision-context { position: relative; z-index: 1; min-height: 18px; margin-top: 10px; color: #64748b; font-size: .73rem; line-height: 1.4; }
+        .revision-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 2px 2px 24px; }
         .revision-card {
             position: relative;
             overflow: hidden;
             border: 1px solid rgba(148,163,184,.22);
-            border-radius: 22px;
-            background: rgba(255,255,255,.94);
-            box-shadow: 0 13px 30px rgba(15,23,42,.09), inset 0 1px 0 rgba(255,255,255,.9);
+            border-radius: 23px;
+            background: rgba(255,255,255,.96);
+            background: linear-gradient(132deg, color-mix(in srgb, var(--revision-accent, #5856d6) 8%, white), white 58%);
+            box-shadow: 0 14px 32px rgba(15,23,42,.09), inset 0 1px 0 rgba(255,255,255,.92);
             transform: translateZ(0);
-            animation: revisionCardIn .44s cubic-bezier(.2,.8,.2,1) both;
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+            animation: revisionCardIn .46s cubic-bezier(.2,.8,.2,1) both;
             animation-delay: var(--revision-delay, 0ms);
             content-visibility: auto;
-            contain-intrinsic-size: 150px;
+            contain-intrinsic-size: 164px;
         }
-        .revision-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--revision-accent, var(--ios-indigo)); }
-        .revision-card-toggle { width: 100%; min-height: 88px; padding: 15px 16px 15px 20px; border: 0; background: transparent; display: grid; grid-template-columns: 42px minmax(0, 1fr) 26px; align-items: center; gap: 12px; color: inherit; text-align: left; cursor: pointer; }
-        .revision-number { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--revision-accent, var(--ios-indigo)) 12%, white); color: var(--revision-accent, var(--ios-indigo)); font-weight: 900; box-shadow: inset 0 0 0 1px rgba(255,255,255,.8); }
+        .revision-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 6px; background: linear-gradient(180deg, var(--revision-accent, var(--ios-indigo)), color-mix(in srgb, var(--revision-accent, var(--ios-indigo)) 48%, #ec4899)); }
+        .revision-card::after { content: ''; position: absolute; z-index: 0; right: -42px; top: -54px; width: 118px; height: 118px; border-radius: 50%; background: color-mix(in srgb, var(--revision-accent, #5856d6) 8%, transparent); pointer-events: none; }
+        .revision-card.is-open { border-color: color-mix(in srgb, var(--revision-accent, #5856d6) 42%, white); box-shadow: 0 20px 44px color-mix(in srgb, var(--revision-accent, #5856d6) 15%, transparent), inset 0 1px 0 rgba(255,255,255,.94); }
+        .revision-card-toggle { position: relative; z-index: 1; width: 100%; min-height: 94px; padding: 15px 16px 15px 20px; border: 0; background: transparent; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 12px; color: inherit; text-align: left; cursor: pointer; }
+        .revision-number { position: relative; width: 44px; height: 48px; display: grid; grid-template-rows: 1fr auto; place-items: center; padding: 4px 0 5px; box-sizing: border-box; border-radius: 15px; background: color-mix(in srgb, var(--revision-accent, var(--ios-indigo)) 13%, white); color: var(--revision-accent, var(--ios-indigo)); font-weight: 900; box-shadow: inset 0 0 0 1px rgba(255,255,255,.82), 0 7px 16px color-mix(in srgb, var(--revision-accent, #5856d6) 12%, transparent); transition: transform .22s ease, background .22s ease, color .22s ease; }
+        .revision-system-icon { font-size: 1.12rem; line-height: 1; }
+        .revision-number-value { font-size: .56rem; line-height: 1; letter-spacing: .055em; }
+        .revision-card.is-seen .revision-number { color: white; background: linear-gradient(145deg, var(--revision-accent, #5856d6), color-mix(in srgb, var(--revision-accent, #5856d6) 58%, #ec4899)); transform: scale(1.04); }
+        .revision-card.is-seen .revision-number::after { content: '✓'; position: absolute; top: -5px; right: -5px; width: 17px; height: 17px; display: grid; place-items: center; border: 2px solid white; border-radius: 50%; background: #22c55e; color: white; font-size: .58rem; box-shadow: 0 3px 8px rgba(22,101,52,.22); }
         .revision-name { display: block; color: #111827; font-size: 1.05rem; font-weight: 820; line-height: 1.3; overflow-wrap: anywhere; }
         .revision-meta { display: block; margin-top: 4px; color: #64748b; font-size: .78rem; line-height: 1.35; overflow-wrap: anywhere; }
+        .revision-system { display: inline-flex; align-items: center; margin-top: 7px; padding: 4px 9px; border: 1px solid color-mix(in srgb, var(--revision-accent, #5856d6) 18%, white); border-radius: 999px; background: color-mix(in srgb, var(--revision-accent, #5856d6) 9%, white); color: color-mix(in srgb, var(--revision-accent, #5856d6) 82%, #111827); font-size: .66rem; font-weight: 850; line-height: 1.2; }
         .revision-source { display: inline-flex; margin-top: 7px; padding: 3px 8px; border-radius: 999px; font-size: .66rem; font-weight: 800; line-height: 1.25; }
         .revision-source.is-saved { background: #ecfdf3; color: #16723c; }
         .revision-source.is-ai { background: #fff7e6; color: #9a5a00; }
-        .revision-chevron { color: #94a3b8; font-size: 1.1rem; transition: transform .24s ease; }
-        .revision-card.is-open .revision-chevron { transform: rotate(180deg); }
-        .revision-details { display: none; padding: 0 16px 17px 20px; }
-        .revision-card.is-open .revision-details { display: grid; gap: 9px; animation: revisionDetailsIn .22s ease-out; }
-        .revision-detail { padding: 11px 12px; border: 1px solid rgba(226,232,240,.9); border-radius: 14px; background: #f8fafc; color: #334155; font-size: .86rem; line-height: 1.48; }
-        .revision-detail strong { display: block; margin-bottom: 3px; color: #475569; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
+        .revision-open-cue { display: grid; justify-items: center; gap: 4px; min-width: 34px; color: #94a3b8; }
+        .revision-chevron { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.75); color: var(--revision-accent, #5856d6); font-size: 1.02rem; box-shadow: 0 5px 12px rgba(15,23,42,.08); transition: transform .24s ease, background .22s ease; }
+        .revision-tap-label { font-size: .52rem; font-weight: 800; white-space: nowrap; }
+        .revision-card.is-open .revision-chevron { transform: rotate(180deg); background: color-mix(in srgb, var(--revision-accent, #5856d6) 11%, white); }
+        .revision-details { position: relative; z-index: 1; display: none; padding: 0 16px 17px 20px; }
+        .revision-card.is-open .revision-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; animation: revisionDetailsIn .24s ease-out; }
+        .revision-detail { padding: 12px; border: 1px solid rgba(226,232,240,.86); border-radius: 15px; background: #f8fafc; color: #334155; font-size: .84rem; line-height: 1.48; overflow-wrap: anywhere; }
+        .revision-detail:nth-child(1) { background: #eef6ff; border-color: #dbeafe; }
+        .revision-detail:nth-child(2) { background: #fff1f5; border-color: #fce7f3; }
+        .revision-detail:nth-child(3) { background: #ecfdf5; border-color: #d1fae5; }
+        .revision-detail:nth-child(4) { background: #fff8eb; border-color: #fef3c7; }
+        .revision-detail strong { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; color: #475569; font-size: .68rem; letter-spacing: .055em; text-transform: uppercase; }
         .revision-empty { padding: 30px 18px; border: 1px dashed #cbd5e1; border-radius: 20px; background: rgba(255,255,255,.8); color: #64748b; text-align: center; }
         @keyframes revisionCardIn { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes revisionDetailsIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-        @media (hover:hover) { .revision-card:hover { transform: translateY(-3px); box-shadow: 0 20px 42px rgba(15,23,42,.13); } }
+        @keyframes revisionCelebrateIn { from { opacity: 0; transform: translateY(-5px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @media (hover:hover) { .revision-card:hover { transform: translateY(-4px); box-shadow: 0 22px 46px rgba(79,70,229,.15); } }
         @media (max-width:560px) {
             .revision-hero-row { display: grid; }
             .revision-shuffle { width: 100%; }
+            .revision-card.is-open .revision-details { grid-template-columns: 1fr; }
+            .revision-tap-label { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .revision-card, .revision-card.is-open .revision-details { animation: none; }
-            .revision-card, .revision-chevron { transition: none; }
+            .revision-card, .revision-card.is-open .revision-details, .revision-complete { animation: none; }
+            .revision-card, .revision-chevron, .revision-progress-bar, .revision-shuffle::after { transition: none; }
         }
 
         .multi-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
@@ -1061,7 +1142,10 @@
     </h1>
     <button onclick="handleTopBack()" class="top-back-btn" aria-label="Back">←</button>
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
-    <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
+    <div class="header-meta">
+        <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
+        <time class="app-last-updated" datetime="2026-09-25T22:00:00+08:00">Updated 25 Sep 2026 · 22:00 HKT</time>
+    </div>
 </header>
 
 <nav class="glass-nav" aria-label="Main navigation">
@@ -1104,11 +1188,21 @@
                 <div>
                     <div class="revision-eyebrow">Quick revision</div>
                     <h2 id="revision-title" class="revision-title">10 drugs for today</h2>
-                    <p class="revision-subtitle">Tap each floating card to reveal the indication, adverse effects, Nursing care and drug action.</p>
+                    <p class="revision-subtitle">Explore each colourful card to reveal the indication, adverse effects, Nursing care and drug action.</p>
                 </div>
-                <button type="button" class="action-btn revision-shuffle" onclick="showRandomRevisionDrugs()">↻ Random 10</button>
+                <button type="button" class="action-btn revision-shuffle" onclick="showRandomRevisionDrugs(this)" aria-label="Choose another random set of 10 drugs">✨ Random 10</button>
             </div>
-            <div id="revision-context" class="revision-context" role="status" aria-live="polite">Random drugs from your saved database. Use AI Drugs for disease-based revision and interaction checking.</div>
+            <div class="revision-progress-panel">
+                <div class="revision-progress-top">
+                    <span>Round progress</span>
+                    <strong id="revision-progress-label" role="status" aria-live="polite">0 / 10 explored</strong>
+                </div>
+                <div id="revision-progress-track" class="revision-progress-track" role="progressbar" aria-label="Revision cards explored" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+                    <span id="revision-progress-bar" class="revision-progress-bar"></span>
+                </div>
+            </div>
+            <div id="revision-complete" class="revision-complete" role="status" hidden>🎉 Round complete — brilliant! Tap Random 10 for a fresh mix.</div>
+            <div id="revision-context" class="revision-context" role="status" aria-live="polite">🎲 Random drugs from your saved database. Every card you explore fills the progress bar.</div>
         </div>
         <div id="revision-list" class="revision-stack" aria-live="polite"></div>
     </section>
@@ -1309,6 +1403,7 @@ Language: ${langInstruction}.`;
     let extendedDrugs = []; 
     let activeSourceList = []; 
     let revisionDrugs = [];
+    const revisionViewedKeys = new Set();
     let searchHistory = []; 
     let searchDebounceTimer = null;
     const SEARCH_DEBOUNCE_MS = 120;
@@ -1942,7 +2037,40 @@ Language: ${langInstruction}.`;
         context.style.color = color;
     }
 
-    function showRandomRevisionDrugs() {
+    function revisionKeyForDrug(drug, index = 0) {
+        return normalizeSearchText(drug?.name) || `revision-card-${index}`;
+    }
+
+    function updateRevisionProgress() {
+        const activeKeys = new Set(revisionDrugs.map(revisionKeyForDrug));
+        const viewed = [...revisionViewedKeys].filter(key => activeKeys.has(key)).length;
+        const total = revisionDrugs.length;
+        const percentage = total ? Math.round((viewed / total) * 100) : 0;
+        const complete = total > 0 && viewed === total;
+        const label = document.getElementById('revision-progress-label');
+        const track = document.getElementById('revision-progress-track');
+        const bar = document.getElementById('revision-progress-bar');
+        const message = document.getElementById('revision-complete');
+        if (label) {
+            label.textContent = complete ? `${viewed} / ${total} explored ✓` : `${viewed} / ${total || 10} explored`;
+            label.classList.toggle('is-complete', complete);
+        }
+        if (track) {
+            track.setAttribute('aria-valuemax', String(total || 10));
+            track.setAttribute('aria-valuenow', String(viewed));
+        }
+        if (bar) bar.style.width = `${percentage}%`;
+        if (message) message.hidden = !complete;
+        return { viewed, total, percentage, complete };
+    }
+
+    function showRandomRevisionDrugs(button = null) {
+        if (button?.classList) {
+            button.classList.remove('is-shuffling');
+            void button.offsetWidth;
+            button.classList.add('is-shuffling');
+            setTimeout(() => button.classList.remove('is-shuffling'), 520);
+        }
         return renderRevisionDrugs({ reshuffle: true });
     }
     function renderRevisionDrugs({ reshuffle = false } = {}) {
@@ -1950,37 +2078,43 @@ Language: ${langInstruction}.`;
         if (!list) return [];
         if (reshuffle || revisionDrugs.length === 0) {
             revisionDrugs = selectRandomRevisionDrugs(activeSourceList, 10);
-            setRevisionContext('Random drugs from your saved database. Use AI Drugs for disease-based revision and interaction checking.');
+            revisionViewedKeys.clear();
+            setRevisionContext('🎲 Fresh mix ready. Every card you explore fills the progress bar.');
         }
         const title = document.getElementById('revision-title');
         if (title) title.textContent = '10 drugs for today';
         if (!revisionDrugs.length) {
             list.innerHTML = '<div class="revision-empty">No saved drugs are available yet. Load the drug database, then try again.</div>';
+            updateRevisionProgress();
             return [];
         }
 
         list.innerHTML = revisionDrugs.map((drug, index) => {
             const system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
+            const systemIcon = Array.from(String(system).trim())[0] || '💊';
             const sideEffects = usefulDrugText(drug.side_effects || drug.SideEffects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
             const effect = usefulDrugText(drug.effect_of_drug || drug.quiz || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
             const nursing = usefulDrugText(drug.nursing, DRUG_TEXT_FALLBACKS.nursing);
             const accent = revisionAccentForSystem(system);
+            const revisionKey = revisionKeyForDrug(drug, index);
+            const seenClass = revisionViewedKeys.has(revisionKey) ? ' is-seen' : '';
             return `
-                <article class="revision-card" style="--revision-delay:${index * 35}ms; --revision-accent:${accent};">
+                <article class="revision-card${seenClass}" data-revision-key="${escapeHtml(revisionKey)}" style="--revision-delay:${index * 35}ms; --revision-accent:${accent};">
                     <button type="button" class="revision-card-toggle" onclick="toggleRevisionCard(this)" aria-expanded="false">
-                        <span class="revision-number">${String(index + 1).padStart(2, '0')}</span>
-                        <span><span class="revision-name">${escapeHtml(drug.name)}</span><span class="revision-meta">${escapeHtml(drug.class || 'Drug class to review')} · ${escapeHtml(system)}</span>${drug.__revisionSource ? `<span class="revision-source ${drug.__databaseMatch ? 'is-saved' : 'is-ai'}">${escapeHtml(drug.__revisionSource)}</span>` : ''}</span>
-                        <span class="revision-chevron" aria-hidden="true">⌄</span>
+                        <span class="revision-number"><span class="revision-system-icon" aria-hidden="true">${escapeHtml(systemIcon)}</span><span class="revision-number-value">${String(index + 1).padStart(2, '0')}</span></span>
+                        <span><span class="revision-name">${escapeHtml(drug.name)}</span><span class="revision-meta">${escapeHtml(drug.class || 'Drug class to review')}</span><span class="revision-system">${escapeHtml(system)}</span>${drug.__revisionSource ? `<span class="revision-source ${drug.__databaseMatch ? 'is-saved' : 'is-ai'}">${escapeHtml(drug.__revisionSource)}</span>` : ''}</span>
+                        <span class="revision-open-cue"><span class="revision-chevron" aria-hidden="true">⌄</span><span class="revision-tap-label">Tap</span></span>
                     </button>
                     <div class="revision-details">
-                        <div class="revision-detail"><strong>Indication</strong>${escapeHtml(drug.indication || 'Check the current formulary.')}</div>
-                        <div class="revision-detail"><strong>Side effects</strong>${escapeHtml(sideEffects)}</div>
-                        <div class="revision-detail"><strong>Nursing care</strong>${escapeHtml(nursing)}</div>
-                        <div class="revision-detail"><strong>Drug effect</strong>${escapeHtml(effect)}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">🎯</span> Indication</strong>${escapeHtml(drug.indication || 'Check the current formulary.')}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">⚠️</span> Side effects</strong>${escapeHtml(sideEffects)}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">🩺</span> Nursing care</strong>${escapeHtml(nursing)}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">⚡</span> Drug effect</strong>${escapeHtml(effect)}</div>
                     </div>
                 </article>`;
         }).join('');
         list.scrollTop = 0;
+        updateRevisionProgress();
         return revisionDrugs;
     }
 
@@ -1989,7 +2123,14 @@ Language: ${langInstruction}.`;
         if (!card) return;
         const open = !card.classList.contains('is-open');
         card.classList.toggle('is-open', open);
+        if (open) {
+            card.classList.add('is-seen');
+            if (card.dataset.revisionKey) revisionViewedKeys.add(card.dataset.revisionKey);
+        }
         button.setAttribute('aria-expanded', String(open));
+        const tapLabel = button.querySelector?.('.revision-tap-label');
+        if (tapLabel) tapLabel.textContent = open ? 'Hide' : 'Review';
+        updateRevisionProgress();
     }
 
     function focusSearch() {
