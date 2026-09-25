@@ -456,7 +456,7 @@ test('AI Drugs defaults to the server proxy without a browser secret or model ch
     assert.equal(body.model, undefined);
     assert.equal(body.stream, false);
     assert.deepEqual(body.response_format, { type: 'json_object' });
-    assert.equal(body.max_tokens, 8192);
+    assert.equal(body.max_tokens, undefined);
     assert.deepEqual(body.thinking, { type: 'disabled' });
 
     await context.requestDiseaseData('Asthma', [], true);
@@ -482,6 +482,7 @@ test('AI Drugs shares the explicit personal DeepSeek mode and calls the official
     assert.equal(request.options.headers.Authorization, 'Bearer personal-unit-test-key');
     const body = JSON.parse(request.options.body);
     assert.equal(body.model, 'deepseek-flash');
+    assert.equal(body.max_tokens, undefined);
     assert.deepEqual(body.thinking, { type: 'disabled' });
 });
 
@@ -818,7 +819,9 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
         if (options.method === 'POST') {
             if (String(url) === '/.netlify/functions/deepseek') {
                 const requestBody = JSON.parse(options.body);
-                const isNursingRequest = requestBody.max_tokens === 180;
+                const isNursingRequest = /Write exactly three short sentences/i.test(
+                    requestBody.messages?.[0]?.content || ''
+                );
                 const improved = JSON.stringify({
                     name: 'Novelmed (Nova)',
                     class: 'Improved test class',
@@ -899,13 +902,14 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.equal((generatedNursing.match(/[.!?](?:\s|$)/g) || []).length, 3);
     const deepSeekRequest = requests.find(request => {
         if (request.url !== '/.netlify/functions/deepseek') return false;
-        return JSON.parse(request.options.body).max_tokens === 180;
+        const body = JSON.parse(request.options.body);
+        return /Write exactly three short sentences/i.test(body.messages?.[0]?.content || '');
     });
     assert.ok(deepSeekRequest);
     assert.equal(deepSeekRequest.options.headers.Authorization, undefined);
     const deepSeekBody = JSON.parse(deepSeekRequest.options.body);
     assert.equal(deepSeekBody.model, undefined);
-    assert.equal(deepSeekBody.max_tokens, 180);
+    assert.equal(deepSeekBody.max_tokens, undefined);
     assert.match(deepSeekBody.messages[0].content, /exactly three short sentences/i);
     assert.match(deepSeekBody.messages[0].content, /Do not use bullets/i);
 
@@ -1055,6 +1059,7 @@ test('streamed AI requests default to the server proxy without exposing a key or
     const body = JSON.parse(requests[0].options.body);
     assert.equal(body.model, undefined);
     assert.equal(body.stream, true);
+    assert.equal(body.max_tokens, undefined);
     assert.doesNotMatch(read('index.html'), /Qwen|OpenRouter|Yinli|Gemini|provider-select/);
     assert.deepEqual(updates, ['Ready']);
 });

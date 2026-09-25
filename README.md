@@ -22,6 +22,8 @@ View your app in AI Studio: https://ai.studio/apps/temp/1
 
 All AI features use the official DeepSeek API with the `deepseek-flash` model. By default they call `/.netlify/functions/deepseek`, so the browser never receives the site's secret.
 
+The app and its Netlify proxy do not set or forward a `max_tokens` output ceiling. DeepSeek still applies the selected model's context limit, the account's quota/rate limits, and normal API charges; removing the app-side ceiling does not make the upstream service literally unlimited or free.
+
 Before deploying on Netlify:
 
 1. Open **Project configuration → Environment variables**.
@@ -43,6 +45,6 @@ The editable **Nursing care** field uses DeepSeek and generates exactly three sh
 
 The home **Revise** tab is deliberately local and fast: it shows 10 randomly selected saved drugs in one floating-card column, and **Random 10** reshuffles them.
 
-The former Clinical / quiz page is now **AI Drugs by Disease**. Enter a disease or condition to request 10 common but distinct medicines, their classes, bilingual uses, and clinically important interactions within that 10-drug set. Structured disease requests disable unnecessary model thinking, use an 8K JSON-output allowance, retry with a shorter JSON prompt when the first response is malformed, truncated or short, and then fall back to compact delimiter and names-only formats if JSON remains unusable. The page merges safe partial replies, removes duplicate generic / brand / salt entries, salvages complete entries from truncated JSON, and checks every result against the loaded or cached drug database. Matches are marked **In database**; unmatched results remain clearly labelled AI drafts and are never auto-saved.
+The former Clinical / quiz page is now **AI Drugs by Disease**. Enter a disease or condition to request 10 common but distinct medicines, their classes, bilingual uses, and clinically important interactions within that 10-drug set. Structured disease requests disable unnecessary model thinking, leave the output ceiling to the official DeepSeek API, retry with a shorter JSON prompt when the first response is malformed, truncated or short, and then fall back to compact delimiter and names-only formats if JSON remains unusable. The page merges safe partial replies, removes duplicate generic / brand / salt entries, salvages complete entries from truncated JSON, and checks every result against the loaded or cached drug database. Matches are marked **In database**; unmatched results remain clearly labelled AI drafts and are never auto-saved.
 
 Ward laboratory cards keep their English clinical explanation and add Traditional Chinese Cantonese names, uses, interpretation, and nursing escalation points for all 62 listed values, including ABG / VBG.
