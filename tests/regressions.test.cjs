@@ -410,6 +410,7 @@ test('AI Drugs replaces the old Clinical quiz and asks for concise uses plus wit
     assert.match(html, /at most 4 of the most clinically important/);
     assert.match(html, /有咩用 · Clinical use/);
     assert.match(html, /重要藥物相互作用 · Interactions/);
+    assert.match(html, /\.loading\[hidden\]\s*\{\s*display:\s*none\s*!important/);
     assert.doesNotMatch(html, /multiple choice|quiz_progress|Question Factory|clinical question/i);
     assert.match(read('index.html'), /<span class="nav-label">AI Drugs<\/span>/);
 });
