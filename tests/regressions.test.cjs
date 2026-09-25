@@ -371,7 +371,7 @@ test('tool iframe guard replaces a recursively loaded app shell', () => {
     assert.match(frame.srcdoc, /https:\/\/example\.test\/ward\.html/);
 });
 
-test('Revise shows one floating column of 10 unique random drugs', () => {
+test('Revise shows one vibrant column of 10 unique drugs with round progress', () => {
     const { context, document } = loadMain();
     context.rows = Array.from({ length: 14 }, (_, index) => ({
         name: `Revision drug ${index + 1}`,
@@ -389,13 +389,40 @@ test('Revise shows one floating column of 10 unique random drugs', () => {
     vm.runInContext('activeSourceList = prepareDrugListForFastSearch(rows); revisionDrugs = [];', context);
     const rendered = context.renderRevisionDrugs({ reshuffle: true });
     assert.equal(rendered.length, 10);
-    assert.equal((document.getElementById('revision-list').innerHTML.match(/class="revision-card"/g) || []).length, 10);
+    assert.equal((document.getElementById('revision-list').innerHTML.match(/class="revision-card(?: is-seen)?"/g) || []).length, 10);
     assert.match(document.getElementById('revision-list').innerHTML, /Indication/);
     assert.match(document.getElementById('revision-list').innerHTML, /Side effects/);
     assert.match(document.getElementById('revision-list').innerHTML, /Nursing care/);
     assert.match(document.getElementById('revision-list').innerHTML, /Drug effect/);
+    assert.match(document.getElementById('revision-list').innerHTML, /revision-system-icon/);
+    assert.match(document.getElementById('revision-list').innerHTML, /revision-system/);
+    assert.notEqual(context.revisionAccentForSystem('Other', 'A'), context.revisionAccentForSystem('Other', 'B'));
+    assert.deepEqual(JSON.parse(JSON.stringify(context.updateRevisionProgress())), { viewed: 0, total: 10, percentage: 0, complete: false });
+    assert.equal(document.getElementById('revision-progress-label').textContent, '0 / 10 explored');
+    assert.equal(document.getElementById('revision-progress-bar').style.width, '0%');
+    const revisionKeys = JSON.parse(vm.runInContext('JSON.stringify(revisionDrugs.map(revisionKeyForDrug))', context));
+    for (const revisionKey of revisionKeys) {
+        const card = element();
+        const button = element();
+        card.dataset.revisionKey = revisionKey;
+        button.closest = () => card;
+        button.querySelector = () => null;
+        context.toggleRevisionCard(button);
+        assert.equal(card.classList.contains('is-seen'), true);
+        assert.equal(button.getAttribute('aria-expanded'), 'true');
+    }
+    assert.deepEqual(JSON.parse(JSON.stringify(context.updateRevisionProgress())), { viewed: 10, total: 10, percentage: 100, complete: true });
+    assert.equal(document.getElementById('revision-progress-label').textContent, '10 / 10 explored ✓');
+    assert.equal(document.getElementById('revision-progress-bar').style.width, '100%');
+    assert.equal(document.getElementById('revision-complete').hidden, false);
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
+    assert.match(read('index.html'), /Round progress/);
+    assert.match(read('index.html'), /Updated 25 Sep 2026 · 22:00 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-25T22:00:00\+08:00"/);
+    assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
+    assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
+    assert.match(read('index.html'), /system === 'Other' \? '💊 General'/);
     assert.doesNotMatch(read('index.html'), /Revise by disease|revision-disease-input/);
     assert.match(read('index.html'), /AI Drugs/);
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
