@@ -37,11 +37,13 @@ Users may instead choose **Settings → Use my own DeepSeek API**. This optional
 
 ## Missing-drug search and Nursing care
 
-Missing drugs are checked in this order: the configured Google Sheet, RxNorm, then the openFDA drug-label API. These searches do not use AI tokens and never add a result automatically. If all sources miss, the review form provides a Google Search button and manual entry.
+Missing drugs are checked in this order: the configured Google Sheet, RxNorm, then the openFDA drug-label API. RxNorm related brand concepts are used when an openFDA label has no brand name. These searches do not use AI tokens and never add a result automatically. If all sources miss, the review form provides a Google Search button and manual entry.
 
-Official RxNorm/openFDA results also offer an optional **AI improve official data** button. It simplifies the editable official fields in place without changing Nursing care or saving anything automatically.
+Official RxNorm/openFDA results offer **AI improve all data**. It simplifies the generic and brand names, class, system, indication, side effects, drug action, and three-sentence Nursing care inside a mobile-readable review; nothing is saved automatically.
 
-The editable **Nursing care** field uses DeepSeek and generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add button. AI improvement, streaming Cantonese explanation, and disease-drug revision all use the same server-protected DeepSeek model; there is no fallback to another provider.
+Every saved database result also has **AI modify data** beside Google, Drugs.com, and the Cantonese explanation. It prefills that record, improves all fields, and waits for explicit approval. Saving from this review updates only the device copy; it does not silently append or overwrite a Google Sheet row.
+
+The editable **Nursing care** field uses DeepSeek and generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add or Save button. AI improvement, streaming Cantonese explanation, and disease-drug revision all use the same server-protected DeepSeek model; there is no fallback to another provider.
 
 The home **Revise** tab is deliberately local and fast: it shows 10 randomly selected saved drugs in one colourful floating-card column. Opening cards fills a round progress bar, explored cards gain a check mark, and **Random 10** starts a fresh mix. A small header timestamp identifies the currently deployed app update.
 

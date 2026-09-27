@@ -249,6 +249,244 @@ summary {
   box-shadow: none;
 }
 
+/* Vibrant, clinically readable layer */
+body.ios-home {
+  background:
+    radial-gradient(circle at 7% 4%, rgba(255, 45, 85, 0.13), transparent 24rem),
+    radial-gradient(circle at 96% 14%, rgba(88, 86, 214, 0.17), transparent 26rem),
+    radial-gradient(circle at 50% 96%, rgba(52, 199, 89, 0.1), transparent 28rem),
+    linear-gradient(165deg, #fff8fb 0%, #f3f6ff 46%, #eefbfa 100%);
+}
+
+.ios-home header {
+  background: linear-gradient(110deg, rgba(255,255,255,.92), rgba(247,242,255,.9) 52%, rgba(236,249,255,.92));
+  border-bottom-color: rgba(99, 102, 241, .16);
+}
+
+.ios-home .glass-nav {
+  padding: 4px;
+  background: linear-gradient(110deg, rgba(255,45,85,.13), rgba(88,86,214,.15), rgba(10,132,255,.13), rgba(52,199,89,.12));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.72), 0 10px 30px rgba(79,70,229,.1);
+}
+
+.ios-home .glass-nav .nav-btn.active {
+  color: #4338ca;
+  background: linear-gradient(135deg, #fff, #f7f3ff);
+  box-shadow: 0 4px 14px rgba(79,70,229,.17);
+}
+
+.ios-home .search-toolbar {
+  background: linear-gradient(to bottom, rgba(247,248,255,.98) 74%, rgba(247,248,255,0));
+}
+
+.ios-home .search-bar {
+  background: rgba(255,255,255,.86);
+  box-shadow: inset 0 0 0 1px rgba(99,102,241,.13), 0 10px 24px rgba(99,102,241,.08);
+}
+
+.ios-home .result-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(99,102,241,.12);
+  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(246,247,255,.97));
+  box-shadow: 0 10px 30px rgba(51,65,85,.09), 0 2px 8px rgba(99,102,241,.06);
+}
+
+.ios-home .result-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, #ff2d55, #af52de 48%, #0a84ff);
+}
+
+.ios-home .result-card:nth-child(3n + 2)::before { background: linear-gradient(180deg, #ff9500, #ff2d55); }
+.ios-home .result-card:nth-child(3n)::before { background: linear-gradient(180deg, #30b0c7, #34c759); }
+.ios-home .result-name { color: #312e81; }
+.ios-home .result-indication { margin-top: 6px; color: #475569; font-size: .9rem; line-height: 1.5; }
+
+.ios-home .extra-details {
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top-color: rgba(99,102,241,.14);
+}
+
+.drug-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.drug-detail-block {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 13px;
+  color: #334155;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.drug-detail-block strong { color: #1e293b; font-size: .74rem; letter-spacing: .02em; }
+.drug-detail-block span { font-size: .84rem; }
+.detail-side-effects { background: linear-gradient(135deg, #fff1f2, #fff7ed); }
+.detail-nursing { background: linear-gradient(135deg, #ecfeff, #eff6ff); }
+.detail-system { background: linear-gradient(135deg, #f0fdf4, #ecfdf5); }
+.detail-effect { background: linear-gradient(135deg, #faf5ff, #eef2ff); }
+
+.drug-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.ios-home .drug-action-grid .chip {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 46px;
+  padding: 9px;
+  white-space: normal;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.ios-home .drug-action-grid .explain-action {
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #fff;
+  box-shadow: 0 7px 16px rgba(124,58,237,.2);
+}
+
+.ios-home .drug-action-grid .ai-modify-action {
+  background: linear-gradient(135deg, #0a84ff, #14b8a6);
+  color: #fff;
+  box-shadow: 0 7px 16px rgba(10,132,255,.2);
+}
+
+.database-ai-editor { grid-column: 1 / -1; min-width: 0; }
+.ai-review-card {
+  margin-top: 16px;
+  padding: clamp(13px, 3vw, 18px);
+  text-align: left;
+  border: 1px solid rgba(99,102,241,.2) !important;
+  background: linear-gradient(155deg, rgba(255,255,255,.99), rgba(245,243,255,.96) 52%, rgba(236,254,255,.95)) !important;
+  box-shadow: 0 18px 42px rgba(79,70,229,.14) !important;
+}
+
+.ai-review-card.is-update { border-color: rgba(10,132,255,.28) !important; }
+.ai-review-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ai-review-heading h3 { margin: 0; color: #312e81; font-size: 1.05rem; }
+.ios-home .ai-review-source { background: linear-gradient(135deg, #34c759, #14b8a6); color: #fff; box-shadow: none; }
+.ios-home .ai-review-note { border-color: rgba(10,132,255,.17); background: rgba(239,246,255,.88); }
+.ios-home .ai-improve-tools { border-color: rgba(124,58,237,.18); background: linear-gradient(135deg, #faf5ff, #eef2ff 50%, #ecfeff); }
+.ios-home .ai-improve-button { margin: 0; background: linear-gradient(135deg, #7c3aed, #0a84ff); color: #fff; box-shadow: 0 8px 18px rgba(79,70,229,.2); }
+.ios-home .ai-local-save { margin: 0; border: 1px solid rgba(5,150,105,.16) !important; background: linear-gradient(135deg, #ecfdf5, #dffaf7); color: #047857; box-shadow: none; }
+
+.ios-home .ai-edit-field {
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(148,163,184,.16);
+  border-radius: 14px;
+  background: rgba(255,255,255,.72);
+}
+
+.ios-home .ai-edit-input { border-color: rgba(99,102,241,.16); background: rgba(255,255,255,.94); }
+.ios-home textarea.ai-edit-input { min-height: 92px; }
+
+body.ios-ward {
+  background:
+    radial-gradient(circle at 5% 4%, rgba(48,176,199,.18), transparent 24rem),
+    radial-gradient(circle at 94% 16%, rgba(175,82,222,.14), transparent 25rem),
+    linear-gradient(160deg, #f5fdff, #f5f3ff 50%, #fff9f1);
+}
+
+.ios-ward .sticky-header {
+  background: linear-gradient(105deg, rgba(255,255,255,.93), rgba(239,246,255,.92), rgba(250,245,255,.92));
+  border-bottom-color: rgba(99,102,241,.16);
+}
+
+.ios-ward .app-title { color: #312e81; }
+.ios-ward .tab-btn { background: rgba(255,255,255,.76); border: 1px solid rgba(99,102,241,.12); }
+.ios-ward .tab-btn.active { background: linear-gradient(135deg, #5856d6, #0a84ff); box-shadow: 0 7px 16px rgba(79,70,229,.2); }
+.ios-ward .card,
+.ios-ward .lab-item,
+.ios-ward .imaging-card {
+  border: 1px solid rgba(99,102,241,.1);
+  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(248,250,255,.96));
+  box-shadow: 0 11px 28px rgba(51,65,85,.09);
+}
+
+.ios-ward .lab-hero,
+.ios-ward .infusion-hero,
+.ios-ward .imaging-hero {
+  background: linear-gradient(135deg, #312e81, #0a84ff 58%, #30b0c7);
+  box-shadow: 0 16px 34px rgba(49,46,129,.2);
+}
+
+.ios-ward .card-header { color: #4338ca; border-bottom-color: rgba(99,102,241,.13); }
+.ios-ward .lab-item:nth-child(3n + 1), .ios-ward .imaging-card:nth-child(3n + 1) { border-left: 4px solid #0a84ff; }
+.ios-ward .lab-item:nth-child(3n + 2), .ios-ward .imaging-card:nth-child(3n + 2) { border-left: 4px solid #af52de; }
+.ios-ward .lab-item:nth-child(3n), .ios-ward .imaging-card:nth-child(3n) { border-left: 4px solid #30b0c7; }
+
+body.ios-disease {
+  background:
+    radial-gradient(circle at 4% 6%, rgba(255,45,85,.16), transparent 23rem),
+    radial-gradient(circle at 95% 12%, rgba(10,132,255,.2), transparent 27rem),
+    radial-gradient(circle at 50% 95%, rgba(52,199,89,.1), transparent 27rem),
+    linear-gradient(155deg, #fff7fb 0%, #f4f5ff 48%, #effcfb 100%);
+}
+
+body.ios-disease .topbar {
+  padding: 7px;
+  border: 1px solid rgba(99,102,241,.12);
+  border-radius: 18px;
+  background: rgba(255,255,255,.72);
+  box-shadow: 0 10px 25px rgba(79,70,229,.08);
+}
+
+body.ios-disease .hero {
+  background: linear-gradient(130deg, #4c1d95, #4338ca 38%, #0a84ff 70%, #14b8a6);
+  box-shadow: 0 20px 45px rgba(76,29,149,.27);
+}
+
+body.ios-disease .hero::before {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  left: -70px;
+  bottom: -90px;
+  border-radius: 50%;
+  background: rgba(255,45,85,.28);
+}
+
+body.ios-disease .search-card {
+  border-color: rgba(99,102,241,.14);
+  background: linear-gradient(145deg, rgba(255,255,255,.97), rgba(246,245,255,.94));
+  box-shadow: 0 14px 32px rgba(79,70,229,.12);
+}
+
+body.ios-disease .find-button { background: linear-gradient(135deg, #7c3aed, #ec4899 52%, #ff6b35); }
+body.ios-disease .quick-chip:nth-child(4n + 1) { background: #fff1f2; color: #be123c; }
+body.ios-disease .quick-chip:nth-child(4n + 2) { background: #f5f3ff; color: #6d28d9; }
+body.ios-disease .quick-chip:nth-child(4n + 3) { background: #eff6ff; color: #1d4ed8; }
+body.ios-disease .quick-chip:nth-child(4n) { background: #ecfdf5; color: #047857; }
+body.ios-disease .drug-card { border-color: rgba(99,102,241,.13); background: linear-gradient(145deg, #fff, #f8f7ff); box-shadow: 0 11px 27px rgba(51,65,85,.09); }
+body.ios-disease .drug-card:nth-child(4n + 1) .number { background: #fff1f2; color: #be123c; }
+body.ios-disease .drug-card:nth-child(4n + 2) .number { background: #f5f3ff; color: #6d28d9; }
+body.ios-disease .drug-card:nth-child(4n + 3) .number { background: #eff6ff; color: #1d4ed8; }
+body.ios-disease .drug-card:nth-child(4n) .number { background: #ecfdf5; color: #047857; }
+body.ios-disease .interaction-panel { background: linear-gradient(145deg, #fff7ed, #fffbeb); box-shadow: 0 12px 28px rgba(245,158,11,.1); }
+body.ios-disease .safety { border: 1px solid rgba(124,58,237,.12); background: linear-gradient(135deg, #f5f3ff, #eff6ff); }
+
+@media (min-width: 700px) {
+  .drug-action-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
 @media (max-width: 600px) {
   .ios-home.mobile-ui header {
     min-height: 50px;
@@ -270,6 +508,19 @@ summary {
   .ios-ward .card {
     border-radius: 15px;
   }
+
+  .drug-detail-grid,
+  .ios-home .ai-edit-grid,
+  .ios-home .ai-review-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ios-home .ai-edit-field.full { grid-column: 1; }
+  .ai-review-heading { align-items: flex-start; flex-direction: column; }
+  .ios-home .ai-review-source { align-self: flex-start; }
+  .ios-home .ai-improve-tools { align-items: stretch; }
+  .ios-home .ai-improve-tools .action-btn { width: 100%; }
+  body.ios-disease .drug-body { padding-left: 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

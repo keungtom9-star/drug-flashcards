@@ -314,11 +314,18 @@ test('all screens share the lightweight iOS visual layer and AI Drugs avoids opt
     assert.doesNotMatch(disease, /quiz|question bank|loadSheet/i);
     assert.match(polish, /content-visibility:\s*auto/);
     assert.match(polish, /\.glass-nav \.nav-btn\.active[\s\S]*animation:\s*none/);
+    assert.match(polish, /body\.ios-home[\s\S]*radial-gradient/);
+    assert.match(polish, /body\.ios-ward[\s\S]*radial-gradient/);
+    assert.match(polish, /body\.ios-disease[\s\S]*radial-gradient/);
+    assert.match(polish, /\.drug-action-grid\s*\{[\s\S]*grid-template-columns/);
+    assert.match(polish, /\.drug-detail-grid\s*\{[\s\S]*grid-template-columns/);
 });
 
 function fillAIEditor(document, overrides = {}) {
     const values = {
         'ai-edit-name': 'Novelmed (Nova)',
+        'ai-edit-generic-name': 'Novelmed',
+        'ai-edit-brand-name': 'Nova',
         'ai-edit-class': 'Edited class',
         'ai-edit-system': '🫀 Cardio',
         'ai-edit-indication': 'Edited indication',
@@ -418,8 +425,8 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 25 Sep 2026 · 22:00 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-25T22:00:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 27 Sep 2026 · 23:04 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-27T23:04:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
     assert.match(read('index.html'), /system === 'Other' \? '💊 General'/);
@@ -810,6 +817,31 @@ test('openFDA lookup prefers the requested single ingredient over a combination 
     assert.equal(new URL(requestedURL).searchParams.get('limit'), '5');
 });
 
+test('RxNorm related concepts supply a brand when openFDA has no brand name', async () => {
+    const { context } = loadMain();
+    const requested = [];
+    context.fetch = async url => {
+        const href = String(url);
+        requested.push(href);
+        if (href.includes('/rxcui.json')) return { ok: true, json: async () => ({ idGroup: { rxnormId: ['987'] } }) };
+        if (href.includes('/properties.json')) return { ok: true, json: async () => ({ properties: { name: 'Novelmed', tty: 'IN' } }) };
+        if (href.includes('tty=IN+MIN')) return { ok: true, json: async () => ({ relatedGroup: { conceptGroup: [{ tty: 'IN', conceptProperties: [{ name: 'Novelmed', tty: 'IN' }] }] } }) };
+        if (href.includes('tty=BN+SBD')) return { ok: true, json: async () => ({ relatedGroup: { conceptGroup: [{ tty: 'SBD', conceptProperties: [{ name: 'Novelmed 10 MG Oral Tablet [Nova]', tty: 'SBD' }] }] } }) };
+        if (href.startsWith('https://api.fda.gov/drug/label.json')) return { ok: true, json: async () => ({ results: [{
+            openfda: { generic_name: ['Novelmed'], pharm_class_epc: ['Test class [EPC]'] },
+            indications_and_usage: ['Used for official-source testing.'],
+            adverse_reactions: ['Nausea and rash.'],
+            mechanism_of_action: ['Example action.'],
+        }] }) };
+        throw new Error(`Unexpected request: ${href}`);
+    };
+    const result = await context.findDrugInOfficialSources('Novelmed');
+    assert.equal(result.generic_name, 'Novelmed');
+    assert.equal(result.brand_name, 'Nova');
+    assert.equal(result.name, 'Novelmed (Nova)');
+    assert.ok(requested.some(url => url.includes('tty=BN+SBD')));
+});
+
 test('DeepSeek Nursing care is limited to exactly three plain sentences', () => {
     const { context } = loadMain();
     const result = context.normalizeThreeSentenceNursingCare([
@@ -832,7 +864,7 @@ test('DeepSeek Nursing care is limited to exactly three plain sentences', () => 
     );
 });
 
-test('an official-source drug uses no search AI and waits for DeepSeek Nursing care plus explicit approval', async () => {
+test('an official-source drug uses no search AI and AI improvement covers Nursing care before explicit approval', async () => {
     const { context, document } = loadMain();
     document.getElementById('sheet-url').value = 'https://example.test/drugs.csv';
     document.getElementById('search-input').value = 'Novelmed';
@@ -851,12 +883,14 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
                 );
                 const improved = JSON.stringify({
                     name: 'Novelmed (Nova)',
+                    generic_name: 'Novelmed',
+                    brand_name: 'Nova',
                     class: 'Improved test class',
                     system: '🫀 Cardio',
                     indication: 'Concise official testing indication',
                     side_effects: 'Nausea, rash, dizziness, hypotension',
                     effect_of_drug: 'Concise official action',
-                    nursing: 'This must never replace Nursing care',
+                    nursing: 'Check allergies and baseline observations. Monitor response and adverse effects during administration. Hold and escalate concerns; verify the prescription, local protocol and current formulary.',
                 });
                 const content = isNursingRequest
                     ? (returnInvalidNursing
@@ -891,7 +925,9 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.equal(context.findLocalDrugs('Novelmed').length, 0);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /RxNorm \+ openFDA/);
-    assert.match(document.getElementById('ai-search-output').innerHTML, /AI improve official data/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /AI improve all data/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Generic name/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /Brand name/);
     assert.equal(requests.some(request => request.url.includes('openrouter')), false);
     assert.equal(requests.some(request => request.url.includes('deepseek')), false);
 
@@ -900,7 +936,7 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
         'ai-edit-class': 'Test class',
         'ai-edit-indication': 'Used for testing',
         'ai-edit-side-effects': 'Nausea, rash and dizziness',
-        'ai-edit-nursing': 'Keep this Nursing care unchanged',
+        'ai-edit-nursing': 'Old Nursing care text',
         'ai-edit-effect': 'Example action',
     });
     await document.getElementById('btn-improve-official-data').onclick();
@@ -908,7 +944,8 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.equal(document.getElementById('ai-edit-indication').value, 'Concise official testing indication');
     assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, rash, dizziness, hypotension');
     assert.equal(document.getElementById('ai-edit-effect').value, 'Concise official action');
-    assert.equal(document.getElementById('ai-edit-nursing').value, 'Keep this Nursing care unchanged');
+    assert.match(document.getElementById('ai-edit-nursing').value, /Check allergies and baseline observations/);
+    assert.equal((document.getElementById('ai-edit-nursing').value.match(/[.!?](?:\s|$)/g) || []).length, 3);
     assert.equal(requests.filter(request => request.url === '/.netlify/functions/deepseek').length, 1);
     assert.equal(sheetWrites, 0, 'AI improvement must never auto-save');
 
@@ -955,10 +992,73 @@ test('an official-source drug uses no search AI and waits for DeepSeek Nursing c
     assert.equal(sheetWrites, 1);
 });
 
+test('saved database records open a mobile AI review and update only the device copy', async () => {
+    const { context, document, storage } = loadMain();
+    vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
+        name: 'Savedmed (Oldbrand)', generic_name: 'Savedmed', brand_name: 'Oldbrand', class: 'Old class',
+        system: '🫀 Cardio', indication: 'Old indication', side_effects: 'Old nausea',
+        nursing: 'Old nursing note', effect_of_drug: 'Old action'
+    }])`, context);
+    const original = JSON.parse(vm.runInContext('JSON.stringify(activeSourceList[0])', context));
+    const prompts = [];
+    context.streamAIResponse = async (messages, onUpdate) => {
+        prompts.push(messages.map(message => message.content).join('\n'));
+        const improved = JSON.stringify({
+            name: 'Savedmed (Brightbrand)', generic_name: 'Savedmed', brand_name: 'Brightbrand',
+            class: 'Clear class', system: '🫀 Cardio', indication: 'Short mobile indication.',
+            side_effects: 'Nausea, dizziness, serious rash',
+            nursing: 'Check allergies and baseline observations. Administer as prescribed and monitor response. Hold and escalate concerns; verify the prescription, local protocol and current formulary.',
+            effect_of_drug: 'Short mobile drug action.',
+        });
+        onUpdate(improved);
+        return improved;
+    };
+
+    context.renderEditableDrugReview(original, {
+        containerId: 'database-review', sourceLabel: 'Saved database', allowSheetSave: false,
+        requireNursing: true, enableDeepSeekNursing: true, enableAIDataImprove: true,
+        reviewMode: 'update', originalName: original.name,
+    });
+    const review = document.getElementById('database-review').innerHTML;
+    assert.match(read('index.html'), /🪄 AI modify data/);
+    assert.match(review, /Review AI changes/);
+    assert.match(review, /Save changes on this device/);
+    assert.match(review, /online Google Sheet remains unchanged/i);
+    assert.doesNotMatch(review, /btn-save-sheet/);
+    fillAIEditor(document, {
+        'ai-edit-name': original.name,
+        'ai-edit-generic-name': 'Savedmed',
+        'ai-edit-brand-name': 'Oldbrand',
+        'ai-edit-class': original.class,
+        'ai-edit-indication': original.indication,
+        'ai-edit-side-effects': original.side_effects,
+        'ai-edit-nursing': original.nursing,
+        'ai-edit-effect': original.effect_of_drug,
+    });
+
+    await document.getElementById('btn-improve-official-data').onclick();
+    assert.match(prompts[0], /"nursing"/);
+    assert.match(prompts[0], /exactly three short sentences/i);
+    assert.equal(document.getElementById('ai-edit-brand-name').value, 'Brightbrand');
+    assert.equal(document.getElementById('ai-edit-name').value, 'Savedmed (Brightbrand)');
+    assert.match(document.getElementById('ai-edit-nursing').value, /local protocol and current formulary/);
+    assert.equal(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context))[0].name, 'Savedmed (Oldbrand)', 'AI must not auto-save');
+
+    document.getElementById('btn-add-local').onclick();
+    const updated = JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context));
+    assert.equal(updated.length, 1);
+    assert.equal(updated[0].name, 'Savedmed (Brightbrand)');
+    assert.equal(updated[0].brand_name, 'Brightbrand');
+    assert.match(document.getElementById('save-status').innerText, /device copy updated/i);
+    assert.equal(JSON.parse(storage.get('drug_tutor_local_data_v1')).length, 1);
+});
+
 test('review validation rejects placeholder side effects', () => {
     const { context } = loadMain();
     const fallback = context.normalizeAISearchDrugPayload({ name: 'Fallbackmed', side_effects: 'Not listed', nursing: 'N/A', effect_of_drug: 'Unknown' });
     assert.doesNotMatch([fallback.side_effects, fallback.nursing, fallback.effect_of_drug].join(' '), /not specified|not listed|unknown|n\/a/i);
+    assert.equal(fallback.name, 'Fallbackmed');
+    assert.doesNotMatch(fallback.name, /\(N\/A\)/i);
     assert.throws(() => context.validateEditedAISearchDrug({ name: 'Fallbackmed', side_effects: 'Not specified' }), /useful.*side effects/i);
 });
 
