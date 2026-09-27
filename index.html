@@ -1144,7 +1144,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-27T23:53:00+08:00">Updated 27 Sep 2026 · 23:53 HKT</time>
+        <time class="app-last-updated" datetime="2026-09-28T00:02:00+08:00">Updated 28 Sep 2026 · 00:02 HKT</time>
     </div>
 </header>
 
@@ -1431,9 +1431,10 @@ Language: ${langInstruction}.`;
     let defaultSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyG6Wkv36DnsJBQ1V2MqJFm9T7iguC0rYxKqc-jhNaDoN7Wweu9lo6KzES-l76YRFP2PQgMf7APIt/pub?gid=1128575640&single=true&output=csv";
 
     // System Data
+    const GENERAL_SYSTEM = "💊 General / Other";
     const systemCategories = [
         "🍔 GI System", "🫀 Cardio", "🫁 Respiratory", "🧠 CNS / Neuro", "🦠 Infections", "🦋 Endocrine",
-        "🤰 ObGyn / GU", "🎗️ Oncology", "🍎 Nutrition / Blood", "🦴 MSK / Bone", "👁️ Eye", "👂 ENT", "🧴 Skin", "🛡️ Immune / Vax", "💉 Anaesthesia"
+        "🤰 ObGyn / GU", "🎗️ Oncology", "🍎 Nutrition / Blood", "🦴 MSK / Bone", "👁️ Eye", "👂 ENT", "🧴 Skin", "🛡️ Immune / Vax", "💉 Anaesthesia", GENERAL_SYSTEM
     ];
     const legacySystemMap = {
         "Gastro-intestinal system": "🍔 GI System",
@@ -1450,13 +1451,26 @@ Language: ${langInstruction}.`;
         "Ear, nose, and oropharynx": "👂 ENT",
         "Skin": "🧴 Skin",
         "Immunological products and vaccines": "🛡️ Immune / Vax",
-        "Anaesthesia": "💉 Anaesthesia"
+        "Anaesthesia": "💉 Anaesthesia",
+        "Other": GENERAL_SYSTEM,
+        "General": GENERAL_SYSTEM,
+        "💊 General": GENERAL_SYSTEM,
+        "General / Other": GENERAL_SYSTEM
     };
 
     function normalizeSystemLabel(systemValue) {
         const raw = String(systemValue || '').trim();
         if (!raw) return "🫀 Cardio";
         return legacySystemMap[raw] || raw;
+    }
+
+    function resolveDrugSystem(drugData = {}) {
+        const supplied = String(drugData.system || '').trim()
+            ? normalizeSystemLabel(drugData.system)
+            : '';
+        const inferred = inferOfficialDrugSystem(drugData);
+        if (systemCategories.includes(supplied) && supplied !== GENERAL_SYSTEM) return supplied;
+        return systemCategories.includes(inferred) ? inferred : GENERAL_SYSTEM;
     }
 
     const DRUG_TEXT_FALLBACKS = {
@@ -1490,11 +1504,11 @@ Language: ${langInstruction}.`;
     const systemIcons = {
         "GI System": "🍔", "Cardio": "🫀", "Respiratory": "🫁", "CNS / Neuro": "🧠", "Infections": "🦠",
         "Endocrine": "🦋", "ObGyn / GU": "🤰", "Oncology": "🎗️", "Nutrition / Blood": "🍎", "MSK / Bone": "🦴",
-        "Eye": "👁️", "ENT": "👂", "Skin": "🧴", "Immune / Vax": "🛡️", "Anaesthesia": "💉"
+        "Eye": "👁️", "ENT": "👂", "Skin": "🧴", "Immune / Vax": "🛡️", "Anaesthesia": "💉", "General / Other": "💊"
     };
 
     function normalizeDrugData(drug) {
-        drug.system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
+        drug.system = resolveDrugSystem(drug);
         drug.side_effects = usefulDrugText(drug.side_effects || drug.SideEffects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
         drug.nursing = usefulDrugText(drug.nursing, DRUG_TEXT_FALLBACKS.nursing);
         drug.quiz = usefulDrugText(drug.quiz || drug.effect_of_drug || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
@@ -2729,7 +2743,7 @@ Language: ${langInstruction}.`;
         const text = [drugData.class, drugData.indication, drugData.effect_of_drug, drugData.name].join(' ').toLowerCase();
         const rules = [
             ['🦠 Infections', /antibi|antibacter|antiviral|antifungal|infection|sepsis|microb/],
-            ['🦋 Endocrine', /diabet|insulin|glucose|thyroid|corticosteroid|endocrin/],
+            ['🦋 Endocrine', /diabet|insulin|glucose|thyroid|corticosteroid|endocrin|vitamin\s*d|calcitriol|alfacalcidol|parathyroid/],
             ['🫁 Respiratory', /asthma|bronch|airway|pulmon|respirat|copd/],
             ['🧠 CNS / Neuro', /seizure|epilep|depress|psych|neuropath|migraine|sedat|dement|parkinson/],
             ['🍔 GI System', /gastr|ulcer|nausea|bowel|constipat|diarr|hepatic|liver|gastro/],
@@ -2744,7 +2758,7 @@ Language: ${langInstruction}.`;
             ['💉 Anaesthesia', /anaesth|anesth|neuromuscular block/],
             ['🫀 Cardio', /hypertension|cardiac|heart|arrhythm|angina|vascular|diuretic|lipid|cholesterol/],
         ];
-        return rules.find(([, pattern]) => pattern.test(text))?.[0] || '🫀 Cardio';
+        return rules.find(([, pattern]) => pattern.test(text))?.[0] || GENERAL_SYSTEM;
     }
 
     async function findDrugInOfficialSources(query) {
@@ -3025,7 +3039,7 @@ Rules:
         const genericName = chooseText(candidate.generic_name || candidate.generic || candidateNameParts.generic, originalDraft.generic_name || originalParts.generic);
         const brandName = chooseText(candidate.brand_name || candidate.brand || candidateNameParts.brand, originalDraft.brand_name || originalParts.brand);
         const formattedName = formatGenericBrandName(genericName, brandName, chooseText(candidate.name, originalDraft.name));
-        const proposedSystem = normalizeSystemLabel(candidate.system || originalDraft.system);
+        const proposedSystem = resolveDrugSystem({ ...originalDraft, ...candidate, system: candidate.system || originalDraft.system });
         const improved = {
             name: formattedName,
             generic_name: genericName,
@@ -3185,7 +3199,7 @@ Rules:
         if (!container) return;
         const isUpdate = reviewMode === 'update';
         const nameParts = getDrugNameParts(drugData);
-        const selectedSystem = normalizeSystemLabel(drugData.system || '🫀 Cardio');
+        const selectedSystem = resolveDrugSystem(drugData);
         const systemOptions = systemCategories.map(system =>
             `<option value="${escapeHtml(system)}" ${system === selectedSystem ? 'selected' : ''}>${escapeHtml(system)}</option>`
         ).join('');
@@ -3305,7 +3319,7 @@ Rules:
             generic_name: String(drugData.generic_name || drugData.generic || '').trim(),
             brand_name: String(drugData.brand_name || drugData.brand || '').trim(),
             class: String(drugData.class || 'IV infusion').trim(),
-            system: normalizeSystemLabel(drugData.system || '🫀 Cardio'),
+            system: resolveDrugSystem(drugData),
             indication: String(drugData.indication || '').trim(),
             nursing: usefulDrugText(drugData.nursing, DRUG_TEXT_FALLBACKS.nursing),
             side_effects: usefulDrugText(rawSideEffects, DRUG_TEXT_FALLBACKS.sideEffects),
@@ -3323,7 +3337,7 @@ Rules:
             const generic = normalized.generic_name || normalized.name;
             normalized.name = formatGenericBrandName(generic, normalized.brand_name, normalized.name);
         }
-        if (!systemCategories.includes(normalized.system)) normalized.system = '🫀 Cardio';
+        if (!systemCategories.includes(normalized.system)) normalized.system = GENERAL_SYSTEM;
         return normalized;
     }
 
@@ -3627,14 +3641,7 @@ Rules:
 
     // --- HELPER FUNCTIONS ---
     function getSystemForDrug(drug) {
-        if (drug.system && systemCategories.includes(drug.system)) return drug.system;
-        const txt = (drug.class + " " + drug.indication + " " + drug.name).toLowerCase();
-        if (txt.includes("antacid") || txt.includes("ulcer")) return "Gastro-intestinal system";
-        if (txt.includes("cardio") || txt.includes("beta-blocker")) return "Cardiovascular system";
-        if (txt.includes("asthma") || txt.includes("broncho")) return "Respiratory system";
-        if (txt.includes("analgesic") || txt.includes("depress")) return "Central nervous system";
-        if (txt.includes("antibiotic") || txt.includes("viral")) return "Infections";
-        return "Other"; 
+        return resolveDrugSystem(drug);
     }
     
     function getSystemIcon(sys) {

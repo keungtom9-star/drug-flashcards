@@ -425,11 +425,11 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 27 Sep 2026 · 23:53 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-27T23:53:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 28 Sep 2026 · 00:02 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-28T00:02:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
-    assert.match(read('index.html'), /system === 'Other' \? '💊 General'/);
+    assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
     assert.doesNotMatch(read('index.html'), /Revise by disease|revision-disease-input/);
     assert.match(read('index.html'), /AI Drugs/);
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
@@ -840,6 +840,20 @@ test('RxNorm related concepts supply a brand when openFDA has no brand name', as
     assert.equal(result.brand_name, 'Nova');
     assert.equal(result.name, 'Novelmed (Nova)');
     assert.ok(requested.some(url => url.includes('tty=BN+SBD')));
+});
+
+test('system resolver keeps Other selectable and recognises active vitamin D as Endocrine', () => {
+    const { context, document } = loadMain();
+    const calcitriol = {
+        name: 'Calcitriol (Rocaltrol)', class: 'Active Vitamin D', system: 'Other',
+        indication: 'Hypocalcemia in CKD (renal osteodystrophy).', side_effects: 'Hypercalcemia',
+        nursing: 'Check calcium. Monitor response. Escalate toxicity signs.', effect_of_drug: 'Increases calcium absorption.',
+    };
+    assert.equal(context.resolveDrugSystem(calcitriol), '🦋 Endocrine');
+    assert.equal(context.resolveDrugSystem({ name: 'Unclassified medicine', class: 'Miscellaneous', system: 'Other' }), '💊 General / Other');
+    context.renderEditableDrugReview(calcitriol, { containerId: 'database-review', reviewMode: 'update' });
+    assert.match(document.getElementById('database-review').innerHTML, /value="🦋 Endocrine" selected/);
+    assert.match(document.getElementById('database-review').innerHTML, /value="💊 General \/ Other"/);
 });
 
 test('DeepSeek Nursing care is limited to exactly three plain sentences', () => {
