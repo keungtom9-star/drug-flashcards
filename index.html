@@ -1144,7 +1144,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-27T23:04:00+08:00">Updated 27 Sep 2026 · 23:04 HKT</time>
+        <time class="app-last-updated" datetime="2026-09-27T23:53:00+08:00">Updated 27 Sep 2026 · 23:53 HKT</time>
     </div>
 </header>
 
@@ -2367,7 +2367,7 @@ Language: ${langInstruction}.`;
         renderEditableDrugReview({ ...drug }, {
             containerId: outputId,
             sourceLabel: 'Saved database',
-            allowSheetSave: false,
+            allowSheetSave: true,
             requireNursing: true,
             enableDeepSeekNursing: true,
             enableAIDataImprove: true,
@@ -2946,7 +2946,7 @@ Rules:
     }
 
     function getDrugDataImprovePrompt(drugData) {
-        return `You are editing medicine information for a nursing reference app. The record may come from RxNorm, openFDA, or the user's saved database.
+        return `You are simplifying one medicine card for a nursing reference app. The record may come from RxNorm, openFDA, or the user's saved database.
 
 Source record supplied by the app:
 ${JSON.stringify({
@@ -2964,13 +2964,17 @@ ${JSON.stringify({
 Return strict JSON only with exactly these keys: "name", "generic_name", "brand_name", "class", "system", "indication", "side_effects", "nursing", "effect_of_drug".
 
 Rules:
-- Improve clarity, remove duplicated wording, and make every field easy to scan on a phone.
+- Work only on the details shown on the medicine card: drug/brand name, class, indication, side effects, Nursing care, system, and drug effect. Do not add extra sections or commentary.
+- Correct unclear wording, remove duplication, and make every field simple enough to scan quickly on a phone while retaining clinically important meaning.
 - Preserve the known generic and brand names. Format "name" as "Generic (Brand)" when a brand is supplied; leave "brand_name" empty when none is known and never invent one.
 - Use only facts present in the source record for class, system, indication, side effects, and drug effect.
-- Keep indication and drug effect to one or two short sentences. Keep side effects to a concise list of important common or serious effects.
+- Keep "class" to a short standard class name, preferably 2-6 words.
+- Keep "indication" to one plain sentence, preferably under 18 words.
+- Keep "side_effects" to a comma-separated list of 2-5 important common or serious effects; do not explain them.
+- Keep "effect_of_drug" to one plain sentence, preferably under 20 words.
 - Keep clinically important adverse effects; never replace a populated clinical field with "Not specified", "Unknown", "N/A", or an empty value.
 - "system" must be exactly one of: ${systemCategories.join(', ')}.
-- "nursing" must be exactly three short sentences in one paragraph: pre-administration checks; administration/monitoring; then hold/escalation signs plus verification of the prescription, local protocol, and current formulary.
+- "nursing" must be exactly three plain sentences in one paragraph, each preferably under 18 words: pre-administration checks; administration/monitoring; then hold/escalation signs plus verification of the prescription and local protocol.
 - Nursing care may synthesize cautious bedside actions from the supplied facts, but must say what to verify instead of guessing.
 - Do not invent a dose, route, dilution, infusion rate, monitoring threshold, contraindication, or local policy.
 - Use concise English. Output JSON only, with no Markdown.`;
@@ -2982,6 +2986,26 @@ Rules:
         if (candidate && Array.isArray(candidate.drugs)) candidate = candidate.drugs[0] || null;
         if (candidate && candidate.drug && typeof candidate.drug === 'object') candidate = candidate.drug;
         return candidate && typeof candidate === 'object' ? candidate : null;
+    }
+
+    function validateSimpleMobileDrugCard(drugData) {
+        const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;
+        const sentenceCount = value => (String(value || '').match(/[^.!?]+(?:[.!?]+|$)/g) || [])
+            .map(sentence => sentence.trim()).filter(Boolean).length;
+        const nursingSentences = String(drugData.nursing || '').match(/[^.!?]+(?:[.!?]+|$)/g) || [];
+        const tooLong = [
+            wordCount(drugData.class) > 10,
+            wordCount(drugData.indication) > 30 || sentenceCount(drugData.indication) > 2,
+            wordCount(drugData.side_effects) > 24 || /[\r\n]/.test(drugData.side_effects),
+            wordCount(drugData.effect_of_drug) > 28 || sentenceCount(drugData.effect_of_drug) > 2,
+            nursingSentences.some(sentence => wordCount(sentence) > 24),
+        ].some(Boolean);
+        if (tooLong) {
+            const error = new Error('AI returned text that is too long for the simple mobile card. Trying a shorter version is required.');
+            error.code = 'ai_card_not_simple';
+            throw error;
+        }
+        return drugData;
     }
 
     function applyAIImprovedDrugData(parsed, originalDraft) {
@@ -3017,6 +3041,7 @@ Rules:
             ),
         };
         if (!improved.name) throw new Error('AI did not return a drug name. The data was left unchanged.');
+        validateSimpleMobileDrugCard(improved);
 
         const fieldMap = {
             'ai-edit-name': improved.name,
@@ -3053,16 +3078,31 @@ Rules:
             button.innerText = 'AI is improving…';
             button.setAttribute('aria-busy', 'true');
         }
-        setAIReviewStatus('AI is improving all fields, including three-sentence Nursing care…', 'var(--ios-blue)');
+        setAIReviewStatus('AI is simplifying the seven medicine-card details, including three-sentence Nursing care…', 'var(--ios-blue)');
         try {
-            let fullText = '';
-            await streamAIResponse([
-                { role: 'system', content: 'Improve only the supplied medicine record. Return strict JSON, keep clinical facts grounded, and include exactly three Nursing care sentences.' },
-                { role: 'user', content: getDrugDataImprovePrompt(draft) },
-            ], text => { fullText = text; });
-            if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
-            const parsed = parseAISearchPayload(fullText);
-            applyAIImprovedDrugData(parsed, draft);
+            const basePrompt = getDrugDataImprovePrompt(draft);
+            let applied = false;
+            let lastError = null;
+            for (let attempt = 0; attempt < 2 && !applied; attempt++) {
+                let fullText = '';
+                const retryRule = attempt
+                    ? '\n\nSTRICT SHORT RETRY: The previous version was too long. Use one short line per field, a 2-5 item side-effect list, and exactly three brief Nursing sentences.'
+                    : '';
+                await streamAIResponse([
+                    { role: 'system', content: 'Simplify only the seven details shown on the supplied medicine card. Return strict JSON, keep clinical facts grounded, and include exactly three short Nursing care sentences.' },
+                    { role: 'user', content: basePrompt + retryRule },
+                ], text => { fullText = text; });
+                if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
+                try {
+                    applyAIImprovedDrugData(parseAISearchPayload(fullText), draft);
+                    applied = true;
+                } catch (error) {
+                    lastError = error;
+                    if (error?.code !== 'ai_card_not_simple' || attempt === 1) throw error;
+                    setAIReviewStatus('AI answer was too long. Retrying once with stricter mobile wording…', 'var(--ios-blue)');
+                }
+            }
+            if (!applied) throw lastError || new Error('AI could not simplify the medicine card.');
             setAIReviewStatus('All fields improved. Review every field before saving.', 'var(--ios-green)');
             return true;
         } catch (error) {
@@ -3151,9 +3191,10 @@ Rules:
         ).join('');
         const reviewTitle = isUpdate ? 'Review AI changes' : 'Review drug details';
         const reviewNote = isUpdate
-            ? '<strong>Nothing has been saved yet.</strong> AI edits every field in this review only. Saving updates this device copy; the online Google Sheet remains unchanged.'
+            ? '<strong>Nothing has been saved yet.</strong> Review every AI change, then save on this device only or safely replace the matching Google Sheet row. An update never silently adds a duplicate row.'
             : '<strong>Nothing has been added yet.</strong> Edit every field, verify it against the prescription and current local formulary, then choose an Add button.';
-        const localButtonLabel = isUpdate ? '✅ Save changes on this device' : '📱 Add to this device';
+        const localButtonLabel = isUpdate ? '📱 Save on this device only' : '📱 Add to this device';
+        const sheetButtonLabel = isUpdate ? '☁️ Save changes to Google Sheet + device' : '☁️ Add to Google Sheet + device';
 
         container.style.display = 'block';
         container.innerHTML = `
@@ -3164,7 +3205,7 @@ Rules:
                 </div>
                 <div class="ai-review-note">${reviewNote}</div>
                 ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
-                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve all data</button><span class="ai-improve-hint">Improves generic/brand name, clinical fields and three-sentence Nursing care. Nothing saves automatically.</span></div>' : ''}
+                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve all data</button><span class="ai-improve-hint">Simplifies only the card details: name, class, indication, side effects, Nursing care, system and drug effect. Nothing saves automatically.</span></div>' : ''}
                 <div class="ai-edit-grid">
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name || '')}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">Generic name</span><input id="ai-edit-generic-name" class="ai-edit-input" value="${escapeHtml(nameParts.generic)}" autocomplete="off"></label>
@@ -3180,7 +3221,7 @@ Rules:
                 </div>
                 <div class="ai-review-actions ${allowSheetSave ? '' : 'one-action'}">
                     <button id="btn-add-local" class="action-btn ai-local-save">${localButtonLabel}</button>
-                    ${allowSheetSave ? '<button id="btn-save-sheet" class="action-btn btn-green" style="margin:0;">☁️ Add to Google Sheet + device</button>' : ''}
+                    ${allowSheetSave ? `<button id="btn-save-sheet" class="action-btn btn-green" style="margin:0;">${sheetButtonLabel}</button>` : ''}
                 </div>
                 <div id="save-status" class="ai-save-status" aria-live="polite"></div>
             </div>`;
@@ -3217,7 +3258,7 @@ Rules:
                         ? replaceDrugInLocalList(originalName || drugData.name, editedDrug)
                         : upsertDrugToLocalList(editedDrug);
                     const successMessage = isUpdate
-                        ? '✅ Device copy updated. The online Google Sheet was not changed.'
+                        ? '✅ Device copy updated only. The online Google Sheet was not changed.'
                         : '✅ Added to this device with your edits.';
                     setAIReviewStatus(ok ? successMessage : '❌ Unable to save this drug.', ok ? 'var(--ios-green)' : 'var(--ios-red)');
                     if (ok) {
@@ -3239,7 +3280,10 @@ Rules:
             saveBtn.onclick = async () => {
                 try {
                     const editedDrug = readEditableAISearchDrug({ requireNursing });
-                    await saveToGoogleSheet(editedDrug);
+                    await saveToGoogleSheet(editedDrug, 'save-status', 'btn-save-sheet', {
+                        mode: isUpdate ? 'update' : 'add',
+                        originalName: originalName || drugData.name,
+                    });
                 } catch (error) {
                     setAIReviewStatus(error.message, 'var(--ios-red)');
                     const focusId = /name/i.test(error.message)
@@ -3358,20 +3402,92 @@ Rules:
         return normalizeSearchText(genericName || fullName);
     }
 
-    async function postDrugToGoogleSheet(scriptURL, payload) {
+    function buildGoogleSheetUpdatePayload(drugData, originalName) {
+        const payload = buildDatabaseSavePayload(drugData);
+        const original = String(originalName || payload.name || '').trim();
+        return {
+            ...payload,
+            action: 'update',
+            protocol_version: 2,
+            original_name: original,
+            original_key: getGoogleSheetSaveKey({ name: original }),
+        };
+    }
+
+    async function readGoogleSheetJSON(response) {
+        if (!response) return null;
+        if (typeof response.text === 'function') {
+            const raw = await response.text().catch(() => '');
+            if (String(raw || '').trim()) {
+                try { return JSON.parse(raw); } catch (_) { return null; }
+            }
+        }
+        if (typeof response.json === 'function') {
+            try { return await response.json(); } catch (_) { return null; }
+        }
+        return null;
+    }
+
+    async function checkGoogleSheetUpdateCapability(scriptURL) {
+        try {
+            const capabilityURL = new URL(scriptURL);
+            capabilityURL.searchParams.set('action', 'capabilities');
+            capabilityURL.searchParams.set('protocol_version', '2');
+            const response = await fetch(capabilityURL.toString(), {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-store',
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) return { ok: false, reason: `HTTP ${response.status}` };
+            const body = await readGoogleSheetJSON(response);
+            const supported = body?.ok !== false
+                && body?.supports_update === true
+                && Number(body?.protocol_version || 0) >= 2;
+            return supported
+                ? { ok: true, body }
+                : { ok: false, reason: body?.error || 'update_not_supported', body };
+        } catch (error) {
+            return { ok: false, reason: error?.message || 'capability_check_failed', error };
+        }
+    }
+
+    async function postDrugToGoogleSheet(scriptURL, payload, { mode = 'add' } = {}) {
         try {
             const response = await fetch(scriptURL, {
                 method: 'POST',
                 mode: 'cors',
-                headers: { 'Content-Type': 'application/json' },
+                // text/plain keeps this a simple cross-origin request so Apps Script
+                // can return its explicit JSON acknowledgement without a preflight.
+                headers: { 'Content-Type': mode === 'update' ? 'text/plain;charset=UTF-8' : 'application/json' },
                 body: JSON.stringify(payload)
             });
             if (!response.ok) {
                 const errText = await response.text().catch(() => '');
                 throw new Error(errText || `HTTP ${response.status}`);
             }
+            if (mode === 'update') {
+                const body = await readGoogleSheetJSON(response);
+                const updated = body?.ok === true
+                    && body?.updated === true
+                    && body?.action === 'updated'
+                    && Number(body?.matched_rows) === 1;
+                if (!updated) {
+                    return {
+                        ok: false,
+                        verified: false,
+                        code: body?.error || 'update_not_acknowledged',
+                        message: body?.message || '',
+                        body,
+                    };
+                }
+                return { ok: true, verified: true, body };
+            }
             return { ok: true, verified: true };
         } catch (corsError) {
+            if (mode === 'update') {
+                return { ok: false, verified: false, code: 'update_request_failed', error: corsError };
+            }
             try {
                 await fetch(scriptURL, {
                     method: 'POST',
@@ -3386,10 +3502,14 @@ Rules:
         }
     }
 
-    async function saveToGoogleSheet(drugData, statusId = 'save-status', btnId = 'btn-save-sheet') {
+    async function saveToGoogleSheet(drugData, statusId = 'save-status', btnId = 'btn-save-sheet', {
+        mode = 'add',
+        originalName = '',
+    } = {}) {
         const statusEl = document.getElementById(statusId);
         const saveBtn = document.getElementById(btnId);
         const scriptURL = String(googleScriptURL || '').trim();
+        const isUpdate = mode === 'update';
         const setStatus = (msg, color) => {
             if (!statusEl) return;
             statusEl.innerText = msg;
@@ -3403,9 +3523,11 @@ Rules:
             return false;
         }
 
-        const payload = buildDatabaseSavePayload(drugData);
+        const payload = isUpdate
+            ? buildGoogleSheetUpdatePayload(drugData, originalName)
+            : buildDatabaseSavePayload(drugData);
         const saveKey = getGoogleSheetSaveKey(payload);
-        if (saveKey && googleSheetSavedKeys.has(saveKey)) {
+        if (!isUpdate && saveKey && googleSheetSavedKeys.has(saveKey)) {
             setStatus('✅ Already added during this session.', 'var(--ios-green)');
             if (saveBtn) {
                 saveBtn.disabled = true;
@@ -3415,36 +3537,65 @@ Rules:
             return true;
         }
 
+        if (isUpdate) {
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerText = '🔎 Checking safe Sheet update…';
+            }
+            setStatus('Checking that Google Sheet supports safe row updates…', 'var(--ios-blue)');
+            const capability = await checkGoogleSheetUpdateCapability(scriptURL);
+            if (!capability.ok) {
+                setStatus('❌ Google Sheet updater needs the v2 Apps Script. No Sheet row was changed; device-only save is still available.', 'var(--ios-red)');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = '☁️ Retry safe Google Sheet update';
+                }
+                return false;
+            }
+        }
+
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerText = '⏳ Adding to Google Sheet…';
+            saveBtn.innerText = isUpdate ? '⏳ Updating Google Sheet…' : '⏳ Adding to Google Sheet…';
         }
-        setStatus('Adding the reviewed drug to Google Sheet…', 'var(--ios-blue)');
+        setStatus(isUpdate ? 'Replacing the matching Google Sheet row…' : 'Adding the reviewed drug to Google Sheet…', 'var(--ios-blue)');
 
-        let pendingSave = saveKey ? googleSheetSavePromises.get(saveKey) : null;
+        const operationKey = isUpdate ? `update:${payload.original_key}` : saveKey;
+        let pendingSave = operationKey ? googleSheetSavePromises.get(operationKey) : null;
         const ownsSave = !pendingSave;
         if (!pendingSave) {
-            pendingSave = postDrugToGoogleSheet(scriptURL, payload);
-            if (saveKey) googleSheetSavePromises.set(saveKey, pendingSave);
+            pendingSave = postDrugToGoogleSheet(scriptURL, payload, { mode });
+            if (operationKey) googleSheetSavePromises.set(operationKey, pendingSave);
         }
 
         const outcome = await pendingSave;
-        if (ownsSave && saveKey && googleSheetSavePromises.get(saveKey) === pendingSave) {
-            googleSheetSavePromises.delete(saveKey);
+        if (ownsSave && operationKey && googleSheetSavePromises.get(operationKey) === pendingSave) {
+            googleSheetSavePromises.delete(operationKey);
         }
 
         if (outcome.ok) {
-            if (saveKey) googleSheetSavedKeys.add(saveKey);
-            setStatus(outcome.verified ? '✅ Added to Google Sheet.' : '✅ Sent to Google Sheet. Please verify the new row.', 'var(--ios-green)');
-            if (saveBtn) saveBtn.innerText = outcome.verified ? '✅ Added to Google Sheet' : '✅ Sent to Google Sheet';
-            upsertDrugToLocalList(payload);
+            if (!isUpdate && saveKey) googleSheetSavedKeys.add(saveKey);
+            const successMessage = isUpdate
+                ? '✅ Changes saved to Google Sheet and this device.'
+                : (outcome.verified ? '✅ Added to Google Sheet.' : '✅ Sent to Google Sheet. Please verify the new row.');
+            setStatus(successMessage, 'var(--ios-green)');
+            if (saveBtn) saveBtn.innerText = isUpdate
+                ? '✅ Sheet + device updated'
+                : (outcome.verified ? '✅ Added to Google Sheet' : '✅ Sent to Google Sheet');
+            if (isUpdate) replaceDrugInLocalList(originalName || payload.original_name, payload);
+            else upsertDrugToLocalList(payload);
             return true;
         }
 
-        setStatus('❌ Could not add to Google Sheet. Try again.', 'var(--ios-red)');
+        const updateFailure = outcome.code === 'not_found'
+            ? '❌ Original Google Sheet row was not found. Nothing was added or changed.'
+            : (outcome.code === 'multiple_matches'
+                ? '❌ More than one matching Sheet row exists. Nothing was changed; remove the duplicate first.'
+                : '❌ Google Sheet could not confirm the row update. Nothing was saved on this device.');
+        setStatus(isUpdate ? updateFailure : '❌ Could not add to Google Sheet. Try again.', 'var(--ios-red)');
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.innerText = '☁️ Retry Google Sheet';
+            saveBtn.innerText = isUpdate ? '☁️ Retry safe Google Sheet update' : '☁️ Retry Google Sheet';
         }
         return false;
     }

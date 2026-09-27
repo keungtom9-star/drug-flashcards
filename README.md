@@ -39,9 +39,21 @@ Users may instead choose **Settings → Use my own DeepSeek API**. This optional
 
 Missing drugs are checked in this order: the configured Google Sheet, RxNorm, then the openFDA drug-label API. RxNorm related brand concepts are used when an openFDA label has no brand name. These searches do not use AI tokens and never add a result automatically. If all sources miss, the review form provides a Google Search button and manual entry.
 
-Official RxNorm/openFDA results offer **AI improve all data**. It simplifies the generic and brand names, class, system, indication, side effects, drug action, and three-sentence Nursing care inside a mobile-readable review; nothing is saved automatically.
+Official RxNorm/openFDA results offer **AI improve all data**. It focuses only on the medicine-card details—generic/brand name, class, indication, side effects, three-sentence Nursing care, system, and drug effect—and rewrites them in short, simple mobile-readable language; nothing is saved automatically.
 
-Every saved database result also has **AI modify data** beside Google, Drugs.com, and the Cantonese explanation. It prefills that record, improves all fields, and waits for explicit approval. Saving from this review updates only the device copy; it does not silently append or overwrite a Google Sheet row.
+Every saved database result also has **AI modify data** beside Google, Drugs.com, and the Cantonese explanation. It prefills that record, improves all fields, and waits for explicit approval. The review offers separate **device only** and **Google Sheet + device** save buttons. Sheet updates use the original generic name, require an explicit v2 server acknowledgement, and never fall back to appending a duplicate row.
+
+## Safe Google Sheet updates
+
+The **Save changes to Google Sheet + device** button requires the web app in [`google-apps-script/Code.gs`](google-apps-script/Code.gs). It implements update protocol v2 and refuses an update unless exactly one original row matches.
+
+1. Back up the Sheet, then open its existing Google Apps Script project.
+2. Replace or merge the existing web-app handler with `google-apps-script/Code.gs`.
+3. For a standalone script, add the Script Property `SPREADSHEET_ID`. Optionally add `SHEET_NAME`; a Sheet-bound script can use its active spreadsheet.
+4. Update the existing web-app deployment so its `/exec` URL stays the same, with access granted to the app's users.
+5. Open the deployed `/exec?action=capabilities`; it should return `"supports_update":true` and `"protocol_version":2`.
+
+Until that deployment reports v2 support, the app makes no update POST and shows a clear message. Adding a new reviewed drug continues to use the existing add flow.
 
 The editable **Nursing care** field uses DeepSeek and generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add or Save button. AI improvement, streaming Cantonese explanation, and disease-drug revision all use the same server-protected DeepSeek model; there is no fallback to another provider.
 
