@@ -1144,7 +1144,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-25T22:00:00+08:00">Updated 25 Sep 2026 · 22:00 HKT</time>
+        <time class="app-last-updated" datetime="2026-09-27T23:04:00+08:00">Updated 27 Sep 2026 · 23:04 HKT</time>
     </div>
 </header>
 
@@ -2264,7 +2264,7 @@ Language: ${langInstruction}.`;
                 <div class="search-empty">
                     <p>No saved drugs found for "${escapeHtml(rawQuery)}".</p>
                     <button type="button" id="ask-ai-search" class="action-btn btn-primary">Search official drug sources</button>
-                    <p class="search-hint">Checks Google Sheet, RxNorm and openFDA without AI. If still missing, you can use Google Search and enter the details manually. DeepSeek is used only for Nursing care.</p>
+                    <p class="search-hint">Checks Google Sheet, RxNorm and openFDA without AI. RxNorm also checks related brand concepts. If found, AI can then simplify every field—including Nursing care—in an editable review.</p>
                     <div id="ai-search-output"></div>
                 </div>`;
             document.getElementById('ask-ai-search').onclick = async () => {
@@ -2280,7 +2280,9 @@ Language: ${langInstruction}.`;
             const card = document.createElement('div');
             card.className = 'result-card';
             
-            const explainId = 'explain-' + index + '-' + Math.floor(Math.random() * 1000);
+            const uniqueId = index + '-' + Math.floor(Math.random() * 1000);
+            const explainId = 'explain-' + uniqueId;
+            const modifyId = 'modify-' + uniqueId;
             const generics = parseDrugGenerics(drug.name);
             const sideEffectsText = usefulDrugText(drug.side_effects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
             
@@ -2290,34 +2292,39 @@ Language: ${langInstruction}.`;
             card.innerHTML = `
                 <div class="result-header">
                     <div class="name-with-speak">
-                        <span class="result-name">${drug.name}</span>
+                        <span class="result-name">${escapeHtml(drug.name)}</span>
                         <button class="speak-icon-btn" onclick="event.stopPropagation(); triggerSearchSpeak(this)" title="Speak">🗣️</button>
                     </div>
-                    <span class="result-class">${drug.class}</span>
+                    <span class="result-class">${escapeHtml(drug.class)}</span>
                 </div>
-                <div style="font-size:0.9rem; margin-top:5px; color:#555;">${drug.indication}</div>
-                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<button type="button" class="multi-chip selectable ${g === generics[0] ? 'is-active' : ''}" onclick="event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')">💖 ${g}</button>`).join('')}</div>` : ''}
+                <div class="result-indication">${escapeHtml(drug.indication)}</div>
+                ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<button type="button" class="multi-chip selectable ${g === generics[0] ? 'is-active' : ''}" onclick="event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')">💖 ${escapeHtml(g)}</button>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
-                    <div style="margin-bottom:5px;"><strong>Side Effects:</strong> <span style="color:#d32f2f;">${sideEffectsText}</span></div>
-                    <div style="margin-bottom:5px;"><strong>Nursing:</strong> ${drug.nursing}</div>
-                    <div style="margin-bottom:5px;"><strong>System:</strong> ${drug.system}</div>
-                    <div style="margin-bottom:5px;"><strong>Drug Effect:</strong> <span style="color:#7c3aed;">${effectText}</span></div>
+                    <div class="drug-detail-grid">
+                        <div class="drug-detail-block detail-side-effects"><strong>⚠️ Side effects</strong><span>${escapeHtml(sideEffectsText)}</span></div>
+                        <div class="drug-detail-block detail-nursing"><strong>🩺 Nursing care</strong><span>${escapeHtml(drug.nursing)}</span></div>
+                        <div class="drug-detail-block detail-system"><strong>🧭 System</strong><span>${escapeHtml(drug.system)}</span></div>
+                        <div class="drug-detail-block detail-effect"><strong>✨ Drug effect</strong><span>${escapeHtml(effectText)}</span></div>
+                    </div>
                     
-                    <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto;">
+                    <div class="drug-action-grid">
                          <button type="button" class="chip" onclick="event.stopPropagation(); triggerSearchGoogle(this)">🔎 Google</button>
                          <button type="button" class="chip" onclick="event.stopPropagation(); triggerSearchDrugsCom(this)">🧴 Drugs.com</button>
-                         <button type="button" class="chip" style="background:var(--ios-indigo); color:white;" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">✨ 廣東話解釋</button>
+                         <button type="button" class="chip explain-action" onclick="event.stopPropagation(); triggerSearchExplain(this, '${explainId}')">✨ 廣東話解釋</button>
+                         <button type="button" class="chip ai-modify-action" onclick="event.stopPropagation(); triggerSearchAIModify(this, '${modifyId}')">🪄 AI modify data</button>
                     </div>
                     <div id="${explainId}" class="ai-output drug-explain-output" aria-live="polite"></div>
+                    <div id="${modifyId}" class="database-ai-editor" aria-live="polite"></div>
                 </div>
             `;
             
             card.dataset.currentGeneric = generics[0];
             card.dataset.generics = JSON.stringify(generics);
+            card.dataset.drugKey = normalizeSearchText(drug.name);
             
             card.onclick = (e) => {
-                if (e.target.closest('button, a, input, select, .chip, .multi-chip')) return;
+                if (e.target.closest('button, a, input, select, textarea, label, .chip, .multi-chip, .database-ai-editor')) return;
                 card.classList.toggle('expanded');
                 rememberSearch(rawQuery);
             };
@@ -2347,6 +2354,39 @@ Language: ${langInstruction}.`;
 
     window.triggerSearchDrugsCom = function(btn) {
         withSearchDrugSelection(btn, 'Pick a drug for Drugs.com', (name) => openDrugsCom({name}));
+    };
+
+    async function openDatabaseDrugAIEditor(drug, outputId) {
+        if (!drug || !outputId) return false;
+        document.querySelectorAll('.database-ai-editor').forEach((editor) => {
+            if (editor.id !== outputId) {
+                editor.innerHTML = '';
+                editor.style.display = 'none';
+            }
+        });
+        renderEditableDrugReview({ ...drug }, {
+            containerId: outputId,
+            sourceLabel: 'Saved database',
+            allowSheetSave: false,
+            requireNursing: true,
+            enableDeepSeekNursing: true,
+            enableAIDataImprove: true,
+            reviewMode: 'update',
+            originalName: drug.name,
+        });
+        document.getElementById(outputId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        return improveDrugDataWithAI();
+    }
+
+    window.triggerSearchAIModify = async function(btn, outputId) {
+        const card = btn.closest('.result-card');
+        if (!card) return false;
+        const key = card.dataset.drugKey || '';
+        const drug = activeSourceList.find(item => normalizeSearchText(item.name) === key);
+        if (!drug) return false;
+        card.classList.add('expanded');
+        rememberSearch(document.getElementById('search-input')?.value || drug.name);
+        return openDatabaseDrugAIEditor(drug, outputId);
     };
     
     window.triggerSearchSpeak = function(btn) {
@@ -2601,6 +2641,26 @@ Language: ${langInstruction}.`;
         return firstOfficialValue(value).replace(/\s*\[[^\]]+\]\s*$/g, '').trim();
     }
 
+    function extractRxNormBrand(related, fallbackProperties = {}) {
+        const concepts = (related?.relatedGroup?.conceptGroup || [])
+            .flatMap(group => (group?.conceptProperties || []).map(concept => ({
+                name: String(concept?.name || '').trim(),
+                tty: String(concept?.tty || group?.tty || '').trim().toUpperCase(),
+            })))
+            .filter(concept => concept.name);
+        const brandConcept = concepts.find(concept => concept.tty === 'BN');
+        if (brandConcept) return brandConcept.name;
+        for (const concept of concepts.filter(item => item.tty === 'SBD')) {
+            const bracketed = [...concept.name.matchAll(/\[([^\]]+)\]/g)].at(-1)?.[1]?.trim();
+            if (bracketed) return bracketed;
+        }
+        const propertyTTY = String(fallbackProperties?.tty || '').toUpperCase();
+        const propertyName = String(fallbackProperties?.name || '').trim();
+        if (propertyTTY === 'BN') return propertyName;
+        if (propertyTTY === 'SBD') return [...propertyName.matchAll(/\[([^\]]+)\]/g)].at(-1)?.[1]?.trim() || '';
+        return '';
+    }
+
     async function resolveRxNormConcept(query) {
         let rxcui = '';
         const exactURL = `${RXNORM_API_ROOT}/rxcui.json?name=${encodeURIComponent(query)}&search=2`;
@@ -2614,18 +2674,21 @@ Language: ${langInstruction}.`;
         }
         if (!rxcui) return null;
 
-        const [properties, related] = await Promise.all([
+        const [properties, relatedIngredients, relatedBrands] = await Promise.all([
             fetchOfficialDrugJson(`${RXNORM_API_ROOT}/rxcui/${encodeURIComponent(rxcui)}/properties.json`).catch(() => null),
             fetchOfficialDrugJson(`${RXNORM_API_ROOT}/rxcui/${encodeURIComponent(rxcui)}/related.json?tty=IN+MIN`).catch(() => null),
+            fetchOfficialDrugJson(`${RXNORM_API_ROOT}/rxcui/${encodeURIComponent(rxcui)}/related.json?tty=BN+SBD`).catch(() => null),
         ]);
-        const ingredient = (related?.relatedGroup?.conceptGroup || [])
+        const ingredient = (relatedIngredients?.relatedGroup?.conceptGroup || [])
             .flatMap(group => group?.conceptProperties || [])
             .map(concept => String(concept?.name || '').trim())
             .find(Boolean) || '';
+        const conceptProperties = properties?.properties || {};
         return {
             rxcui,
-            displayName: String(properties?.properties?.name || query).trim(),
+            displayName: String(conceptProperties.name || query).trim(),
             ingredient,
+            brand: extractRxNormBrand(relatedBrands, conceptProperties),
         };
     }
 
@@ -2689,7 +2752,7 @@ Language: ${langInstruction}.`;
             resolveRxNormConcept(query).catch(() => null),
             findOpenFDALabel([query]).catch(() => null),
         ]);
-        const label = directLabel || await findOpenFDALabel([rxNorm?.ingredient, rxNorm?.displayName]);
+        const label = directLabel || await findOpenFDALabel([rxNorm?.ingredient, rxNorm?.displayName, rxNorm?.brand]);
         if (!label) return null;
 
         const openfda = label.openfda || {};
@@ -2697,7 +2760,7 @@ Language: ${langInstruction}.`;
             || rxNorm?.ingredient
             || rxNorm?.displayName
             || query;
-        const brand = firstOfficialValue(openfda.brand_name);
+        const brand = firstOfficialValue(openfda.brand_name) || rxNorm?.brand || '';
         const displayName = brand && brand.toLowerCase() !== generic.toLowerCase()
             ? `${generic} (${brand})`
             : generic;
@@ -2799,8 +2862,12 @@ Language: ${langInstruction}.`;
 
     function getEditableAISearchDrugDraft() {
         const value = id => String(document.getElementById(id)?.value || '').trim();
+        const name = value('ai-edit-name');
+        const nameParts = getDrugNameParts({ name });
         return {
-            name: value('ai-edit-name'),
+            name,
+            generic_name: value('ai-edit-generic-name') || nameParts.generic,
+            brand_name: value('ai-edit-brand-name') || nameParts.brand,
             class: value('ai-edit-class'),
             system: value('ai-edit-system'),
             indication: value('ai-edit-indication'),
@@ -2861,27 +2928,51 @@ Rules:
         return sentences.map(sentence => /[.!?]$/.test(sentence) ? sentence : `${sentence}.`).join(' ');
     }
 
-    function getOfficialDataImprovePrompt(drugData) {
-        return `You are editing medicine information retrieved from RxNorm and openFDA for a nursing reference app.
+    function getDrugNameParts(drugData = {}) {
+        const pair = parseDrugNamePairs(drugData.name || '')[0] || {};
+        return {
+            generic: String(drugData.generic_name || drugData.generic || pair.generic || drugData.name || '').trim(),
+            brand: String(drugData.brand_name || drugData.brand || pair.brand || '').trim(),
+        };
+    }
 
-Official source text supplied by the app:
+    function formatGenericBrandName(generic, brand, fallback = '') {
+        const cleanGeneric = String(generic || '').trim();
+        const cleanBrand = isMissingDrugText(brand) ? '' : String(brand).trim();
+        if (cleanGeneric && cleanBrand && normalizeSearchText(cleanGeneric) !== normalizeSearchText(cleanBrand)) {
+            return `${cleanGeneric} (${cleanBrand})`;
+        }
+        return cleanGeneric || String(fallback || '').trim();
+    }
+
+    function getDrugDataImprovePrompt(drugData) {
+        return `You are editing medicine information for a nursing reference app. The record may come from RxNorm, openFDA, or the user's saved database.
+
+Source record supplied by the app:
 ${JSON.stringify({
     name: drugData.name || '',
+    generic_name: drugData.generic_name || '',
+    brand_name: drugData.brand_name || '',
     class: drugData.class || '',
     system: drugData.system || '',
     indication: drugData.indication || '',
     side_effects: drugData.side_effects || '',
+    nursing: drugData.nursing || '',
     effect_of_drug: drugData.effect_of_drug || ''
 }, null, 2)}
 
-Return strict JSON only with exactly these keys: "name", "class", "system", "indication", "side_effects", "effect_of_drug".
+Return strict JSON only with exactly these keys: "name", "generic_name", "brand_name", "class", "system", "indication", "side_effects", "nursing", "effect_of_drug".
 
 Rules:
-- Improve clarity, remove duplicated label wording, and shorten the text for fast mobile reading.
-- Use only facts present in the supplied official source text; do not add a dose, route, dilution, monitoring threshold, contraindication, or local policy.
-- Keep clinically important common or serious adverse effects; never use "Not specified", "Unknown", "N/A", or an empty value.
+- Improve clarity, remove duplicated wording, and make every field easy to scan on a phone.
+- Preserve the known generic and brand names. Format "name" as "Generic (Brand)" when a brand is supplied; leave "brand_name" empty when none is known and never invent one.
+- Use only facts present in the source record for class, system, indication, side effects, and drug effect.
+- Keep indication and drug effect to one or two short sentences. Keep side effects to a concise list of important common or serious effects.
+- Keep clinically important adverse effects; never replace a populated clinical field with "Not specified", "Unknown", "N/A", or an empty value.
 - "system" must be exactly one of: ${systemCategories.join(', ')}.
-- Do not include Nursing care. That field is handled separately by DeepSeek.
+- "nursing" must be exactly three short sentences in one paragraph: pre-administration checks; administration/monitoring; then hold/escalation signs plus verification of the prescription, local protocol, and current formulary.
+- Nursing care may synthesize cautious bedside actions from the supplied facts, but must say what to verify instead of guessing.
+- Do not invent a dose, route, dilution, infusion rate, monitoring threshold, contraindication, or local policy.
 - Use concise English. Output JSON only, with no Markdown.`;
     }
 
@@ -2893,7 +2984,7 @@ Rules:
         return candidate && typeof candidate === 'object' ? candidate : null;
     }
 
-    function applyAIImprovedOfficialData(parsed, originalDraft) {
+    function applyAIImprovedDrugData(parsed, originalDraft) {
         const candidate = unwrapDrugObject(parsed);
         if (!candidate) throw new Error('AI did not return usable drug data. Please try again.');
         const chooseText = (value, fallback) => isMissingDrugText(value) ? String(fallback || '').trim() : String(value).trim();
@@ -2902,28 +2993,40 @@ Rules:
             originalDraft.side_effects
         );
         if (isMissingDrugText(sideEffects) || sideEffects === DRUG_TEXT_FALLBACKS.sideEffects) {
-            throw new Error('AI did not return useful side effects. The official data was left unchanged.');
+            throw new Error('AI did not return useful side effects. The data was left unchanged.');
         }
+        const nursing = normalizeThreeSentenceNursingCare(candidate.nursing || candidate.nursing_care || '');
+        const originalParts = getDrugNameParts(originalDraft);
+        const candidateNameParts = getDrugNameParts(candidate);
+        const genericName = chooseText(candidate.generic_name || candidate.generic || candidateNameParts.generic, originalDraft.generic_name || originalParts.generic);
+        const brandName = chooseText(candidate.brand_name || candidate.brand || candidateNameParts.brand, originalDraft.brand_name || originalParts.brand);
+        const formattedName = formatGenericBrandName(genericName, brandName, chooseText(candidate.name, originalDraft.name));
         const proposedSystem = normalizeSystemLabel(candidate.system || originalDraft.system);
         const improved = {
-            name: chooseText(candidate.name, originalDraft.name),
+            name: formattedName,
+            generic_name: genericName,
+            brand_name: isMissingDrugText(brandName) ? '' : brandName,
             class: chooseText(candidate.class, originalDraft.class),
             system: systemCategories.includes(proposedSystem) ? proposedSystem : originalDraft.system,
             indication: chooseText(candidate.indication, originalDraft.indication),
             side_effects: sideEffects,
+            nursing,
             effect_of_drug: chooseText(
                 candidate.effect_of_drug || candidate.drug_effect || candidate['effect of drug'] || candidate.effect,
                 originalDraft.effect_of_drug
             ),
         };
-        if (!improved.name) throw new Error('AI did not return a drug name. The official data was left unchanged.');
+        if (!improved.name) throw new Error('AI did not return a drug name. The data was left unchanged.');
 
         const fieldMap = {
             'ai-edit-name': improved.name,
+            'ai-edit-generic-name': improved.generic_name,
+            'ai-edit-brand-name': improved.brand_name,
             'ai-edit-class': improved.class,
             'ai-edit-system': improved.system,
             'ai-edit-indication': improved.indication,
             'ai-edit-side-effects': improved.side_effects,
+            'ai-edit-nursing': improved.nursing,
             'ai-edit-effect': improved.effect_of_drug,
         };
         Object.entries(fieldMap).forEach(([id, value]) => {
@@ -2933,12 +3036,15 @@ Rules:
         return improved;
     }
 
-    async function improveOfficialDrugDataWithAI() {
+    function applyAIImprovedOfficialData(parsed, originalDraft) {
+        return applyAIImprovedDrugData(parsed, originalDraft);
+    }
+
+    async function improveDrugDataWithAI() {
         const button = document.getElementById('btn-improve-official-data');
         const draft = getEditableAISearchDrugDraft();
-        const nursingBefore = document.getElementById('ai-edit-nursing')?.value || '';
         if (!draft.name) {
-            setAIReviewStatus('Add the drug name before improving the official data.', 'var(--ios-red)');
+            setAIReviewStatus('Add the drug name before improving the data.', 'var(--ios-red)');
             document.getElementById('ai-edit-name')?.focus();
             return false;
         }
@@ -2947,32 +3053,32 @@ Rules:
             button.innerText = 'AI is improving…';
             button.setAttribute('aria-busy', 'true');
         }
-        setAIReviewStatus('AI is simplifying the official fields. Nursing care will not be changed.', 'var(--ios-blue)');
+        setAIReviewStatus('AI is improving all fields, including three-sentence Nursing care…', 'var(--ios-blue)');
         try {
             let fullText = '';
             await streamAIResponse([
-                { role: 'system', content: 'Edit only the supplied official medicine data. Return strict JSON and never include Nursing care.' },
-                { role: 'user', content: getOfficialDataImprovePrompt(draft) },
+                { role: 'system', content: 'Improve only the supplied medicine record. Return strict JSON, keep clinical facts grounded, and include exactly three Nursing care sentences.' },
+                { role: 'user', content: getDrugDataImprovePrompt(draft) },
             ], text => { fullText = text; });
             if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
             const parsed = parseAISearchPayload(fullText);
-            applyAIImprovedOfficialData(parsed, draft);
-            const nursingField = document.getElementById('ai-edit-nursing');
-            if (nursingField) nursingField.value = nursingBefore;
-            setAIReviewStatus('AI improvements applied. Review every field before choosing Add.', 'var(--ios-green)');
+            applyAIImprovedDrugData(parsed, draft);
+            setAIReviewStatus('All fields improved. Review every field before saving.', 'var(--ios-green)');
             return true;
         } catch (error) {
-            const nursingField = document.getElementById('ai-edit-nursing');
-            if (nursingField) nursingField.value = nursingBefore;
-            setAIReviewStatus(error?.message || 'AI could not improve the official data. Nothing was added.', 'var(--ios-red)');
+            setAIReviewStatus(error?.message || 'AI could not improve the data. Nothing was saved.', 'var(--ios-red)');
             return false;
         } finally {
             if (button) {
                 button.disabled = false;
-                button.innerText = '✨ AI improve official data';
+                button.innerText = '✨ AI improve all data';
                 button.removeAttribute('aria-busy');
             }
         }
+    }
+
+    async function improveOfficialDrugDataWithAI() {
+        return improveDrugDataWithAI();
     }
 
     async function streamDeepSeekNursingResponse(messages, onUpdate) {
@@ -3008,7 +3114,7 @@ Rules:
             );
             const conciseAnswer = normalizeThreeSentenceNursingCare(answer);
             if (nursingField) nursingField.value = conciseAnswer;
-            setAIReviewStatus('Three-sentence Nursing care is ready. Review it before adding.', 'var(--ios-green)');
+            setAIReviewStatus('Three-sentence Nursing care is ready. Review it before saving.', 'var(--ios-green)');
             return true;
         } catch (error) {
             if (nursingField) nursingField.value = nursingBefore;
@@ -3024,6 +3130,7 @@ Rules:
     }
 
     function renderEditableDrugReview(drugData, {
+        containerId = 'ai-search-output',
         sourceLabel = 'Review result',
         allowSheetSave = true,
         requireNursing = false,
@@ -3031,36 +3138,48 @@ Rules:
         enableAIDataImprove = false,
         showGoogleSearch = false,
         googleQuery = '',
+        reviewMode = 'add',
+        originalName = '',
     } = {}) {
-        const container = document.getElementById('ai-search-output');
+        const container = document.getElementById(containerId);
         if (!container) return;
+        const isUpdate = reviewMode === 'update';
+        const nameParts = getDrugNameParts(drugData);
+        const selectedSystem = normalizeSystemLabel(drugData.system || '🫀 Cardio');
         const systemOptions = systemCategories.map(system =>
-            `<option value="${escapeHtml(system)}" ${system === drugData.system ? 'selected' : ''}>${escapeHtml(system)}</option>`
+            `<option value="${escapeHtml(system)}" ${system === selectedSystem ? 'selected' : ''}>${escapeHtml(system)}</option>`
         ).join('');
+        const reviewTitle = isUpdate ? 'Review AI changes' : 'Review drug details';
+        const reviewNote = isUpdate
+            ? '<strong>Nothing has been saved yet.</strong> AI edits every field in this review only. Saving updates this device copy; the online Google Sheet remains unchanged.'
+            : '<strong>Nothing has been added yet.</strong> Edit every field, verify it against the prescription and current local formulary, then choose an Add button.';
+        const localButtonLabel = isUpdate ? '✅ Save changes on this device' : '📱 Add to this device';
 
         container.style.display = 'block';
         container.innerHTML = `
-            <div class="ios-card" style="border:2px solid var(--ios-green); margin-top:20px; text-align:left;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
-                    <h3 style="margin:0; color:var(--ios-blue);">Review drug details</h3>
-                    <span class="chip" style="background:var(--ios-green); color:white;">${escapeHtml(sourceLabel)}</span>
+            <div class="ios-card ai-review-card ${isUpdate ? 'is-update' : 'is-add'}">
+                <div class="ai-review-heading">
+                    <h3>${reviewTitle}</h3>
+                    <span class="chip ai-review-source">${escapeHtml(sourceLabel)}</span>
                 </div>
-                <div class="ai-review-note"><strong>Nothing has been added yet.</strong> Edit any field below, verify it against the prescription and current local formulary, then choose an Add button.</div>
+                <div class="ai-review-note">${reviewNote}</div>
                 ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
-                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn" style="background:#4f46e5; color:white;">✨ AI improve official data</button><span class="ai-improve-hint">Improves the official fields in place. Nursing care stays separate and nothing is saved automatically.</span></div>' : ''}
+                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve all data</button><span class="ai-improve-hint">Improves generic/brand name, clinical fields and three-sentence Nursing care. Nothing saves automatically.</span></div>' : ''}
                 <div class="ai-edit-grid">
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name || '')}" autocomplete="off"></label>
+                    <label class="ai-edit-field"><span class="ai-edit-label">Generic name</span><input id="ai-edit-generic-name" class="ai-edit-input" value="${escapeHtml(nameParts.generic)}" autocomplete="off"></label>
+                    <label class="ai-edit-field"><span class="ai-edit-label">Brand name</span><input id="ai-edit-brand-name" class="ai-edit-input" value="${escapeHtml(nameParts.brand)}" placeholder="No brand found" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">Class</span><input id="ai-edit-class" class="ai-edit-input" value="${escapeHtml(drugData.class || '')}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">System</span><select id="ai-edit-system" class="ai-edit-input">${systemOptions}</select></label>
                     <label class="ai-edit-field full"><span class="ai-edit-label">Indication</span><textarea id="ai-edit-indication" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication || '')}</textarea></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects || '')}</textarea></label>
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects || drugData.SideEffects || '')}</textarea></label>
                     <label class="ai-edit-field full"><span class="ai-edit-label">Nursing care · DeepSeek</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="4" placeholder="Generate with DeepSeek or type Nursing care manually">${escapeHtml(drugData.nursing || '')}</textarea>
                         ${enableDeepSeekNursing ? '<span class="ai-nursing-tools"><button id="btn-generate-nursing" type="button" class="action-btn" style="background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe;">✨ Generate Nursing care</button><span class="ai-nursing-hint">DeepSeek writes only three short sentences. Review them against the prescription and local protocol.</span></span>' : ''}
                     </label>
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug effect</span><textarea id="ai-edit-effect" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug || drugData.quiz || '')}</textarea></label>
                 </div>
                 <div class="ai-review-actions ${allowSheetSave ? '' : 'one-action'}">
-                    <button id="btn-add-local" class="action-btn" style="margin:0; background:#ecfdf5; color:#047857;">📱 Add to this device</button>
+                    <button id="btn-add-local" class="action-btn ai-local-save">${localButtonLabel}</button>
                     ${allowSheetSave ? '<button id="btn-save-sheet" class="action-btn btn-green" style="margin:0;">☁️ Add to Google Sheet + device</button>' : ''}
                 </div>
                 <div id="save-status" class="ai-save-status" aria-live="polite"></div>
@@ -3070,7 +3189,21 @@ Rules:
         if (googleSearchBtn) googleSearchBtn.onclick = () => openGoogleDeepLink(googleQuery || drugData.name || 'medicine');
 
         const improveDataBtn = enableAIDataImprove ? document.getElementById('btn-improve-official-data') : null;
-        if (improveDataBtn) improveDataBtn.onclick = improveOfficialDrugDataWithAI;
+        if (improveDataBtn) improveDataBtn.onclick = improveDrugDataWithAI;
+
+        const nameField = document.getElementById('ai-edit-name');
+        const genericField = document.getElementById('ai-edit-generic-name');
+        const brandField = document.getElementById('ai-edit-brand-name');
+        const syncFullName = () => {
+            if (nameField) nameField.value = formatGenericBrandName(genericField?.value, brandField?.value, nameField.value);
+        };
+        genericField?.addEventListener('input', syncFullName);
+        brandField?.addEventListener('input', syncFullName);
+        nameField?.addEventListener('change', () => {
+            const parts = getDrugNameParts({ name: nameField.value });
+            if (genericField) genericField.value = parts.generic;
+            if (brandField) brandField.value = parts.brand;
+        });
 
         const nursingBtn = document.getElementById('btn-generate-nursing');
         if (nursingBtn) nursingBtn.onclick = generateDeepSeekNursingCare;
@@ -3080,11 +3213,16 @@ Rules:
             addLocalBtn.onclick = () => {
                 try {
                     const editedDrug = readEditableAISearchDrug({ requireNursing });
-                    const ok = upsertDrugToLocalList(editedDrug);
-                    setAIReviewStatus(ok ? '✅ Added to this device with your edits.' : '❌ Unable to add this drug.', ok ? 'var(--ios-green)' : 'var(--ios-red)');
+                    const ok = isUpdate
+                        ? replaceDrugInLocalList(originalName || drugData.name, editedDrug)
+                        : upsertDrugToLocalList(editedDrug);
+                    const successMessage = isUpdate
+                        ? '✅ Device copy updated. The online Google Sheet was not changed.'
+                        : '✅ Added to this device with your edits.';
+                    setAIReviewStatus(ok ? successMessage : '❌ Unable to save this drug.', ok ? 'var(--ios-green)' : 'var(--ios-red)');
                     if (ok) {
                         addLocalBtn.disabled = true;
-                        addLocalBtn.innerText = '✅ Added to this device';
+                        addLocalBtn.innerText = isUpdate ? '✅ Changes saved on this device' : '✅ Added to this device';
                     }
                 } catch (error) {
                     setAIReviewStatus(error.message, 'var(--ios-red)');
@@ -3133,11 +3271,13 @@ Rules:
             admin_type: String(drugData.admin_type || 'IV').trim()
         };
         if (!normalized.name) return null;
+        const parsedName = getDrugNameParts({ name: normalized.name });
+        if (!normalized.generic_name) normalized.generic_name = parsedName.generic;
+        if (!normalized.brand_name) normalized.brand_name = parsedName.brand;
         const hasParen = /.+\(.+\)/.test(normalized.name);
         if (!hasParen) {
             const generic = normalized.generic_name || normalized.name;
-            const brand = normalized.brand_name || 'N/A';
-            normalized.name = `${generic} (${brand})`.trim();
+            normalized.name = formatGenericBrandName(generic, normalized.brand_name, normalized.name);
         }
         if (!systemCategories.includes(normalized.system)) normalized.system = '🫀 Cardio';
         return normalized;
@@ -3189,6 +3329,25 @@ Rules:
         else activeSourceList.unshift(drug);
         saveLocalDrugCache(activeSourceList);
         refreshDrugViews();
+        return true;
+    }
+
+    function replaceDrugInLocalList(originalName, drugData) {
+        const payload = normalizeAISearchDrugPayload(drugData);
+        if (!payload) return false;
+        const drug = normalizeDrugData({ ...payload });
+        const originalKey = normalizeSearchText(originalName);
+        const updatedKey = normalizeSearchText(drug.name);
+        const index = activeSourceList.findIndex(item => {
+            const itemKey = normalizeSearchText(item.name);
+            return itemKey === originalKey || itemKey === updatedKey;
+        });
+        if (index >= 0) activeSourceList[index] = drug;
+        else activeSourceList.unshift(drug);
+        saveLocalDrugCache(activeSourceList);
+        revisionDrugs = [];
+        renderAllSystems();
+        renderRevisionDrugs({ reshuffle: true });
         return true;
     }
 
