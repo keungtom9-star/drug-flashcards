@@ -425,11 +425,11 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 27 Sep 2026 · 23:04 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-27T23:04:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 28 Sep 2026 · 00:02 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-28T00:02:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
-    assert.match(read('index.html'), /system === 'Other' \? '💊 General'/);
+    assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
     assert.doesNotMatch(read('index.html'), /Revise by disease|revision-disease-input/);
     assert.match(read('index.html'), /AI Drugs/);
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
@@ -842,6 +842,20 @@ test('RxNorm related concepts supply a brand when openFDA has no brand name', as
     assert.ok(requested.some(url => url.includes('tty=BN+SBD')));
 });
 
+test('system resolver keeps Other selectable and recognises active vitamin D as Endocrine', () => {
+    const { context, document } = loadMain();
+    const calcitriol = {
+        name: 'Calcitriol (Rocaltrol)', class: 'Active Vitamin D', system: 'Other',
+        indication: 'Hypocalcemia in CKD (renal osteodystrophy).', side_effects: 'Hypercalcemia',
+        nursing: 'Check calcium. Monitor response. Escalate toxicity signs.', effect_of_drug: 'Increases calcium absorption.',
+    };
+    assert.equal(context.resolveDrugSystem(calcitriol), '🦋 Endocrine');
+    assert.equal(context.resolveDrugSystem({ name: 'Unclassified medicine', class: 'Miscellaneous', system: 'Other' }), '💊 General / Other');
+    context.renderEditableDrugReview(calcitriol, { containerId: 'database-review', reviewMode: 'update' });
+    assert.match(document.getElementById('database-review').innerHTML, /value="🦋 Endocrine" selected/);
+    assert.match(document.getElementById('database-review').innerHTML, /value="💊 General \/ Other"/);
+});
+
 test('DeepSeek Nursing care is limited to exactly three plain sentences', () => {
     const { context } = loadMain();
     const result = context.normalizeThreeSentenceNursingCare([
@@ -992,7 +1006,7 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     assert.equal(sheetWrites, 1);
 });
 
-test('saved database records open a mobile AI review and update only the device copy', async () => {
+test('saved database AI keeps card details simple and safely updates Google Sheet plus device', async () => {
     const { context, document, storage } = loadMain();
     vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
         name: 'Savedmed (Oldbrand)', generic_name: 'Savedmed', brand_name: 'Oldbrand', class: 'Old class',
@@ -1001,6 +1015,22 @@ test('saved database records open a mobile AI review and update only the device 
     }])`, context);
     const original = JSON.parse(vm.runInContext('JSON.stringify(activeSourceList[0])', context));
     const prompts = [];
+    const sheetRequests = [];
+    context.fetch = async (url, options = {}) => {
+        const request = { url: String(url), options };
+        sheetRequests.push(request);
+        if ((options.method || 'GET') === 'GET' && new URL(request.url).searchParams.get('action') === 'capabilities') {
+            return new Response(JSON.stringify({ ok: true, supports_update: true, protocol_version: 2 }), {
+                status: 200, headers: { 'Content-Type': 'application/json' },
+            });
+        }
+        if (options.method === 'POST') {
+            return new Response(JSON.stringify({ ok: true, action: 'updated', updated: true, matched_rows: 1, row: 2 }), {
+                status: 200, headers: { 'Content-Type': 'application/json' },
+            });
+        }
+        throw new Error(`Unexpected request: ${url}`);
+    };
     context.streamAIResponse = async (messages, onUpdate) => {
         prompts.push(messages.map(message => message.content).join('\n'));
         const improved = JSON.stringify({
@@ -1015,16 +1045,17 @@ test('saved database records open a mobile AI review and update only the device 
     };
 
     context.renderEditableDrugReview(original, {
-        containerId: 'database-review', sourceLabel: 'Saved database', allowSheetSave: false,
+        containerId: 'database-review', sourceLabel: 'Saved database', allowSheetSave: true,
         requireNursing: true, enableDeepSeekNursing: true, enableAIDataImprove: true,
         reviewMode: 'update', originalName: original.name,
     });
     const review = document.getElementById('database-review').innerHTML;
     assert.match(read('index.html'), /🪄 AI modify data/);
     assert.match(review, /Review AI changes/);
-    assert.match(review, /Save changes on this device/);
-    assert.match(review, /online Google Sheet remains unchanged/i);
-    assert.doesNotMatch(review, /btn-save-sheet/);
+    assert.match(review, /Save on this device only/);
+    assert.match(review, /Save changes to Google Sheet \+ device/);
+    assert.match(review, /never silently adds a duplicate row/i);
+    assert.match(review, /name, class, indication, side effects, Nursing care, system and drug effect/i);
     fillAIEditor(document, {
         'ai-edit-name': original.name,
         'ai-edit-generic-name': 'Savedmed',
@@ -1038,19 +1069,200 @@ test('saved database records open a mobile AI review and update only the device 
 
     await document.getElementById('btn-improve-official-data').onclick();
     assert.match(prompts[0], /"nursing"/);
-    assert.match(prompts[0], /exactly three short sentences/i);
+    assert.match(prompts[0], /exactly three (?:short Nursing care|plain) sentences/i);
+    assert.match(prompts[0], /details shown on the medicine card/i);
+    assert.match(prompts[0], /comma-separated list of 2-5/i);
+    assert.match(prompts[0], /"effect_of_drug" to one plain sentence/i);
     assert.equal(document.getElementById('ai-edit-brand-name').value, 'Brightbrand');
     assert.equal(document.getElementById('ai-edit-name').value, 'Savedmed (Brightbrand)');
     assert.match(document.getElementById('ai-edit-nursing').value, /local protocol and current formulary/);
     assert.equal(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context))[0].name, 'Savedmed (Oldbrand)', 'AI must not auto-save');
 
-    document.getElementById('btn-add-local').onclick();
+    await document.getElementById('btn-save-sheet').onclick();
     const updated = JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context));
     assert.equal(updated.length, 1);
     assert.equal(updated[0].name, 'Savedmed (Brightbrand)');
     assert.equal(updated[0].brand_name, 'Brightbrand');
-    assert.match(document.getElementById('save-status').innerText, /device copy updated/i);
+    assert.match(document.getElementById('save-status').innerText, /saved to Google Sheet and this device/i);
     assert.equal(JSON.parse(storage.get('drug_tutor_local_data_v1')).length, 1);
+    assert.equal(sheetRequests.filter(request => request.options.method === 'POST').length, 1);
+    const updatePayload = JSON.parse(sheetRequests.find(request => request.options.method === 'POST').options.body);
+    assert.equal(updatePayload.action, 'update');
+    assert.equal(updatePayload.protocol_version, 2);
+    assert.equal(updatePayload.original_name, 'Savedmed (Oldbrand)');
+    assert.equal(updatePayload.original_key, 'savedmed');
+    assert.equal(updatePayload.name, 'Savedmed (Brightbrand)');
+    assert.equal(sheetRequests.find(request => request.options.method === 'POST').options.headers['Content-Type'], 'text/plain;charset=UTF-8');
+});
+
+test('AI improve retries once when medicine-card wording is too long for mobile', async () => {
+    const { context, document } = loadMain();
+    const original = {
+        name: 'Simplemed (Brand)', generic_name: 'Simplemed', brand_name: 'Brand', class: 'Test class',
+        system: '🫀 Cardio', indication: 'Short use.', side_effects: 'Nausea, dizziness',
+        nursing: 'Check first. Monitor response. Escalate concerns.', effect_of_drug: 'Short action.',
+    };
+    const prompts = [];
+    context.streamAIResponse = async (messages, onUpdate) => {
+        prompts.push(messages[1].content);
+        const result = prompts.length === 1 ? {
+            ...original,
+            indication: Array(36).fill('unnecessarily').join(' ') + '.',
+        } : {
+            ...original,
+            class: 'Clear class', indication: 'Treats the stated condition.',
+            side_effects: 'Nausea, dizziness, rash',
+            nursing: 'Check allergies before giving. Administer as prescribed and monitor response. Hold and escalate concerns; verify the prescription and local protocol.',
+            effect_of_drug: 'Produces the intended therapeutic effect.',
+        };
+        const text = JSON.stringify(result);
+        onUpdate(text);
+        return text;
+    };
+    context.renderEditableDrugReview(original, {
+        containerId: 'database-review', allowSheetSave: true, requireNursing: true,
+        enableAIDataImprove: true, reviewMode: 'update', originalName: original.name,
+    });
+    fillAIEditor(document, {
+        'ai-edit-name': original.name, 'ai-edit-generic-name': original.generic_name,
+        'ai-edit-brand-name': original.brand_name, 'ai-edit-class': original.class,
+        'ai-edit-indication': original.indication, 'ai-edit-side-effects': original.side_effects,
+        'ai-edit-nursing': original.nursing, 'ai-edit-effect': original.effect_of_drug,
+    });
+
+    assert.equal(await document.getElementById('btn-improve-official-data').onclick(), true);
+    assert.equal(prompts.length, 2);
+    assert.match(prompts[1], /STRICT SHORT RETRY/);
+    assert.equal(document.getElementById('ai-edit-indication').value, 'Treats the stated condition.');
+    assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, dizziness, rash');
+    assert.match(document.getElementById('save-status').innerText, /All fields improved/i);
+});
+
+test('legacy Sheet writer receives no update POST and cannot create a duplicate row', async () => {
+    const { context, document } = loadMain();
+    vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
+        name: 'Safemed (Old)', class: 'Old class', system: '🫀 Cardio', indication: 'Old use',
+        side_effects: 'Nausea, rash', nursing: 'Check first. Monitor response. Escalate concerns.', effect_of_drug: 'Old action.'
+    }])`, context);
+    const original = JSON.parse(vm.runInContext('JSON.stringify(activeSourceList[0])', context));
+    const requests = [];
+    context.fetch = async (url, options = {}) => {
+        requests.push({ url: String(url), options });
+        return new Response(JSON.stringify({ ok: true, supports_update: false, protocol_version: 1 }), {
+            status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+    };
+    context.renderEditableDrugReview(original, {
+        containerId: 'database-review', allowSheetSave: true, requireNursing: true,
+        reviewMode: 'update', originalName: original.name,
+    });
+    fillAIEditor(document, {
+        'ai-edit-name': 'Safemed (New)', 'ai-edit-generic-name': 'Safemed', 'ai-edit-brand-name': 'New',
+        'ai-edit-side-effects': 'Nausea, serious rash',
+        'ai-edit-nursing': 'Check allergies. Monitor response. Hold and escalate concerns.',
+    });
+
+    await document.getElementById('btn-save-sheet').onclick();
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].options.method, 'GET');
+    assert.match(document.getElementById('save-status').innerText, /needs the v2 Apps Script/i);
+    assert.match(document.getElementById('save-status').innerText, /No Sheet row was changed/i);
+    assert.equal(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context))[0].name, 'Safemed (Old)');
+});
+
+test('Sheet update requires an explicit acknowledgement and never retries with no-cors', async () => {
+    const { context, document } = loadMain();
+    vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
+        name: 'Ackmed (Old)', class: 'Class', system: '🫀 Cardio', indication: 'Use', side_effects: 'Nausea',
+        nursing: 'Check first. Monitor response. Escalate concerns.', effect_of_drug: 'Action.'
+    }])`, context);
+    const original = JSON.parse(vm.runInContext('JSON.stringify(activeSourceList[0])', context));
+    const requests = [];
+    context.fetch = async (url, options = {}) => {
+        requests.push({ url: String(url), options });
+        if ((options.method || 'GET') === 'GET') {
+            return new Response(JSON.stringify({ ok: true, supports_update: true, protocol_version: 2 }), { status: 200 });
+        }
+        return new Response('', { status: 200 });
+    };
+    context.renderEditableDrugReview(original, {
+        containerId: 'database-review', allowSheetSave: true, requireNursing: true,
+        reviewMode: 'update', originalName: original.name,
+    });
+    fillAIEditor(document, {
+        'ai-edit-name': 'Ackmed (New)', 'ai-edit-generic-name': 'Ackmed', 'ai-edit-brand-name': 'New',
+        'ai-edit-nursing': 'Check first. Monitor response. Hold and escalate concerns.',
+    });
+
+    await document.getElementById('btn-save-sheet').onclick();
+    assert.equal(requests.length, 2, 'one capability GET and one verified POST only');
+    assert.equal(requests.filter(request => request.options.mode === 'no-cors').length, 0);
+    assert.match(document.getElementById('save-status').innerText, /could not confirm the row update/i);
+    assert.equal(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context))[0].name, 'Ackmed (Old)');
+});
+
+test('Apps Script v2 refuses missing or duplicate update matches', () => {
+    const script = read('google-apps-script/Code.gs');
+    assert.match(script, /supports_update:\s*true/);
+    assert.match(script, /protocol_version:\s*DRUG_SHEET_PROTOCOL_VERSION/);
+    assert.match(script, /matches\.length === 0[\s\S]*error: 'not_found'/);
+    assert.match(script, /matches\.length > 1[\s\S]*error: 'multiple_matches'/);
+    assert.match(script, /action: 'updated'[\s\S]*matched_rows: 1/);
+});
+
+test('Apps Script v2 replaces exactly one row without appending', () => {
+    const rows = [
+        ['name', 'class', 'system', 'indication', 'SideEffects', 'nursing', 'effect_of_drug'],
+        ['Savedmed (Oldbrand)', 'Old class', '🫀 Cardio', 'Old use', 'Nausea', 'Old care', 'Old action'],
+    ];
+    let appendCount = 0;
+    const sheet = {
+        getLastRow: () => rows.length,
+        getLastColumn: () => rows[0]?.length || 0,
+        appendRow(row) { appendCount++; rows.push(row.slice()); },
+        getRange(row, column, rowCount = 1, columnCount = 1) {
+            return {
+                getDisplayValues: () => rows.slice(row - 1, row - 1 + rowCount)
+                    .map(values => values.slice(column - 1, column - 1 + columnCount).map(String)),
+                getValues: () => rows.slice(row - 1, row - 1 + rowCount)
+                    .map(values => values.slice(column - 1, column - 1 + columnCount)),
+                setValues(values) {
+                    values.forEach((newRow, rowOffset) => newRow.forEach((value, columnOffset) => {
+                        rows[row - 1 + rowOffset][column - 1 + columnOffset] = value;
+                    }));
+                },
+            };
+        },
+    };
+    const appContext = vm.createContext({
+        JSON, String, Number,
+        ContentService: {
+            MimeType: { JSON: 'application/json' },
+            createTextOutput(body) { return { body, setMimeType() { return this; } }; },
+        },
+        LockService: { getScriptLock: () => ({ waitLock() {}, hasLock: () => true, releaseLock() {} }) },
+        PropertiesService: { getScriptProperties: () => ({ getProperty: () => '' }) },
+        SpreadsheetApp: {
+            getActiveSpreadsheet: () => ({ getSheets: () => [sheet], getSheetByName: () => null }),
+            flush() {},
+        },
+    });
+    vm.runInContext(read('google-apps-script/Code.gs'), appContext);
+    const payload = {
+        action: 'update', protocol_version: 2, original_name: 'Savedmed (Oldbrand)', original_key: 'savedmed',
+        name: 'Savedmed (Brightbrand)', class: 'Clear class', system: '🫀 Cardio', indication: 'Short use.',
+        side_effects: 'Nausea, dizziness', nursing: 'Check first. Monitor response. Escalate concerns.',
+        effect_of_drug: 'Short action.',
+    };
+    const response = appContext.doPost({ postData: { contents: JSON.stringify(payload) } });
+    const result = JSON.parse(response.body);
+    assert.equal(result.ok, true);
+    assert.equal(result.matched_rows, 1);
+    assert.equal(appendCount, 0);
+    assert.equal(rows.length, 2);
+    assert.equal(rows[1][0], 'Savedmed (Brightbrand)');
+    assert.equal(rows[1][1], 'Clear class');
+    assert.equal(rows[1][4], 'Nausea, dizziness');
 });
 
 test('review validation rejects placeholder side effects', () => {
