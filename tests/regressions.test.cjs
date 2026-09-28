@@ -188,6 +188,9 @@ test('unknown search text is safe and falls back to Google plus manual review wi
     context.runSearch();
     assert.ok(!document.getElementById('search-results').innerHTML.includes('<img src=x'));
     assert.doesNotMatch(document.getElementById('search-results').innerHTML, /upload an infusion chart|ai-image-upload/i);
+    assert.match(document.getElementById('search-results').innerHTML, /RxNorm \+ openFDA/);
+    assert.match(document.getElementById('search-results').innerHTML, /Direct AI search/);
+    assert.match(document.getElementById('search-results').innerHTML, /never save automatically/);
     await document.getElementById('ask-ai-search').onclick();
     assert.match(document.getElementById('ai-search-output').innerHTML, /Manual entry/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Search this drug on Google/);
@@ -431,8 +434,8 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 28 Sep 2026 · 22:47 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-28T22:47:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 28 Sep 2026 · 23:35 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-28T23:35:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
     assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
@@ -1051,6 +1054,51 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     assert.equal(context.findLocalDrugs('Novelmed')[0].name, 'Novelmed (Edited brand)');
     await document.getElementById('btn-save-sheet').onclick();
     assert.equal(sheetWrites, 1);
+});
+
+test('missing-drug search offers a direct bilingual AI draft without official lookup or automatic saving', async () => {
+    const { context, document } = loadMain();
+    const requests = [];
+    const directDraft = JSON.stringify({
+        name: 'Directtestmed', generic_name: 'Directtestmed', brand_name: '',
+        class: 'Beta blocker', system: '🫀 Cardio', indication: 'Treats hypertension.',
+        side_effects: 'Dizziness, bradycardia, hypotension',
+        nursing: 'Check blood pressure and pulse before administration. Give as prescribed and monitor heart rate and symptoms. Hold and escalate significant bradycardia; verify the prescription and local protocol.',
+        effect_of_drug: 'Slows heart rate and lowers blood pressure.',
+        class_zh_hk: 'β受體阻斷劑', system_zh_hk: '🫀 心血管系統', indication_zh_hk: '用嚟治療高血壓。',
+        side_effects_zh_hk: '頭暈、心搏過慢、低血壓',
+        nursing_zh_hk: '給藥前量血壓及脈搏。按處方給藥並監察心率同症狀。明顯心搏過慢要停藥上報，並核對醫囑及本地指引。',
+        effect_of_drug_zh_hk: '減慢心率並降低血壓。',
+    });
+    context.fetch = async (url, options = {}) => {
+        requests.push({ url: String(url), options });
+        if (String(url) === '/.netlify/functions/deepseek') {
+            return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: directDraft } }] })}\n\ndata: [DONE]\n\n`, {
+                status: 200, headers: { 'Content-Type': 'text/event-stream' },
+            });
+        }
+        throw new Error(`Direct AI search unexpectedly called ${url}`);
+    };
+    document.getElementById('search-input').value = 'Directtestmed';
+    context.runSearch();
+
+    const result = await document.getElementById('ask-ai-direct-search').onclick();
+    assert.equal(result, true);
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, '/.netlify/functions/deepseek');
+    const body = JSON.parse(requests[0].options.body);
+    assert.equal(body.stream, true);
+    assert.deepEqual(body.thinking, { type: 'disabled' });
+    assert.match(body.messages.map(message => message.content).join('\n'), /direct AI draft/i);
+    assert.doesNotMatch(requests[0].url, /rxnav|fda\.gov|google/);
+
+    assert.equal(context.findLocalDrugs('Directtestmed').length, 0, 'AI draft must not auto-save');
+    assert.match(document.getElementById('ai-search-output').innerHTML, /DeepSeek AI draft · verify/);
+    assert.equal(document.getElementById('ai-edit-class').value, 'Beta blocker');
+    assert.equal(document.getElementById('ai-edit-indication-zh-hk').value, '用嚟治療高血壓。');
+    assert.match(document.getElementById('ai-edit-nursing').value, /local protocol/);
+    assert.match(document.getElementById('ai-edit-nursing-zh-hk').value, /本地指引/);
+    assert.match(document.getElementById('save-status').innerText, /not official data/i);
 });
 
 test('saved database AI keeps card details simple and safely updates Google Sheet plus device', async () => {

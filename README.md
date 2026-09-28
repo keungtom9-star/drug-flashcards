@@ -37,7 +37,7 @@ Users may instead choose **Settings → Use my own DeepSeek API**. This optional
 
 ## Missing-drug search and Nursing care
 
-Missing drugs are checked in this order: the configured Google Sheet, RxNorm, then the openFDA drug-label API. RxNorm related brand concepts are used when an openFDA label has no brand name. These searches do not use AI tokens and never add a result automatically. If all sources miss, the review form provides a Google Search button and manual entry.
+When a saved drug is missing, the app presents two explicit choices. **RxNorm + openFDA** checks the configured Google Sheet first, then RxNorm and the openFDA drug-label API without AI tokens; RxNorm related brand concepts are used when an openFDA label has no brand name. **Direct AI search** skips those public databases and asks DeepSeek for one concise English + Cantonese draft, including exactly three Nursing care sentences in each language. The AI route is clearly labelled as non-official data that must be checked against BNF or the local formulary. Both routes open an editable review and never add or save a result automatically.
 
 Official RxNorm/openFDA results offer one combined **AI improve data + Nursing care** action. It improves the medicine-card details—generic/brand name, class, indication, side effects, system, drug effect, and exactly three concise Nursing care sentences—in one request; nothing is saved automatically. The same request prepares concise English and Traditional Chinese written Cantonese versions. Medicine and brand names remain in English for safer identification.
 

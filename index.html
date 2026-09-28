@@ -991,6 +991,8 @@
             .result-header { flex-wrap: wrap; gap: 8px; }
             .name-with-speak { min-width: 0; flex: 1 1 180px; }
             .ai-edit-grid, .ai-review-actions { grid-template-columns: 1fr; }
+            .lookup-choice-grid { grid-template-columns: 1fr; }
+            .lookup-choice-card { min-height: 82px; }
             .modal-overlay { top: var(--viewport-top, 0px); bottom: auto; height: var(--app-height, 100dvh); }
             .modal-card { max-height: 100%; height: 90%; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
             .modal-card button { min-height: 44px; }
@@ -1016,6 +1018,17 @@
         .system-filter-chip[aria-pressed="true"] { background: #007aff; color: white; }
         .search-empty { padding: 16px 0; color: #475569; }
         .search-examples { display: flex; flex-wrap: wrap; gap: 8px; }
+        .lookup-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+        .lookup-choice-card {
+            min-width: 0; min-height: 92px; padding: 14px; border: 0; border-radius: 18px;
+            color: white; text-align: left; cursor: pointer; display: flex; flex-direction: column;
+            justify-content: space-between; gap: 8px; box-shadow: 0 12px 25px rgba(15,23,42,.16);
+        }
+        .lookup-choice-card strong { display: block; font-size: .98rem; line-height: 1.25; }
+        .lookup-choice-card small { display: block; font-size: .72rem; line-height: 1.4; color: rgba(255,255,255,.9); }
+        .lookup-choice-card.official { background: linear-gradient(135deg, #0a84ff, #2563eb 55%, #4f46e5); }
+        .lookup-choice-card.direct-ai { background: linear-gradient(135deg, #9333ea, #ec4899 58%, #f97316); }
+        .lookup-safety-note { margin: 11px 2px 0; font-size: .76rem; line-height: 1.45; color: #64748b; }
         button.chip { border: 0; min-height: 44px; }
         .settings-help { margin-top: 16px; border-radius: 12px; padding: 12px; background: #eff6ff; color: #1e3a8a; line-height: 1.5; font-size: .9rem; }
 
@@ -1165,7 +1178,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-28T22:47:00+08:00">Updated 28 Sep 2026 · 22:47 HKT</time>
+        <time class="app-last-updated" datetime="2026-09-28T23:35:00+08:00">Updated 28 Sep 2026 · 23:35 HKT</time>
     </div>
 </header>
 
@@ -1330,7 +1343,7 @@
         </div>
 
         <div class="settings-help">
-            Search saved drugs by name, brand or condition in English or Cantonese. Missing drugs are checked against Google Sheet, RxNorm and openFDA without AI. The combined AI review prepares concise English and Cantonese card data before you choose whether to save it.
+            Search saved drugs by name, brand or condition in English or Cantonese. For a missing drug, choose an official-first RxNorm + openFDA lookup without AI tokens or a direct DeepSeek bilingual draft. Every result stays editable and unsaved until you approve it.
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Settings</button>
@@ -2388,13 +2401,26 @@ Language: ${langInstruction}.`;
             container.innerHTML = `
                 <div class="search-empty">
                     <p>No saved drugs found for "${escapeHtml(rawQuery)}".</p>
-                    <button type="button" id="ask-ai-search" class="action-btn btn-primary">Search official drug sources</button>
-                    <p class="search-hint">Checks Google Sheet, RxNorm and openFDA without AI. RxNorm also checks related brand concepts. If found, AI can then simplify every field—including Nursing care—in an editable review.</p>
+                    <div class="lookup-choice-grid" role="group" aria-label="Choose drug lookup source">
+                        <button type="button" id="ask-ai-search" class="lookup-choice-card official">
+                            <strong>🛡️ RxNorm + openFDA</strong>
+                            <small>Official-first lookup · no AI tokens</small>
+                        </button>
+                        <button type="button" id="ask-ai-direct-search" class="lookup-choice-card direct-ai">
+                            <strong>✨ Direct AI search</strong>
+                            <small>DeepSeek bilingual draft · uses AI tokens</small>
+                        </button>
+                    </div>
+                    <p class="lookup-safety-note">Official lookup checks the Google Sheet first. Direct AI skips public databases. Both open an editable review and never save automatically.</p>
                     <div id="ai-search-output"></div>
                 </div>`;
             document.getElementById('ask-ai-search').onclick = async () => {
                 rememberSearch(rawQuery);
                 return resolveMissingDrug(rawQuery);
+            };
+            document.getElementById('ask-ai-direct-search').onclick = async () => {
+                rememberSearch(rawQuery);
+                return resolveMissingDrugWithAI(rawQuery);
             };
             return;
         }
@@ -2917,6 +2943,118 @@ Language: ${langInstruction}.`;
         };
         drugData.system = inferOfficialDrugSystem(drugData);
         return drugData;
+    }
+
+    function getDirectAIDrugLookupPrompt(query, strictRetry = false) {
+        return `Create one concise bilingual medicine-card draft for: ${query}
+
+Return strict JSON only with exactly these keys: "name", "generic_name", "brand_name", "class", "system", "indication", "side_effects", "nursing", "effect_of_drug", "class_zh_hk", "system_zh_hk", "indication_zh_hk", "side_effects_zh_hk", "nursing_zh_hk", "effect_of_drug_zh_hk".
+
+Rules:
+- This is a direct AI draft, not an official-source result. Use established general medicine knowledge and keep uncertainty explicit.
+- Keep medicine and brand names in English. Use the likely generic name; leave "brand_name" empty rather than inventing one.
+- If the requested name is ambiguous or not recognisable as a medicine, do not substitute a different medicine.
+- "system" must be exactly one of: ${systemCategories.join(', ')}.
+- English: class at most 8 words; indication one sentence at most 18 words; side effects 2-5 comma-separated items; drug effect one sentence at most 20 words.
+- "nursing" must be exactly three plain sentences, each at most 18 words: checks; administration/monitoring; then hold/escalation plus verifying prescription and local protocol.
+- The six "_zh_hk" fields must contain the same facts in concise Traditional Chinese written Cantonese for Hong Kong nurses. Medical terms may stay in English when clearer.
+- "nursing_zh_hk" must be exactly three short Chinese-punctuation sentences covering the same three Nursing care steps.
+- Do not invent a dose, route, dilution, infusion rate, laboratory threshold, contraindication, brand, or local policy.
+- Output JSON only, with no Markdown or commentary.${strictRetry ? '\n- STRICT RETRY: shorten every field and include every English and _zh_hk key.' : ''}`;
+    }
+
+    async function resolveMissingDrugWithAI(query) {
+        if (!requireApiKey()) return false;
+        const directButton = document.getElementById('ask-ai-direct-search');
+        const officialButton = document.getElementById('ask-ai-search');
+        if (directButton) {
+            directButton.disabled = true;
+            directButton.innerHTML = '<strong>⏳ DeepSeek searching…</strong><small>Preparing English + Cantonese review</small>';
+        }
+        if (officialButton) officialButton.disabled = true;
+
+        const draft = {
+            name: query,
+            generic_name: query,
+            brand_name: '',
+            class: '',
+            system: GENERAL_SYSTEM,
+            indication: '',
+            side_effects: '',
+            nursing: '',
+            effect_of_drug: '',
+            class_zh_hk: '',
+            system_zh_hk: cantoneseSystemMap[GENERAL_SYSTEM],
+            indication_zh_hk: '',
+            side_effects_zh_hk: '',
+            nursing_zh_hk: '',
+            effect_of_drug_zh_hk: '',
+        };
+        renderEditableDrugReview(draft, {
+            sourceLabel: 'DeepSeek AI draft · verify',
+            allowSheetSave: true,
+            requireNursing: true,
+            enableAIDataImprove: true,
+            showGoogleSearch: true,
+            googleQuery: query,
+        });
+        const improveButton = document.getElementById('btn-improve-official-data');
+        if (improveButton) {
+            improveButton.disabled = true;
+            improveButton.innerText = 'AI is searching…';
+            improveButton.setAttribute('aria-busy', 'true');
+        }
+        setAIReviewStatus('DeepSeek is preparing a bilingual AI draft. Verify it against BNF or your local formulary before saving…', 'var(--ios-blue)');
+
+        try {
+            let applied = false;
+            let lastError = null;
+            for (let attempt = 0; attempt < 2 && !applied; attempt++) {
+                const fullText = await streamAIResponse([
+                    { role: 'system', content: 'Create one safe, concise bilingual medicine-card draft. Return strict JSON only and never invent dosing or a brand name.' },
+                    { role: 'user', content: getDirectAIDrugLookupPrompt(query, attempt === 1) },
+                ], () => {}, { temperature: 0.1 });
+                const parsed = parseAISearchPayload(fullText);
+                if (!parsed) {
+                    const error = new Error('DeepSeek returned incomplete medicine-card JSON.');
+                    error.code = 'DEEPSEEK_JSON_INCOMPLETE';
+                    lastError = error;
+                } else {
+                    try {
+                        applyAIImprovedDrugData(parsed, draft);
+                        applied = true;
+                    } catch (error) {
+                        lastError = error;
+                    }
+                }
+                if (!applied && attempt === 0 && ['DEEPSEEK_JSON_INCOMPLETE', 'ai_card_not_simple'].includes(lastError?.code)) {
+                    setAIReviewStatus('AI draft was incomplete or too long. Retrying once with stricter mobile wording…', 'var(--ios-blue)');
+                    continue;
+                }
+                if (!applied) throw lastError || new Error('DeepSeek did not return usable medicine data.');
+            }
+            if (!applied) throw lastError || new Error('DeepSeek did not return usable medicine data.');
+            const status = document.getElementById('search-status');
+            if (status) status.textContent = 'DeepSeek AI draft ready. Verify every field before saving.';
+            setAIReviewStatus('Direct AI draft ready in English + Cantonese. This is not official data—review every field before saving.', 'var(--ios-green)');
+            return true;
+        } catch (error) {
+            const status = document.getElementById('search-status');
+            if (status) status.textContent = 'Direct AI search failed. The editable draft was not saved.';
+            setAIReviewStatus(error?.message || 'Direct AI search failed. Nothing was saved.', 'var(--ios-red)');
+            return false;
+        } finally {
+            if (directButton) {
+                directButton.disabled = false;
+                directButton.innerHTML = '<strong>✨ Direct AI search</strong><small>DeepSeek bilingual draft · uses AI tokens</small>';
+            }
+            if (officialButton) officialButton.disabled = false;
+            if (improveButton) {
+                improveButton.disabled = false;
+                improveButton.innerText = '✨ AI improve data + Nursing care';
+                improveButton.removeAttribute('aria-busy');
+            }
+        }
     }
 
     async function resolveMissingDrug(query) {
