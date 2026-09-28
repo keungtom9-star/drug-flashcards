@@ -1165,7 +1165,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-28T21:11:00+08:00">Updated 28 Sep 2026 · 21:11 HKT</time>
+        <time class="app-last-updated" datetime="2026-09-28T22:47:00+08:00">Updated 28 Sep 2026 · 22:47 HKT</time>
     </div>
 </header>
 
@@ -3940,11 +3940,31 @@ Rules:
     // --- AI FUNCTIONS: DeepSeek only ---
     function extractDeepSeekText(content) {
         if (typeof content === 'string') return content;
-        if (!Array.isArray(content)) return '';
-        return content.map(part => {
-            if (typeof part === 'string') return part;
-            return typeof part?.text === 'string' ? part.text : '';
-        }).join('');
+        if (Array.isArray(content)) return content.map(extractDeepSeekText).join('');
+        if (!content || typeof content !== 'object') return '';
+        if (typeof content.text === 'string') return content.text;
+        return extractDeepSeekText(content.content);
+    }
+
+    function extractDeepSeekResponseText(payload) {
+        const choice = payload?.choices?.[0];
+        const candidates = [
+            choice?.delta?.content,
+            choice?.message?.content,
+            choice?.text,
+            payload?.output_text,
+            payload?.content,
+            payload?.output,
+        ];
+        for (const candidate of candidates) {
+            const text = extractDeepSeekText(candidate);
+            if (text) return text;
+        }
+        return '';
+    }
+
+    function getDeepSeekPayloadError(payload) {
+        return String(payload?.error?.message || payload?.error || '').replace(/\s+/g, ' ').trim().slice(0, 180);
     }
 
     async function getDeepSeekErrorDetail(response) {
@@ -4001,7 +4021,8 @@ Rules:
         const body = {
             messages,
             temperature,
-            stream: true
+            stream: true,
+            thinking: { type: 'disabled' },
         };
         const response = await fetchDeepSeek(body);
         if (!response.ok) {
@@ -4014,6 +4035,7 @@ Rules:
         const decoder = new TextDecoder('utf-8');
         let fullText = '';
         let eventBuffer = '';
+        let rawResponse = '';
         const readEventLine = line => {
             const trimmed = line.trim();
             if (!trimmed.startsWith('data:')) return;
@@ -4021,13 +4043,14 @@ Rules:
             if (!payload || payload === '[DONE]') return;
             try {
                 const json = JSON.parse(payload);
-                const content = extractDeepSeekText(
-                    json?.choices?.[0]?.delta?.content ?? json?.choices?.[0]?.message?.content
-                );
+                const payloadError = getDeepSeekPayloadError(json);
+                if (payloadError) throw new Error(`DeepSeek request failed: ${payloadError}`);
+                const content = extractDeepSeekResponseText(json);
                 if (!content) return;
                 fullText += content;
                 onUpdate(fullText);
-            } catch (_) {
+            } catch (error) {
+                if (/^DeepSeek request failed:/.test(String(error?.message || ''))) throw error;
                 // Keep reading subsequent server-sent events.
             }
         };
@@ -4035,15 +4058,55 @@ Rules:
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            eventBuffer += decoder.decode(value, { stream: true });
+            const chunk = decoder.decode(value, { stream: true });
+            rawResponse += chunk;
+            eventBuffer += chunk;
             const lines = eventBuffer.split(/\r?\n/);
             eventBuffer = lines.pop() || '';
             lines.forEach(readEventLine);
         }
-        eventBuffer += decoder.decode();
-        if (eventBuffer.trim()) readEventLine(eventBuffer);
+        const tail = decoder.decode();
+        rawResponse += tail;
+        eventBuffer += tail;
+        eventBuffer.split(/\r?\n/).forEach(readEventLine);
         fullText = fullText.trim();
-        if (!fullText) throw new Error('DeepSeek returned an empty response. Please try again.');
+        if (!fullText) {
+            try {
+                const json = JSON.parse(rawResponse.trim());
+                const payloadError = getDeepSeekPayloadError(json);
+                if (payloadError) throw new Error(`DeepSeek request failed: ${payloadError}`);
+                fullText = extractDeepSeekResponseText(json).trim();
+                if (fullText) onUpdate(fullText);
+            } catch (error) {
+                if (/^DeepSeek request failed:/.test(String(error?.message || ''))) throw error;
+            }
+        }
+        if (fullText) return fullText;
+
+        // Some successful upstream responses contain no usable stream delta. Retry once
+        // without streaming so a transient empty SSE response does not reach the user.
+        const retryResponse = await fetchDeepSeek({
+            messages,
+            temperature,
+            stream: false,
+            thinking: { type: 'disabled' },
+        });
+        if (!retryResponse.ok) {
+            const detail = await getDeepSeekErrorDetail(retryResponse);
+            throw new Error(`DeepSeek retry failed (${retryResponse.status})${detail ? `: ${detail}` : ''}`);
+        }
+        const retryRaw = await retryResponse.text();
+        let retryJson;
+        try {
+            retryJson = JSON.parse(retryRaw);
+        } catch (_) {
+            throw new Error('DeepSeek returned no readable text after an automatic retry. Please try again.');
+        }
+        const retryError = getDeepSeekPayloadError(retryJson);
+        if (retryError) throw new Error(`DeepSeek retry failed: ${retryError}`);
+        fullText = extractDeepSeekResponseText(retryJson).trim();
+        if (!fullText) throw new Error('DeepSeek returned no readable text after an automatic retry. Please try again.');
+        onUpdate(fullText);
         return fullText;
     }
 
