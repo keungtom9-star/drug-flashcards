@@ -39,9 +39,15 @@ Users may instead choose **Settings → Use my own DeepSeek API**. This optional
 
 Missing drugs are checked in this order: the configured Google Sheet, RxNorm, then the openFDA drug-label API. RxNorm related brand concepts are used when an openFDA label has no brand name. These searches do not use AI tokens and never add a result automatically. If all sources miss, the review form provides a Google Search button and manual entry.
 
-Official RxNorm/openFDA results offer one combined **AI improve data + Nursing care** action. It improves the medicine-card details—generic/brand name, class, indication, side effects, system, drug effect, and exactly three concise Nursing care sentences—in one request; nothing is saved automatically.
+Official RxNorm/openFDA results offer one combined **AI improve data + Nursing care** action. It improves the medicine-card details—generic/brand name, class, indication, side effects, system, drug effect, and exactly three concise Nursing care sentences—in one request; nothing is saved automatically. The same request prepares concise English and Traditional Chinese written Cantonese versions. Medicine and brand names remain in English for safer identification.
 
 Every saved database result also has **AI modify data** beside Google, Drugs.com, and the Cantonese explanation. It prefills that record, uses the same combined data-and-Nursing action, and waits for explicit approval. The review offers separate **device only** and **Google Sheet + device** save buttons. Sheet updates use the original generic name, require an explicit v2 server acknowledgement, and never fall back to appending a duplicate row.
+
+## English / Cantonese drug cards
+
+Choose **Settings → Drug card language / 藥卡語言** to show the clinical card fields in English or Traditional Chinese Cantonese. Search and Revise switch immediately, Cantonese terms are searchable, and records without Cantonese data safely fall back to English. The generic and brand name always stay in English.
+
+The editable review keeps both language sections together. Device-only saves may keep an older English-only record, but a Google Sheet save requires both language sections. The six Cantonese columns are `class_zh_hk`, `system_zh_hk`, `indication_zh_hk`, `side_effects_zh_hk`, `nursing_zh_hk`, and `effect_of_drug_zh_hk`; the existing unsuffixed columns remain English.
 
 ## Safe Google Sheet updates
 
@@ -51,9 +57,11 @@ The **Save changes to Google Sheet + device** button requires the web app in [`g
 2. Replace or merge the existing web-app handler with `google-apps-script/Code.gs`.
 3. For a standalone script, add the Script Property `SPREADSHEET_ID`. Optionally add `SHEET_NAME`; a Sheet-bound script can use its active spreadsheet.
 4. Update the existing web-app deployment so its `/exec` URL stays the same, with access granted to the app's users.
-5. Open the deployed `/exec?action=capabilities`; it should return `"supports_update":true` and `"protocol_version":2`.
+5. Open the deployed `/exec?action=capabilities`; it should return `"supports_update":true`, `"bilingual_fields":true`, `"languages":["en","zh-HK"]`, and `"protocol_version":2`.
 
-Until that deployment reports v2 support, the app makes no update POST and shows a clear message. Adding a new reviewed drug continues to use the existing add flow.
+On the first add or update after deployment, the script automatically appends any missing Cantonese columns to an existing header row. A blank drug sheet receives the complete English + Cantonese header set. Back up the Sheet before replacing the script, and do not rename the drug-name column.
+
+Until that deployment reports bilingual v2 support, the app makes no add or update POST and shows a clear message. Device-only save remains available.
 
 The editable **Nursing care** field uses DeepSeek and generates exactly three short bedside sentences, which must be reviewed against the prescription, current formulary, and local policy before choosing an Add or Save button. AI improvement, streaming Cantonese explanation, and disease-drug revision all use the same server-protected DeepSeek model; there is no fallback to another provider.
 

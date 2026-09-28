@@ -927,6 +927,27 @@
         }
         .ai-improve-tools .action-btn { width: auto; min-height: 42px; margin: 0; padding: 10px 13px; }
         .ai-improve-hint { flex: 1 1 190px; color: #5b6476; font-size: .75rem; line-height: 1.42; }
+        .ai-language-panel {
+            grid-column: 1 / -1;
+            border: 1px solid #dbe3ef;
+            border-radius: 14px;
+            background: rgba(248,250,252,.86);
+            overflow: hidden;
+        }
+        .ai-language-panel + .ai-language-panel { margin-top: 2px; }
+        .ai-language-panel summary {
+            min-height: 46px;
+            padding: 11px 13px;
+            box-sizing: border-box;
+            cursor: pointer;
+            color: #334155;
+            font-size: .86rem;
+            font-weight: 800;
+            list-style-position: inside;
+        }
+        .ai-language-panel[open] summary { color: #1d4ed8; background: #eff6ff; }
+        .ai-language-fields { padding: 12px; }
+        .ai-language-note { display: block; margin-top: 6px; color: #64748b; font-size: .74rem; line-height: 1.42; }
         .ai-review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
         .ai-review-actions.one-action { grid-template-columns: 1fr; }
         .ai-save-status { min-height: 20px; margin-top: 9px; text-align: center; font-size: .82rem; font-weight: 700; line-height: 1.4; }
@@ -1144,7 +1165,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-28T20:44:00+08:00">Updated 28 Sep 2026 · 20:44 HKT</time>
+        <time class="app-last-updated" datetime="2026-09-28T21:11:00+08:00">Updated 28 Sep 2026 · 21:11 HKT</time>
     </div>
 </header>
 
@@ -1287,6 +1308,13 @@
         </div>
         
         <div style="margin-top:20px;">
+             <label for="drug-card-language" style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Drug card language / 藥卡語言</label>
+             <select id="drug-card-language" class="settings-input" style="margin-top:8px; margin-bottom:5px;">
+                <option value="en">English</option>
+                <option value="zh-HK">廣東話（繁體中文）</option>
+             </select>
+             <div style="font-size:0.73rem; line-height:1.45; color:#64748b; margin-bottom:18px;">Medicine and brand names stay in English for safer identification. Other card details switch language, with English fallback when Cantonese is not available.</div>
+
              <label style="font-size:0.85rem; font-weight:600; color:var(--ios-gray);">Data Source</label>
              <button onclick="toggleDrugSet()" id="set-btn" class="action-btn">📚 Source: Common drugs</button>
              <div class="import-wrapper" style="margin-top:10px;">
@@ -1302,7 +1330,7 @@
         </div>
 
         <div class="settings-help">
-            Search saved drugs by name, brand or condition. Missing drugs are checked against Google Sheet, RxNorm and openFDA without AI. You may ask AI to improve an official result, then review every field before choosing whether to add it.
+            Search saved drugs by name, brand or condition in English or Cantonese. Missing drugs are checked against Google Sheet, RxNorm and openFDA without AI. The combined AI review prepares concise English and Cantonese card data before you choose whether to save it.
         </div>
 
         <button onclick="saveSettings()" class="action-btn btn-green" style="margin-top:20px;">Save Settings</button>
@@ -1414,6 +1442,8 @@ Language: ${langInstruction}.`;
     let autoSyncOnStartup = localStorage.getItem('auto_sync_startup') === '1';
 
     const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
+    const DRUG_DISPLAY_LANGUAGE_STORAGE_KEY = 'drug_tutor_display_language';
+    let drugDisplayLanguage = localStorage.getItem(DRUG_DISPLAY_LANGUAGE_STORAGE_KEY) === 'zh-HK' ? 'zh-HK' : 'en';
     
     // DeepSeek is the only AI provider. Server mode keeps its secret in Netlify;
     // personal mode is an explicit, device-local opt-in that calls DeepSeek directly.
@@ -1457,6 +1487,69 @@ Language: ${langInstruction}.`;
         "💊 General": GENERAL_SYSTEM,
         "General / Other": GENERAL_SYSTEM
     };
+    const cantoneseSystemMap = {
+        "🍔 GI System": "🍔 消化系統",
+        "🫀 Cardio": "🫀 心血管系統",
+        "🫁 Respiratory": "🫁 呼吸系統",
+        "🧠 CNS / Neuro": "🧠 中樞神經系統",
+        "🦠 Infections": "🦠 感染",
+        "🦋 Endocrine": "🦋 內分泌系統",
+        "🤰 ObGyn / GU": "🤰 婦產／泌尿系統",
+        "🎗️ Oncology": "🎗️ 腫瘤",
+        "🍎 Nutrition / Blood": "🍎 營養／血液",
+        "🦴 MSK / Bone": "🦴 肌肉骨骼",
+        "👁️ Eye": "👁️ 眼科",
+        "👂 ENT": "👂 耳鼻喉",
+        "🧴 Skin": "🧴 皮膚",
+        "🛡️ Immune / Vax": "🛡️ 免疫／疫苗",
+        "💉 Anaesthesia": "💉 麻醉",
+        [GENERAL_SYSTEM]: "💊 其他／一般"
+    };
+    const drugCardLabels = {
+        en: {
+            classFallback: 'Drug class to review', indication: 'Indication', sideEffects: 'Side effects',
+            nursing: 'Nursing care', system: 'System', effect: 'Drug effect', tap: 'Tap', review: 'Review', hide: 'Hide',
+            browse: 'Browse by system', allSystems: 'All systems', formularyFallback: 'Check the current formulary.'
+        },
+        'zh-HK': {
+            classFallback: '藥物分類待核對', indication: '用途', sideEffects: '副作用',
+            nursing: '護理重點', system: '系統', effect: '藥物作用', tap: '撳開', review: '溫習', hide: '收起',
+            browse: '按系統瀏覽', allSystems: '所有系統', formularyFallback: '請查閱最新藥物名冊。'
+        }
+    };
+
+    function isCantoneseDrugDisplay() {
+        return drugDisplayLanguage === 'zh-HK';
+    }
+
+    function getDrugCardLabels() {
+        return drugCardLabels[isCantoneseDrugDisplay() ? 'zh-HK' : 'en'];
+    }
+
+    function localizeDrugSystem(systemValue) {
+        const normalized = normalizeSystemLabel(systemValue);
+        return isCantoneseDrugDisplay() ? (cantoneseSystemMap[normalized] || normalized) : normalized;
+    }
+
+    function getLocalizedDrugField(drugData = {}, field) {
+        const aliases = {
+            class: ['class_zh_hk', 'class'],
+            system: ['system_zh_hk', 'system'],
+            indication: ['indication_zh_hk', 'indication'],
+            side_effects: ['side_effects_zh_hk', 'side_effects', 'SideEffects', 'sideEffects'],
+            nursing: ['nursing_zh_hk', 'nursing'],
+            effect_of_drug: ['effect_of_drug_zh_hk', 'effect_of_drug', 'quiz', 'effect', 'effects']
+        };
+        const englishAliases = {
+            class: ['class'], system: ['system'], indication: ['indication'],
+            side_effects: ['side_effects', 'SideEffects', 'sideEffects'], nursing: ['nursing'],
+            effect_of_drug: ['effect_of_drug', 'quiz', 'effect', 'effects']
+        };
+        const keys = isCantoneseDrugDisplay() ? aliases[field] : englishAliases[field];
+        const found = (keys || [field]).map(key => drugData?.[key]).find(value => !isMissingDrugText(value));
+        if (field === 'system') return localizeDrugSystem(found || drugData.system || GENERAL_SYSTEM);
+        return found == null ? '' : String(found).trim();
+    }
 
     function normalizeSystemLabel(systemValue) {
         const raw = String(systemValue || '').trim();
@@ -1509,10 +1602,21 @@ Language: ${langInstruction}.`;
 
     function normalizeDrugData(drug) {
         drug.system = resolveDrugSystem(drug);
+        drug.class_zh_hk = String(drug.class_zh_hk || drug.class_zh || drug.class_cantonese || '').trim();
+        drug.system_zh_hk = String(drug.system_zh_hk || drug.system_zh || drug.system_cantonese || cantoneseSystemMap[drug.system] || '').trim();
+        drug.indication_zh_hk = String(drug.indication_zh_hk || drug.indication_zh || drug.indication_cantonese || '').trim();
+        drug.side_effects_zh_hk = String(drug.side_effects_zh_hk || drug.side_effects_zh || drug.side_effects_cantonese || '').trim();
+        drug.nursing_zh_hk = String(drug.nursing_zh_hk || drug.nursing_zh || drug.nursing_cantonese || '').trim();
+        drug.effect_of_drug_zh_hk = String(drug.effect_of_drug_zh_hk || drug.effect_of_drug_zh || drug.effect_of_drug_cantonese || '').trim();
         drug.side_effects = usefulDrugText(drug.side_effects || drug.SideEffects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
         drug.nursing = usefulDrugText(drug.nursing, DRUG_TEXT_FALLBACKS.nursing);
         drug.quiz = usefulDrugText(drug.quiz || drug.effect_of_drug || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
-        drug.__searchBlob = `${drug.name || ''} ${(drug.class || '')} ${(drug.system || '')} ${(drug.indication || '')} ${(drug.side_effects || '')} ${(drug.quiz || '')}`.toLowerCase();
+        drug.effect_of_drug = usefulDrugText(drug.effect_of_drug || drug.quiz || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
+        drug.__searchBlob = [
+            drug.name, drug.generic_name, drug.brand_name, drug.class, drug.system, drug.indication,
+            drug.side_effects, drug.nursing, drug.effect_of_drug, drug.class_zh_hk, drug.system_zh_hk,
+            drug.indication_zh_hk, drug.side_effects_zh_hk, drug.nursing_zh_hk, drug.effect_of_drug_zh_hk
+        ].filter(Boolean).join(' ').toLowerCase();
         return drug;
     }
 
@@ -1629,6 +1733,7 @@ Language: ${langInstruction}.`;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
 
         document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
+        syncDrugLanguageSettingsUI();
 
         refreshDrugViews();
         renderHistory();
@@ -2011,7 +2116,7 @@ Language: ${langInstruction}.`;
             .map(drug => {
                 const name = normalizeSearchText(drug.name);
                 const drugClass = normalizeSearchText(drug.class);
-                const text = normalizeSearchText([drug.__searchBlob, drug.name, drug.class, drug.system, drug.indication, drug.nursing, drug.side_effects, drug.SideEffects, drug.effect_of_drug].filter(Boolean).join(' '));
+                const text = normalizeSearchText([drug.__searchBlob, drug.name, drug.class, drug.system, drug.indication, drug.nursing, drug.side_effects, drug.SideEffects, drug.effect_of_drug, drug.class_zh_hk, drug.system_zh_hk, drug.indication_zh_hk, drug.side_effects_zh_hk, drug.nursing_zh_hk, drug.effect_of_drug_zh_hk].filter(Boolean).join(' '));
                 const matches = tokens.every(token => text.includes(token));
                 const rank = !normalized || name === normalized ? 0 : name.startsWith(normalized) ? 1 : tokens.every(token => name.includes(token)) ? 2 : tokens.every(token => drugClass.includes(token)) ? 3 : 4;
                 return { drug, matches, rank };
@@ -2105,13 +2210,16 @@ Language: ${langInstruction}.`;
             return [];
         }
 
+        const labels = getDrugCardLabels();
         list.innerHTML = revisionDrugs.map((drug, index) => {
             const system = normalizeSystemLabel(drug.system || getSystemForDrug(drug));
-            const displaySystem = system === 'Other' ? '💊 General' : system;
+            const displaySystem = localizeDrugSystem(system);
             const systemIcon = getSystemIcon(displaySystem);
-            const sideEffects = usefulDrugText(drug.side_effects || drug.SideEffects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
-            const effect = usefulDrugText(drug.effect_of_drug || drug.quiz || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
-            const nursing = usefulDrugText(drug.nursing, DRUG_TEXT_FALLBACKS.nursing);
+            const drugClass = getLocalizedDrugField(drug, 'class') || labels.classFallback;
+            const indication = getLocalizedDrugField(drug, 'indication') || labels.formularyFallback;
+            const sideEffects = getLocalizedDrugField(drug, 'side_effects') || DRUG_TEXT_FALLBACKS.sideEffects;
+            const effect = getLocalizedDrugField(drug, 'effect_of_drug') || DRUG_TEXT_FALLBACKS.effect;
+            const nursing = getLocalizedDrugField(drug, 'nursing') || DRUG_TEXT_FALLBACKS.nursing;
             const accent = revisionAccentForSystem(system, drug.name);
             const revisionKey = revisionKeyForDrug(drug, index);
             const seenClass = revisionViewedKeys.has(revisionKey) ? ' is-seen' : '';
@@ -2119,14 +2227,14 @@ Language: ${langInstruction}.`;
                 <article class="revision-card${seenClass}" data-revision-key="${escapeHtml(revisionKey)}" style="--revision-delay:${index * 35}ms; --revision-accent:${accent};">
                     <button type="button" class="revision-card-toggle" onclick="toggleRevisionCard(this)" aria-expanded="false">
                         <span class="revision-number"><span class="revision-system-icon" aria-hidden="true">${escapeHtml(systemIcon)}</span><span class="revision-number-value">${String(index + 1).padStart(2, '0')}</span></span>
-                        <span><span class="revision-name">${escapeHtml(drug.name)}</span><span class="revision-meta">${escapeHtml(drug.class || 'Drug class to review')}</span><span class="revision-system">${escapeHtml(displaySystem)}</span>${drug.__revisionSource ? `<span class="revision-source ${drug.__databaseMatch ? 'is-saved' : 'is-ai'}">${escapeHtml(drug.__revisionSource)}</span>` : ''}</span>
-                        <span class="revision-open-cue"><span class="revision-chevron" aria-hidden="true">⌄</span><span class="revision-tap-label">Tap</span></span>
+                        <span><span class="revision-name">${escapeHtml(drug.name)}</span><span class="revision-meta">${escapeHtml(drugClass)}</span><span class="revision-system">${escapeHtml(displaySystem)}</span>${drug.__revisionSource ? `<span class="revision-source ${drug.__databaseMatch ? 'is-saved' : 'is-ai'}">${escapeHtml(drug.__revisionSource)}</span>` : ''}</span>
+                        <span class="revision-open-cue"><span class="revision-chevron" aria-hidden="true">⌄</span><span class="revision-tap-label">${labels.tap}</span></span>
                     </button>
                     <div class="revision-details">
-                        <div class="revision-detail"><strong><span aria-hidden="true">🎯</span> Indication</strong>${escapeHtml(drug.indication || 'Check the current formulary.')}</div>
-                        <div class="revision-detail"><strong><span aria-hidden="true">⚠️</span> Side effects</strong>${escapeHtml(sideEffects)}</div>
-                        <div class="revision-detail"><strong><span aria-hidden="true">🩺</span> Nursing care</strong>${escapeHtml(nursing)}</div>
-                        <div class="revision-detail"><strong><span aria-hidden="true">⚡</span> Drug effect</strong>${escapeHtml(effect)}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">🎯</span> ${labels.indication}</strong>${escapeHtml(indication)}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">⚠️</span> ${labels.sideEffects}</strong>${escapeHtml(sideEffects)}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">🩺</span> ${labels.nursing}</strong>${escapeHtml(nursing)}</div>
+                        <div class="revision-detail"><strong><span aria-hidden="true">⚡</span> ${labels.effect}</strong>${escapeHtml(effect)}</div>
                     </div>
                 </article>`;
         }).join('');
@@ -2146,7 +2254,10 @@ Language: ${langInstruction}.`;
         }
         button.setAttribute('aria-expanded', String(open));
         const tapLabel = button.querySelector?.('.revision-tap-label');
-        if (tapLabel) tapLabel.textContent = open ? 'Hide' : 'Review';
+        if (tapLabel) {
+            const labels = getDrugCardLabels();
+            tapLabel.textContent = open ? labels.hide : labels.review;
+        }
         updateRevisionProgress();
     }
 
@@ -2289,6 +2400,7 @@ Language: ${langInstruction}.`;
         }
 
         const fragment = document.createDocumentFragment();
+        const labels = getDrugCardLabels();
 
         results.forEach((drug, index) => {
             const card = document.createElement('div');
@@ -2298,10 +2410,14 @@ Language: ${langInstruction}.`;
             const explainId = 'explain-' + uniqueId;
             const modifyId = 'modify-' + uniqueId;
             const generics = parseDrugGenerics(drug.name);
-            const sideEffectsText = usefulDrugText(drug.side_effects || drug.sideEffects, DRUG_TEXT_FALLBACKS.sideEffects);
+            const classText = getLocalizedDrugField(drug, 'class');
+            const indicationText = getLocalizedDrugField(drug, 'indication');
+            const sideEffectsText = getLocalizedDrugField(drug, 'side_effects') || DRUG_TEXT_FALLBACKS.sideEffects;
+            const nursingText = getLocalizedDrugField(drug, 'nursing') || DRUG_TEXT_FALLBACKS.nursing;
+            const systemText = getLocalizedDrugField(drug, 'system');
             
             // Grab the effect data (handling different possible keys from your database)
-            const effectText = usefulDrugText(drug.effect_of_drug || drug.quiz || drug.effect || drug.effects, DRUG_TEXT_FALLBACKS.effect);
+            const effectText = getLocalizedDrugField(drug, 'effect_of_drug') || DRUG_TEXT_FALLBACKS.effect;
 
             card.innerHTML = `
                 <div class="result-header">
@@ -2309,17 +2425,17 @@ Language: ${langInstruction}.`;
                         <span class="result-name">${escapeHtml(drug.name)}</span>
                         <button class="speak-icon-btn" onclick="event.stopPropagation(); triggerSearchSpeak(this)" title="Speak">🗣️</button>
                     </div>
-                    <span class="result-class">${escapeHtml(drug.class)}</span>
+                    <span class="result-class">${escapeHtml(classText)}</span>
                 </div>
-                <div class="result-indication">${escapeHtml(drug.indication)}</div>
+                <div class="result-indication">${escapeHtml(indicationText)}</div>
                 ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<button type="button" class="multi-chip selectable ${g === generics[0] ? 'is-active' : ''}" onclick="event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')">💖 ${escapeHtml(g)}</button>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
                     <div class="drug-detail-grid">
-                        <div class="drug-detail-block detail-side-effects"><strong>⚠️ Side effects</strong><span>${escapeHtml(sideEffectsText)}</span></div>
-                        <div class="drug-detail-block detail-nursing"><strong>🩺 Nursing care</strong><span>${escapeHtml(drug.nursing)}</span></div>
-                        <div class="drug-detail-block detail-system"><strong>🧭 System</strong><span>${escapeHtml(drug.system)}</span></div>
-                        <div class="drug-detail-block detail-effect"><strong>✨ Drug effect</strong><span>${escapeHtml(effectText)}</span></div>
+                        <div class="drug-detail-block detail-side-effects"><strong>⚠️ ${labels.sideEffects}</strong><span>${escapeHtml(sideEffectsText)}</span></div>
+                        <div class="drug-detail-block detail-nursing"><strong>🩺 ${labels.nursing}</strong><span>${escapeHtml(nursingText)}</span></div>
+                        <div class="drug-detail-block detail-system"><strong>🧭 ${labels.system}</strong><span>${escapeHtml(systemText)}</span></div>
+                        <div class="drug-detail-block detail-effect"><strong>✨ ${labels.effect}</strong><span>${escapeHtml(effectText)}</span></div>
                     </div>
                     
                     <div class="drug-action-grid">
@@ -2860,7 +2976,7 @@ Language: ${langInstruction}.`;
         });
     }
 
-    function validateEditedAISearchDrug(drugData, { requireNursing = false } = {}) {
+    function validateEditedAISearchDrug(drugData, { requireNursing = false, requireBilingual = false } = {}) {
         const name = String(drugData?.name || '').trim();
         const sideEffects = String(drugData?.side_effects || '').trim();
         const nursing = String(drugData?.nursing || '').trim();
@@ -2870,6 +2986,26 @@ Language: ${langInstruction}.`;
         }
         if (requireNursing && (isMissingDrugText(nursing) || nursing === DRUG_TEXT_FALLBACKS.nursing)) {
             throw new Error('Generate with DeepSeek or add useful Nursing care before saving.');
+        }
+        if (requireBilingual) {
+            const missingCantonese = [
+                ['class_zh_hk', '廣東話藥物分類'],
+                ['indication_zh_hk', '廣東話用途'],
+                ['side_effects_zh_hk', '廣東話副作用'],
+                ['nursing_zh_hk', '廣東話護理重點'],
+                ['effect_of_drug_zh_hk', '廣東話藥物作用'],
+            ].find(([field]) => !containsHanCharacters(drugData?.[field]));
+            if (missingCantonese) {
+                const error = new Error(`Google Sheet needs both languages. Run the combined AI review or add ${missingCantonese[1]}.`);
+                error.fieldId = {
+                    class_zh_hk: 'ai-edit-class-zh-hk',
+                    indication_zh_hk: 'ai-edit-indication-zh-hk',
+                    side_effects_zh_hk: 'ai-edit-side-effects-zh-hk',
+                    nursing_zh_hk: 'ai-edit-nursing-zh-hk',
+                    effect_of_drug_zh_hk: 'ai-edit-effect-zh-hk',
+                }[missingCantonese[0]];
+                throw error;
+            }
         }
         return normalizeAISearchDrugPayload({ ...drugData, name, side_effects: sideEffects, nursing });
     }
@@ -2887,7 +3023,13 @@ Language: ${langInstruction}.`;
             indication: value('ai-edit-indication'),
             side_effects: value('ai-edit-side-effects'),
             nursing: value('ai-edit-nursing'),
-            effect_of_drug: value('ai-edit-effect')
+            effect_of_drug: value('ai-edit-effect'),
+            class_zh_hk: value('ai-edit-class-zh-hk'),
+            system_zh_hk: value('ai-edit-system-zh-hk'),
+            indication_zh_hk: value('ai-edit-indication-zh-hk'),
+            side_effects_zh_hk: value('ai-edit-side-effects-zh-hk'),
+            nursing_zh_hk: value('ai-edit-nursing-zh-hk'),
+            effect_of_drug_zh_hk: value('ai-edit-effect-zh-hk')
         };
     }
 
@@ -2945,6 +3087,27 @@ Rules:
         return sentences.map(sentence => /[.!?]$/.test(sentence) ? sentence : `${sentence}.`).join(' ');
     }
 
+    function containsHanCharacters(value) {
+        return /[\u3400-\u9fff]/u.test(String(value || ''));
+    }
+
+    function normalizeThreeSentenceCantoneseNursingCare(text) {
+        const lines = String(text || '')
+            .replace(/\r/g, '\n')
+            .split(/\n+/)
+            .map(line => line.trim().replace(/^(?:[-*•]\s*|\d+[.)、]\s*)/, '').replace(/^(?:護理重點|護理|答案)\s*[:：]\s*/, '').trim())
+            .filter(Boolean);
+        const sentences = lines.flatMap(line => line.match(/[^。！？.!?]+(?:[。！？.!?]+|$)/gu) || [])
+            .map(sentence => sentence.replace(/\s+/g, ' ').trim()).filter(Boolean);
+        const visibleLength = value => String(value || '').replace(/[\s。！？.!?,，、；;：:]/gu, '').length;
+        if (sentences.length !== 3 || sentences.some(sentence => visibleLength(sentence) > 42) || !sentences.every(containsHanCharacters)) {
+            const error = new Error('DeepSeek must return exactly three concise Traditional Chinese Cantonese Nursing care sentences. Please try again.');
+            error.code = 'ai_card_not_simple';
+            throw error;
+        }
+        return sentences.map(sentence => /[。！？.!?]$/u.test(sentence) ? sentence : `${sentence}。`).join('');
+    }
+
     function getDrugNameParts(drugData = {}) {
         const pair = parseDrugNamePairs(drugData.name || '')[0] || {};
         return {
@@ -2975,10 +3138,16 @@ ${JSON.stringify({
     indication: drugData.indication || '',
     side_effects: drugData.side_effects || '',
     nursing: drugData.nursing || '',
-    effect_of_drug: drugData.effect_of_drug || ''
+    effect_of_drug: drugData.effect_of_drug || '',
+    class_zh_hk: drugData.class_zh_hk || '',
+    system_zh_hk: drugData.system_zh_hk || '',
+    indication_zh_hk: drugData.indication_zh_hk || '',
+    side_effects_zh_hk: drugData.side_effects_zh_hk || '',
+    nursing_zh_hk: drugData.nursing_zh_hk || '',
+    effect_of_drug_zh_hk: drugData.effect_of_drug_zh_hk || ''
 }, null, 2)}
 
-Return strict JSON only with exactly these keys: "name", "generic_name", "brand_name", "class", "system", "indication", "side_effects", "nursing", "effect_of_drug".
+Return strict JSON only with exactly these keys: "name", "generic_name", "brand_name", "class", "system", "indication", "side_effects", "nursing", "effect_of_drug", "class_zh_hk", "system_zh_hk", "indication_zh_hk", "side_effects_zh_hk", "nursing_zh_hk", "effect_of_drug_zh_hk".
 
 Rules:
 - Work only on the details shown on the medicine card: drug/brand name, class, indication, side effects, Nursing care, system, and drug effect. Do not add extra sections or commentary.
@@ -2994,7 +3163,11 @@ Rules:
 - "nursing" must be exactly three plain sentences in one paragraph, each preferably under 18 words: pre-administration checks; administration/monitoring; then hold/escalation signs plus verification of the prescription and local protocol.
 - Nursing care may synthesize cautious bedside actions from the supplied facts, but must say what to verify instead of guessing.
 - Do not invent a dose, route, dilution, infusion rate, monitoring threshold, contraindication, or local policy.
-- Use concise English. Output JSON only, with no Markdown.`;
+- The six "_zh_hk" fields must give the same facts in concise Traditional Chinese written Cantonese suitable for Hong Kong nurses. Medical terms may stay in English when clearer.
+- Keep "class_zh_hk" under 18 characters; "indication_zh_hk" and "effect_of_drug_zh_hk" to one short sentence each; and "side_effects_zh_hk" to 2-5 items separated by "、".
+- "nursing_zh_hk" must be exactly three short sentences using Chinese punctuation: checks before administration; administration/monitoring; then hold/escalation plus checking the prescription and local protocol.
+- "system_zh_hk" must be the matching Cantonese label for the selected English system. Never translate or alter medicine and brand names.
+- Use concise English for the unsuffixed fields and Traditional Chinese Cantonese for the "_zh_hk" fields. Output JSON only, with no Markdown.`;
     }
 
     function unwrapDrugObject(parsed) {
@@ -3009,9 +3182,15 @@ Rules:
         const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;
         const sentenceCount = value => (String(value || '').match(/[^.!?]+(?:[.!?]+|$)/g) || [])
             .map(sentence => sentence.trim()).filter(Boolean).length;
+        const cantoneseSentenceCount = value => (String(value || '').match(/[^。！？.!?]+(?:[。！？.!?]+|$)/gu) || [])
+            .map(sentence => sentence.trim()).filter(Boolean).length;
+        const visibleLength = value => String(value || '').replace(/[\s。！？.!?,，、；;：:]/gu, '').length;
         const nursingSentences = String(drugData.nursing || '').match(/[^.!?]+(?:[.!?]+|$)/g) || [];
+        const cantoneseNursingSentences = String(drugData.nursing_zh_hk || '').match(/[^。！？.!?]+(?:[。！？.!?]+|$)/gu) || [];
         const sideEffectItems = String(drugData.side_effects || '')
             .split(/[,;]+/).map(item => item.trim()).filter(Boolean);
+        const cantoneseSideEffectItems = String(drugData.side_effects_zh_hk || '')
+            .split(/[、，,；;]+/u).map(item => item.trim()).filter(Boolean);
         const tooLong = [
             wordCount(drugData.class) > 8,
             wordCount(drugData.indication) > 18 || sentenceCount(drugData.indication) > 1,
@@ -3019,6 +3198,12 @@ Rules:
             wordCount(drugData.effect_of_drug) > 20 || sentenceCount(drugData.effect_of_drug) > 1,
             nursingSentences.length !== 3,
             nursingSentences.some(sentence => wordCount(sentence) > 18),
+            !containsHanCharacters(drugData.class_zh_hk) || visibleLength(drugData.class_zh_hk) > 18,
+            !containsHanCharacters(drugData.indication_zh_hk) || visibleLength(drugData.indication_zh_hk) > 42 || cantoneseSentenceCount(drugData.indication_zh_hk) > 1,
+            !containsHanCharacters(drugData.side_effects_zh_hk) || visibleLength(drugData.side_effects_zh_hk) > 60 || cantoneseSideEffectItems.length > 5 || /[\r\n]/.test(drugData.side_effects_zh_hk),
+            !containsHanCharacters(drugData.effect_of_drug_zh_hk) || visibleLength(drugData.effect_of_drug_zh_hk) > 42 || cantoneseSentenceCount(drugData.effect_of_drug_zh_hk) > 1,
+            cantoneseNursingSentences.length !== 3,
+            cantoneseNursingSentences.some(sentence => visibleLength(sentence) > 42 || !containsHanCharacters(sentence)),
         ].some(Boolean);
         if (tooLong) {
             const error = new Error('AI returned text that is too long for the simple mobile card. Trying a shorter version is required.');
@@ -3040,6 +3225,7 @@ Rules:
             throw new Error('AI did not return useful side effects. The data was left unchanged.');
         }
         const nursing = normalizeThreeSentenceNursingCare(candidate.nursing || candidate.nursing_care || '');
+        const nursingZh = normalizeThreeSentenceCantoneseNursingCare(candidate.nursing_zh_hk || candidate.nursing_care_zh_hk || '');
         const originalParts = getDrugNameParts(originalDraft);
         const candidateNameParts = getDrugNameParts(candidate);
         const genericName = chooseText(candidate.generic_name || candidate.generic || candidateNameParts.generic, originalDraft.generic_name || originalParts.generic);
@@ -3059,6 +3245,12 @@ Rules:
                 candidate.effect_of_drug || candidate.drug_effect || candidate['effect of drug'] || candidate.effect,
                 originalDraft.effect_of_drug
             ),
+            class_zh_hk: chooseText(candidate.class_zh_hk || candidate.class_zh, originalDraft.class_zh_hk),
+            system_zh_hk: cantoneseSystemMap[systemCategories.includes(proposedSystem) ? proposedSystem : originalDraft.system] || '',
+            indication_zh_hk: chooseText(candidate.indication_zh_hk || candidate.indication_zh, originalDraft.indication_zh_hk),
+            side_effects_zh_hk: chooseText(candidate.side_effects_zh_hk || candidate.side_effects_zh, originalDraft.side_effects_zh_hk),
+            nursing_zh_hk: nursingZh,
+            effect_of_drug_zh_hk: chooseText(candidate.effect_of_drug_zh_hk || candidate.drug_effect_zh_hk || candidate.effect_zh_hk, originalDraft.effect_of_drug_zh_hk),
         };
         if (!improved.name) throw new Error('AI did not return a drug name. The data was left unchanged.');
         validateSimpleMobileDrugCard(improved);
@@ -3073,6 +3265,12 @@ Rules:
             'ai-edit-side-effects': improved.side_effects,
             'ai-edit-nursing': improved.nursing,
             'ai-edit-effect': improved.effect_of_drug,
+            'ai-edit-class-zh-hk': improved.class_zh_hk,
+            'ai-edit-system-zh-hk': improved.system_zh_hk,
+            'ai-edit-indication-zh-hk': improved.indication_zh_hk,
+            'ai-edit-side-effects-zh-hk': improved.side_effects_zh_hk,
+            'ai-edit-nursing-zh-hk': improved.nursing_zh_hk,
+            'ai-edit-effect-zh-hk': improved.effect_of_drug_zh_hk,
         };
         Object.entries(fieldMap).forEach(([id, value]) => {
             const field = document.getElementById(id);
@@ -3098,7 +3296,7 @@ Rules:
             button.innerText = 'AI is improving…';
             button.setAttribute('aria-busy', 'true');
         }
-        setAIReviewStatus('AI is improving the card data and concise three-sentence Nursing care…', 'var(--ios-blue)');
+        setAIReviewStatus('AI is preparing concise English + Cantonese card data and Nursing care…', 'var(--ios-blue)');
         try {
             const basePrompt = getDrugDataImprovePrompt(draft);
             let applied = false;
@@ -3106,10 +3304,10 @@ Rules:
             for (let attempt = 0; attempt < 2 && !applied; attempt++) {
                 let fullText = '';
                 const retryRule = attempt
-                    ? '\n\nSTRICT SHORT RETRY: The previous version was too long. Class: at most 8 words. Indication: one sentence, at most 18 words. Side effects: at most 5 short items. Drug effect: one sentence, at most 20 words. Nursing: exactly three sentences, each at most 18 words.'
+                    ? '\n\nSTRICT SHORT RETRY: The previous version was incomplete or too long. English: class at most 8 words; indication at most 18 words; side effects at most 5 items; effect at most 20 words; Nursing exactly three sentences of at most 18 words. Traditional Chinese Cantonese: include every _zh_hk field; class at most 18 characters; indication/effect one short sentence; side effects at most 5 items; Nursing exactly three short sentences.'
                     : '';
                 await streamAIResponse([
-                    { role: 'system', content: 'Simplify only the seven details shown on the supplied medicine card. Return strict JSON, keep clinical facts grounded, and include exactly three short Nursing care sentences.' },
+                    { role: 'system', content: 'Simplify only the details shown on the supplied medicine card. Return strict bilingual English and Traditional Chinese Cantonese JSON, keep clinical facts grounded, and include exactly three short Nursing care sentences in each language.' },
                     { role: 'user', content: basePrompt + retryRule },
                 ], text => { fullText = text; });
                 if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
@@ -3123,7 +3321,7 @@ Rules:
                 }
             }
             if (!applied) throw lastError || new Error('AI could not simplify the medicine card.');
-            setAIReviewStatus('Card data and Nursing care improved. Review every field before saving.', 'var(--ios-green)');
+            setAIReviewStatus('Card data and Nursing care improved in English + Cantonese. Review both before saving.', 'var(--ios-green)');
             return true;
         } catch (error) {
             setAIReviewStatus(error?.message || 'AI could not improve the data. Nothing was saved.', 'var(--ios-red)');
@@ -3206,6 +3404,7 @@ Rules:
         const isUpdate = reviewMode === 'update';
         const nameParts = getDrugNameParts(drugData);
         const selectedSystem = resolveDrugSystem(drugData);
+        const selectedSystemZh = String(drugData.system_zh_hk || cantoneseSystemMap[selectedSystem] || '').trim();
         const systemOptions = systemCategories.map(system =>
             `<option value="${escapeHtml(system)}" ${system === selectedSystem ? 'selected' : ''}>${escapeHtml(system)}</option>`
         ).join('');
@@ -3226,19 +3425,36 @@ Rules:
                 </div>
                 <div class="ai-review-note">${reviewNote}</div>
                 ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
-                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve data + Nursing care</button><span class="ai-improve-hint">One AI action makes every card field concise and writes exactly three short Nursing care sentences. Nothing saves automatically.</span></div>' : ''}
+                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve data + Nursing care</button><span class="ai-improve-hint">One AI action makes every card field concise in English + Cantonese, with three short Nursing care sentences in each language. Nothing saves automatically.</span></div>' : ''}
                 <div class="ai-edit-grid">
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name || '')}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">Generic name</span><input id="ai-edit-generic-name" class="ai-edit-input" value="${escapeHtml(nameParts.generic)}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">Brand name</span><input id="ai-edit-brand-name" class="ai-edit-input" value="${escapeHtml(nameParts.brand)}" placeholder="No brand found" autocomplete="off"></label>
-                    <label class="ai-edit-field"><span class="ai-edit-label">Class</span><input id="ai-edit-class" class="ai-edit-input" value="${escapeHtml(drugData.class || '')}" autocomplete="off"></label>
-                    <label class="ai-edit-field"><span class="ai-edit-label">System</span><select id="ai-edit-system" class="ai-edit-input">${systemOptions}</select></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Indication</span><textarea id="ai-edit-indication" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication || '')}</textarea></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects || drugData.SideEffects || '')}</textarea></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Nursing care · 3 concise sentences</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="4" placeholder="${enableAIDataImprove ? 'Use the combined AI button above or type Nursing care manually' : 'Generate with DeepSeek or type Nursing care manually'}">${escapeHtml(drugData.nursing || '')}</textarea>
-                        ${showStandaloneNursingAI ? '<span class="ai-nursing-tools"><button id="btn-generate-nursing" type="button" class="action-btn" style="background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe;">✨ Generate Nursing care</button><span class="ai-nursing-hint">DeepSeek writes exactly three sentences of 18 words or fewer. Review them against the prescription and local protocol.</span></span>' : ''}
-                    </label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Drug effect</span><textarea id="ai-edit-effect" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug || drugData.quiz || '')}</textarea></label>
+                    <span class="ai-language-note ai-edit-field full">Medicine and brand names remain in English for safer identification. Google Sheet saves require both language sections.</span>
+                    <details class="ai-language-panel" ${isCantoneseDrugDisplay() ? '' : 'open'}>
+                        <summary>English card data</summary>
+                        <div class="ai-edit-grid ai-language-fields">
+                            <label class="ai-edit-field"><span class="ai-edit-label">Class</span><input id="ai-edit-class" class="ai-edit-input" value="${escapeHtml(drugData.class || '')}" autocomplete="off"></label>
+                            <label class="ai-edit-field"><span class="ai-edit-label">System</span><select id="ai-edit-system" class="ai-edit-input">${systemOptions}</select></label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">Indication</span><textarea id="ai-edit-indication" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication || '')}</textarea></label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects || drugData.SideEffects || '')}</textarea></label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">Nursing care · 3 concise sentences</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="4" placeholder="${enableAIDataImprove ? 'Use the combined AI button above or type Nursing care manually' : 'Generate with DeepSeek or type Nursing care manually'}">${escapeHtml(drugData.nursing || '')}</textarea>
+                                ${showStandaloneNursingAI ? '<span class="ai-nursing-tools"><button id="btn-generate-nursing" type="button" class="action-btn" style="background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe;">✨ Generate Nursing care</button><span class="ai-nursing-hint">DeepSeek writes exactly three English sentences. Add the matching Cantonese section before saving to Google Sheet.</span></span>' : ''}
+                            </label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">Drug effect</span><textarea id="ai-edit-effect" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug || drugData.quiz || '')}</textarea></label>
+                        </div>
+                    </details>
+                    <details class="ai-language-panel" ${isCantoneseDrugDisplay() ? 'open' : ''}>
+                        <summary>廣東話卡資料（繁體中文）</summary>
+                        <div class="ai-edit-grid ai-language-fields">
+                            <label class="ai-edit-field"><span class="ai-edit-label">藥物分類</span><input id="ai-edit-class-zh-hk" class="ai-edit-input" value="${escapeHtml(drugData.class_zh_hk || '')}" autocomplete="off"></label>
+                            <label class="ai-edit-field"><span class="ai-edit-label">系統</span><input id="ai-edit-system-zh-hk" class="ai-edit-input" value="${escapeHtml(selectedSystemZh)}" readonly></label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">用途</span><textarea id="ai-edit-indication-zh-hk" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication_zh_hk || '')}</textarea></label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">副作用</span><textarea id="ai-edit-side-effects-zh-hk" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects_zh_hk || '')}</textarea></label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">護理重點 · 3句精簡句子</span><textarea id="ai-edit-nursing-zh-hk" class="ai-edit-input" rows="4">${escapeHtml(drugData.nursing_zh_hk || '')}</textarea></label>
+                            <label class="ai-edit-field full"><span class="ai-edit-label">藥物作用</span><textarea id="ai-edit-effect-zh-hk" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug_zh_hk || '')}</textarea></label>
+                        </div>
+                    </details>
                 </div>
                 <div class="ai-review-actions ${allowSheetSave ? '' : 'one-action'}">
                     <button id="btn-add-local" class="action-btn ai-local-save">${localButtonLabel}</button>
@@ -3266,6 +3482,11 @@ Rules:
             if (genericField) genericField.value = parts.generic;
             if (brandField) brandField.value = parts.brand;
         });
+        const systemField = document.getElementById('ai-edit-system');
+        const systemZhField = document.getElementById('ai-edit-system-zh-hk');
+        systemField?.addEventListener('change', () => {
+            if (systemZhField) systemZhField.value = cantoneseSystemMap[systemField.value] || '';
+        });
 
         const nursingBtn = showStandaloneNursingAI ? document.getElementById('btn-generate-nursing') : null;
         if (nursingBtn) nursingBtn.onclick = generateDeepSeekNursingCare;
@@ -3288,9 +3509,9 @@ Rules:
                     }
                 } catch (error) {
                     setAIReviewStatus(error.message, 'var(--ios-red)');
-                    const focusId = /name/i.test(error.message)
+                    const focusId = error.fieldId || (/name/i.test(error.message)
                         ? 'ai-edit-name'
-                        : (/nursing/i.test(error.message) ? 'ai-edit-nursing' : 'ai-edit-side-effects');
+                        : (/nursing/i.test(error.message) ? 'ai-edit-nursing' : 'ai-edit-side-effects'));
                     document.getElementById(focusId)?.focus();
                 }
             };
@@ -3300,16 +3521,16 @@ Rules:
         if (saveBtn) {
             saveBtn.onclick = async () => {
                 try {
-                    const editedDrug = readEditableAISearchDrug({ requireNursing });
+                    const editedDrug = readEditableAISearchDrug({ requireNursing, requireBilingual: true });
                     await saveToGoogleSheet(editedDrug, 'save-status', 'btn-save-sheet', {
                         mode: isUpdate ? 'update' : 'add',
                         originalName: originalName || drugData.name,
                     });
                 } catch (error) {
                     setAIReviewStatus(error.message, 'var(--ios-red)');
-                    const focusId = /name/i.test(error.message)
+                    const focusId = error.fieldId || (/name/i.test(error.message)
                         ? 'ai-edit-name'
-                        : (/nursing/i.test(error.message) ? 'ai-edit-nursing' : 'ai-edit-side-effects');
+                        : (/nursing/i.test(error.message) ? 'ai-edit-nursing' : 'ai-edit-side-effects'));
                     document.getElementById(focusId)?.focus();
                 }
             };
@@ -3321,6 +3542,8 @@ Rules:
         if (!drugData || typeof drugData !== 'object') return null;
         const rawSideEffects = drugData.side_effects || drugData.SideEffects || drugData.sideEffects || drugData['side effects'] || drugData['Side Effects'];
         const rawEffect = drugData.effect_of_drug || drugData.drug_effect || drugData['effect of drug'] || drugData['Drug Effect'] || drugData.quiz || drugData.effect || drugData.effects;
+        const rawSideEffectsZh = drugData.side_effects_zh_hk || drugData.side_effects_zh || drugData.side_effects_cantonese || '';
+        const rawEffectZh = drugData.effect_of_drug_zh_hk || drugData.drug_effect_zh_hk || drugData.effect_zh_hk || drugData.effect_of_drug_cantonese || '';
         const normalized = {
             name: String(drugData.name || '').trim(),
             generic_name: String(drugData.generic_name || drugData.generic || '').trim(),
@@ -3332,6 +3555,12 @@ Rules:
             side_effects: usefulDrugText(rawSideEffects, DRUG_TEXT_FALLBACKS.sideEffects),
             quiz: usefulDrugText(rawEffect, DRUG_TEXT_FALLBACKS.effect),
             effect_of_drug: usefulDrugText(rawEffect, DRUG_TEXT_FALLBACKS.effect),
+            class_zh_hk: String(drugData.class_zh_hk || drugData.class_zh || drugData.class_cantonese || '').trim(),
+            system_zh_hk: String(drugData.system_zh_hk || drugData.system_zh || drugData.system_cantonese || '').trim(),
+            indication_zh_hk: String(drugData.indication_zh_hk || drugData.indication_zh || drugData.indication_cantonese || '').trim(),
+            side_effects_zh_hk: String(rawSideEffectsZh).trim(),
+            nursing_zh_hk: String(drugData.nursing_zh_hk || drugData.nursing_zh || drugData.nursing_cantonese || '').trim(),
+            effect_of_drug_zh_hk: String(rawEffectZh).trim(),
             hold_param: String(drugData.hold_param || '').trim(),
             admin_type: String(drugData.admin_type || 'IV').trim()
         };
@@ -3345,6 +3574,7 @@ Rules:
             normalized.name = formatGenericBrandName(generic, normalized.brand_name, normalized.name);
         }
         if (!systemCategories.includes(normalized.system)) normalized.system = GENERAL_SYSTEM;
+        normalized.system_zh_hk = cantoneseSystemMap[normalized.system] || normalized.system_zh_hk;
         return normalized;
     }
 
@@ -3378,6 +3608,12 @@ Rules:
             side_effects: sideEffects,
             nursing: String(normalized.nursing || '').trim(),
             effect_of_drug: effect,
+            class_zh_hk: String(normalized.class_zh_hk || '').trim(),
+            system_zh_hk: String(normalized.system_zh_hk || cantoneseSystemMap[normalized.system] || '').trim(),
+            indication_zh_hk: String(normalized.indication_zh_hk || '').trim(),
+            side_effects_zh_hk: String(normalized.side_effects_zh_hk || '').trim(),
+            nursing_zh_hk: String(normalized.nursing_zh_hk || '').trim(),
+            effect_of_drug_zh_hk: String(normalized.effect_of_drug_zh_hk || '').trim(),
             quiz: usefulDrugText(normalized.quiz || effect, DRUG_TEXT_FALLBACKS.effect),
             effect: effect,
             effects: effect
@@ -3449,7 +3685,7 @@ Rules:
         return null;
     }
 
-    async function checkGoogleSheetUpdateCapability(scriptURL) {
+    async function checkGoogleSheetCapability(scriptURL, { requireUpdate = false } = {}) {
         try {
             const capabilityURL = new URL(scriptURL);
             capabilityURL.searchParams.set('action', 'capabilities');
@@ -3463,8 +3699,12 @@ Rules:
             if (!response.ok) return { ok: false, reason: `HTTP ${response.status}` };
             const body = await readGoogleSheetJSON(response);
             const supported = body?.ok !== false
-                && body?.supports_update === true
-                && Number(body?.protocol_version || 0) >= 2;
+                && (requireUpdate ? body?.supports_update === true : body?.supports_add === true)
+                && Number(body?.protocol_version || 0) >= 2
+                && body?.bilingual_fields === true
+                && Array.isArray(body?.languages)
+                && body.languages.includes('en')
+                && body.languages.includes('zh-HK');
             return supported
                 ? { ok: true, body }
                 : { ok: false, reason: body?.error || 'update_not_supported', body };
@@ -3558,21 +3798,23 @@ Rules:
             return true;
         }
 
-        if (isUpdate) {
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = isUpdate ? '🔎 Checking safe Sheet update…' : '🔎 Checking bilingual Sheet…';
+        }
+        setStatus(isUpdate
+            ? 'Checking that Google Sheet supports safe bilingual row updates…'
+            : 'Checking that Google Sheet supports English + Cantonese fields…', 'var(--ios-blue)');
+        const capability = await checkGoogleSheetCapability(scriptURL, { requireUpdate: isUpdate });
+        if (!capability.ok) {
+            setStatus(isUpdate
+                ? '❌ Google Sheet updater needs the v2 Apps Script with bilingual fields. No Sheet row was changed; device-only save is still available.'
+                : '❌ Google Sheet needs the v2 Apps Script with bilingual fields. Nothing was sent; device-only save is still available.', 'var(--ios-red)');
             if (saveBtn) {
-                saveBtn.disabled = true;
-                saveBtn.innerText = '🔎 Checking safe Sheet update…';
+                saveBtn.disabled = false;
+                saveBtn.innerText = isUpdate ? '☁️ Retry safe Google Sheet update' : '☁️ Retry Google Sheet';
             }
-            setStatus('Checking that Google Sheet supports safe row updates…', 'var(--ios-blue)');
-            const capability = await checkGoogleSheetUpdateCapability(scriptURL);
-            if (!capability.ok) {
-                setStatus('❌ Google Sheet updater needs the v2 Apps Script. No Sheet row was changed; device-only save is still available.', 'var(--ios-red)');
-                if (saveBtn) {
-                    saveBtn.disabled = false;
-                    saveBtn.innerText = '☁️ Retry safe Google Sheet update';
-                }
-                return false;
-            }
+            return false;
         }
 
         if (saveBtn) {
@@ -3659,11 +3901,12 @@ Rules:
     function renderAllSystems() {
         const container = document.getElementById('recommend-container');
         container.innerHTML = '';
+        const labels = getDrugCardLabels();
         ['All', ...systemCategories].forEach(system => {
             const chip = document.createElement('button');
             chip.type = 'button';
             chip.className = 'chip system-filter-chip';
-            chip.textContent = system === 'All' ? 'All systems' : system;
+            chip.textContent = system === 'All' ? labels.allSystems : localizeDrugSystem(system);
             chip.setAttribute('aria-pressed', String(searchSystem === system));
             chip.onclick = () => {
                 searchSystem = system;
@@ -3673,7 +3916,9 @@ Rules:
             };
             container.appendChild(chip);
         });
-        document.getElementById('search-browse-label').textContent = searchSystem === 'All' ? 'Browse by system' : `System: ${searchSystem}`;
+        document.getElementById('search-browse-label').textContent = searchSystem === 'All'
+            ? labels.browse
+            : `${labels.system}: ${localizeDrugSystem(searchSystem)}`;
     }
     
     function renderHistory() {
@@ -3818,9 +4063,13 @@ Rules:
     function saveLocalDrugCache(list) {
         try {
             const payload = (list || []).map(d => ({
-                name: d.name || '', class: d.class || '', indication: d.indication || '',
+                name: d.name || '', generic_name: d.generic_name || '', brand_name: d.brand_name || '',
+                class: d.class || '', indication: d.indication || '',
                 side_effects: d.side_effects || d.sideEffects || '', quiz: d.quiz || d.effect || d.effects || '', nursing: d.nursing || '',
-                system: d.system || ''
+                effect_of_drug: d.effect_of_drug || d.quiz || d.effect || d.effects || '', system: d.system || '',
+                class_zh_hk: d.class_zh_hk || '', system_zh_hk: d.system_zh_hk || '',
+                indication_zh_hk: d.indication_zh_hk || '', side_effects_zh_hk: d.side_effects_zh_hk || '',
+                nursing_zh_hk: d.nursing_zh_hk || '', effect_of_drug_zh_hk: d.effect_of_drug_zh_hk || ''
             }));
             localStorage.setItem(LOCAL_DRUG_CACHE_KEY, JSON.stringify(payload));
         } catch (_) {}
@@ -3830,7 +4079,15 @@ Rules:
         const p = document.getElementById('settings-panel');
         const opening = p.style.display !== 'flex';
         p.style.display = opening ? 'flex' : 'none';
-        if (opening) syncDeepSeekSettingsUI();
+        if (opening) {
+            syncDeepSeekSettingsUI();
+            syncDrugLanguageSettingsUI();
+        }
+    }
+
+    function syncDrugLanguageSettingsUI() {
+        const select = document.getElementById('drug-card-language');
+        if (select) select.value = drugDisplayLanguage;
     }
 
     function selectDeepSeekMode(mode) {
@@ -3883,6 +4140,9 @@ Rules:
         localStorage.removeItem('google_script_url');
 
         localStorage.setItem('auto_sync_startup', document.getElementById('auto-sync-startup').checked ? '1' : '0');
+        const selectedDrugLanguage = document.getElementById('drug-card-language')?.value === 'zh-HK' ? 'zh-HK' : 'en';
+        localStorage.setItem(DRUG_DISPLAY_LANGUAGE_STORAGE_KEY, selectedDrugLanguage);
+        drugDisplayLanguage = selectedDrugLanguage;
         // reload globals
         googleScriptURL = REQUIRED_SCRIPT_URL;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
@@ -3892,7 +4152,7 @@ Rules:
 
         updateProviderDisplay();
         updateApiNotices();
-        runSearch();
+        refreshDrugViews();
         toggleSettings();
         alert("Settings saved!");
     }
