@@ -39,9 +39,9 @@ Users may instead choose **Settings → Use my own DeepSeek API**. This optional
 
 Missing drugs are checked in this order: the configured Google Sheet, RxNorm, then the openFDA drug-label API. RxNorm related brand concepts are used when an openFDA label has no brand name. These searches do not use AI tokens and never add a result automatically. If all sources miss, the review form provides a Google Search button and manual entry.
 
-Official RxNorm/openFDA results offer **AI improve all data**. It focuses only on the medicine-card details—generic/brand name, class, indication, side effects, three-sentence Nursing care, system, and drug effect—and rewrites them in short, simple mobile-readable language; nothing is saved automatically.
+Official RxNorm/openFDA results offer one combined **AI improve data + Nursing care** action. It improves the medicine-card details—generic/brand name, class, indication, side effects, system, drug effect, and exactly three concise Nursing care sentences—in one request; nothing is saved automatically.
 
-Every saved database result also has **AI modify data** beside Google, Drugs.com, and the Cantonese explanation. It prefills that record, improves all fields, and waits for explicit approval. The review offers separate **device only** and **Google Sheet + device** save buttons. Sheet updates use the original generic name, require an explicit v2 server acknowledgement, and never fall back to appending a duplicate row.
+Every saved database result also has **AI modify data** beside Google, Drugs.com, and the Cantonese explanation. It prefills that record, uses the same combined data-and-Nursing action, and waits for explicit approval. The review offers separate **device only** and **Google Sheet + device** save buttons. Sheet updates use the original generic name, require an explicit v2 server acknowledgement, and never fall back to appending a duplicate row.
 
 ## Safe Google Sheet updates
 

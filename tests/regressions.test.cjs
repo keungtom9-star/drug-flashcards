@@ -425,8 +425,8 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 28 Sep 2026 · 00:02 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-28T00:02:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 28 Sep 2026 · 20:44 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-28T20:44:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
     assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
@@ -876,6 +876,12 @@ test('DeepSeek Nursing care is limited to exactly three plain sentences', () => 
         () => context.normalizeThreeSentenceNursingCare('One. Two. Three. Four.'),
         /exactly three/i
     );
+    assert.throws(
+        () => context.normalizeThreeSentenceNursingCare(
+            'Check every available clinical detail and all baseline observations very carefully before giving this medicine to the patient today. Monitor response. Escalate concerns.'
+        ),
+        /18 words or fewer/i
+    );
 });
 
 test('an official-source drug uses no search AI and AI improvement covers Nursing care before explicit approval', async () => {
@@ -885,16 +891,11 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     context.Papa = { parse: () => ({ data: [] }) };
     let sheetWrites = 0;
     let writtenPayload;
-    let returnInvalidNursing = false;
     const requests = [];
     context.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
         if (options.method === 'POST') {
             if (String(url) === '/.netlify/functions/deepseek') {
-                const requestBody = JSON.parse(options.body);
-                const isNursingRequest = /Write exactly three short sentences/i.test(
-                    requestBody.messages?.[0]?.content || ''
-                );
                 const improved = JSON.stringify({
                     name: 'Novelmed (Nova)',
                     generic_name: 'Novelmed',
@@ -906,11 +907,7 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
                     effect_of_drug: 'Concise official action',
                     nursing: 'Check allergies and baseline observations. Monitor response and adverse effects during administration. Hold and escalate concerns; verify the prescription, local protocol and current formulary.',
                 });
-                const content = isNursingRequest
-                    ? (returnInvalidNursing
-                        ? 'One. Two. Three. Four.'
-                        : '- Check allergies and baseline observations.\n- Monitor response and adverse effects.\n- Hold and escalate concerns; verify against the prescription, local protocol and current formulary.')
-                    : improved;
+                const content = improved;
                 return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`, {
                     status: 200,
                     headers: { 'Content-Type': 'text/event-stream' },
@@ -939,7 +936,8 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     assert.equal(context.findLocalDrugs('Novelmed').length, 0);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /RxNorm \+ openFDA/);
-    assert.match(document.getElementById('ai-search-output').innerHTML, /AI improve all data/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /AI improve data \+ Nursing care/);
+    assert.doesNotMatch(document.getElementById('ai-search-output').innerHTML, /id="btn-generate-nursing"/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Generic name/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Brand name/);
     assert.equal(requests.some(request => request.url.includes('openrouter')), false);
@@ -973,28 +971,24 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     assert.equal(sheetWrites, 0, 'Nursing care is required before saving an official result');
     assert.match(document.getElementById('save-status').innerText, /DeepSeek.*Nursing care/i);
 
-    await document.getElementById('btn-generate-nursing').onclick();
+    await document.getElementById('btn-improve-official-data').onclick();
     const generatedNursing = document.getElementById('ai-edit-nursing').value;
     assert.match(generatedNursing, /Monitor response/);
     assert.doesNotMatch(generatedNursing, /\n|^\s*[-*•]/);
     assert.equal((generatedNursing.match(/[.!?](?:\s|$)/g) || []).length, 3);
-    const deepSeekRequest = requests.find(request => {
-        if (request.url !== '/.netlify/functions/deepseek') return false;
-        const body = JSON.parse(request.options.body);
-        return /Write exactly three short sentences/i.test(body.messages?.[0]?.content || '');
-    });
+    const deepSeekRequest = requests.find(request => request.url === '/.netlify/functions/deepseek');
     assert.ok(deepSeekRequest);
     assert.equal(deepSeekRequest.options.headers.Authorization, undefined);
     const deepSeekBody = JSON.parse(deepSeekRequest.options.body);
     assert.equal(deepSeekBody.model, undefined);
     assert.equal(deepSeekBody.max_tokens, undefined);
-    assert.match(deepSeekBody.messages[0].content, /exactly three short sentences/i);
-    assert.match(deepSeekBody.messages[0].content, /Do not use bullets/i);
+    assert.match(deepSeekBody.messages.map(message => message.content).join('\n'), /exactly three (?:short Nursing care|plain) sentences/i);
 
-    returnInvalidNursing = true;
-    await document.getElementById('btn-generate-nursing').onclick();
-    assert.equal(document.getElementById('ai-edit-nursing').value, generatedNursing);
-    assert.match(document.getElementById('save-status').innerText, /exactly three/i);
+    fillAIEditor(document, {
+        'ai-edit-name': 'Novelmed (Edited brand)',
+        'ai-edit-indication': 'Edited indication for testing',
+        'ai-edit-side-effects': 'Edited nausea, rash, dizziness',
+    });
 
     await document.getElementById('btn-save-sheet').onclick();
     assert.equal(sheetWrites, 1);
@@ -1055,7 +1049,9 @@ test('saved database AI keeps card details simple and safely updates Google Shee
     assert.match(review, /Save on this device only/);
     assert.match(review, /Save changes to Google Sheet \+ device/);
     assert.match(review, /never silently adds a duplicate row/i);
-    assert.match(review, /name, class, indication, side effects, Nursing care, system and drug effect/i);
+    assert.match(review, /AI improve data \+ Nursing care/i);
+    assert.match(review, /every card field concise/i);
+    assert.doesNotMatch(review, /id="btn-generate-nursing"/);
     fillAIEditor(document, {
         'ai-edit-name': original.name,
         'ai-edit-generic-name': 'Savedmed',
@@ -1135,7 +1131,7 @@ test('AI improve retries once when medicine-card wording is too long for mobile'
     assert.match(prompts[1], /STRICT SHORT RETRY/);
     assert.equal(document.getElementById('ai-edit-indication').value, 'Treats the stated condition.');
     assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, dizziness, rash');
-    assert.match(document.getElementById('save-status').innerText, /All fields improved/i);
+    assert.match(document.getElementById('save-status').innerText, /Card data and Nursing care improved/i);
 });
 
 test('legacy Sheet writer receives no update POST and cannot create a duplicate row', async () => {

@@ -1144,7 +1144,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-28T00:02:00+08:00">Updated 28 Sep 2026 · 00:02 HKT</time>
+        <time class="app-last-updated" datetime="2026-09-28T20:44:00+08:00">Updated 28 Sep 2026 · 20:44 HKT</time>
     </div>
 </header>
 
@@ -2916,7 +2916,7 @@ Rules:
 - Sentence 1: pre-administration checks.
 - Sentence 2: safe administration and monitoring.
 - Sentence 3: important hold/escalation signs, then remind the nurse to verify the prescription, local protocol and current formulary.
-- Keep each sentence under 24 words and include patient education only when essential.
+- Keep each sentence to 18 words or fewer and include patient education only when essential.
 - Do not invent a dose, route, dilution, infusion rate, contraindication, laboratory threshold, or local policy.
 - If the supplied information is insufficient, say what must be checked instead of guessing.
 - Do not use bullets, numbering, headings, Markdown or an introduction.
@@ -2936,8 +2936,11 @@ Rules:
         const sentences = lines.flatMap(line => (
             line.match(/[^.!?]+(?:[.!?]+|$)/g) || []
         )).map(sentence => sentence.replace(/\s+/g, ' ').trim()).filter(Boolean);
-        if (sentences.length !== 3) {
-            throw new Error('DeepSeek must return exactly three short Nursing care sentences. Please try again.');
+        const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;
+        if (sentences.length !== 3 || sentences.some(sentence => wordCount(sentence) > 18)) {
+            const error = new Error('DeepSeek must return exactly three concise Nursing care sentences of 18 words or fewer. Please try again.');
+            error.code = 'ai_card_not_simple';
+            throw error;
         }
         return sentences.map(sentence => /[.!?]$/.test(sentence) ? sentence : `${sentence}.`).join(' ');
     }
@@ -3007,12 +3010,15 @@ Rules:
         const sentenceCount = value => (String(value || '').match(/[^.!?]+(?:[.!?]+|$)/g) || [])
             .map(sentence => sentence.trim()).filter(Boolean).length;
         const nursingSentences = String(drugData.nursing || '').match(/[^.!?]+(?:[.!?]+|$)/g) || [];
+        const sideEffectItems = String(drugData.side_effects || '')
+            .split(/[,;]+/).map(item => item.trim()).filter(Boolean);
         const tooLong = [
-            wordCount(drugData.class) > 10,
-            wordCount(drugData.indication) > 30 || sentenceCount(drugData.indication) > 2,
-            wordCount(drugData.side_effects) > 24 || /[\r\n]/.test(drugData.side_effects),
-            wordCount(drugData.effect_of_drug) > 28 || sentenceCount(drugData.effect_of_drug) > 2,
-            nursingSentences.some(sentence => wordCount(sentence) > 24),
+            wordCount(drugData.class) > 8,
+            wordCount(drugData.indication) > 18 || sentenceCount(drugData.indication) > 1,
+            wordCount(drugData.side_effects) > 18 || sideEffectItems.length > 5 || /[\r\n]/.test(drugData.side_effects),
+            wordCount(drugData.effect_of_drug) > 20 || sentenceCount(drugData.effect_of_drug) > 1,
+            nursingSentences.length !== 3,
+            nursingSentences.some(sentence => wordCount(sentence) > 18),
         ].some(Boolean);
         if (tooLong) {
             const error = new Error('AI returned text that is too long for the simple mobile card. Trying a shorter version is required.');
@@ -3092,7 +3098,7 @@ Rules:
             button.innerText = 'AI is improving…';
             button.setAttribute('aria-busy', 'true');
         }
-        setAIReviewStatus('AI is simplifying the seven medicine-card details, including three-sentence Nursing care…', 'var(--ios-blue)');
+        setAIReviewStatus('AI is improving the card data and concise three-sentence Nursing care…', 'var(--ios-blue)');
         try {
             const basePrompt = getDrugDataImprovePrompt(draft);
             let applied = false;
@@ -3100,7 +3106,7 @@ Rules:
             for (let attempt = 0; attempt < 2 && !applied; attempt++) {
                 let fullText = '';
                 const retryRule = attempt
-                    ? '\n\nSTRICT SHORT RETRY: The previous version was too long. Use one short line per field, a 2-5 item side-effect list, and exactly three brief Nursing sentences.'
+                    ? '\n\nSTRICT SHORT RETRY: The previous version was too long. Class: at most 8 words. Indication: one sentence, at most 18 words. Side effects: at most 5 short items. Drug effect: one sentence, at most 20 words. Nursing: exactly three sentences, each at most 18 words.'
                     : '';
                 await streamAIResponse([
                     { role: 'system', content: 'Simplify only the seven details shown on the supplied medicine card. Return strict JSON, keep clinical facts grounded, and include exactly three short Nursing care sentences.' },
@@ -3117,7 +3123,7 @@ Rules:
                 }
             }
             if (!applied) throw lastError || new Error('AI could not simplify the medicine card.');
-            setAIReviewStatus('All fields improved. Review every field before saving.', 'var(--ios-green)');
+            setAIReviewStatus('Card data and Nursing care improved. Review every field before saving.', 'var(--ios-green)');
             return true;
         } catch (error) {
             setAIReviewStatus(error?.message || 'AI could not improve the data. Nothing was saved.', 'var(--ios-red)');
@@ -3125,7 +3131,7 @@ Rules:
         } finally {
             if (button) {
                 button.disabled = false;
-                button.innerText = '✨ AI improve all data';
+                button.innerText = '✨ AI improve data + Nursing care';
                 button.removeAttribute('aria-busy');
             }
         }
@@ -3204,6 +3210,7 @@ Rules:
             `<option value="${escapeHtml(system)}" ${system === selectedSystem ? 'selected' : ''}>${escapeHtml(system)}</option>`
         ).join('');
         const reviewTitle = isUpdate ? 'Review AI changes' : 'Review drug details';
+        const showStandaloneNursingAI = enableDeepSeekNursing && !enableAIDataImprove;
         const reviewNote = isUpdate
             ? '<strong>Nothing has been saved yet.</strong> Review every AI change, then save on this device only or safely replace the matching Google Sheet row. An update never silently adds a duplicate row.'
             : '<strong>Nothing has been added yet.</strong> Edit every field, verify it against the prescription and current local formulary, then choose an Add button.';
@@ -3219,7 +3226,7 @@ Rules:
                 </div>
                 <div class="ai-review-note">${reviewNote}</div>
                 ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
-                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve all data</button><span class="ai-improve-hint">Simplifies only the card details: name, class, indication, side effects, Nursing care, system and drug effect. Nothing saves automatically.</span></div>' : ''}
+                ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve data + Nursing care</button><span class="ai-improve-hint">One AI action makes every card field concise and writes exactly three short Nursing care sentences. Nothing saves automatically.</span></div>' : ''}
                 <div class="ai-edit-grid">
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name || '')}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">Generic name</span><input id="ai-edit-generic-name" class="ai-edit-input" value="${escapeHtml(nameParts.generic)}" autocomplete="off"></label>
@@ -3228,8 +3235,8 @@ Rules:
                     <label class="ai-edit-field"><span class="ai-edit-label">System</span><select id="ai-edit-system" class="ai-edit-input">${systemOptions}</select></label>
                     <label class="ai-edit-field full"><span class="ai-edit-label">Indication</span><textarea id="ai-edit-indication" class="ai-edit-input" rows="2">${escapeHtml(drugData.indication || '')}</textarea></label>
                     <label class="ai-edit-field full"><span class="ai-edit-label">Side effects</span><textarea id="ai-edit-side-effects" class="ai-edit-input" rows="2">${escapeHtml(drugData.side_effects || drugData.SideEffects || '')}</textarea></label>
-                    <label class="ai-edit-field full"><span class="ai-edit-label">Nursing care · DeepSeek</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="4" placeholder="Generate with DeepSeek or type Nursing care manually">${escapeHtml(drugData.nursing || '')}</textarea>
-                        ${enableDeepSeekNursing ? '<span class="ai-nursing-tools"><button id="btn-generate-nursing" type="button" class="action-btn" style="background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe;">✨ Generate Nursing care</button><span class="ai-nursing-hint">DeepSeek writes only three short sentences. Review them against the prescription and local protocol.</span></span>' : ''}
+                    <label class="ai-edit-field full"><span class="ai-edit-label">Nursing care · 3 concise sentences</span><textarea id="ai-edit-nursing" class="ai-edit-input" rows="4" placeholder="${enableAIDataImprove ? 'Use the combined AI button above or type Nursing care manually' : 'Generate with DeepSeek or type Nursing care manually'}">${escapeHtml(drugData.nursing || '')}</textarea>
+                        ${showStandaloneNursingAI ? '<span class="ai-nursing-tools"><button id="btn-generate-nursing" type="button" class="action-btn" style="background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe;">✨ Generate Nursing care</button><span class="ai-nursing-hint">DeepSeek writes exactly three sentences of 18 words or fewer. Review them against the prescription and local protocol.</span></span>' : ''}
                     </label>
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug effect</span><textarea id="ai-edit-effect" class="ai-edit-input" rows="2">${escapeHtml(drugData.effect_of_drug || drugData.quiz || '')}</textarea></label>
                 </div>
@@ -3260,7 +3267,7 @@ Rules:
             if (brandField) brandField.value = parts.brand;
         });
 
-        const nursingBtn = document.getElementById('btn-generate-nursing');
+        const nursingBtn = showStandaloneNursingAI ? document.getElementById('btn-generate-nursing') : null;
         if (nursingBtn) nursingBtn.onclick = generateDeepSeekNursingCare;
 
         const addLocalBtn = document.getElementById('btn-add-local');
