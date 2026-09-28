@@ -12,11 +12,25 @@ const DEFAULT_DRUG_HEADERS = [
   'generic_name',
   'brand_name',
   'class',
+  'class_zh_hk',
   'system',
+  'system_zh_hk',
   'indication',
+  'indication_zh_hk',
   'SideEffects',
+  'side_effects_zh_hk',
   'nursing',
-  'effect_of_drug'
+  'nursing_zh_hk',
+  'effect_of_drug',
+  'effect_of_drug_zh_hk'
+];
+const BILINGUAL_DRUG_HEADERS = [
+  'class_zh_hk',
+  'system_zh_hk',
+  'indication_zh_hk',
+  'side_effects_zh_hk',
+  'nursing_zh_hk',
+  'effect_of_drug_zh_hk'
 ];
 
 function doGet(e) {
@@ -27,6 +41,8 @@ function doGet(e) {
       service: 'ai-drug-tutor-sheet',
       supports_add: true,
       supports_update: true,
+      bilingual_fields: true,
+      languages: ['en', 'zh-HK'],
       protocol_version: DRUG_SHEET_PROTOCOL_VERSION
     });
   }
@@ -99,6 +115,14 @@ function ensureDrugHeaders_(sheet) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0]
     .map(function (header) { return String(header || '').trim(); });
   if (!headers.some(Boolean)) throw new Error('The first row must contain column headers.');
+  const normalizedHeaders = headers.map(normalizeHeader_);
+  const missingBilingualHeaders = BILINGUAL_DRUG_HEADERS.filter(function (header) {
+    return normalizedHeaders.indexOf(normalizeHeader_(header)) === -1;
+  });
+  if (missingBilingualHeaders.length) {
+    sheet.getRange(1, headers.length + 1, 1, missingBilingualHeaders.length).setValues([missingBilingualHeaders]);
+    return headers.concat(missingBilingualHeaders);
+  }
   return headers;
 }
 
@@ -186,23 +210,44 @@ function payloadFieldForHeader_(header, payload) {
     brandname: 'brand_name',
     class: 'class',
     drugclass: 'class',
+    classzhhk: 'class_zh_hk',
+    classzh: 'class_zh_hk',
+    classcantonese: 'class_zh_hk',
     system: 'system',
     bodysystem: 'system',
+    systemzhhk: 'system_zh_hk',
+    systemzh: 'system_zh_hk',
+    systemcantonese: 'system_zh_hk',
     indication: 'indication',
     indications: 'indication',
     use: 'indication',
     uses: 'indication',
+    indicationzhhk: 'indication_zh_hk',
+    indicationzh: 'indication_zh_hk',
+    indicationcantonese: 'indication_zh_hk',
     sideeffect: 'side_effects',
     sideeffects: 'side_effects',
     adverseeffect: 'side_effects',
     adverseeffects: 'side_effects',
+    sideeffectszhhk: 'side_effects_zh_hk',
+    sideeffectszh: 'side_effects_zh_hk',
+    sideeffectscantonese: 'side_effects_zh_hk',
     nursing: 'nursing',
     nursingcare: 'nursing',
+    nursingzhhk: 'nursing_zh_hk',
+    nursingcarezhhk: 'nursing_zh_hk',
+    nursingzh: 'nursing_zh_hk',
+    nursingcantonese: 'nursing_zh_hk',
     effect: 'effect_of_drug',
     effects: 'effect_of_drug',
     drugeffect: 'effect_of_drug',
     effectofdrug: 'effect_of_drug',
     quiz: 'effect_of_drug',
+    effectofdrugzhhk: 'effect_of_drug_zh_hk',
+    drugeffectzhhk: 'effect_of_drug_zh_hk',
+    effectzhhk: 'effect_of_drug_zh_hk',
+    effectofdrugzh: 'effect_of_drug_zh_hk',
+    drugeffectcantonese: 'effect_of_drug_zh_hk',
     holdparam: 'hold_param',
     holdparameter: 'hold_param',
     admintype: 'admin_type',

@@ -332,6 +332,12 @@ function fillAIEditor(document, overrides = {}) {
         'ai-edit-side-effects': 'Nausea, dizziness, hypotension',
         'ai-edit-nursing': 'Monitor blood pressure and response',
         'ai-edit-effect': 'Edited drug action',
+        'ai-edit-class-zh-hk': '測試藥物',
+        'ai-edit-system-zh-hk': '🫀 心血管系統',
+        'ai-edit-indication-zh-hk': '用於測試相關病況。',
+        'ai-edit-side-effects-zh-hk': '噁心、頭暈、低血壓',
+        'ai-edit-nursing-zh-hk': '給藥前核對敏感史及基線觀察。按處方給藥並監察反應。出現嚴重反應要停藥上報，並核對處方及本地指引。',
+        'ai-edit-effect-zh-hk': '按預期產生治療作用。',
         ...overrides,
     };
     for (const [id, value] of Object.entries(values)) document.getElementById(id).value = value;
@@ -425,14 +431,49 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 28 Sep 2026 · 00:02 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-28T00:02:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 28 Sep 2026 · 21:11 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-28T21:11:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
     assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
     assert.doesNotMatch(read('index.html'), /Revise by disease|revision-disease-input/);
     assert.match(read('index.html'), /AI Drugs/);
     assert.doesNotMatch(read('index.html'), /Adaptive Quiz|id="nav-quiz"|id="quiz-section"/);
+});
+
+test('Settings switches drug cards between English and Cantonese while medicine names stay English', () => {
+    const { context, document, storage } = loadMain();
+    vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
+        name: 'Bilingualmed (SafeBrand)', generic_name: 'Bilingualmed', brand_name: 'SafeBrand',
+        class: 'Blood pressure medicine', class_zh_hk: '血壓藥', system: '🫀 Cardio', system_zh_hk: '🫀 心血管系統',
+        indication: 'Treats high blood pressure.', indication_zh_hk: '用嚟治療高血壓。',
+        side_effects: 'Dizziness, low blood pressure', side_effects_zh_hk: '頭暈、低血壓',
+        nursing: 'Check blood pressure. Monitor response. Escalate severe hypotension.',
+        nursing_zh_hk: '給藥前量血壓。給藥後監察反應。嚴重低血壓要停藥上報。',
+        effect_of_drug: 'Lowers blood pressure.', effect_of_drug_zh_hk: '降低血壓。'
+    }]); revisionDrugs = [];`, context);
+    assert.equal(context.getLocalizedDrugField(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList[0])', context)), 'indication'), 'Treats high blood pressure.');
+
+    document.getElementById('search-input').value = '低血壓';
+    document.getElementById('drug-card-language').value = 'zh-HK';
+    document.getElementById('settings-panel').style.display = 'flex';
+    context.saveSettings();
+
+    assert.equal(storage.get('drug_tutor_display_language'), 'zh-HK');
+    assert.equal(document.getElementById('settings-panel').style.display, 'none');
+    const revise = document.getElementById('revision-list').innerHTML;
+    assert.match(revise, /Bilingualmed \(SafeBrand\)/);
+    assert.match(revise, /血壓藥/);
+    assert.match(revise, /用嚟治療高血壓/);
+    assert.match(revise, /護理重點/);
+    assert.doesNotMatch(revise, /Treats high blood pressure/);
+
+    const fragments = document.getElementById('search-results').children;
+    const searchCard = fragments[fragments.length - 1].children[0].innerHTML;
+    assert.match(searchCard, /Bilingualmed \(SafeBrand\)/);
+    assert.match(searchCard, /頭暈、低血壓/);
+    assert.match(searchCard, /心血管系統/);
+    assert.doesNotMatch(searchCard, /Blood pressure medicine/);
 });
 
 test('AI Drugs replaces the old Clinical quiz and asks for concise uses plus within-list interactions', () => {
@@ -876,6 +917,12 @@ test('DeepSeek Nursing care is limited to exactly three plain sentences', () => 
         () => context.normalizeThreeSentenceNursingCare('One. Two. Three. Four.'),
         /exactly three/i
     );
+    assert.throws(
+        () => context.normalizeThreeSentenceNursingCare(
+            'Check every available clinical detail and all baseline observations very carefully before giving this medicine to the patient today. Monitor response. Escalate concerns.'
+        ),
+        /18 words or fewer/i
+    );
 });
 
 test('an official-source drug uses no search AI and AI improvement covers Nursing care before explicit approval', async () => {
@@ -885,16 +932,17 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     context.Papa = { parse: () => ({ data: [] }) };
     let sheetWrites = 0;
     let writtenPayload;
-    let returnInvalidNursing = false;
     const requests = [];
     context.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
+        if ((options.method || 'GET') === 'GET' && new URL(String(url)).searchParams.get('action') === 'capabilities') {
+            return new Response(JSON.stringify({
+                ok: true, supports_add: true, supports_update: true, bilingual_fields: true,
+                languages: ['en', 'zh-HK'], protocol_version: 2,
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
         if (options.method === 'POST') {
             if (String(url) === '/.netlify/functions/deepseek') {
-                const requestBody = JSON.parse(options.body);
-                const isNursingRequest = /Write exactly three short sentences/i.test(
-                    requestBody.messages?.[0]?.content || ''
-                );
                 const improved = JSON.stringify({
                     name: 'Novelmed (Nova)',
                     generic_name: 'Novelmed',
@@ -905,12 +953,14 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
                     side_effects: 'Nausea, rash, dizziness, hypotension',
                     effect_of_drug: 'Concise official action',
                     nursing: 'Check allergies and baseline observations. Monitor response and adverse effects during administration. Hold and escalate concerns; verify the prescription, local protocol and current formulary.',
+                    class_zh_hk: '測試藥物',
+                    system_zh_hk: '🫀 心血管系統',
+                    indication_zh_hk: '用於精簡測試病況。',
+                    side_effects_zh_hk: '噁心、紅疹、頭暈、低血壓',
+                    nursing_zh_hk: '給藥前核對敏感史及基線觀察。給藥期間監察反應及副作用。出現嚴重反應要停藥上報，並核對處方及本地指引。',
+                    effect_of_drug_zh_hk: '按預期產生治療作用。',
                 });
-                const content = isNursingRequest
-                    ? (returnInvalidNursing
-                        ? 'One. Two. Three. Four.'
-                        : '- Check allergies and baseline observations.\n- Monitor response and adverse effects.\n- Hold and escalate concerns; verify against the prescription, local protocol and current formulary.')
-                    : improved;
+                const content = improved;
                 return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`, {
                     status: 200,
                     headers: { 'Content-Type': 'text/event-stream' },
@@ -939,7 +989,8 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     assert.equal(context.findLocalDrugs('Novelmed').length, 0);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Review drug details/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /RxNorm \+ openFDA/);
-    assert.match(document.getElementById('ai-search-output').innerHTML, /AI improve all data/);
+    assert.match(document.getElementById('ai-search-output').innerHTML, /AI improve data \+ Nursing care/);
+    assert.doesNotMatch(document.getElementById('ai-search-output').innerHTML, /id="btn-generate-nursing"/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Generic name/);
     assert.match(document.getElementById('ai-search-output').innerHTML, /Brand name/);
     assert.equal(requests.some(request => request.url.includes('openrouter')), false);
@@ -973,28 +1024,24 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     assert.equal(sheetWrites, 0, 'Nursing care is required before saving an official result');
     assert.match(document.getElementById('save-status').innerText, /DeepSeek.*Nursing care/i);
 
-    await document.getElementById('btn-generate-nursing').onclick();
+    await document.getElementById('btn-improve-official-data').onclick();
     const generatedNursing = document.getElementById('ai-edit-nursing').value;
     assert.match(generatedNursing, /Monitor response/);
     assert.doesNotMatch(generatedNursing, /\n|^\s*[-*•]/);
     assert.equal((generatedNursing.match(/[.!?](?:\s|$)/g) || []).length, 3);
-    const deepSeekRequest = requests.find(request => {
-        if (request.url !== '/.netlify/functions/deepseek') return false;
-        const body = JSON.parse(request.options.body);
-        return /Write exactly three short sentences/i.test(body.messages?.[0]?.content || '');
-    });
+    const deepSeekRequest = requests.find(request => request.url === '/.netlify/functions/deepseek');
     assert.ok(deepSeekRequest);
     assert.equal(deepSeekRequest.options.headers.Authorization, undefined);
     const deepSeekBody = JSON.parse(deepSeekRequest.options.body);
     assert.equal(deepSeekBody.model, undefined);
     assert.equal(deepSeekBody.max_tokens, undefined);
-    assert.match(deepSeekBody.messages[0].content, /exactly three short sentences/i);
-    assert.match(deepSeekBody.messages[0].content, /Do not use bullets/i);
+    assert.match(deepSeekBody.messages.map(message => message.content).join('\n'), /exactly three (?:short Nursing care|plain) sentences/i);
 
-    returnInvalidNursing = true;
-    await document.getElementById('btn-generate-nursing').onclick();
-    assert.equal(document.getElementById('ai-edit-nursing').value, generatedNursing);
-    assert.match(document.getElementById('save-status').innerText, /exactly three/i);
+    fillAIEditor(document, {
+        'ai-edit-name': 'Novelmed (Edited brand)',
+        'ai-edit-indication': 'Edited indication for testing',
+        'ai-edit-side-effects': 'Edited nausea, rash, dizziness',
+    });
 
     await document.getElementById('btn-save-sheet').onclick();
     assert.equal(sheetWrites, 1);
@@ -1020,7 +1067,10 @@ test('saved database AI keeps card details simple and safely updates Google Shee
         const request = { url: String(url), options };
         sheetRequests.push(request);
         if ((options.method || 'GET') === 'GET' && new URL(request.url).searchParams.get('action') === 'capabilities') {
-            return new Response(JSON.stringify({ ok: true, supports_update: true, protocol_version: 2 }), {
+            return new Response(JSON.stringify({
+                ok: true, supports_add: true, supports_update: true, bilingual_fields: true,
+                languages: ['en', 'zh-HK'], protocol_version: 2,
+            }), {
                 status: 200, headers: { 'Content-Type': 'application/json' },
             });
         }
@@ -1039,6 +1089,10 @@ test('saved database AI keeps card details simple and safely updates Google Shee
             side_effects: 'Nausea, dizziness, serious rash',
             nursing: 'Check allergies and baseline observations. Administer as prescribed and monitor response. Hold and escalate concerns; verify the prescription, local protocol and current formulary.',
             effect_of_drug: 'Short mobile drug action.',
+            class_zh_hk: '測試藥物', system_zh_hk: '🫀 心血管系統', indication_zh_hk: '用於精簡測試病況。',
+            side_effects_zh_hk: '噁心、頭暈、嚴重紅疹',
+            nursing_zh_hk: '給藥前核對敏感史及基線觀察。按處方給藥並監察反應。出現嚴重反應要停藥上報，並核對處方及本地指引。',
+            effect_of_drug_zh_hk: '按預期產生治療作用。',
         });
         onUpdate(improved);
         return improved;
@@ -1055,7 +1109,9 @@ test('saved database AI keeps card details simple and safely updates Google Shee
     assert.match(review, /Save on this device only/);
     assert.match(review, /Save changes to Google Sheet \+ device/);
     assert.match(review, /never silently adds a duplicate row/i);
-    assert.match(review, /name, class, indication, side effects, Nursing care, system and drug effect/i);
+    assert.match(review, /AI improve data \+ Nursing care/i);
+    assert.match(review, /every card field concise/i);
+    assert.doesNotMatch(review, /id="btn-generate-nursing"/);
     fillAIEditor(document, {
         'ai-edit-name': original.name,
         'ai-edit-generic-name': 'Savedmed',
@@ -1076,6 +1132,8 @@ test('saved database AI keeps card details simple and safely updates Google Shee
     assert.equal(document.getElementById('ai-edit-brand-name').value, 'Brightbrand');
     assert.equal(document.getElementById('ai-edit-name').value, 'Savedmed (Brightbrand)');
     assert.match(document.getElementById('ai-edit-nursing').value, /local protocol and current formulary/);
+    assert.equal(document.getElementById('ai-edit-class-zh-hk').value, '測試藥物');
+    assert.match(document.getElementById('ai-edit-nursing-zh-hk').value, /本地指引/);
     assert.equal(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context))[0].name, 'Savedmed (Oldbrand)', 'AI must not auto-save');
 
     await document.getElementById('btn-save-sheet').onclick();
@@ -1092,6 +1150,8 @@ test('saved database AI keeps card details simple and safely updates Google Shee
     assert.equal(updatePayload.original_name, 'Savedmed (Oldbrand)');
     assert.equal(updatePayload.original_key, 'savedmed');
     assert.equal(updatePayload.name, 'Savedmed (Brightbrand)');
+    assert.equal(updatePayload.indication_zh_hk, '用於精簡測試病況。');
+    assert.match(updatePayload.nursing_zh_hk, /本地指引/);
     assert.equal(sheetRequests.find(request => request.options.method === 'POST').options.headers['Content-Type'], 'text/plain;charset=UTF-8');
 });
 
@@ -1114,6 +1174,10 @@ test('AI improve retries once when medicine-card wording is too long for mobile'
             side_effects: 'Nausea, dizziness, rash',
             nursing: 'Check allergies before giving. Administer as prescribed and monitor response. Hold and escalate concerns; verify the prescription and local protocol.',
             effect_of_drug: 'Produces the intended therapeutic effect.',
+            class_zh_hk: '測試藥物', system_zh_hk: '🫀 心血管系統', indication_zh_hk: '用於指定病況。',
+            side_effects_zh_hk: '噁心、頭暈、紅疹',
+            nursing_zh_hk: '給藥前核對敏感史。按處方給藥並監察反應。出現問題要停藥上報，並核對處方及本地指引。',
+            effect_of_drug_zh_hk: '產生預期治療作用。',
         };
         const text = JSON.stringify(result);
         onUpdate(text);
@@ -1135,7 +1199,7 @@ test('AI improve retries once when medicine-card wording is too long for mobile'
     assert.match(prompts[1], /STRICT SHORT RETRY/);
     assert.equal(document.getElementById('ai-edit-indication').value, 'Treats the stated condition.');
     assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, dizziness, rash');
-    assert.match(document.getElementById('save-status').innerText, /All fields improved/i);
+    assert.match(document.getElementById('save-status').innerText, /Card data and Nursing care improved/i);
 });
 
 test('legacy Sheet writer receives no update POST and cannot create a duplicate row', async () => {
@@ -1181,7 +1245,10 @@ test('Sheet update requires an explicit acknowledgement and never retries with n
     context.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
         if ((options.method || 'GET') === 'GET') {
-            return new Response(JSON.stringify({ ok: true, supports_update: true, protocol_version: 2 }), { status: 200 });
+            return new Response(JSON.stringify({
+                ok: true, supports_add: true, supports_update: true, bilingual_fields: true,
+                languages: ['en', 'zh-HK'], protocol_version: 2,
+            }), { status: 200 });
         }
         return new Response('', { status: 200 });
     };
@@ -1204,6 +1271,11 @@ test('Sheet update requires an explicit acknowledgement and never retries with n
 test('Apps Script v2 refuses missing or duplicate update matches', () => {
     const script = read('google-apps-script/Code.gs');
     assert.match(script, /supports_update:\s*true/);
+    assert.match(script, /bilingual_fields:\s*true/);
+    assert.match(script, /languages:\s*\['en', 'zh-HK'\]/);
+    for (const field of ['class_zh_hk', 'system_zh_hk', 'indication_zh_hk', 'side_effects_zh_hk', 'nursing_zh_hk', 'effect_of_drug_zh_hk']) {
+        assert.match(script, new RegExp(field));
+    }
     assert.match(script, /protocol_version:\s*DRUG_SHEET_PROTOCOL_VERSION/);
     assert.match(script, /matches\.length === 0[\s\S]*error: 'not_found'/);
     assert.match(script, /matches\.length > 1[\s\S]*error: 'multiple_matches'/);
@@ -1253,6 +1325,9 @@ test('Apps Script v2 replaces exactly one row without appending', () => {
         name: 'Savedmed (Brightbrand)', class: 'Clear class', system: '🫀 Cardio', indication: 'Short use.',
         side_effects: 'Nausea, dizziness', nursing: 'Check first. Monitor response. Escalate concerns.',
         effect_of_drug: 'Short action.',
+        class_zh_hk: '測試藥物', system_zh_hk: '🫀 心血管系統', indication_zh_hk: '用於短期測試。',
+        side_effects_zh_hk: '噁心、頭暈', nursing_zh_hk: '給藥前核對病歷。按處方給藥並監察。出現問題要停藥上報。',
+        effect_of_drug_zh_hk: '產生測試作用。',
     };
     const response = appContext.doPost({ postData: { contents: JSON.stringify(payload) } });
     const result = JSON.parse(response.body);
@@ -1263,6 +1338,11 @@ test('Apps Script v2 replaces exactly one row without appending', () => {
     assert.equal(rows[1][0], 'Savedmed (Brightbrand)');
     assert.equal(rows[1][1], 'Clear class');
     assert.equal(rows[1][4], 'Nausea, dizziness');
+    assert.deepEqual(rows[0].slice(-6), [
+        'class_zh_hk', 'system_zh_hk', 'indication_zh_hk', 'side_effects_zh_hk', 'nursing_zh_hk', 'effect_of_drug_zh_hk'
+    ]);
+    assert.equal(rows[1][rows[0].indexOf('indication_zh_hk')], '用於短期測試。');
+    assert.equal(rows[1][rows[0].indexOf('nursing_zh_hk')], '給藥前核對病歷。按處方給藥並監察。出現問題要停藥上報。');
 });
 
 test('review validation rejects placeholder side effects', () => {
