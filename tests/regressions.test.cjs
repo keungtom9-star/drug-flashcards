@@ -431,8 +431,8 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 28 Sep 2026 · 21:11 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-28T21:11:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 28 Sep 2026 · 22:47 HKT/);
+    assert.match(read('index.html'), /datetime="2026-09-28T22:47:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
     assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
@@ -1404,6 +1404,45 @@ test('AI text streams across split server-sent event chunks', async () => {
     const updates = [];
     await context.streamAIResponse([], text => updates.push(text));
     assert.deepEqual(updates, ['廣東話', '廣東話逐段出']);
+});
+
+test('streamed AI accepts a normal JSON response when upstream does not emit SSE', async () => {
+    const { context } = loadMain();
+    let requestBody;
+    context.fetch = async (_url, options) => {
+        requestBody = JSON.parse(options.body);
+        return new Response(JSON.stringify({
+            choices: [{ message: { content: [{ type: 'text', text: 'Readable fallback' }] } }],
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+    const updates = [];
+    const answer = await context.streamAIResponse([], text => updates.push(text));
+    assert.equal(answer, 'Readable fallback');
+    assert.deepEqual(updates, ['Readable fallback']);
+    assert.equal(requestBody.stream, true);
+    assert.deepEqual(requestBody.thinking, { type: 'disabled' });
+});
+
+test('streamed AI retries one empty successful stream without exposing reasoning text', async () => {
+    const { context } = loadMain();
+    const bodies = [];
+    context.fetch = async (_url, options) => {
+        bodies.push(JSON.parse(options.body));
+        if (bodies.length === 1) {
+            return new Response('data: {"choices":[{"delta":{"reasoning_content":"hidden reasoning"}}]}\n\ndata: [DONE]\n\n', {
+                status: 200, headers: { 'Content-Type': 'text/event-stream' },
+            });
+        }
+        return new Response(JSON.stringify({
+            choices: [{ message: { content: 'Answer after retry' } }],
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+    const updates = [];
+    const answer = await context.streamAIResponse([], text => updates.push(text));
+    assert.equal(answer, 'Answer after retry');
+    assert.deepEqual(updates, ['Answer after retry']);
+    assert.deepEqual(bodies.map(body => body.stream), [true, false]);
+    assert.ok(bodies.every(body => body.thinking?.type === 'disabled'));
 });
 
 test('search history saves submitted searches once, with a small limit', () => {
