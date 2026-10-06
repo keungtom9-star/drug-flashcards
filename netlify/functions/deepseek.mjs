@@ -51,10 +51,18 @@ function clampNumber(value, fallback, min, max) {
 }
 
 export default async function handler(request) {
-  if (request.method !== 'POST') return jsonResponse(405, { error: 'Method not allowed.' });
   if (!isAllowedOrigin(request)) return jsonResponse(403, { error: 'Origin not allowed.' });
 
   const apiKey = String(process.env.DEEPSEEK_API_KEY || '').trim();
+  if (request.method === 'GET') {
+    return jsonResponse(200, {
+      ok: true,
+      service: 'ai-drug-tutor-deepseek',
+      configured: Boolean(apiKey),
+      model: DEEPSEEK_MODEL,
+    });
+  }
+  if (request.method !== 'POST') return jsonResponse(405, { error: 'Method not allowed.' });
   if (!apiKey) return jsonResponse(503, { error: 'DeepSeek is not configured on the server.' });
 
   const declaredLength = Number(request.headers.get('content-length') || 0);
@@ -81,6 +89,7 @@ export default async function handler(request) {
       temperature: clampNumber(input?.temperature, 0.4, 0, 1),
       stream,
     };
+    if (stream) upstreamBody.stream_options = { include_usage: true };
     if (input?.thinking?.type === 'disabled') {
       upstreamBody.thinking = { type: 'disabled' };
     }

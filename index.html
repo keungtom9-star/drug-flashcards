@@ -13,6 +13,8 @@
     <link rel="manifest" href="manifest.json">
     
     <script src="app-ui.js" defer></script>
+    <script src="ai-usage.js" defer></script>
+    <script src="phase-one.js" defer></script>
     <script src="drugs.js" defer></script>
     <style>
         :root {
@@ -665,6 +667,11 @@
             font-size: 0.85rem; color: var(--ios-gray); text-align: right; 
             max-width: 40%; word-break: break-word;
         }
+        .drug-provenance { display:flex; flex-wrap:wrap; gap:6px; margin:9px 0 4px; }
+        .drug-provenance-badge { display:inline-flex; align-items:center; min-height:24px; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#4338ca; font-size:.67rem; font-weight:750; line-height:1.25; }
+        .drug-provenance-badge.needs-review { background:#fff7ed; color:#9a3412; }
+        .drug-provenance-badge.verified { background:#ecfdf5; color:#047857; }
+        .drug-provenance-badge.ai { background:linear-gradient(135deg,#fae8ff,#dbeafe); color:#7e22ce; }
         .name-with-speak { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
         .speak-icon-btn {
             border:none; background:#eef2ff; color:var(--ios-blue); width:30px; height:30px;
@@ -892,6 +899,30 @@
             font-size: .82rem;
             line-height: 1.45;
         }
+        .ai-safety-strip { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin:-3px 0 14px; padding:9px 10px; border:1px solid #fed7aa; border-radius:12px; background:#fff7ed; color:#9a3412; font-size:.75rem; font-weight:750; }
+        .ai-safety-strip .chip { min-height:36px; padding:7px 10px; border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; }
+        .ai-diff-panel { margin:0 0 14px; padding:12px; border:1px solid #c4b5fd; border-radius:16px; background:linear-gradient(145deg,#faf5ff,#eff6ff); }
+        .ai-diff-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+        .ai-diff-heading h4 { margin:0; color:#4c1d95; font-size:.94rem; }
+        .ai-diff-heading p { margin:3px 0 0; color:#64748b; font-size:.72rem; line-height:1.4; }
+        .ai-diff-actions { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px; }
+        .ai-diff-actions button { min-height:38px; padding:8px 10px; border:0; border-radius:10px; font-weight:750; cursor:pointer; }
+        .ai-diff-apply-all { background:linear-gradient(135deg,#7c3aed,#2563eb); color:#fff; }
+        .ai-diff-keep-all { background:#fff; color:#475569; border:1px solid #dbe3ef !important; }
+        .ai-diff-undo { background:#fff7ed; color:#9a3412; border:1px solid #fed7aa !important; }
+        .ai-diff-list { display:grid; gap:8px; }
+        .ai-diff-row { padding:10px; border:1px solid #e2e8f0; border-radius:12px; background:rgba(255,255,255,.9); }
+        .ai-diff-row.is-decided { opacity:.62; }
+        .ai-diff-label { display:block; margin-bottom:7px; color:#334155; font-size:.75rem; font-weight:850; }
+        .ai-diff-values { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+        .ai-diff-value { min-width:0; padding:8px; border-radius:9px; font-size:.73rem; line-height:1.4; overflow-wrap:anywhere; }
+        .ai-diff-current { background:#f8fafc; color:#475569; }
+        .ai-diff-suggested { background:#ecfdf5; color:#065f46; }
+        .ai-diff-value strong { display:block; margin-bottom:3px; font-size:.64rem; text-transform:uppercase; letter-spacing:.05em; }
+        .ai-diff-row-actions { display:flex; gap:7px; margin-top:8px; }
+        .ai-diff-row-actions button { flex:1; min-height:36px; border:0; border-radius:9px; font-size:.72rem; font-weight:800; cursor:pointer; }
+        .ai-diff-use { background:#dcfce7; color:#166534; }
+        .ai-diff-keep { background:#f1f5f9; color:#475569; }
         .ai-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
         .ai-edit-field { display: grid; gap: 5px; min-width: 0; }
         .ai-edit-field.full { grid-column: 1 / -1; }
@@ -958,6 +989,22 @@
             background: #F2F2F7; font-size: 16px;
         }
         .config-section { margin-bottom: 15px; }
+        .sync-centre { margin-top:20px; padding:14px; border:1px solid #c7d2fe; border-radius:18px; background:linear-gradient(145deg,#f5f3ff,#eff6ff 55%,#ecfeff); box-shadow:0 10px 26px rgba(79,70,229,.09); }
+        .sync-centre h4 { margin:0; color:#312e81; font-size:.96rem; }
+        .sync-centre-intro { margin:5px 0 11px; color:#64748b; font-size:.73rem; line-height:1.45; }
+        .sync-status-list { display:grid; gap:7px; }
+        .sync-status-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:8px 9px; border:1px solid rgba(203,213,225,.8); border-radius:11px; background:rgba(255,255,255,.84); }
+        .sync-status-row strong { color:#334155; font-size:.73rem; }
+        .sync-status-value { max-width:64%; color:#64748b; font-size:.7rem; line-height:1.35; text-align:right; overflow-wrap:anywhere; }
+        .sync-status-value.ok { color:#047857; }
+        .sync-status-value.warning { color:#b45309; }
+        .sync-status-value.error { color:#b91c1c; }
+        .sync-status-value.checking { color:#1d4ed8; }
+        .sync-centre-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:11px; }
+        .sync-centre-actions .action-btn { margin:0; min-height:42px; padding:9px; font-size:.78rem; }
+        .sources-safety { margin-top:14px; padding:13px; border:1px solid #bbf7d0; border-radius:15px; background:#f0fdf4; color:#14532d; font-size:.75rem; line-height:1.5; }
+        .sources-safety strong { display:block; margin-bottom:4px; font-size:.82rem; }
+        .sources-safety a { color:#166534; font-weight:750; }
 
         .loading-spinner {
             display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(0,0,0,0.1);
@@ -991,6 +1038,8 @@
             .result-header { flex-wrap: wrap; gap: 8px; }
             .name-with-speak { min-width: 0; flex: 1 1 180px; }
             .ai-edit-grid, .ai-review-actions { grid-template-columns: 1fr; }
+            .ai-diff-values { grid-template-columns:1fr; }
+            .sync-centre-actions { grid-template-columns:1fr; }
             .lookup-choice-grid { grid-template-columns: 1fr; }
             .lookup-choice-card { min-height: 82px; }
             .modal-overlay { top: var(--viewport-top, 0px); bottom: auto; height: var(--app-height, 100dvh); }
@@ -1178,7 +1227,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-09-28T23:35:00+08:00">Updated 28 Sep 2026 · 23:35 HKT</time>
+        <time class="app-last-updated" datetime="2026-10-06T20:00:00+08:00">Updated 6 Oct 2026 · 20:00 HKT</time>
     </div>
 </header>
 
@@ -1342,6 +1391,31 @@
             </div>
         </div>
 
+        <section class="sync-centre" aria-labelledby="sync-centre-title">
+            <h4 id="sync-centre-title">🔄 Data &amp; Sync Centre</h4>
+            <p class="sync-centre-intro">Live checks are manual. Failed safe Sheet writes and AI usage records stay on this device until successfully retried.</p>
+            <div class="sync-status-list">
+                <div class="sync-status-row"><strong>Drug Sheet</strong><span id="sync-sheet-drugs" class="sync-status-value">Not checked</span></div>
+                <div class="sync-status-row"><strong>AI usage Sheet</strong><span id="sync-sheet-usage" class="sync-status-value">Not checked · v3 required</span></div>
+                <div class="sync-status-row"><strong>DeepSeek</strong><span id="sync-deepseek" class="sync-status-value">Not checked</span></div>
+                <div class="sync-status-row"><strong>RxNorm</strong><span id="sync-rxnorm" class="sync-status-value">Not checked</span></div>
+                <div class="sync-status-row"><strong>openFDA</strong><span id="sync-openfda" class="sync-status-value">Not checked</span></div>
+                <div class="sync-status-row"><strong>Database sync</strong><span id="sync-database" class="sync-status-value">Never synced</span></div>
+                <div class="sync-status-row"><strong>Queued drug writes</strong><span id="sync-queue" class="sync-status-value">0 pending</span></div>
+                <div class="sync-status-row"><strong>AI tokens / estimate</strong><span id="sync-ai-summary" class="sync-status-value">0 tokens · US$0 estimated</span></div>
+            </div>
+            <div class="sync-centre-actions">
+                <button type="button" onclick="runConnectionCheck()" class="action-btn" style="background:linear-gradient(135deg,#4f46e5,#0a84ff); color:#fff;">Run connection check</button>
+                <button type="button" onclick="retryQueuedDrugSaves()" class="action-btn" style="background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;">Retry queued drug saves</button>
+                <button type="button" onclick="syncAIUsageNow()" class="action-btn" style="grid-column:1 / -1; background:#ecfdf5; color:#047857; border:1px solid #bbf7d0;">Send AI usage to Google Sheet</button>
+            </div>
+        </section>
+
+        <section class="sources-safety">
+            <strong>🛡️ Sources &amp; Safety</strong>
+            <a href="https://www.nlm.nih.gov/research/umls/rxnorm/" target="_blank" rel="noopener noreferrer">RxNorm</a> is provided by the U.S. National Library of Medicine; <a href="https://open.fda.gov/apis/drug/label/" target="_blank" rel="noopener noreferrer">openFDA label data</a> comes from FDA datasets. DeepSeek output is an editable draft, not an official source. “Verified” means you manually checked the card against a current formulary, label or local protocol.
+        </section>
+
         <div class="settings-help">
             Search saved drugs by name, brand or condition in English or Cantonese. For a missing drug, choose an official-first RxNorm + openFDA lookup without AI tokens or a direct DeepSeek bilingual draft. Every result stays editable and unsaved until you approve it.
         </div>
@@ -1456,6 +1530,8 @@ Language: ${langInstruction}.`;
 
     const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
     const DRUG_DISPLAY_LANGUAGE_STORAGE_KEY = 'drug_tutor_display_language';
+    const PENDING_SHEET_WRITES_KEY = 'drug_tutor_pending_sheet_writes_v1';
+    const LAST_DATABASE_SYNC_KEY = 'drug_tutor_last_database_sync_v1';
     let drugDisplayLanguage = localStorage.getItem(DRUG_DISPLAY_LANGUAGE_STORAGE_KEY) === 'zh-HK' ? 'zh-HK' : 'en';
     
     // DeepSeek is the only AI provider. Server mode keeps its secret in Netlify;
@@ -1613,8 +1689,11 @@ Language: ${langInstruction}.`;
         "Eye": "👁️", "ENT": "👂", "Skin": "🧴", "Immune / Vax": "🛡️", "Anaesthesia": "💉", "General / Other": "💊"
     };
 
-    function normalizeDrugData(drug) {
+    function normalizeDrugData(drug, fallbackSource = '') {
         drug.system = resolveDrugSystem(drug);
+        drug.data_source = String(drug.data_source || drug.source || fallbackSource || 'Unknown source').trim();
+        drug.verified_at = String(drug.verified_at || drug.last_verified || '').trim();
+        drug.ai_modified = drug.ai_modified === true || String(drug.ai_modified || '').toLowerCase() === 'true';
         drug.class_zh_hk = String(drug.class_zh_hk || drug.class_zh || drug.class_cantonese || '').trim();
         drug.system_zh_hk = String(drug.system_zh_hk || drug.system_zh || drug.system_cantonese || cantoneseSystemMap[drug.system] || '').trim();
         drug.indication_zh_hk = String(drug.indication_zh_hk || drug.indication_zh || drug.indication_cantonese || '').trim();
@@ -1633,8 +1712,16 @@ Language: ${langInstruction}.`;
         return drug;
     }
 
-    function prepareDrugListForFastSearch(list) {
-        return list.map(normalizeDrugData);
+    function prepareDrugListForFastSearch(list, fallbackSource = '') {
+        return list.map(drug => normalizeDrugData(drug, fallbackSource));
+    }
+
+    function formatVerifiedDate(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) return raw.slice(0, 10);
+        return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
     }
 
     function replaceRecursiveToolFrame(frame, toolLabel, pagePath) {
@@ -1726,14 +1813,14 @@ Language: ${langInstruction}.`;
         setupDeviceUILayoutWatcher();
 
         if(typeof commonDrugs !== 'undefined') {
-            activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
+            activeSourceList = prepareDrugListForFastSearch([...commonDrugs], 'Built-in database');
 
         }
 
         // Load locally cached data first for faster startup on iPhone.
         const cachedData = loadLocalDrugCache();
         if (cachedData.length > 0) {
-            activeSourceList = prepareDrugListForFastSearch(cachedData);
+            activeSourceList = prepareDrugListForFastSearch(cachedData, 'Device cache');
 
             document.getElementById('set-btn').innerText = '📚 Source: Local cache';
         }
@@ -1744,6 +1831,7 @@ Language: ${langInstruction}.`;
         // Init UI
         document.getElementById('sheet-url').value = defaultSheetUrl;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
+        window.DrugTutorAIUsage?.configure({ scriptUrl: googleScriptURL });
 
         document.getElementById('auto-sync-startup').checked = autoSyncOnStartup;
         syncDrugLanguageSettingsUI();
@@ -1753,6 +1841,7 @@ Language: ${langInstruction}.`;
         syncDeepSeekSettingsUI();
         updateProviderDisplay();
         updateApiNotices();
+        updateSyncCentre();
 
         // Keep startup interactive; online data refreshes after first paint when enabled.
         if (autoSyncOnStartup) {
@@ -2441,6 +2530,8 @@ Language: ${langInstruction}.`;
             const sideEffectsText = getLocalizedDrugField(drug, 'side_effects') || DRUG_TEXT_FALLBACKS.sideEffects;
             const nursingText = getLocalizedDrugField(drug, 'nursing') || DRUG_TEXT_FALLBACKS.nursing;
             const systemText = getLocalizedDrugField(drug, 'system');
+            const sourceText = String(drug.data_source || 'Unknown source').trim();
+            const verifiedDate = formatVerifiedDate(drug.verified_at);
             
             // Grab the effect data (handling different possible keys from your database)
             const effectText = getLocalizedDrugField(drug, 'effect_of_drug') || DRUG_TEXT_FALLBACKS.effect;
@@ -2454,6 +2545,11 @@ Language: ${langInstruction}.`;
                     <span class="result-class">${escapeHtml(classText)}</span>
                 </div>
                 <div class="result-indication">${escapeHtml(indicationText)}</div>
+                <div class="drug-provenance" aria-label="Data source and verification status">
+                    <span class="drug-provenance-badge">📚 ${escapeHtml(sourceText)}</span>
+                    <span class="drug-provenance-badge ${verifiedDate ? 'verified' : 'needs-review'}">${verifiedDate ? `✓ Verified ${escapeHtml(verifiedDate)}` : '⚠ Needs verification'}</span>
+                    ${drug.ai_modified ? '<span class="drug-provenance-badge ai">✨ AI modified</span>' : ''}
+                </div>
                 ${generics.length > 1 ? `<div class="multi-chip-wrap" style="margin-top:8px;">${generics.map(g => `<button type="button" class="multi-chip selectable ${g === generics[0] ? 'is-active' : ''}" onclick="event.stopPropagation(); selectSearchGeneric(this, '${g.replace(/'/g, "\\'")}')">💖 ${escapeHtml(g)}</button>`).join('')}</div>` : ''}
                 
                 <div class="extra-details">
@@ -2665,7 +2761,7 @@ Language: ${langInstruction}.`;
         await streamAIResponse(messages, (text) => {
             answer = text;
             if (hasStartedCantonese(text)) onUpdate(text);
-        });
+        }, { feature: 'Cantonese drug explanation' });
         if (isMostlyCantoneseExplanation(answer)) return answer;
 
         let rewritten = '';
@@ -2676,7 +2772,7 @@ Language: ${langInstruction}.`;
         ], (text) => {
             rewritten = text;
             if (hasStartedCantonese(text)) onUpdate(text);
-        });
+        }, { feature: 'Cantonese drug explanation rewrite' });
         if (isMostlyCantoneseExplanation(rewritten)) return rewritten;
         return '## ⚠️ 暫時未能產生廣東話解釋\n- 請再試一次。\n- 用藥前請核對正式藥物參考同病房指引。';
     }
@@ -2751,7 +2847,7 @@ Language: ${langInstruction}.`;
         if (response.ok === false) throw new Error(`Google Sheet returned ${response.status}`);
         const csv = await response.text();
         const parsed = papa.parse(csv, { header: true, skipEmptyLines: true });
-        const sheetDrugs = prepareDrugListForFastSearch(parsed.data || []);
+        const sheetDrugs = prepareDrugListForFastSearch(parsed.data || [], 'Google Sheet');
         return findLocalDrugs(query, 'All', sheetDrugs)[0] || null;
     }
 
@@ -2940,6 +3036,9 @@ Language: ${langInstruction}.`;
             side_effects: sideEffects || DRUG_TEXT_FALLBACKS.sideEffects,
             nursing: '',
             effect_of_drug: effect || DRUG_TEXT_FALLBACKS.effect,
+            data_source: 'RxNorm + openFDA',
+            verified_at: '',
+            ai_modified: false,
         };
         drugData.system = inferOfficialDrugSystem(drugData);
         return drugData;
@@ -2989,6 +3088,9 @@ Rules:
             side_effects_zh_hk: '',
             nursing_zh_hk: '',
             effect_of_drug_zh_hk: '',
+            data_source: 'DeepSeek AI draft',
+            verified_at: '',
+            ai_modified: true,
         };
         renderEditableDrugReview(draft, {
             sourceLabel: 'DeepSeek AI draft · verify',
@@ -3013,7 +3115,7 @@ Rules:
                 const fullText = await streamAIResponse([
                     { role: 'system', content: 'Create one safe, concise bilingual medicine-card draft. Return strict JSON only and never invent dosing or a brand name.' },
                     { role: 'user', content: getDirectAIDrugLookupPrompt(query, attempt === 1) },
-                ], () => {}, { temperature: 0.1 });
+                ], () => {}, { temperature: 0.1, feature: 'Direct AI drug lookup' });
                 const parsed = parseAISearchPayload(fullText);
                 if (!parsed) {
                     const error = new Error('DeepSeek returned incomplete medicine-card JSON.');
@@ -3104,6 +3206,9 @@ Rules:
             side_effects: '',
             nursing: '',
             effect_of_drug: '',
+            data_source: 'Manual entry',
+            verified_at: '',
+            ai_modified: false,
         }, {
             sourceLabel: 'Manual entry',
             allowSheetSave: true,
@@ -3167,7 +3272,10 @@ Rules:
             indication_zh_hk: value('ai-edit-indication-zh-hk'),
             side_effects_zh_hk: value('ai-edit-side-effects-zh-hk'),
             nursing_zh_hk: value('ai-edit-nursing-zh-hk'),
-            effect_of_drug_zh_hk: value('ai-edit-effect-zh-hk')
+            effect_of_drug_zh_hk: value('ai-edit-effect-zh-hk'),
+            data_source: value('ai-edit-data-source') || 'Manual entry',
+            verified_at: value('ai-edit-verified-at'),
+            ai_modified: value('ai-edit-ai-modified') === 'true'
         };
     }
 
@@ -3351,72 +3459,6 @@ Rules:
         return drugData;
     }
 
-    function applyAIImprovedDrugData(parsed, originalDraft) {
-        const candidate = unwrapDrugObject(parsed);
-        if (!candidate) throw new Error('AI did not return usable drug data. Please try again.');
-        const chooseText = (value, fallback) => isMissingDrugText(value) ? String(fallback || '').trim() : String(value).trim();
-        const sideEffects = chooseText(
-            candidate.side_effects || candidate.SideEffects || candidate.sideEffects || candidate['side effects'],
-            originalDraft.side_effects
-        );
-        if (isMissingDrugText(sideEffects) || sideEffects === DRUG_TEXT_FALLBACKS.sideEffects) {
-            throw new Error('AI did not return useful side effects. The data was left unchanged.');
-        }
-        const nursing = normalizeThreeSentenceNursingCare(candidate.nursing || candidate.nursing_care || '');
-        const nursingZh = normalizeThreeSentenceCantoneseNursingCare(candidate.nursing_zh_hk || candidate.nursing_care_zh_hk || '');
-        const originalParts = getDrugNameParts(originalDraft);
-        const candidateNameParts = getDrugNameParts(candidate);
-        const genericName = chooseText(candidate.generic_name || candidate.generic || candidateNameParts.generic, originalDraft.generic_name || originalParts.generic);
-        const brandName = chooseText(candidate.brand_name || candidate.brand || candidateNameParts.brand, originalDraft.brand_name || originalParts.brand);
-        const formattedName = formatGenericBrandName(genericName, brandName, chooseText(candidate.name, originalDraft.name));
-        const proposedSystem = resolveDrugSystem({ ...originalDraft, ...candidate, system: candidate.system || originalDraft.system });
-        const improved = {
-            name: formattedName,
-            generic_name: genericName,
-            brand_name: isMissingDrugText(brandName) ? '' : brandName,
-            class: chooseText(candidate.class, originalDraft.class),
-            system: systemCategories.includes(proposedSystem) ? proposedSystem : originalDraft.system,
-            indication: chooseText(candidate.indication, originalDraft.indication),
-            side_effects: sideEffects,
-            nursing,
-            effect_of_drug: chooseText(
-                candidate.effect_of_drug || candidate.drug_effect || candidate['effect of drug'] || candidate.effect,
-                originalDraft.effect_of_drug
-            ),
-            class_zh_hk: chooseText(candidate.class_zh_hk || candidate.class_zh, originalDraft.class_zh_hk),
-            system_zh_hk: cantoneseSystemMap[systemCategories.includes(proposedSystem) ? proposedSystem : originalDraft.system] || '',
-            indication_zh_hk: chooseText(candidate.indication_zh_hk || candidate.indication_zh, originalDraft.indication_zh_hk),
-            side_effects_zh_hk: chooseText(candidate.side_effects_zh_hk || candidate.side_effects_zh, originalDraft.side_effects_zh_hk),
-            nursing_zh_hk: nursingZh,
-            effect_of_drug_zh_hk: chooseText(candidate.effect_of_drug_zh_hk || candidate.drug_effect_zh_hk || candidate.effect_zh_hk, originalDraft.effect_of_drug_zh_hk),
-        };
-        if (!improved.name) throw new Error('AI did not return a drug name. The data was left unchanged.');
-        validateSimpleMobileDrugCard(improved);
-
-        const fieldMap = {
-            'ai-edit-name': improved.name,
-            'ai-edit-generic-name': improved.generic_name,
-            'ai-edit-brand-name': improved.brand_name,
-            'ai-edit-class': improved.class,
-            'ai-edit-system': improved.system,
-            'ai-edit-indication': improved.indication,
-            'ai-edit-side-effects': improved.side_effects,
-            'ai-edit-nursing': improved.nursing,
-            'ai-edit-effect': improved.effect_of_drug,
-            'ai-edit-class-zh-hk': improved.class_zh_hk,
-            'ai-edit-system-zh-hk': improved.system_zh_hk,
-            'ai-edit-indication-zh-hk': improved.indication_zh_hk,
-            'ai-edit-side-effects-zh-hk': improved.side_effects_zh_hk,
-            'ai-edit-nursing-zh-hk': improved.nursing_zh_hk,
-            'ai-edit-effect-zh-hk': improved.effect_of_drug_zh_hk,
-        };
-        Object.entries(fieldMap).forEach(([id, value]) => {
-            const field = document.getElementById(id);
-            if (field) field.value = value;
-        });
-        return improved;
-    }
-
     function applyAIImprovedOfficialData(parsed, originalDraft) {
         return applyAIImprovedDrugData(parsed, originalDraft);
     }
@@ -3447,10 +3489,11 @@ Rules:
                 await streamAIResponse([
                     { role: 'system', content: 'Simplify only the details shown on the supplied medicine card. Return strict bilingual English and Traditional Chinese Cantonese JSON, keep clinical facts grounded, and include exactly three short Nursing care sentences in each language.' },
                     { role: 'user', content: basePrompt + retryRule },
-                ], text => { fullText = text; });
+                ], text => { fullText = text; }, { feature: 'AI drug data + Nursing care' });
                 if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
                 try {
-                    applyAIImprovedDrugData(parseAISearchPayload(fullText), draft);
+                    const proposed = buildAIImprovedDrugData(parseAISearchPayload(fullText), draft);
+                    renderAIChangeReview(draft, proposed);
                     applied = true;
                 } catch (error) {
                     lastError = error;
@@ -3459,7 +3502,7 @@ Rules:
                 }
             }
             if (!applied) throw lastError || new Error('AI could not simplify the medicine card.');
-            setAIReviewStatus('Card data and Nursing care improved in English + Cantonese. Review both before saving.', 'var(--ios-green)');
+            setAIReviewStatus('AI suggestions are ready. Compare each field, then choose Use AI or Keep original.', 'var(--ios-green)');
             return true;
         } catch (error) {
             setAIReviewStatus(error?.message || 'AI could not improve the data. Nothing was saved.', 'var(--ios-red)');
@@ -3478,7 +3521,7 @@ Rules:
     }
 
     async function streamDeepSeekNursingResponse(messages, onUpdate) {
-        return streamAIResponse(messages, onUpdate, { temperature: 0.2 });
+        return streamAIResponse(messages, onUpdate, { temperature: 0.2, feature: 'Nursing care' });
     }
 
     async function generateDeepSeekNursingCare() {
@@ -3496,21 +3539,16 @@ Rules:
             button.setAttribute('aria-busy', 'true');
         }
         const nursingBefore = nursingField?.value || '';
-        if (nursingField) nursingField.value = '';
         setAIReviewStatus('Generating Nursing care with DeepSeek…', 'var(--ios-blue)');
         try {
             const answer = await streamDeepSeekNursingResponse(
                 [{ role: 'user', content: getDeepSeekNursingPrompt(draft) }],
-                text => {
-                    if (nursingField) {
-                        nursingField.value = text;
-                        nursingField.scrollTop = nursingField.scrollHeight;
-                    }
-                }
+                () => {}
             );
             const conciseAnswer = normalizeThreeSentenceNursingCare(answer);
-            if (nursingField) nursingField.value = conciseAnswer;
-            setAIReviewStatus('Three-sentence Nursing care is ready. Review it before saving.', 'var(--ios-green)');
+            if (nursingField) nursingField.value = nursingBefore;
+            renderAIChangeReview(draft, { ...draft, nursing: conciseAnswer });
+            setAIReviewStatus('Nursing care suggestion is ready. Choose Use AI or Keep original.', 'var(--ios-green)');
             return true;
         } catch (error) {
             if (nursingField) nursingField.value = nursingBefore;
@@ -3539,6 +3577,8 @@ Rules:
     } = {}) {
         const container = document.getElementById(containerId);
         if (!container) return;
+        activeAIChangeReview = null;
+        aiEditUndoStack = [];
         const isUpdate = reviewMode === 'update';
         const nameParts = getDrugNameParts(drugData);
         const selectedSystem = resolveDrugSystem(drugData);
@@ -3561,9 +3601,17 @@ Rules:
                     <h3>${reviewTitle}</h3>
                     <span class="chip ai-review-source">${escapeHtml(sourceLabel)}</span>
                 </div>
+                <input id="ai-edit-data-source" type="hidden" value="${escapeHtml(drugData.data_source || sourceLabel.replace(/ result| · verify/gi, '') || 'Manual entry')}">
+                <input id="ai-edit-verified-at" type="hidden" value="${escapeHtml(drugData.verified_at || '')}">
+                <input id="ai-edit-ai-modified" type="hidden" value="${drugData.ai_modified ? 'true' : 'false'}">
                 <div class="ai-review-note">${reviewNote}</div>
+                <div class="ai-safety-strip">
+                    <span id="ai-verification-label">${drugData.verified_at ? `✓ Verified ${escapeHtml(formatVerifiedDate(drugData.verified_at))}` : '⚠ Needs verification'}</span>
+                    <button id="btn-mark-verified" type="button" class="chip">✓ Mark verified today</button>
+                </div>
                 ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
                 ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve data + Nursing care</button><span class="ai-improve-hint">One AI action makes every card field concise in English + Cantonese, with three short Nursing care sentences in each language. Nothing saves automatically.</span></div>' : ''}
+                <div id="ai-diff-panel" class="ai-diff-panel" hidden></div>
                 <div class="ai-edit-grid">
                     <label class="ai-edit-field full"><span class="ai-edit-label">Drug name</span><input id="ai-edit-name" class="ai-edit-input" value="${escapeHtml(drugData.name || '')}" autocomplete="off"></label>
                     <label class="ai-edit-field"><span class="ai-edit-label">Generic name</span><input id="ai-edit-generic-name" class="ai-edit-input" value="${escapeHtml(nameParts.generic)}" autocomplete="off"></label>
@@ -3606,6 +3654,31 @@ Rules:
 
         const improveDataBtn = enableAIDataImprove ? document.getElementById('btn-improve-official-data') : null;
         if (improveDataBtn) improveDataBtn.onclick = improveDrugDataWithAI;
+
+        const markVerifiedBtn = document.getElementById('btn-mark-verified');
+        if (markVerifiedBtn) markVerifiedBtn.onclick = () => {
+            const now = new Date().toISOString();
+            const verifiedField = document.getElementById('ai-edit-verified-at');
+            const label = document.getElementById('ai-verification-label');
+            if (verifiedField) verifiedField.value = now;
+            if (label) label.textContent = `✓ Verified ${formatVerifiedDate(now)}`;
+            markVerifiedBtn.disabled = true;
+            markVerifiedBtn.textContent = '✓ Verified today';
+            setAIReviewStatus('Verification date added. Save the drug to keep it.', 'var(--ios-green)');
+        };
+
+        const invalidateVerificationAfterEdit = () => {
+            const verifiedField = document.getElementById('ai-edit-verified-at');
+            if (!verifiedField?.value) return;
+            verifiedField.value = '';
+            const label = document.getElementById('ai-verification-label');
+            if (label) label.textContent = '⚠ Needs verification after edit';
+            if (markVerifiedBtn) {
+                markVerifiedBtn.disabled = false;
+                markVerifiedBtn.textContent = '✓ Mark verified today';
+            }
+        };
+        AI_EDIT_FIELDS.forEach(({ id }) => document.getElementById(id)?.addEventListener('input', invalidateVerificationAfterEdit));
 
         const nameField = document.getElementById('ai-edit-name');
         const genericField = document.getElementById('ai-edit-generic-name');
@@ -3699,6 +3772,9 @@ Rules:
             side_effects_zh_hk: String(rawSideEffectsZh).trim(),
             nursing_zh_hk: String(drugData.nursing_zh_hk || drugData.nursing_zh || drugData.nursing_cantonese || '').trim(),
             effect_of_drug_zh_hk: String(rawEffectZh).trim(),
+            data_source: String(drugData.data_source || drugData.source || 'Manual entry').trim(),
+            verified_at: String(drugData.verified_at || drugData.last_verified || '').trim(),
+            ai_modified: drugData.ai_modified === true || String(drugData.ai_modified || '').toLowerCase() === 'true',
             hold_param: String(drugData.hold_param || '').trim(),
             admin_type: String(drugData.admin_type || 'IV').trim()
         };
@@ -3752,6 +3828,9 @@ Rules:
             side_effects_zh_hk: String(normalized.side_effects_zh_hk || '').trim(),
             nursing_zh_hk: String(normalized.nursing_zh_hk || '').trim(),
             effect_of_drug_zh_hk: String(normalized.effect_of_drug_zh_hk || '').trim(),
+            data_source: String(normalized.data_source || 'Manual entry').trim(),
+            verified_at: String(normalized.verified_at || '').trim(),
+            ai_modified: normalized.ai_modified === true,
             quiz: usefulDrugText(normalized.quiz || effect, DRUG_TEXT_FALLBACKS.effect),
             effect: effect,
             effects: effect
@@ -3858,7 +3937,7 @@ Rules:
                 mode: 'cors',
                 // text/plain keeps this a simple cross-origin request so Apps Script
                 // can return its explicit JSON acknowledgement without a preflight.
-                headers: { 'Content-Type': mode === 'update' ? 'text/plain;charset=UTF-8' : 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                 body: JSON.stringify(payload)
             });
             if (!response.ok) {
@@ -3882,7 +3961,11 @@ Rules:
                 }
                 return { ok: true, verified: true, body };
             }
-            return { ok: true, verified: true };
+            const body = await readGoogleSheetJSON(response);
+            const added = body?.ok === true && body?.added === true && body?.action === 'added';
+            return added
+                ? { ok: true, verified: true, body }
+                : { ok: false, verified: false, code: body?.error || 'add_not_acknowledged', message: body?.message || '', body };
         } catch (corsError) {
             if (mode === 'update') {
                 return { ok: false, verified: false, code: 'update_request_failed', error: corsError };
@@ -3891,7 +3974,7 @@ Rules:
                 await fetch(scriptURL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                     body: JSON.stringify(payload)
                 });
                 return { ok: true, verified: false };
@@ -3945,9 +4028,10 @@ Rules:
             : 'Checking that Google Sheet supports English + Cantonese fields…', 'var(--ios-blue)');
         const capability = await checkGoogleSheetCapability(scriptURL, { requireUpdate: isUpdate });
         if (!capability.ok) {
+            queuePendingSheetWrite(payload, mode, originalName, capability.reason || 'Apps Script capability check failed');
             setStatus(isUpdate
-                ? '❌ Google Sheet updater needs the v2 Apps Script with bilingual fields. No Sheet row was changed; device-only save is still available.'
-                : '❌ Google Sheet needs the v2 Apps Script with bilingual fields. Nothing was sent; device-only save is still available.', 'var(--ios-red)');
+                ? '❌ Google Sheet updater needs the v2 Apps Script with bilingual fields. No Sheet row was changed; device-only save is still available. This update is queued for manual retry.'
+                : '❌ Google Sheet needs the v2 Apps Script with bilingual fields. Nothing was sent; device-only save is still available. This add is queued for manual retry.', 'var(--ios-red)');
             if (saveBtn) {
                 saveBtn.disabled = false;
                 saveBtn.innerText = isUpdate ? '☁️ Retry safe Google Sheet update' : '☁️ Retry Google Sheet';
@@ -3975,6 +4059,8 @@ Rules:
         }
 
         if (outcome.ok) {
+            removeQueuedSheetWrite(payload, mode);
+            setLastDatabaseSync();
             if (!isUpdate && saveKey) googleSheetSavedKeys.add(saveKey);
             const successMessage = isUpdate
                 ? '✅ Changes saved to Google Sheet and this device.'
@@ -3993,7 +4079,11 @@ Rules:
             : (outcome.code === 'multiple_matches'
                 ? '❌ More than one matching Sheet row exists. Nothing was changed; remove the duplicate first.'
                 : '❌ Google Sheet could not confirm the row update. Nothing was saved on this device.');
-        setStatus(isUpdate ? updateFailure : '❌ Could not add to Google Sheet. Try again.', 'var(--ios-red)');
+        const shouldQueue = !['not_found', 'multiple_matches'].includes(outcome.code);
+        if (shouldQueue) queuePendingSheetWrite(payload, mode, originalName, outcome.message || outcome.error || outcome.code);
+        setStatus(isUpdate
+            ? `${updateFailure}${shouldQueue ? ' This update is queued for manual retry.' : ''}`
+            : `❌ Could not add to Google Sheet.${shouldQueue ? ' This add is queued for manual retry.' : ' Try again.'}`, 'var(--ios-red)');
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.innerText = isUpdate ? '☁️ Retry safe Google Sheet update' : '☁️ Retry Google Sheet';
@@ -4140,26 +4230,51 @@ Rules:
         }
     }
 
-    async function requestDeepSeekJSON(messages, { temperature = 0.1 } = {}) {
-        const response = await fetchDeepSeek({
-            messages,
-            temperature,
-            stream: false,
-            response_format: { type: 'json_object' },
-        });
-        if (!response.ok) {
-            const detail = await getDeepSeekErrorDetail(response);
-            throw new Error(`DeepSeek request failed (${response.status})${detail ? `: ${detail}` : ''}`);
+    async function requestDeepSeekJSON(messages, { temperature = 0.1, feature = 'DeepSeek JSON' } = {}) {
+        let usage = {};
+        try {
+            const response = await fetchDeepSeek({
+                messages,
+                temperature,
+                stream: false,
+                response_format: { type: 'json_object' },
+            });
+            if (!response.ok) {
+                const detail = await getDeepSeekErrorDetail(response);
+                throw new Error(`DeepSeek request failed (${response.status})${detail ? `: ${detail}` : ''}`);
+            }
+            const json = await response.json();
+            usage = json?.usage || {};
+            const text = extractDeepSeekText(json?.choices?.[0]?.message?.content).trim();
+            recordDeepSeekUsage({ feature, usage, success: true });
+            return text;
+        } catch (error) {
+            recordDeepSeekUsage({ feature, usage, success: false, error: error?.message || error });
+            throw error;
         }
-        const json = await response.json();
-        return extractDeepSeekText(json?.choices?.[0]?.message?.content).trim();
     }
 
-    async function streamAIResponse(messages, onUpdate, { temperature = 0.7 } = {}) {
+    function recordDeepSeekUsage({ feature, usage, success, retryCount = 0, error = '' }) {
+        if (!window.DrugTutorAIUsage) return;
+        const config = getApiConfiguration();
+        window.DrugTutorAIUsage.record({
+            feature,
+            usage,
+            success,
+            retry_count: retryCount,
+            error,
+            model: DEEPSEEK_MODEL,
+            mode: config.serverManaged ? 'server' : 'personal',
+        });
+        updateAIUsageSummary();
+    }
+
+    async function performStreamAIResponse(messages, onUpdate, { temperature = 0.7, onUsage = () => {}, onRetry = () => {} } = {}) {
         const body = {
             messages,
             temperature,
             stream: true,
+            stream_options: { include_usage: true },
             thinking: { type: 'disabled' },
         };
         const response = await fetchDeepSeek(body);
@@ -4181,6 +4296,7 @@ Rules:
             if (!payload || payload === '[DONE]') return;
             try {
                 const json = JSON.parse(payload);
+                if (json?.usage) onUsage(json.usage);
                 const payloadError = getDeepSeekPayloadError(json);
                 if (payloadError) throw new Error(`DeepSeek request failed: ${payloadError}`);
                 const content = extractDeepSeekResponseText(json);
@@ -4211,6 +4327,7 @@ Rules:
         if (!fullText) {
             try {
                 const json = JSON.parse(rawResponse.trim());
+                if (json?.usage) onUsage(json.usage);
                 const payloadError = getDeepSeekPayloadError(json);
                 if (payloadError) throw new Error(`DeepSeek request failed: ${payloadError}`);
                 fullText = extractDeepSeekResponseText(json).trim();
@@ -4223,6 +4340,7 @@ Rules:
 
         // Some successful upstream responses contain no usable stream delta. Retry once
         // without streaming so a transient empty SSE response does not reach the user.
+        onRetry();
         const retryResponse = await fetchDeepSeek({
             messages,
             temperature,
@@ -4242,10 +4360,39 @@ Rules:
         }
         const retryError = getDeepSeekPayloadError(retryJson);
         if (retryError) throw new Error(`DeepSeek retry failed: ${retryError}`);
+        if (retryJson?.usage) onUsage(retryJson.usage);
         fullText = extractDeepSeekResponseText(retryJson).trim();
         if (!fullText) throw new Error('DeepSeek returned no readable text after an automatic retry. Please try again.');
         onUpdate(fullText);
         return fullText;
+    }
+
+    async function streamAIResponse(messages, onUpdate, { temperature = 0.7, feature = 'DeepSeek AI' } = {}) {
+        let aggregateUsage = {};
+        let retryCount = 0;
+        const mergeUsage = usage => {
+            aggregateUsage = window.DrugTutorAIUsage
+                ? window.DrugTutorAIUsage.addUsage(aggregateUsage, usage)
+                : usage || aggregateUsage;
+        };
+        try {
+            const text = await performStreamAIResponse(messages, onUpdate, {
+                temperature,
+                onUsage: mergeUsage,
+                onRetry: () => { retryCount += 1; },
+            });
+            recordDeepSeekUsage({ feature, usage: aggregateUsage, success: true, retryCount });
+            return text;
+        } catch (error) {
+            recordDeepSeekUsage({
+                feature,
+                usage: aggregateUsage,
+                success: false,
+                retryCount,
+                error: error?.message || error,
+            });
+            throw error;
+        }
     }
 
     // --- UTILS ---
@@ -4270,7 +4417,8 @@ Rules:
                 effect_of_drug: d.effect_of_drug || d.quiz || d.effect || d.effects || '', system: d.system || '',
                 class_zh_hk: d.class_zh_hk || '', system_zh_hk: d.system_zh_hk || '',
                 indication_zh_hk: d.indication_zh_hk || '', side_effects_zh_hk: d.side_effects_zh_hk || '',
-                nursing_zh_hk: d.nursing_zh_hk || '', effect_of_drug_zh_hk: d.effect_of_drug_zh_hk || ''
+                nursing_zh_hk: d.nursing_zh_hk || '', effect_of_drug_zh_hk: d.effect_of_drug_zh_hk || '',
+                data_source: d.data_source || '', verified_at: d.verified_at || '', ai_modified: d.ai_modified === true
             }));
             localStorage.setItem(LOCAL_DRUG_CACHE_KEY, JSON.stringify(payload));
         } catch (_) {}
@@ -4283,6 +4431,7 @@ Rules:
         if (opening) {
             syncDeepSeekSettingsUI();
             syncDrugLanguageSettingsUI();
+            updateSyncCentre();
         }
     }
 
@@ -4347,6 +4496,7 @@ Rules:
         // reload globals
         googleScriptURL = REQUIRED_SCRIPT_URL;
         document.getElementById('script-url').value = REQUIRED_SCRIPT_URL;
+        window.DrugTutorAIUsage?.configure({ scriptUrl: googleScriptURL });
 
         autoSyncOnStartup = document.getElementById('auto-sync-startup').checked;
         saveLocalDrugCache(activeSourceList);
@@ -4381,11 +4531,12 @@ Rules:
             const csv = await response.text();
             const results = papa.parse(csv, { header: true, skipEmptyLines: true });
             if (results.data.length > 0) {
-                extendedDrugs = prepareDrugListForFastSearch(results.data);
+                extendedDrugs = prepareDrugListForFastSearch(results.data, 'Google Sheet');
+                setLastDatabaseSync();
                 status.innerText = `✅ Loaded ${extendedDrugs.length} drugs`;
                 document.getElementById('set-btn').innerText = "📚 Source: Online CSV";
                 if(autoSwitch) {
-                    activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
+                    activeSourceList = prepareDrugListForFastSearch([...extendedDrugs], 'Google Sheet');
                     saveLocalDrugCache(activeSourceList);
                     refreshDrugViews();
                 }
@@ -4393,7 +4544,7 @@ Rules:
         } catch (e) {
             status.innerText = "❌ Load failed, switched to local data.";
             if(autoSwitch) {
-                activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
+                activeSourceList = prepareDrugListForFastSearch([...commonDrugs], 'Built-in database');
                 refreshDrugViews();
             }
         }
@@ -4402,10 +4553,10 @@ Rules:
     function toggleDrugSet() {
         const usingOnline = document.getElementById('set-btn').innerText.includes('Online CSV');
         if(usingOnline) {
-            activeSourceList = prepareDrugListForFastSearch([...commonDrugs]);
+            activeSourceList = prepareDrugListForFastSearch([...commonDrugs], 'Built-in database');
             document.getElementById('set-btn').innerText = "📚 Source: Common drugs";
         } else if(extendedDrugs.length > 0) {
-            activeSourceList = prepareDrugListForFastSearch([...extendedDrugs]);
+            activeSourceList = prepareDrugListForFastSearch([...extendedDrugs], 'Google Sheet');
             document.getElementById('set-btn').innerText = "📚 Source: Online CSV";
         }
         saveLocalDrugCache(activeSourceList);

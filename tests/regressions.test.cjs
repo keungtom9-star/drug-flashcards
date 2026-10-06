@@ -43,6 +43,7 @@ function browserContext(records = {}) {
     context.window = context;
     context.parent = context;
     vm.runInContext(read('app-ui.js'), context);
+    vm.runInContext(read('ai-usage.js'), context);
     return { context, elements, storage, document, viewportListeners, css, events };
 }
 function loadDisease(records = {}) {
@@ -54,6 +55,9 @@ function loadDisease(records = {}) {
 test('all inline application scripts parse', () => {
     for (const file of ['index.html', 'drugquiz.html', 'ward.html']) {
         for (const source of inlineScripts(file)) assert.doesNotThrow(() => new vm.Script(source, { filename: file }));
+    }
+    for (const file of ['app-ui.js', 'ai-usage.js', 'phase-one.js']) {
+        assert.doesNotThrow(() => new vm.Script(read(file), { filename: file }));
     }
 });
 
@@ -175,6 +179,7 @@ test('viewport changes follow keyboard height without overriding pinch zoom', ()
 test('unknown search text is safe and falls back to Google plus manual review without AI', async () => {
     const { context, document } = browserContext({ ds_key: 'test-key' });
     for (const source of inlineScripts('index.html')) vm.runInContext(source, context);
+    vm.runInContext(read('phase-one.js'), context);
     const query = '<img src=x onerror=alert(1)> "quote"';
     document.getElementById('search-input').value = query;
     const opened = [];
@@ -236,6 +241,8 @@ test('service worker installs under root and GitHub Pages subpaths', async () =>
         assert.ok(worker.requested.every(url => url.startsWith(base)));
         assert.ok(worker.requested.includes(base+'drugquiz.html'));
         assert.ok(worker.requested.includes(base+'app-ui.js'));
+        assert.ok(worker.requested.includes(base+'ai-usage.js'));
+        assert.ok(worker.requested.includes(base+'phase-one.js'));
         assert.ok(worker.requested.includes(base+'ios-polish.css'));
     }
 });
@@ -245,7 +252,7 @@ test('Netlify build publishes Home, Ward and AI Drugs as multi-page entries', ()
     const netlifyConfig = read('netlify.toml');
     for (const page of ['index.html', 'ward.html', 'drugquiz.html']) assert.match(viteConfig, new RegExp(page.replace('.', '\\.')));
     assert.match(viteConfig, /rollupOptions[\s\S]*input/);
-    for (const asset of ['app-ui.js', 'ios-polish.css', 'service-worker.js', 'manifest.json']) assert.match(viteConfig, new RegExp(asset.replace('.', '\\.')));
+    for (const asset of ['app-ui.js', 'ai-usage.js', 'phase-one.js', 'ios-polish.css', 'service-worker.js', 'manifest.json']) assert.match(viteConfig, new RegExp(asset.replace('.', '\\.')));
     assert.match(netlifyConfig, /publish\s*=\s*"dist"/);
     assert.match(netlifyConfig, /from\s*=\s*"\/ward"[\s\S]*to\s*=\s*"\/ward\.html"/);
     assert.match(netlifyConfig, /from\s*=\s*"\/clinical"[\s\S]*to\s*=\s*"\/drugquiz\.html"/);
@@ -285,6 +292,7 @@ function loadMain(records = {}) {
     const state = browserContext({ auto_sync_startup: '0', ...records });
     vm.runInContext(read('drugs.js'), state.context);
     for (const source of inlineScripts('index.html')) vm.runInContext(source, state.context);
+    vm.runInContext(read('phase-one.js'), state.context);
     return state;
 }
 
@@ -322,6 +330,44 @@ test('all screens share the lightweight iOS visual layer and AI Drugs avoids opt
     assert.match(polish, /body\.ios-disease[\s\S]*radial-gradient/);
     assert.match(polish, /\.drug-action-grid\s*\{[\s\S]*grid-template-columns/);
     assert.match(polish, /\.drug-detail-grid\s*\{[\s\S]*grid-template-columns/);
+});
+
+test('AI usage records tokens and estimated charge, then syncs only to Apps Script v3', async () => {
+    const { context, storage } = browserContext();
+    const posts = [];
+    context.fetch = async (_url, options = {}) => {
+        if ((options.method || 'GET') === 'GET') {
+            return new Response(JSON.stringify({ ok: true, protocol_version: 3, supports_usage_log: true }), {
+                status: 200, headers: { 'Content-Type': 'application/json' },
+            });
+        }
+        posts.push(JSON.parse(options.body));
+        return new Response(JSON.stringify({ ok: true, action: 'usage_logged' }), {
+            status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+    };
+    const entry = context.DrugTutorAIUsage.record({
+        timestamp: '2026-10-04T12:00:00.000Z',
+        feature: 'AI drug data + Nursing care',
+        model: 'deepseek-flash', mode: 'server', success: true,
+        usage: {
+            prompt_tokens: 1000, prompt_cache_hit_tokens: 400, prompt_cache_miss_tokens: 600,
+            completion_tokens: 500, total_tokens: 1500,
+        },
+    });
+    assert.equal(entry.total_tokens, 1500);
+    assert.equal(entry.estimated_usd, 0.0003912);
+    assert.equal(context.DrugTutorAIUsage.summary().pending, 1);
+    const result = await context.DrugTutorAIUsage.sync('https://script.google.test/exec');
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), { ok: true, sent: 1, pending: 0 });
+    assert.equal(posts.length, 1);
+    assert.equal(posts[0].action, 'log_ai_usage');
+    assert.equal(posts[0].protocol_version, 3);
+    assert.equal(posts[0].feature, 'AI drug data + Nursing care');
+    assert.equal(posts[0].estimated_usd, 0.0003912);
+    assert.equal(posts[0].prompt, undefined);
+    assert.equal(posts[0].api_key, undefined);
+    assert.equal(JSON.parse(storage.get('drug_tutor_ai_usage_pending_v1')).length, 0);
 });
 
 function fillAIEditor(document, overrides = {}) {
@@ -434,8 +480,8 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 28 Sep 2026 · 23:35 HKT/);
-    assert.match(read('index.html'), /datetime="2026-09-28T23:35:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 6 Oct 2026 · 20:00 HKT/);
+    assert.match(read('index.html'), /datetime="2026-10-06T20:00:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
     assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
@@ -477,6 +523,22 @@ test('Settings switches drug cards between English and Cantonese while medicine 
     assert.match(searchCard, /頭暈、低血壓/);
     assert.match(searchCard, /心血管系統/);
     assert.doesNotMatch(searchCard, /Blood pressure medicine/);
+});
+
+test('drug cards show source, verification date and AI-modified safety status', () => {
+    const { context, document } = loadMain();
+    vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
+        name: 'Sourcemed', class: 'Test class', system: '🫀 Cardio', indication: 'Test indication',
+        side_effects: 'Nausea', nursing: 'Monitor response.', effect_of_drug: 'Test action.',
+        data_source: 'RxNorm + openFDA', verified_at: '2026-10-05T12:00:00.000Z', ai_modified: true
+    }])`, context);
+    document.getElementById('search-input').value = 'Sourcemed';
+    context.runSearch();
+    const fragment = document.getElementById('search-results').children.at(-1);
+    const card = fragment.children[0];
+    assert.match(card.innerHTML, /RxNorm \+ openFDA/);
+    assert.match(card.innerHTML, /Verified 5 Oct 2026/);
+    assert.match(card.innerHTML, /AI modified/);
 });
 
 test('AI Drugs replaces the old Clinical quiz and asks for concise uses plus within-list interactions', () => {
@@ -971,7 +1033,9 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
             }
             sheetWrites++;
             writtenPayload = JSON.parse(options.body);
-            return { ok: true, text: async () => '' };
+            return new Response(JSON.stringify({ ok: true, action: 'added', added: true, row: 2 }), {
+                status: 200, headers: { 'Content-Type': 'application/json' },
+            });
         }
         if (String(url).includes('example.test/drugs.csv')) return { ok: true, text: async () => 'name,class' };
         if (String(url).includes('/rxcui.json')) return { ok: true, json: async () => ({ idGroup: { rxnormId: ['123'] } }) };
@@ -1008,6 +1072,10 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
         'ai-edit-effect': 'Example action',
     });
     await document.getElementById('btn-improve-official-data').onclick();
+    assert.equal(document.getElementById('ai-edit-class').value, 'Test class', 'AI suggestions do not overwrite the editor');
+    assert.match(document.getElementById('ai-diff-panel').innerHTML, /Improved test class/);
+    assert.match(document.getElementById('ai-diff-panel').innerHTML, /Use AI/);
+    context.applyAllAISuggestions();
     assert.equal(document.getElementById('ai-edit-class').value, 'Improved test class');
     assert.equal(document.getElementById('ai-edit-indication').value, 'Concise official testing indication');
     assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, rash, dizziness, hypotension');
@@ -1028,6 +1096,7 @@ test('an official-source drug uses no search AI and AI improvement covers Nursin
     assert.match(document.getElementById('save-status').innerText, /DeepSeek.*Nursing care/i);
 
     await document.getElementById('btn-improve-official-data').onclick();
+    context.applyAllAISuggestions();
     const generatedNursing = document.getElementById('ai-edit-nursing').value;
     assert.match(generatedNursing, /Monitor response/);
     assert.doesNotMatch(generatedNursing, /\n|^\s*[-*•]/);
@@ -1106,7 +1175,8 @@ test('saved database AI keeps card details simple and safely updates Google Shee
     vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
         name: 'Savedmed (Oldbrand)', generic_name: 'Savedmed', brand_name: 'Oldbrand', class: 'Old class',
         system: '🫀 Cardio', indication: 'Old indication', side_effects: 'Old nausea',
-        nursing: 'Old nursing note', effect_of_drug: 'Old action'
+        nursing: 'Old nursing note', effect_of_drug: 'Old action', data_source: 'Google Sheet',
+        verified_at: '2026-10-01T10:00:00.000Z', ai_modified: false
     }])`, context);
     const original = JSON.parse(vm.runInContext('JSON.stringify(activeSourceList[0])', context));
     const prompts = [];
@@ -1169,6 +1239,9 @@ test('saved database AI keeps card details simple and safely updates Google Shee
         'ai-edit-side-effects': original.side_effects,
         'ai-edit-nursing': original.nursing,
         'ai-edit-effect': original.effect_of_drug,
+        'ai-edit-data-source': 'Google Sheet',
+        'ai-edit-verified-at': '2026-10-01T10:00:00.000Z',
+        'ai-edit-ai-modified': 'false',
     });
 
     await document.getElementById('btn-improve-official-data').onclick();
@@ -1177,7 +1250,16 @@ test('saved database AI keeps card details simple and safely updates Google Shee
     assert.match(prompts[0], /details shown on the medicine card/i);
     assert.match(prompts[0], /comma-separated list of 2-5/i);
     assert.match(prompts[0], /"effect_of_drug" to one plain sentence/i);
+    assert.equal(document.getElementById('ai-edit-brand-name').value, 'Oldbrand', 'AI suggestions require explicit acceptance');
+    assert.match(document.getElementById('ai-diff-panel').innerHTML, /Brightbrand/);
+    context.applyAllAISuggestions();
     assert.equal(document.getElementById('ai-edit-brand-name').value, 'Brightbrand');
+    assert.equal(document.getElementById('ai-edit-ai-modified').value, 'true');
+    assert.equal(document.getElementById('ai-edit-verified-at').value, '', 'AI changes require re-verification');
+    assert.equal(context.undoLastAIChange(), true);
+    assert.equal(document.getElementById('ai-edit-brand-name').value, 'Oldbrand');
+    assert.equal(document.getElementById('ai-edit-verified-at').value, '2026-10-01T10:00:00.000Z');
+    context.applyAllAISuggestions();
     assert.equal(document.getElementById('ai-edit-name').value, 'Savedmed (Brightbrand)');
     assert.match(document.getElementById('ai-edit-nursing').value, /local protocol and current formulary/);
     assert.equal(document.getElementById('ai-edit-class-zh-hk').value, '測試藥物');
@@ -1245,13 +1327,15 @@ test('AI improve retries once when medicine-card wording is too long for mobile'
     assert.equal(await document.getElementById('btn-improve-official-data').onclick(), true);
     assert.equal(prompts.length, 2);
     assert.match(prompts[1], /STRICT SHORT RETRY/);
+    assert.equal(document.getElementById('ai-edit-indication').value, 'Short use.');
+    context.applyAllAISuggestions();
     assert.equal(document.getElementById('ai-edit-indication').value, 'Treats the stated condition.');
     assert.equal(document.getElementById('ai-edit-side-effects').value, 'Nausea, dizziness, rash');
-    assert.match(document.getElementById('save-status').innerText, /Card data and Nursing care improved/i);
+    assert.match(document.getElementById('save-status').innerText, /All AI suggestions applied/i);
 });
 
 test('legacy Sheet writer receives no update POST and cannot create a duplicate row', async () => {
-    const { context, document } = loadMain();
+    const { context, document, storage } = loadMain();
     vm.runInContext(`activeSourceList = prepareDrugListForFastSearch([{
         name: 'Safemed (Old)', class: 'Old class', system: '🫀 Cardio', indication: 'Old use',
         side_effects: 'Nausea, rash', nursing: 'Check first. Monitor response. Escalate concerns.', effect_of_drug: 'Old action.'
@@ -1279,6 +1363,8 @@ test('legacy Sheet writer receives no update POST and cannot create a duplicate 
     assert.equal(requests[0].options.method, 'GET');
     assert.match(document.getElementById('save-status').innerText, /needs the v2 Apps Script/i);
     assert.match(document.getElementById('save-status').innerText, /No Sheet row was changed/i);
+    assert.equal(JSON.parse(storage.get('drug_tutor_pending_sheet_writes_v1')).length, 1);
+    assert.match(document.getElementById('save-status').innerText, /queued for manual retry/i);
     assert.equal(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context))[0].name, 'Safemed (Old)');
 });
 
@@ -1316,7 +1402,7 @@ test('Sheet update requires an explicit acknowledgement and never retries with n
     assert.equal(JSON.parse(vm.runInContext('JSON.stringify(activeSourceList)', context))[0].name, 'Ackmed (Old)');
 });
 
-test('Apps Script v2 refuses missing or duplicate update matches', () => {
+test('Apps Script v3 refuses missing or duplicate update matches', () => {
     const script = read('google-apps-script/Code.gs');
     assert.match(script, /supports_update:\s*true/);
     assert.match(script, /bilingual_fields:\s*true/);
@@ -1330,7 +1416,7 @@ test('Apps Script v2 refuses missing or duplicate update matches', () => {
     assert.match(script, /action: 'updated'[\s\S]*matched_rows: 1/);
 });
 
-test('Apps Script v2 replaces exactly one row without appending', () => {
+test('Apps Script v3 replaces exactly one row without appending', () => {
     const rows = [
         ['name', 'class', 'system', 'indication', 'SideEffects', 'nursing', 'effect_of_drug'],
         ['Savedmed (Oldbrand)', 'Old class', '🫀 Cardio', 'Old use', 'Nausea', 'Old care', 'Old action'],
@@ -1386,11 +1472,75 @@ test('Apps Script v2 replaces exactly one row without appending', () => {
     assert.equal(rows[1][0], 'Savedmed (Brightbrand)');
     assert.equal(rows[1][1], 'Clear class');
     assert.equal(rows[1][4], 'Nausea, dizziness');
-    assert.deepEqual(rows[0].slice(-6), [
-        'class_zh_hk', 'system_zh_hk', 'indication_zh_hk', 'side_effects_zh_hk', 'nursing_zh_hk', 'effect_of_drug_zh_hk'
+    assert.deepEqual(rows[0].slice(-9), [
+        'class_zh_hk', 'system_zh_hk', 'indication_zh_hk', 'side_effects_zh_hk', 'nursing_zh_hk', 'effect_of_drug_zh_hk',
+        'data_source', 'verified_at', 'ai_modified'
     ]);
     assert.equal(rows[1][rows[0].indexOf('indication_zh_hk')], '用於短期測試。');
     assert.equal(rows[1][rows[0].indexOf('nursing_zh_hk')], '給藥前核對病歷。按處方給藥並監察。出現問題要停藥上報。');
+});
+
+test('Apps Script v3 writes token charges to a separate deduplicated AI_Usage sheet', () => {
+    const makeSheet = rows => ({
+        rows,
+        getLastRow: () => rows.length,
+        getLastColumn: () => rows.reduce((max, row) => Math.max(max, row.length), 0),
+        appendRow(row) { rows.push(row.slice()); },
+        getRange(row, column, rowCount = 1, columnCount = 1) {
+            return {
+                getDisplayValues: () => Array.from({ length: rowCount }, (_, rowOffset) =>
+                    Array.from({ length: columnCount }, (_, columnOffset) => String(rows[row - 1 + rowOffset]?.[column - 1 + columnOffset] ?? ''))),
+                getValues: () => Array.from({ length: rowCount }, (_, rowOffset) =>
+                    Array.from({ length: columnCount }, (_, columnOffset) => rows[row - 1 + rowOffset]?.[column - 1 + columnOffset] ?? '')),
+                setValues(values) {
+                    values.forEach((newRow, rowOffset) => {
+                        const target = row - 1 + rowOffset;
+                        while (rows.length <= target) rows.push([]);
+                        newRow.forEach((value, columnOffset) => { rows[target][column - 1 + columnOffset] = value; });
+                    });
+                },
+            };
+        },
+    });
+    const drugSheet = makeSheet([['name'], ['Existingmed']]);
+    let usageSheet = null;
+    const spreadsheet = {
+        getSheets: () => [drugSheet],
+        getSheetByName: name => name === 'AI_Usage' ? usageSheet : null,
+        insertSheet: name => {
+            assert.equal(name, 'AI_Usage');
+            usageSheet = makeSheet([]);
+            return usageSheet;
+        },
+    };
+    const appContext = vm.createContext({
+        JSON, String, Number,
+        ContentService: {
+            MimeType: { JSON: 'application/json' },
+            createTextOutput(body) { return { body, setMimeType() { return this; } }; },
+        },
+        LockService: { getScriptLock: () => ({ waitLock() {}, hasLock: () => true, releaseLock() {} }) },
+        PropertiesService: { getScriptProperties: () => ({ getProperty: () => '' }) },
+        SpreadsheetApp: { getActiveSpreadsheet: () => spreadsheet, flush() {} },
+    });
+    vm.runInContext(read('google-apps-script/Code.gs'), appContext);
+    const payload = {
+        action: 'log_ai_usage', protocol_version: 3, request_id: 'usage-1', timestamp: '2026-10-06T12:00:00Z',
+        feature: 'AI drug data + Nursing care', model: 'deepseek-flash', mode: 'server', success: true,
+        prompt_tokens: 100, cache_hit_tokens: 20, cache_miss_tokens: 80, completion_tokens: 50,
+        total_tokens: 150, retry_count: 0, estimated_usd: 0.00005,
+        pricing_period: 'off_peak', pricing_version: '2026-09-10', error: '',
+    };
+    const first = JSON.parse(appContext.doPost({ postData: { contents: JSON.stringify(payload) } }).body);
+    const duplicate = JSON.parse(appContext.doPost({ postData: { contents: JSON.stringify(payload) } }).body);
+    assert.equal(first.action, 'usage_logged');
+    assert.equal(duplicate.action, 'usage_exists');
+    assert.equal(usageSheet.rows.length, 2);
+    assert.equal(usageSheet.rows[0][0], 'request_id');
+    assert.equal(usageSheet.rows[0][12], 'estimated_usd');
+    assert.equal(usageSheet.rows[1][0], 'usage-1');
+    assert.equal(usageSheet.rows[1][12], 0.00005);
+    assert.equal(drugSheet.rows.length, 2, 'usage logging must not alter the drug table');
 });
 
 test('review validation rejects placeholder side effects', () => {

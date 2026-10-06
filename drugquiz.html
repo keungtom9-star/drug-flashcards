@@ -9,6 +9,7 @@
         if (window.parent !== window) document.documentElement.classList.add('embedded');
     </script>
     <script src="app-ui.js" defer></script>
+    <script src="ai-usage.js" defer></script>
     <script src="drugs.js" defer></script>
     <link rel="stylesheet" href="ios-polish.css">
     <style>
@@ -171,6 +172,7 @@
         const DEEPSEEK_MODEL = 'deepseek-flash';
         const DEEPSEEK_MODE_STORAGE_KEY = 'drug_tutor_deepseek_mode';
         const DEEPSEEK_PERSONAL_KEY_STORAGE_KEY = 'drug_tutor_deepseek_key';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxyNPyjbVXDMTQxFPxEuuCDTNNf-iVFfqedfNbh-kgn6Tk9rSIFEfIaLWXxXZoNOVnWug/exec';
         const LOCAL_DRUG_CACHE_KEY = 'drug_tutor_local_data_v1';
         let database = [];
         let runningRequest = 0;
@@ -205,6 +207,7 @@
         }
 
         function loadDatabase() {
+            window.DrugTutorAIUsage?.configure({ scriptUrl: GOOGLE_SCRIPT_URL });
             let cached = [];
             try {
                 const parsed = JSON.parse(localStorage.getItem(LOCAL_DRUG_CACHE_KEY) || '[]');
@@ -312,6 +315,17 @@ Output that line only. Do not include doses, descriptions, Markdown or commentar
                 : { url: DEEPSEEK_PROXY_URL, key: '', model: '', serverManaged: true, configured: true };
         }
 
+        function recordDiseaseAIUsage(connection, usage, success, error = '') {
+            window.DrugTutorAIUsage?.record({
+                feature: 'AI drugs by disease',
+                model: DEEPSEEK_MODEL,
+                mode: connection.serverManaged ? 'server' : 'personal',
+                usage,
+                success,
+                error: error?.message || error,
+            });
+        }
+
         async function requestDiseaseData(disease, acceptedNames = [], compactRetry = false, textFallback = false, namesOnly = false) {
             const connection = getDeepSeekConnection();
             if (!connection.configured) {
@@ -347,7 +361,8 @@ Output that line only. Do not include doses, descriptions, Markdown or commentar
                     },
                     body: JSON.stringify(requestBody)
                 });
-            } catch (_) {
+            } catch (error) {
+                recordDiseaseAIUsage(connection, {}, false, error);
                 if (!connection.serverManaged) {
                     throw new Error('未能直接連接 DeepSeek。請檢查 key／網絡，或轉回 Built-in secure key。');
                 }
@@ -359,13 +374,27 @@ Output that line only. Do not include doses, descriptions, Markdown or commentar
                     const payload = await response.json();
                     message = payload?.error?.message || payload?.error || payload?.message || '';
                 } catch (_) {}
-                if (connection.serverManaged && response.status === 503) throw new Error('DeepSeek 尚未喺 Netlify 設定。請加入 DEEPSEEK_API_KEY，再重新 deploy。');
-                throw new Error(`DeepSeek request failed (${response.status})${message ? `: ${message}` : ''}`);
+                const error = connection.serverManaged && response.status === 503
+                    ? new Error('DeepSeek 尚未喺 Netlify 設定。請加入 DEEPSEEK_API_KEY，再重新 deploy。')
+                    : new Error(`DeepSeek request failed (${response.status})${message ? `: ${message}` : ''}`);
+                recordDiseaseAIUsage(connection, {}, false, error);
+                throw error;
             }
-            const payload = await response.json();
-            const content = extractText(payload?.choices?.[0]?.message?.content);
-            if (namesOnly) return parseDiseaseNamesFallback(content, disease);
-            return textFallback ? parseDiseaseTextFallback(content, disease) : parseJsonObject(content);
+            let payload;
+            try {
+                payload = await response.json();
+                const content = extractText(payload?.choices?.[0]?.message?.content);
+                const result = namesOnly
+                    ? parseDiseaseNamesFallback(content, disease)
+                    : textFallback
+                    ? parseDiseaseTextFallback(content, disease)
+                    : parseJsonObject(content);
+                recordDiseaseAIUsage(connection, payload?.usage, true);
+                return result;
+            } catch (error) {
+                recordDiseaseAIUsage(connection, payload?.usage, false, error);
+                throw error;
+            }
         }
 
         function parseJsonObject(raw) {

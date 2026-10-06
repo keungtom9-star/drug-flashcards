@@ -1,12 +1,13 @@
 /**
- * AI Drug Tutor Google Sheets web app (protocol v2).
+ * AI Drug Tutor Google Sheets web app (protocol v3).
  *
  * Deploy this as the app's existing /exec web app. A Sheet-bound script uses
  * its active spreadsheet. A standalone script must set the SPREADSHEET_ID
  * Script Property; SHEET_NAME is optional in either setup.
  */
 
-const DRUG_SHEET_PROTOCOL_VERSION = 2;
+const DRUG_SHEET_PROTOCOL_VERSION = 3;
+const DRUG_UPDATE_PROTOCOL_VERSION = 2;
 const DEFAULT_DRUG_HEADERS = [
   'name',
   'generic_name',
@@ -22,7 +23,10 @@ const DEFAULT_DRUG_HEADERS = [
   'nursing',
   'nursing_zh_hk',
   'effect_of_drug',
-  'effect_of_drug_zh_hk'
+  'effect_of_drug_zh_hk',
+  'data_source',
+  'verified_at',
+  'ai_modified'
 ];
 const BILINGUAL_DRUG_HEADERS = [
   'class_zh_hk',
@@ -31,6 +35,25 @@ const BILINGUAL_DRUG_HEADERS = [
   'side_effects_zh_hk',
   'nursing_zh_hk',
   'effect_of_drug_zh_hk'
+];
+const DRUG_METADATA_HEADERS = ['data_source', 'verified_at', 'ai_modified'];
+const AI_USAGE_HEADERS = [
+  'request_id',
+  'timestamp',
+  'feature',
+  'model',
+  'mode',
+  'success',
+  'prompt_tokens',
+  'cache_hit_tokens',
+  'cache_miss_tokens',
+  'completion_tokens',
+  'total_tokens',
+  'retry_count',
+  'estimated_usd',
+  'pricing_period',
+  'pricing_version',
+  'error'
 ];
 
 function doGet(e) {
@@ -41,8 +64,10 @@ function doGet(e) {
       service: 'ai-drug-tutor-sheet',
       supports_add: true,
       supports_update: true,
+      supports_usage_log: true,
       bilingual_fields: true,
       languages: ['en', 'zh-HK'],
+      usage_sheet: 'AI_Usage',
       protocol_version: DRUG_SHEET_PROTOCOL_VERSION
     });
   }
@@ -62,13 +87,31 @@ function doPost(e) {
   }
 
   const action = String(payload.action || 'add').toLowerCase();
+  if (action === 'log_ai_usage') {
+    if (Number(payload.protocol_version || 0) < DRUG_SHEET_PROTOCOL_VERSION) {
+      return jsonResponse_({ ok: false, error: 'protocol_mismatch', message: 'AI usage logging requires protocol v3.' });
+    }
+    const usageLock = LockService.getScriptLock();
+    try {
+      usageLock.waitLock(10000);
+      return logAIUsage_(payload);
+    } catch (error) {
+      return jsonResponse_({
+        ok: false,
+        error: 'server_error',
+        message: String(error && error.message || error || 'Unknown server error')
+      });
+    } finally {
+      if (usageLock.hasLock()) usageLock.releaseLock();
+    }
+  }
   if (action !== 'add' && action !== 'update') {
-    return jsonResponse_({ ok: false, error: 'unsupported_action', message: 'Only add and update are supported.' });
+    return jsonResponse_({ ok: false, error: 'unsupported_action', message: 'Only add, update and log_ai_usage are supported.' });
   }
   if (!String(payload.name || '').trim()) {
     return jsonResponse_({ ok: false, error: 'missing_name', message: 'A drug name is required.' });
   }
-  if (action === 'update' && Number(payload.protocol_version || 0) < DRUG_SHEET_PROTOCOL_VERSION) {
+  if (action === 'update' && Number(payload.protocol_version || 0) < DRUG_UPDATE_PROTOCOL_VERSION) {
     return jsonResponse_({ ok: false, error: 'protocol_mismatch', message: 'Update protocol v2 is required.' });
   }
 
@@ -91,7 +134,7 @@ function doPost(e) {
   }
 }
 
-function getTargetDrugSheet_() {
+function getTargetSpreadsheet_() {
   const properties = PropertiesService.getScriptProperties();
   const spreadsheetId = String(properties.getProperty('SPREADSHEET_ID') || '').trim();
   const spreadsheet = spreadsheetId
@@ -100,7 +143,12 @@ function getTargetDrugSheet_() {
   if (!spreadsheet) {
     throw new Error('No spreadsheet is configured. Set the SPREADSHEET_ID Script Property.');
   }
+  return spreadsheet;
+}
 
+function getTargetDrugSheet_() {
+  const properties = PropertiesService.getScriptProperties();
+  const spreadsheet = getTargetSpreadsheet_();
   const sheetName = String(properties.getProperty('SHEET_NAME') || '').trim();
   const sheet = sheetName ? spreadsheet.getSheetByName(sheetName) : spreadsheet.getSheets()[0];
   if (!sheet) throw new Error('The configured SHEET_NAME was not found.');
@@ -116,7 +164,8 @@ function ensureDrugHeaders_(sheet) {
     .map(function (header) { return String(header || '').trim(); });
   if (!headers.some(Boolean)) throw new Error('The first row must contain column headers.');
   const normalizedHeaders = headers.map(normalizeHeader_);
-  const missingBilingualHeaders = BILINGUAL_DRUG_HEADERS.filter(function (header) {
+  const requiredExtraHeaders = BILINGUAL_DRUG_HEADERS.concat(DRUG_METADATA_HEADERS);
+  const missingBilingualHeaders = requiredExtraHeaders.filter(function (header) {
     return normalizedHeaders.indexOf(normalizeHeader_(header)) === -1;
   });
   if (missingBilingualHeaders.length) {
@@ -248,6 +297,11 @@ function payloadFieldForHeader_(header, payload) {
     effectzhhk: 'effect_of_drug_zh_hk',
     effectofdrugzh: 'effect_of_drug_zh_hk',
     drugeffectcantonese: 'effect_of_drug_zh_hk',
+    datasource: 'data_source',
+    source: 'data_source',
+    verifiedat: 'verified_at',
+    lastverified: 'verified_at',
+    aimodified: 'ai_modified',
     holdparam: 'hold_param',
     holdparameter: 'hold_param',
     admintype: 'admin_type',
@@ -259,6 +313,69 @@ function payloadFieldForHeader_(header, payload) {
     ? payload.side_effects || payload.SideEffects || ''
     : payload[payloadKey];
   return { known: true, value: value == null ? '' : String(value).trim() };
+}
+
+function getAIUsageSheet_() {
+  const spreadsheet = getTargetSpreadsheet_();
+  const properties = PropertiesService.getScriptProperties();
+  const sheetName = String(properties.getProperty('AI_USAGE_SHEET_NAME') || 'AI_Usage').trim() || 'AI_Usage';
+  return spreadsheet.getSheetByName(sheetName) || spreadsheet.insertSheet(sheetName);
+}
+
+function ensureAIUsageHeaders_(sheet) {
+  if (sheet.getLastRow() < 1 || sheet.getLastColumn() < 1) {
+    sheet.getRange(1, 1, 1, AI_USAGE_HEADERS.length).setValues([AI_USAGE_HEADERS]);
+    return;
+  }
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0]
+    .map(function (header) { return normalizeHeader_(header); });
+  const valid = AI_USAGE_HEADERS.every(function (header, index) {
+    return headers[index] === normalizeHeader_(header);
+  });
+  if (!valid) throw new Error('AI_Usage has incompatible headers. Rename it or restore the v3 header row.');
+}
+
+function logAIUsage_(payload) {
+  const requestId = String(payload.request_id || '').trim();
+  if (!requestId) {
+    return jsonResponse_({ ok: false, error: 'missing_request_id', message: 'A request_id is required.' });
+  }
+  const sheet = getAIUsageSheet_();
+  ensureAIUsageHeaders_(sheet);
+  if (sheet.getLastRow() > 1) {
+    const existingIds = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+    const duplicate = existingIds.some(function (row) { return String(row[0] || '').trim() === requestId; });
+    if (duplicate) {
+      return jsonResponse_({ ok: true, action: 'usage_exists', duplicate: true, request_id: requestId, protocol_version: DRUG_SHEET_PROTOCOL_VERSION });
+    }
+  }
+  const numericFields = {
+    prompt_tokens: true,
+    cache_hit_tokens: true,
+    cache_miss_tokens: true,
+    completion_tokens: true,
+    total_tokens: true,
+    retry_count: true,
+    estimated_usd: true
+  };
+  const row = AI_USAGE_HEADERS.map(function (header) {
+    if (header === 'success') return payload.success === true || String(payload.success).toLowerCase() === 'true';
+    if (numericFields[header]) {
+      const number = Number(payload[header] || 0);
+      return isFinite(number) && number >= 0 ? number : 0;
+    }
+    return String(payload[header] == null ? '' : payload[header]).trim();
+  });
+  sheet.appendRow(row);
+  SpreadsheetApp.flush();
+  return jsonResponse_({
+    ok: true,
+    action: 'usage_logged',
+    logged: true,
+    request_id: requestId,
+    row: sheet.getLastRow(),
+    protocol_version: DRUG_SHEET_PROTOCOL_VERSION
+  });
 }
 
 function normalizeHeader_(value) {
