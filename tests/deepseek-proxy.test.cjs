@@ -27,6 +27,26 @@ function request(body, origin = 'https://site.test') {
     });
 }
 
+function healthRequest(origin = 'https://site.test') {
+    return new Request('https://site.test/.netlify/functions/deepseek', {
+        method: 'GET',
+        headers: { Origin: origin },
+    });
+}
+
+test('DeepSeek proxy health check reports configuration without exposing the key', async () => {
+    const { default: handler } = await modulePromise;
+    await runWithServerKey('health-secret-key', async () => {
+        const response = await handler(healthRequest());
+        assert.equal(response.status, 200);
+        const text = await response.text();
+        const body = JSON.parse(text);
+        assert.equal(body.configured, true);
+        assert.equal(body.model, 'deepseek-flash');
+        assert.doesNotMatch(text, /health-secret-key/);
+    });
+});
+
 test('DeepSeek proxy keeps the key server-side, pins the Flash model and omits an output cap', async () => {
     const { default: handler } = await modulePromise;
     await runWithServerKey('server-secret-test-key', async () => {
@@ -84,6 +104,24 @@ test('DeepSeek proxy sanitises options and does not forward arbitrary response f
             { role: 'system', content: 'Safe prompt' },
             { role: 'user', content: 'Question' },
         ]);
+    });
+});
+
+test('DeepSeek proxy requests final token usage for streaming calls', async () => {
+    const { default: handler } = await modulePromise;
+    await runWithServerKey('server-test-key', async () => {
+        let forwarded;
+        global.fetch = async (_url, options) => {
+            forwarded = JSON.parse(options.body);
+            return new Response('data: [DONE]\n\n', { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+        };
+        const response = await handler(request({
+            messages: [{ role: 'user', content: 'Stream safely.' }],
+            stream: true,
+            stream_options: { include_usage: false, unsafe: true },
+        }));
+        assert.equal(response.status, 200);
+        assert.deepEqual(forwarded.stream_options, { include_usage: true });
     });
 });
 
