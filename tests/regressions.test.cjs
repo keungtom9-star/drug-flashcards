@@ -480,8 +480,8 @@ test('Revise shows one vibrant column of 10 unique drugs with round progress', (
     assert.match(read('index.html'), /10 drugs for today/);
     assert.match(read('index.html'), /Random 10/);
     assert.match(read('index.html'), /Round progress/);
-    assert.match(read('index.html'), /Updated 6 Oct 2026 · 20:00 HKT/);
-    assert.match(read('index.html'), /datetime="2026-10-06T20:00:00\+08:00"/);
+    assert.match(read('index.html'), /Updated 7 Oct 2026 · 20:36 HKT/);
+    assert.match(read('index.html'), /datetime="2026-10-07T20:36:00\+08:00"/);
     assert.match(read('index.html'), /linear-gradient\(135deg, #7c3aed, #ec4899/);
     assert.match(read('index.html'), /\.ios-home \.action-btn\.revision-shuffle/);
     assert.match(read('index.html'), /GENERAL_SYSTEM = "💊 General \/ Other"/);
@@ -946,6 +946,75 @@ test('RxNorm related concepts supply a brand when openFDA has no brand name', as
     assert.equal(result.brand_name, 'Nova');
     assert.equal(result.name, 'Novelmed (Nova)');
     assert.ok(requested.some(url => url.includes('tty=BN+SBD')));
+});
+
+test('automated source check uses RxNorm, openFDA and DeepSeek but never self-verifies', async () => {
+    const { context, document } = loadMain({ ds_key: 'test-key' });
+    const current = {
+        name: 'Novelmed (Nova)', generic_name: 'Novelmed', brand_name: 'Nova',
+        class: 'Test class', system: '🫀 Cardio', indication: 'Treats the test condition.',
+        side_effects: 'Nausea, dizziness',
+        nursing: 'Check allergies first. Monitor response after administration. Hold and escalate concerns; verify the prescription and local protocol.',
+        effect_of_drug: 'Produces the intended test effect.',
+        class_zh_hk: '測試藥物', system_zh_hk: '🫀 心血管系統', indication_zh_hk: '用於測試病況。',
+        side_effects_zh_hk: '噁心、頭暈',
+        nursing_zh_hk: '給藥前核對敏感史。給藥後監察反應。有問題要停藥上報，並核對處方及本地指引。',
+        effect_of_drug_zh_hk: '產生預期治療作用。', data_source: 'Saved database', verified_at: '', ai_modified: false,
+    };
+    context.renderEditableDrugReview(current, { containerId: 'database-review', reviewMode: 'update' });
+    fillAIEditor(document, {
+        'ai-edit-class': current.class,
+        'ai-edit-indication': current.indication,
+        'ai-edit-side-effects': current.side_effects,
+        'ai-edit-nursing': current.nursing,
+        'ai-edit-effect': current.effect_of_drug,
+        'ai-edit-class-zh-hk': current.class_zh_hk,
+        'ai-edit-system-zh-hk': current.system_zh_hk,
+        'ai-edit-indication-zh-hk': current.indication_zh_hk,
+        'ai-edit-side-effects-zh-hk': current.side_effects_zh_hk,
+        'ai-edit-nursing-zh-hk': current.nursing_zh_hk,
+        'ai-edit-effect-zh-hk': current.effect_of_drug_zh_hk,
+    });
+    const response = JSON.stringify({
+        verdict: 'pass', summary_en: 'Identity and card facts are consistent.', summary_zh_hk: '藥物身份同卡片資料一致。', mismatches: [],
+        suggested: current,
+    });
+    vm.runInContext(`
+        loadOfficialDrugEvidence = async () => ({ rxNorm: { rxcui: '987', displayName: 'Novelmed', ingredient: 'Novelmed', brand: 'Nova' }, label: { openfda: { generic_name: ['Novelmed'] } } });
+        buildDrugFromOfficialEvidence = () => (${JSON.stringify(current)});
+        streamAIResponse = async (_messages, onUpdate) => { onUpdate(${JSON.stringify(response)}); return ${JSON.stringify(response)}; };
+    `, context);
+
+    const passed = await context.autoCheckDrugWithOfficialSources();
+    assert.equal(passed, true);
+    assert.equal(document.getElementById('ai-source-check-result').dataset.state, 'pass');
+    assert.match(document.getElementById('ai-source-check-result').innerHTML, /RxNorm ✓ matched/);
+    assert.match(document.getElementById('ai-source-check-result').innerHTML, /openFDA ✓ label found/);
+    assert.match(document.getElementById('ai-source-check-result').innerHTML, /Human confirmation is still required/);
+    assert.equal(document.getElementById('ai-edit-verified-at').value, '');
+    assert.match(document.getElementById('btn-mark-verified').textContent, /Confirm checked/);
+});
+
+test('automated source check blocks a different official medicine identity before AI', async () => {
+    const { context } = loadMain({ ds_key: 'test-key' });
+    assert.equal(context.officialIdentityMatches(
+        { name: 'Metformin (Glucophage)', generic_name: 'Metformin' },
+        { generic_name: 'Metformin hydrochloride' },
+        { rxNorm: { ingredient: 'Metformin hydrochloride' }, label: { openfda: { generic_name: ['METFORMIN HYDROCHLORIDE'] } } }
+    ), true);
+    assert.equal(context.officialIdentityMatches(
+        { name: 'Metformin', generic_name: 'Metformin' },
+        { generic_name: 'Sitagliptin and metformin hydrochloride' },
+        { rxNorm: { ingredient: 'Sitagliptin and metformin hydrochloride' }, label: { openfda: { generic_name: ['SITAGLIPTIN AND METFORMIN HYDROCHLORIDE'] } } }
+    ), false);
+});
+
+test('AI modify editor removes the fixed expansion cap and leaves safe-area room for save buttons', () => {
+    const html = read('index.html');
+    const polish = read('ios-polish.css');
+    assert.match(html, /classList\.add\('expanded', 'ai-editor-open'\)/);
+    assert.match(polish, /\.database-ai-editor\s*\{[\s\S]*?overflow:\s*visible;[\s\S]*?padding-bottom:\s*max\(96px/);
+    assert.match(polish, /\.result-card\.ai-editor-open \.extra-details\s*\{\s*max-height:\s*none;\s*overflow:\s*visible;/);
 });
 
 test('system resolver keeps Other selectable and recognises active vitamin D as Endocrine', () => {
