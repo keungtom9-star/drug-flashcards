@@ -229,6 +229,166 @@
         return improved;
     }
 
+    function getAutoSourceCheckPrompt(draft, officialDrug, rxNorm) {
+        return `Cross-check one medicine card against the supplied RxNorm identity and openFDA label extract.
+
+Current editable card:
+${JSON.stringify(draft, null, 2)}
+
+RxNorm identity:
+${JSON.stringify({
+    rxcui: rxNorm?.rxcui || '',
+    display_name: rxNorm?.displayName || '',
+    ingredient: rxNorm?.ingredient || '',
+    brand: rxNorm?.brand || ''
+}, null, 2)}
+
+openFDA-derived card extract:
+${JSON.stringify(officialDrug, null, 2)}
+
+Return strict JSON only with exactly these top-level keys: "verdict", "summary_en", "summary_zh_hk", "mismatches", "suggested".
+
+Rules:
+- "verdict" must be "pass" only when the medicine identity is consistent and no current clinical field directly contradicts the supplied official extract; otherwise use "review".
+- "mismatches" must be an array of short field names or concerns. Use an empty array only for a pass.
+- Summaries must be one short English sentence and one short Traditional Chinese Cantonese sentence.
+- "suggested" must contain exactly: "name", "generic_name", "brand_name", "class", "system", "indication", "side_effects", "nursing", "effect_of_drug", "class_zh_hk", "system_zh_hk", "indication_zh_hk", "side_effects_zh_hk", "nursing_zh_hk", "effect_of_drug_zh_hk".
+- Ground class, indication, side effects and drug effect only in the supplied official extract. Do not add a dose, route, dilution, rate, threshold, contraindication or local policy.
+- Keep medicine and brand names in English. Never invent a brand.
+- Use concise English and matching Traditional Chinese written Cantonese for Hong Kong nurses.
+- English Nursing care must be exactly three short sentences: checks; monitoring; then hold/escalation plus verifying the prescription and local protocol.
+- Cantonese Nursing care must be exactly three short sentences with the same meaning.
+- Keep "system" exactly one of: ${systemCategories.join(', ')}.
+- This is an automated source check, not human clinical verification. Output JSON only.`;
+    }
+
+    function normalizeOfficialIdentity(value) {
+        return normalizeSearchText(String(value || '')
+            .replace(/\([^)]*\)/g, ' ')
+            .replace(/\b(?:hydrochloride|hydrobromide|sodium|potassium|calcium|acetate|succinate|tartrate|maleate|mesylate|phosphate)\b/gi, ' '));
+    }
+
+    function officialIdentityMatches(draft, officialDrug, evidence) {
+        const current = normalizeOfficialIdentity(getDrugNameParts(draft).generic || draft?.name);
+        if (!current) return false;
+        const openfda = evidence?.label?.openfda || {};
+        const candidates = [
+            evidence?.rxNorm?.ingredient,
+            evidence?.rxNorm?.displayName,
+            officialDrug?.generic_name,
+            ...(openfda.generic_name || []),
+            ...(openfda.substance_name || []),
+        ].map(normalizeOfficialIdentity).filter(Boolean);
+        return candidates.some(candidate => candidate === current);
+    }
+
+    function renderAutoSourceCheckResult({ state = 'review', rxNorm = false, openFDA = false, summary = '', mismatches = [] } = {}) {
+        const panel = document.getElementById('ai-source-check-result');
+        if (!panel) return;
+        const titles = {
+            pass: '✓ Automated source check passed',
+            review: '⚠ Automated check needs review',
+            error: '✕ Automated source check failed',
+            stale: '↻ Source check is out of date',
+        };
+        const concerns = Array.isArray(mismatches) ? mismatches.map(item => String(item || '').trim()).filter(Boolean).slice(0, 6) : [];
+        panel.className = `ai-source-check-result ${state === 'stale' ? 'review' : state}`;
+        panel.dataset.state = state;
+        panel.hidden = false;
+        panel.innerHTML = `
+            <strong>${escapeHtml(titles[state] || titles.review)}</strong>
+            <div class="ai-source-check-badges">
+                <span class="ai-source-check-badge">RxNorm ${rxNorm ? '✓ matched' : '✕ unavailable'}</span>
+                <span class="ai-source-check-badge">openFDA ${openFDA ? '✓ label found' : '✕ unavailable'}</span>
+                <span class="ai-source-check-badge">DeepSeek ${state === 'error' ? '✕ failed' : '✓ compared'}</span>
+            </div>
+            ${summary ? `<span>${escapeHtml(summary)}</span>` : ''}
+            ${concerns.length ? `<ul>${concerns.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+            <span><strong>Human confirmation is still required.</strong> Review any AI suggestions before marking the card verified.</span>`;
+    }
+
+    async function autoCheckDrugWithOfficialSources() {
+        const button = document.getElementById('btn-auto-source-check');
+        const draft = getEditableAISearchDrugDraft();
+        const nameParts = getDrugNameParts(draft);
+        const query = nameParts.generic || draft.name;
+        if (!query) {
+            setAIReviewStatus('Add a generic drug name before running the source check.', 'var(--ios-red)');
+            document.getElementById('ai-edit-name')?.focus();
+            return false;
+        }
+        if (!requireApiKey()) return false;
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'Checking RxNorm + openFDA…';
+            button.setAttribute('aria-busy', 'true');
+        }
+        setAIReviewStatus('Checking the medicine identity in RxNorm and the label in openFDA…', 'var(--ios-blue)');
+        try {
+            const evidence = await loadOfficialDrugEvidence(query);
+            const hasRxNorm = Boolean(evidence?.rxNorm?.rxcui);
+            const hasOpenFDA = Boolean(evidence?.label);
+            const officialDrug = buildDrugFromOfficialEvidence(query, evidence);
+            if (!hasRxNorm || !hasOpenFDA || !officialDrug) {
+                renderAutoSourceCheckResult({
+                    state: 'review', rxNorm: hasRxNorm, openFDA: hasOpenFDA,
+                    summary: 'Both RxNorm identity and an openFDA label are required before AI comparison.',
+                    mismatches: [!hasRxNorm ? 'RxNorm identity not confirmed' : '', !hasOpenFDA ? 'openFDA label not found' : ''].filter(Boolean),
+                });
+                setAIReviewStatus('Official-source check is incomplete. The card remains unverified.', 'var(--ios-orange)');
+                return false;
+            }
+            if (!officialIdentityMatches(draft, officialDrug, evidence)) {
+                renderAutoSourceCheckResult({
+                    state: 'review', rxNorm: true, openFDA: true,
+                    summary: 'The generic medicine name does not exactly match the official identities after normalising common salt names.',
+                    mismatches: ['Medicine identity mismatch'],
+                });
+                setAIReviewStatus('Medicine identity mismatch. DeepSeek comparison was not run and the card remains unverified.', 'var(--ios-orange)');
+                return false;
+            }
+
+            if (button) button.innerText = 'DeepSeek is comparing…';
+            let fullText = '';
+            await streamAIResponse([
+                { role: 'system', content: 'Compare only the supplied medicine card, RxNorm identity and openFDA extract. Return strict JSON and never claim human clinical verification.' },
+                { role: 'user', content: getAutoSourceCheckPrompt(draft, officialDrug, evidence.rxNorm) },
+            ], text => { fullText = text; }, { temperature: 0.1, feature: 'AI + official source check' });
+            if (/^Error:/i.test(fullText.trim())) throw new Error(fullText.trim());
+            const parsed = parseAISearchPayload(fullText);
+            const suggested = parsed?.suggested;
+            if (!parsed || !suggested || typeof suggested !== 'object') {
+                throw new Error('DeepSeek returned an incomplete source-check response. Please try again.');
+            }
+            const proposed = buildAIImprovedDrugData(suggested, officialDrug);
+            renderAIChangeReview(draft, proposed);
+            const verdict = String(parsed.verdict || '').trim().toLowerCase();
+            const mismatches = Array.isArray(parsed.mismatches) ? parsed.mismatches : [];
+            const passed = verdict === 'pass' && mismatches.length === 0;
+            const summary = [parsed.summary_en, parsed.summary_zh_hk].map(value => String(value || '').trim()).filter(Boolean).join(' · ');
+            renderAutoSourceCheckResult({ state: passed ? 'pass' : 'review', rxNorm: true, openFDA: true, summary, mismatches });
+            const verifyButton = document.getElementById('btn-mark-verified');
+            if (verifyButton && passed) verifyButton.textContent = '✓ Confirm checked & mark verified today';
+            setAIReviewStatus(
+                passed
+                    ? 'RxNorm, openFDA and DeepSeek agree. Review the suggested fields, then confirm verification yourself.'
+                    : 'The automated check found differences. Review them before saving or marking verified.',
+                passed ? 'var(--ios-green)' : 'var(--ios-orange)'
+            );
+            return passed;
+        } catch (error) {
+            renderAutoSourceCheckResult({ state: 'error', summary: error?.message || 'Automated source check failed.' });
+            setAIReviewStatus(error?.message || 'Automated source check failed. The card remains unverified.', 'var(--ios-red)');
+            return false;
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.innerText = '🛡️ Auto-check: AI + RxNorm + openFDA';
+                button.removeAttribute('aria-busy');
+            }
+        }
+    }
+
     function readPendingSheetWrites() {
         try {
             const value = JSON.parse(localStorage.getItem(PENDING_SHEET_WRITES_KEY) || '[]');

@@ -1227,7 +1227,7 @@
     <button onclick="toggleSettings()" class="settings-btn-top" aria-label="Settings">⚙️</button>
     <div class="header-meta">
         <div class="subtitle" id="provider-display">DeepSeek V4.1 Flash</div>
-        <time class="app-last-updated" datetime="2026-10-06T20:00:00+08:00">Updated 6 Oct 2026 · 20:00 HKT</time>
+        <time class="app-last-updated" datetime="2026-10-07T20:36:00+08:00">Updated 7 Oct 2026 · 20:36 HKT</time>
     </div>
 </header>
 
@@ -2610,12 +2610,16 @@ Language: ${langInstruction}.`;
 
     async function openDatabaseDrugAIEditor(drug, outputId) {
         if (!drug || !outputId) return false;
+        document.querySelectorAll('.result-card.ai-editor-open').forEach((card) => card.classList.remove('ai-editor-open'));
         document.querySelectorAll('.database-ai-editor').forEach((editor) => {
             if (editor.id !== outputId) {
                 editor.innerHTML = '';
                 editor.style.display = 'none';
             }
         });
+        const editor = document.getElementById(outputId);
+        const card = editor?.closest('.result-card');
+        if (card) card.classList.add('expanded', 'ai-editor-open');
         renderEditableDrugReview({ ...drug }, {
             containerId: outputId,
             sourceLabel: 'Saved database',
@@ -2626,7 +2630,7 @@ Language: ${langInstruction}.`;
             reviewMode: 'update',
             originalName: drug.name,
         });
-        document.getElementById(outputId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        editor?.scrollIntoView({ block: 'start', behavior: 'smooth' });
         return improveDrugDataWithAI();
     }
 
@@ -2999,12 +3003,16 @@ Language: ${langInstruction}.`;
         return rules.find(([, pattern]) => pattern.test(text))?.[0] || GENERAL_SYSTEM;
     }
 
-    async function findDrugInOfficialSources(query) {
+    async function loadOfficialDrugEvidence(query) {
         const [rxNorm, directLabel] = await Promise.all([
             resolveRxNormConcept(query).catch(() => null),
             findOpenFDALabel([query]).catch(() => null),
         ]);
         const label = directLabel || await findOpenFDALabel([rxNorm?.ingredient, rxNorm?.displayName, rxNorm?.brand]);
+        return { rxNorm, label };
+    }
+
+    function buildDrugFromOfficialEvidence(query, { rxNorm, label } = {}) {
         if (!label) return null;
 
         const openfda = label.openfda || {};
@@ -3042,6 +3050,11 @@ Language: ${langInstruction}.`;
         };
         drugData.system = inferOfficialDrugSystem(drugData);
         return drugData;
+    }
+
+    async function findDrugInOfficialSources(query) {
+        const evidence = await loadOfficialDrugEvidence(query);
+        return buildDrugFromOfficialEvidence(query, evidence);
     }
 
     function getDirectAIDrugLookupPrompt(query, strictRetry = false) {
@@ -3609,6 +3622,11 @@ Rules:
                     <span id="ai-verification-label">${drugData.verified_at ? `✓ Verified ${escapeHtml(formatVerifiedDate(drugData.verified_at))}` : '⚠ Needs verification'}</span>
                     <button id="btn-mark-verified" type="button" class="chip">✓ Mark verified today</button>
                 </div>
+                <div class="ai-source-check-tools">
+                    <button id="btn-auto-source-check" type="button" class="action-btn">🛡️ Auto-check: AI + RxNorm + openFDA</button>
+                    <span class="ai-source-check-hint">Checks medicine identity and official label data, then asks DeepSeek to compare the mobile card. It never marks clinical verification automatically.</span>
+                    <div id="ai-source-check-result" class="ai-source-check-result" hidden></div>
+                </div>
                 ${showGoogleSearch ? '<button id="btn-google-missing-drug" type="button" class="action-btn" style="margin:0 0 12px; background:#fff; color:#1d4ed8; border:1px solid #bfdbfe;">🔎 Search this drug on Google</button>' : ''}
                 ${enableAIDataImprove ? '<div class="ai-improve-tools"><button id="btn-improve-official-data" type="button" class="action-btn ai-improve-button">✨ AI improve data + Nursing care</button><span class="ai-improve-hint">One AI action makes every card field concise in English + Cantonese, with three short Nursing care sentences in each language. Nothing saves automatically.</span></div>' : ''}
                 <div id="ai-diff-panel" class="ai-diff-panel" hidden></div>
@@ -3655,6 +3673,9 @@ Rules:
         const improveDataBtn = enableAIDataImprove ? document.getElementById('btn-improve-official-data') : null;
         if (improveDataBtn) improveDataBtn.onclick = improveDrugDataWithAI;
 
+        const autoSourceCheckBtn = document.getElementById('btn-auto-source-check');
+        if (autoSourceCheckBtn) autoSourceCheckBtn.onclick = autoCheckDrugWithOfficialSources;
+
         const markVerifiedBtn = document.getElementById('btn-mark-verified');
         if (markVerifiedBtn) markVerifiedBtn.onclick = () => {
             const now = new Date().toISOString();
@@ -3669,13 +3690,16 @@ Rules:
 
         const invalidateVerificationAfterEdit = () => {
             const verifiedField = document.getElementById('ai-edit-verified-at');
-            if (!verifiedField?.value) return;
-            verifiedField.value = '';
+            if (verifiedField?.value) verifiedField.value = '';
             const label = document.getElementById('ai-verification-label');
             if (label) label.textContent = '⚠ Needs verification after edit';
             if (markVerifiedBtn) {
                 markVerifiedBtn.disabled = false;
                 markVerifiedBtn.textContent = '✓ Mark verified today';
+            }
+            const sourcePanel = document.getElementById('ai-source-check-result');
+            if (sourcePanel && !sourcePanel.hidden && sourcePanel.dataset.state !== 'stale') {
+                renderAutoSourceCheckResult({ state: 'stale', summary: 'The card changed after the automated check. Run it again before confirming verification.' });
             }
         };
         AI_EDIT_FIELDS.forEach(({ id }) => document.getElementById(id)?.addEventListener('input', invalidateVerificationAfterEdit));

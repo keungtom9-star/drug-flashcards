@@ -43,6 +43,8 @@ Official RxNorm/openFDA results offer one combined **AI improve data + Nursing c
 
 Every saved database result also has **AI modify data** beside Google, Drugs.com, and the Cantonese explanation. It prefills that record, uses the same combined data-and-Nursing action, and waits for field-level approval. Accepting an AI change marks the record as AI-modified and clears its previous verification date until the user explicitly marks it verified again. The review offers separate **device only** and **Google Sheet + device** save buttons. Sheet updates use the original generic name, require an explicit server acknowledgement, and never fall back to appending a duplicate row.
 
+Every editable review also includes **Auto-check: AI + RxNorm + openFDA**. It requires both an RxNorm identity and an openFDA label, then asks DeepSeek to compare those supplied facts with the current mobile card and prepares field-by-field suggestions. A passing automated check never writes `verified_at` by itself: the nurse must review any differences and explicitly choose **Confirm checked & mark verified today**, then save. Editing a field makes the automated result stale and clears the verification state.
+
 ## English / Cantonese drug cards
 
 Choose **Settings → Drug card language / 藥卡語言** to show the clinical card fields in English or Traditional Chinese Cantonese. Search and Revise switch immediately, Cantonese terms are searchable, and records without Cantonese data safely fall back to English. The generic and brand name always stay in English.
